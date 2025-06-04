@@ -132,58 +132,61 @@ const ProjectDetail = () => {
       </header>
 
       <div className="container mx-auto px-6 py-8">
-        {/* Project Banner */}
-        <Card className="mb-8 bg-gradient-to-r from-gloster-gray to-gloster-gray/80 text-gloster-white">
-          <CardHeader className="pb-4">
-            <div className="flex items-start justify-between">
-              <div>
-                <CardTitle className="text-2xl mb-2 font-rubik">{project.name}</CardTitle>
-                <CardDescription className="text-gloster-white/80 text-base font-rubik">
-                  {project.description}
-                </CardDescription>
-              </div>
-              <Badge variant="secondary" className="bg-gloster-yellow text-slate-800 font-rubik">
-                {project.status}
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div>
-                <p className="text-gloster-white/80 text-sm font-rubik">Cliente</p>
-                <p className="font-semibold font-rubik">{project.client}</p>
-              </div>
-              <div>
-                <p className="text-gloster-white/80 text-sm font-rubik">Ubicación</p>
-                <p className="font-semibold font-rubik">{project.location}</p>
-              </div>
-              <div>
-                <p className="text-gloster-white/80 text-sm font-rubik">Valor Total</p>
-                <p className="font-semibold font-rubik">{formatCurrency(project.totalValue)}</p>
-              </div>
-              <div>
-                <p className="text-gloster-white/80 text-sm font-rubik">Progreso</p>
-                <div className="flex items-center space-x-2">
-                  <Progress value={project.progress} className="flex-1 bg-gloster-gray/60" />
-                  <span className="font-semibold text-sm font-rubik">{project.progress}%</span>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Payment States in Mosaic */}
+        {/* Estados de Pago in Mosaic Layout with Project Banner as first card */}
         <div className="space-y-6">
-          <h3 className="text-2xl font-bold text-slate-800 mb-6 font-rubik">Estados de Pago</h3>
+          <h3 className="text-2xl font-bold text-slate-800 mb-6 font-rubik">Detalles del Proyecto y Estados de Pago</h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Project Banner Card - Spans 2 columns on larger screens */}
+            <Card className="md:col-span-2 lg:col-span-2 border-l-4 border-l-gloster-yellow hover:shadow-xl transition-all duration-300">
+              <CardHeader className="pb-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <CardTitle className="text-2xl mb-2 font-rubik text-slate-800">{project.name}</CardTitle>
+                    <CardDescription className="text-gloster-gray text-base font-rubik">
+                      {project.description}
+                    </CardDescription>
+                  </div>
+                  <Badge variant="secondary" className="bg-gloster-yellow/20 text-gloster-gray border-gloster-yellow/30 font-rubik">
+                    {project.status}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-gloster-gray text-sm font-rubik">Cliente</p>
+                      <p className="font-semibold text-slate-800 font-rubik">{project.client}</p>
+                    </div>
+                    <div>
+                      <p className="text-gloster-gray text-sm font-rubik">Ubicación</p>
+                      <p className="font-semibold text-slate-800 font-rubik">{project.location}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-gloster-gray text-sm font-rubik">Valor Total</p>
+                      <p className="font-semibold text-slate-800 font-rubik">{formatCurrency(project.totalValue)}</p>
+                    </div>
+                    <div>
+                      <p className="text-gloster-gray text-sm font-rubik">Progreso</p>
+                      <div className="flex items-center space-x-2">
+                        <Progress value={project.progress} className="flex-1 bg-gloster-gray/20" />
+                        <span className="font-semibold text-sm text-slate-800 font-rubik">{project.progress}%</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Payment States Cards */}
             {paymentStates.map((payment, index) => (
               <Card 
                 key={payment.id} 
                 className={`hover:shadow-xl transition-all duration-300 cursor-pointer border-gloster-gray/20 hover:border-gloster-yellow/50 ${
-                  index === 0 ? 'md:col-span-2' : ''
-                } ${
-                  index === 2 ? 'lg:row-span-2' : ''
+                  index === 1 ? 'lg:row-span-2' : ''
                 }`}
               >
                 <CardContent className="p-6">

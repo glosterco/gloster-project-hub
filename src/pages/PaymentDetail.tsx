@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, Download, Upload, FileText, ExternalLink, Send } from 'lucide-react';
+import { ArrowLeft, Download, Upload, FileText, ExternalLink, Send, Calendar, DollarSign } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const PaymentDetail = () => {
@@ -137,71 +137,83 @@ const PaymentDetail = () => {
       </header>
 
       <div className="container mx-auto px-6 py-8">
-        {/* Payment Info Banner */}
-        <Card className="mb-8 bg-gradient-to-r from-gloster-gray to-gloster-gray/80 text-gloster-white">
-          <CardHeader>
-            <div className="flex items-start justify-between">
-              <div>
-                <CardTitle className="text-2xl mb-2 font-rubik">{paymentState.month}</CardTitle>
-                <CardDescription className="text-gloster-white/80 font-rubik">
-                  {paymentState.projectName}
-                </CardDescription>
-              </div>
-              <Badge variant="secondary" className="bg-gloster-white text-gloster-gray">
-                {paymentState.status}
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-3 gap-6">
-              <div>
-                <p className="text-gloster-white/80 text-sm font-rubik">Monto del Estado</p>
-                <p className="font-bold text-xl font-rubik">{formatCurrency(paymentState.amount)}</p>
-              </div>
-              <div>
-                <p className="text-gloster-white/80 text-sm font-rubik">Fecha de Vencimiento</p>
-                <p className="font-semibold font-rubik">{paymentState.dueDate}</p>
-              </div>
-              <div>
-                <p className="text-gloster-white/80 text-sm font-rubik">Destinatario</p>
-                <p className="font-semibold font-rubik">{paymentState.recipient}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Mosaic Layout with Payment Banner and Documents */}
+        <div className="space-y-6">
+          <h3 className="text-2xl font-bold text-slate-800 mb-6 font-rubik">Estado de Pago y Documentación</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Payment Info Banner Card - Spans 2 columns on larger screens */}
+            <Card className="md:col-span-2 lg:col-span-2 border-l-4 border-l-gloster-yellow hover:shadow-xl transition-all duration-300">
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-12 h-12 bg-gloster-yellow/20 rounded-lg flex items-center justify-center">
+                      <Calendar className="h-6 w-6 text-gloster-gray" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-2xl mb-2 font-rubik text-slate-800">{paymentState.month}</CardTitle>
+                      <CardDescription className="text-gloster-gray font-rubik">
+                        {paymentState.projectName}
+                      </CardDescription>
+                    </div>
+                  </div>
+                  <Badge variant="secondary" className="bg-gloster-yellow/20 text-gloster-gray border-gloster-yellow/30">
+                    {paymentState.status}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid md:grid-cols-3 gap-6">
+                  <div>
+                    <p className="text-gloster-gray text-sm font-rubik">Monto del Estado</p>
+                    <p className="font-bold text-xl text-slate-800 font-rubik">{formatCurrency(paymentState.amount)}</p>
+                  </div>
+                  <div>
+                    <p className="text-gloster-gray text-sm font-rubik">Fecha de Vencimiento</p>
+                    <p className="font-semibold text-slate-800 font-rubik">{paymentState.dueDate}</p>
+                  </div>
+                  <div>
+                    <p className="text-gloster-gray text-sm font-rubik">Destinatario</p>
+                    <p className="font-semibold text-slate-800 font-rubik">{paymentState.recipient}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-        {/* Instructions */}
-        <Card className="mb-8 border-gloster-gray/20">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2 font-rubik">
-              <div className="w-8 h-8 bg-gloster-yellow/20 rounded-lg flex items-center justify-center">
-                <FileText className="h-5 w-5 text-gloster-gray" />
-              </div>
-              <span>Instrucciones</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3 text-gloster-gray">
-              <p className="font-rubik">Para procesar este estado de pago, debes completar los siguientes pasos:</p>
-              <ol className="list-decimal list-inside space-y-2 ml-4 font-rubik">
-                <li>Descarga cada documento desde los enlaces oficiales proporcionados</li>
-                <li>Completa toda la información requerida en cada formulario</li>
-                <li>Carga los documentos completados utilizando los botones de carga</li>
-                <li>Una vez que todos los documentos estén cargados, presiona "Enviar" para enviarlos al destinatario</li>
-              </ol>
-            </div>
-          </CardContent>
-        </Card>
+            {/* Instructions Card */}
+            <Card className="border-gloster-gray/20 hover:shadow-xl transition-all duration-300">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2 font-rubik">
+                  <div className="w-8 h-8 bg-gloster-yellow/20 rounded-lg flex items-center justify-center">
+                    <FileText className="h-5 w-5 text-gloster-gray" />
+                  </div>
+                  <span className="text-slate-800">Instrucciones</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 text-gloster-gray">
+                  <p className="font-rubik text-sm">Para procesar este estado de pago:</p>
+                  <ol className="list-decimal list-inside space-y-2 ml-4 font-rubik text-sm">
+                    <li>Descarga cada documento</li>
+                    <li>Completa la información</li>
+                    <li>Carga los documentos</li>
+                    <li>Presiona "Enviar"</li>
+                  </ol>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
 
-        {/* Documents List - Changed to vertical layout */}
-        <div className="space-y-4 mb-8">
+        {/* Documents List - Vertical Layout */}
+        <div className="space-y-4 mt-8 mb-8">
           <h3 className="text-xl font-bold text-slate-800 font-rubik">Documentación Requerida</h3>
           
           <div className="space-y-4">
             {documents.map((doc) => (
               <Card 
                 key={doc.id} 
-                className="border-l-4 border-l-gloster-gray"
+                className="border-l-4 border-l-gloster-gray/30"
               >
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
@@ -235,7 +247,7 @@ const PaymentDetail = () => {
                             <Button
                               size="sm"
                               onClick={() => handleDocumentUpload(doc.id)}
-                              className="bg-gloster-gray hover:bg-gloster-gray/90 text-slate-50 font-rubik"
+                              className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
                             >
                               <Upload className="h-4 w-4 mr-2" />
                               Cargar Documento

@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, Building2, Calendar, DollarSign, FileText, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Calendar, DollarSign, ChevronRight, User } from 'lucide-react';
 
 const ProjectDetail = () => {
   const { id } = useParams();
@@ -96,7 +96,7 @@ const ProjectDetail = () => {
       case 'pagado':
         return 'bg-green-100 text-green-700';
       case 'pendiente':
-        return 'bg-yellow-100 text-yellow-700';
+        return 'bg-gloster-yellow/20 text-gloster-gray';
       case 'programado':
         return 'bg-blue-100 text-blue-700';
       default:
@@ -105,25 +105,27 @@ const ProjectDetail = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 font-rubik">
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 shadow-sm">
+      <header className="bg-gloster-white border-b border-gloster-gray/20 shadow-sm">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center space-x-4">
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={() => navigate('/dashboard')}
-              className="text-slate-600 hover:text-slate-800"
+              className="text-gloster-gray hover:text-slate-800"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Volver al Dashboard
             </Button>
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
-                <Building2 className="h-5 w-5 text-white" />
-              </div>
-              <h1 className="text-xl font-bold text-slate-800">Gloster</h1>
+              <img 
+                src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
+                alt="Gloster Logo" 
+                className="w-8 h-8"
+              />
+              <h1 className="text-xl font-bold text-slate-800 font-rubik">Gloster</h1>
             </div>
           </div>
         </div>
@@ -131,16 +133,16 @@ const ProjectDetail = () => {
 
       <div className="container mx-auto px-6 py-8">
         {/* Project Banner */}
-        <Card className="mb-8 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+        <Card className="mb-8 bg-gradient-to-r from-gloster-gray to-gloster-gray/80 text-gloster-white">
           <CardHeader className="pb-4">
             <div className="flex items-start justify-between">
               <div>
-                <CardTitle className="text-2xl mb-2">{project.name}</CardTitle>
-                <CardDescription className="text-blue-100 text-base">
+                <CardTitle className="text-2xl mb-2 font-rubik">{project.name}</CardTitle>
+                <CardDescription className="text-gloster-white/80 text-base font-rubik">
                   {project.description}
                 </CardDescription>
               </div>
-              <Badge variant="secondary" className="bg-white/20 text-white">
+              <Badge variant="secondary" className="bg-gloster-yellow text-slate-800 font-rubik">
                 {project.status}
               </Badge>
             </div>
@@ -148,116 +150,138 @@ const ProjectDetail = () => {
           <CardContent>
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div>
-                <p className="text-blue-200 text-sm">Cliente</p>
-                <p className="font-semibold">{project.client}</p>
+                <p className="text-gloster-white/80 text-sm font-rubik">Cliente</p>
+                <p className="font-semibold font-rubik">{project.client}</p>
               </div>
               <div>
-                <p className="text-blue-200 text-sm">Ubicación</p>
-                <p className="font-semibold">{project.location}</p>
+                <p className="text-gloster-white/80 text-sm font-rubik">Ubicación</p>
+                <p className="font-semibold font-rubik">{project.location}</p>
               </div>
               <div>
-                <p className="text-blue-200 text-sm">Valor Total</p>
-                <p className="font-semibold">{formatCurrency(project.totalValue)}</p>
+                <p className="text-gloster-white/80 text-sm font-rubik">Valor Total</p>
+                <p className="font-semibold font-rubik">{formatCurrency(project.totalValue)}</p>
               </div>
               <div>
-                <p className="text-blue-200 text-sm">Progreso</p>
+                <p className="text-gloster-white/80 text-sm font-rubik">Progreso</p>
                 <div className="flex items-center space-x-2">
-                  <Progress value={project.progress} className="flex-1 bg-blue-800" />
-                  <span className="font-semibold text-sm">{project.progress}%</span>
+                  <Progress value={project.progress} className="flex-1 bg-gloster-gray/60" />
+                  <span className="font-semibold text-sm font-rubik">{project.progress}%</span>
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Payment States */}
-        <div className="space-y-4">
-          <h3 className="text-2xl font-bold text-slate-800 mb-6">Estados de Pago</h3>
+        {/* Payment States in Mosaic */}
+        <div className="space-y-6">
+          <h3 className="text-2xl font-bold text-slate-800 mb-6 font-rubik">Estados de Pago</h3>
           
-          {paymentStates.map((payment) => (
-            <Card key={payment.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center">
-                      <Calendar className="h-6 w-6 text-slate-600" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-slate-800">{payment.month}</h4>
-                      <p className="text-slate-600 text-sm">
-                        Vencimiento: {payment.dueDate}
-                        {payment.paidDate && ` • Pagado: ${payment.paidDate}`}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-4">
-                    <div className="text-right">
-                      <p className="font-semibold text-slate-800">
-                        {formatCurrency(payment.amount)}
-                      </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {paymentStates.map((payment, index) => (
+              <Card 
+                key={payment.id} 
+                className={`hover:shadow-xl transition-all duration-300 cursor-pointer border-gloster-gray/20 hover:border-gloster-yellow/50 ${
+                  index === 0 ? 'md:col-span-2' : ''
+                } ${
+                  index === 2 ? 'lg:row-span-2' : ''
+                }`}
+              >
+                <CardContent className="p-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-gloster-yellow/20 rounded-lg flex items-center justify-center">
+                          <Calendar className="h-5 w-5 text-gloster-gray" />
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-slate-800 font-rubik">{payment.month}</h4>
+                          <p className="text-gloster-gray text-sm font-rubik">
+                            Vencimiento: {payment.dueDate}
+                          </p>
+                        </div>
+                      </div>
                       <Badge variant="secondary" className={getStatusColor(payment.status)}>
                         {payment.status}
                       </Badge>
                     </div>
                     
-                    {payment.status === 'pendiente' && (
-                      <Button
-                        onClick={() => navigate(`/payment/${payment.id}`)}
-                        className="bg-orange-500 hover:bg-orange-600 text-white"
-                      >
-                        Gestionar Documentos
-                        <ChevronRight className="h-4 w-4 ml-2" />
-                      </Button>
-                    )}
-                    
-                    {payment.status === 'pagado' && (
-                      <Button
-                        variant="outline"
-                        onClick={() => navigate(`/payment/${payment.id}`)}
-                      >
-                        Ver Documentos
-                        <ChevronRight className="h-4 w-4 ml-2" />
-                      </Button>
-                    )}
-                    
-                    {payment.status === 'programado' && (
-                      <Button variant="ghost" disabled>
-                        Programado
-                      </Button>
-                    )}
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gloster-gray text-sm font-rubik">Monto:</span>
+                        <span className="font-semibold text-slate-800 font-rubik">
+                          {formatCurrency(payment.amount)}
+                        </span>
+                      </div>
+                      {payment.paidDate && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-gloster-gray text-sm font-rubik">Pagado:</span>
+                          <span className="text-green-600 text-sm font-rubik">{payment.paidDate}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="pt-2">
+                      {payment.status === 'pendiente' && (
+                        <Button
+                          onClick={() => navigate(`/payment/${payment.id}`)}
+                          className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold font-rubik"
+                          size="sm"
+                        >
+                          Gestionar Documentos
+                          <ChevronRight className="h-4 w-4 ml-2" />
+                        </Button>
+                      )}
+                      
+                      {payment.status === 'pagado' && (
+                        <Button
+                          variant="outline"
+                          onClick={() => navigate(`/payment/${payment.id}`)}
+                          className="w-full border-gloster-gray/30 hover:bg-gloster-yellow/10 font-rubik"
+                          size="sm"
+                        >
+                          Ver Documentos
+                          <ChevronRight className="h-4 w-4 ml-2" />
+                        </Button>
+                      )}
+                      
+                      {payment.status === 'programado' && (
+                        <Button variant="ghost" disabled className="w-full font-rubik" size="sm">
+                          Programado
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
 
         {/* Project Info */}
-        <Card className="mt-8">
+        <Card className="mt-8 border-gloster-gray/20">
           <CardHeader>
-            <CardTitle>Información del Proyecto</CardTitle>
+            <CardTitle className="font-rubik text-slate-800">Información del Proyecto</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid md:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <div>
-                  <p className="text-slate-600 text-sm">Fecha de Inicio</p>
-                  <p className="font-medium">{project.startDate}</p>
+                  <p className="text-gloster-gray text-sm font-rubik">Fecha de Inicio</p>
+                  <p className="font-medium font-rubik">{project.startDate}</p>
                 </div>
                 <div>
-                  <p className="text-slate-600 text-sm">Fecha Estimada de Término</p>
-                  <p className="font-medium">{project.estimatedEndDate}</p>
+                  <p className="text-gloster-gray text-sm font-rubik">Fecha Estimada de Término</p>
+                  <p className="font-medium font-rubik">{project.estimatedEndDate}</p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div>
-                  <p className="text-slate-600 text-sm">Project Manager</p>
-                  <p className="font-medium">{project.projectManager}</p>
+                  <p className="text-gloster-gray text-sm font-rubik">Project Manager</p>
+                  <p className="font-medium font-rubik">{project.projectManager}</p>
                 </div>
                 <div>
-                  <p className="text-slate-600 text-sm">Contacto</p>
-                  <p className="font-medium">{project.contactEmail}</p>
+                  <p className="text-gloster-gray text-sm font-rubik">Contacto</p>
+                  <p className="font-medium font-rubik">{project.contactEmail}</p>
                 </div>
               </div>
             </div>

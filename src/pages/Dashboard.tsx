@@ -1,9 +1,8 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, DollarSign, FileText, LogOut, User } from 'lucide-react';
+import { Calendar, DollarSign, FileText, LogOut, User, FolderOpen } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 
@@ -78,19 +77,19 @@ const Dashboard = () => {
                 alt="Gloster Logo" 
                 className="w-8 h-8"
               />
-              <h1 className="text-xl font-bold text-slate-800">Gloster</h1>
+              <h1 className="text-xl font-bold text-slate-800 font-rubik">Gloster</h1>
             </div>
             
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2 text-gloster-gray">
                 <User className="h-4 w-4" />
-                <span className="text-sm">Juan Pérez - Subcontratista</span>
+                <span className="text-sm font-rubik">Juan Pérez - Subcontratista</span>
               </div>
               <Button 
                 variant="outline" 
                 size="sm" 
                 onClick={handleLogout}
-                className="text-gloster-gray hover:text-slate-800 border-gloster-gray/30"
+                className="text-gloster-gray hover:text-slate-800 border-gloster-gray/30 font-rubik"
               >
                 <LogOut className="h-4 w-4 mr-2" />
                 Cerrar Sesión
@@ -103,39 +102,35 @@ const Dashboard = () => {
       <div className="container mx-auto px-6 py-8">
         {/* Page Title */}
         <div className="mb-8">
-          <h2 className="text-3xl font-bold text-slate-800 mb-2">Mis Proyectos</h2>
-          <p className="text-gloster-gray">Gestiona tus proyectos activos y estados de pago</p>
+          <h2 className="text-3xl font-bold text-slate-800 mb-2 font-rubik">Mis Proyectos - Constructora San Miguel Ltda.</h2>
+          <p className="text-gloster-gray font-rubik">Gestiona tus proyectos activos y estados de pago</p>
         </div>
 
         {/* Summary Cards */}
         <div className="grid md:grid-cols-3 gap-6 mb-8">
           <Card className="border-gloster-gray/20">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gloster-gray">
+              <CardTitle className="text-sm font-medium text-gloster-gray font-rubik">
                 Proyectos Activos
               </CardTitle>
               <div className="w-8 h-8 bg-gloster-yellow/20 rounded-lg flex items-center justify-center">
-                <img 
-                  src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
-                  alt="Gloster Logo" 
-                  className="w-4 h-4"
-                />
+                <FolderOpen className="h-4 w-4 text-gloster-gray" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-slate-800">{projects.length}</div>
+              <div className="text-2xl font-bold text-slate-800 font-rubik">{projects.length}</div>
             </CardContent>
           </Card>
 
           <Card className="border-gloster-gray/20">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gloster-gray">
+              <CardTitle className="text-sm font-medium text-gloster-gray font-rubik">
                 Valor Total Contratos
               </CardTitle>
-              <DollarSign className="h-4 w-4 text-gloster-yellow" />
+              <DollarSign className="h-4 w-4 text-gloster-gray" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-slate-800">
+              <div className="text-2xl font-bold text-slate-800 font-rubik">
                 {formatCurrency(projects.reduce((sum, p) => sum + p.totalValue, 0))}
               </div>
             </CardContent>
@@ -143,13 +138,13 @@ const Dashboard = () => {
 
           <Card className="border-gloster-gray/20">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gloster-gray">
+              <CardTitle className="text-sm font-medium text-gloster-gray font-rubik">
                 Total Pagado
               </CardTitle>
-              <FileText className="h-4 w-4 text-gloster-yellow" />
+              <FileText className="h-4 w-4 text-gloster-gray" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-slate-800">
+              <div className="text-2xl font-bold text-slate-800 font-rubik">
                 {formatCurrency(projects.reduce((sum, p) => sum + p.paidValue, 0))}
               </div>
             </CardContent>
@@ -170,17 +165,17 @@ const Dashboard = () => {
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
-                    <CardTitle className="text-lg text-slate-800 leading-tight">{project.name}</CardTitle>
-                    <CardDescription className="text-gloster-gray text-sm">
+                    <CardTitle className="text-lg text-slate-800 leading-tight font-rubik">{project.name}</CardTitle>
+                    <CardDescription className="text-gloster-gray text-sm font-rubik">
                       {project.description}
                     </CardDescription>
                     <div className="flex items-center space-x-2 text-xs text-gloster-gray/80">
-                      <span>{project.client}</span>
+                      <span className="font-rubik">{project.client}</span>
                       <span>•</span>
-                      <span>{project.location}</span>
+                      <span className="font-rubik">{project.location}</span>
                     </div>
                   </div>
-                  <Badge variant="secondary" className="bg-gloster-yellow/20 text-gloster-gray border-gloster-yellow/30">
+                  <Badge variant="secondary" className="bg-gloster-yellow/20 text-gloster-gray border-gloster-yellow/30 font-rubik">
                     {project.status}
                   </Badge>
                 </div>
@@ -188,8 +183,8 @@ const Dashboard = () => {
               <CardContent className="space-y-4">
                 <div>
                   <div className="flex justify-between text-sm mb-2">
-                    <span className="text-gloster-gray">Progreso</span>
-                    <span className="font-medium text-slate-800">{project.progress}%</span>
+                    <span className="text-gloster-gray font-rubik">Progreso</span>
+                    <span className="font-medium text-slate-800 font-rubik">{project.progress}%</span>
                   </div>
                   <div className="w-full bg-gloster-gray/20 rounded-full h-2">
                     <div 
@@ -201,25 +196,25 @@ const Dashboard = () => {
                 
                 <div className="flex items-center space-x-2 text-gloster-gray text-sm">
                   <Calendar className="h-3 w-3" />
-                  <span>Próximo pago: {project.nextPayment}</span>
+                  <span className="font-rubik">Próximo pago: {project.nextPayment}</span>
                 </div>
 
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gloster-gray">Valor total:</span>
-                    <span className="font-semibold text-slate-800">
+                    <span className="text-gloster-gray font-rubik">Valor total:</span>
+                    <span className="font-semibold text-slate-800 font-rubik">
                       {formatCurrency(project.totalValue)}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gloster-gray">Pagado:</span>
-                    <span className="font-semibold text-green-600">
+                    <span className="text-gloster-gray font-rubik">Pagado:</span>
+                    <span className="font-semibold text-green-600 font-rubik">
                       {formatCurrency(project.paidValue)}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gloster-gray">Pendiente:</span>
-                    <span className="font-semibold text-red-600">
+                    <span className="text-gloster-gray font-rubik">Pendiente:</span>
+                    <span className="font-semibold text-red-600 font-rubik">
                       {formatCurrency(project.totalValue - project.paidValue)}
                     </span>
                   </div>
@@ -227,7 +222,7 @@ const Dashboard = () => {
 
                 <Button 
                   onClick={() => navigate(`/project/${project.id}`)}
-                  className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold"
+                  className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold font-rubik"
                   size="sm"
                 >
                   Ver Detalles

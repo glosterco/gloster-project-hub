@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Shield, FileText, Clock } from 'lucide-react';
+import { Shield, FileText, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 
@@ -38,14 +38,16 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800">
+    <div className="min-h-screen bg-gradient-to-br from-gloster-gray via-slate-600 to-gloster-gray">
       {/* Header */}
       <header className="relative z-10 p-6">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center">
-            <Building2 className="h-6 w-6 text-white" />
-          </div>
-          <h1 className="text-2xl font-bold text-white">Gloster</h1>
+          <img 
+            src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
+            alt="Gloster Logo" 
+            className="w-12 h-12"
+          />
+          <h1 className="text-2xl font-bold text-gloster-white font-rubik">Gloster</h1>
         </div>
       </header>
 
@@ -55,11 +57,11 @@ const Index = () => {
           {/* Hero Section */}
           <div className="space-y-8">
             <div className="space-y-4">
-              <h2 className="text-5xl font-bold text-white leading-tight">
+              <h2 className="text-5xl font-bold text-gloster-white leading-tight font-rubik">
                 Gestiona tus proyectos de
-                <span className="text-orange-400"> construcción</span>
+                <span className="text-gloster-yellow"> construcción</span>
               </h2>
-              <p className="text-xl text-slate-300 leading-relaxed">
+              <p className="text-xl text-gloster-white/80 leading-relaxed font-rubik">
                 La plataforma integral para subcontratistas. Administra estados de pago, 
                 documentación contractual y mantén el control total de tus proyectos.
               </p>
@@ -67,27 +69,27 @@ const Index = () => {
 
             {/* Features */}
             <div className="grid gap-4">
-              <div className="flex items-center space-x-3 text-slate-200">
-                <Shield className="h-5 w-5 text-orange-400" />
-                <span>Gestión segura de documentos</span>
+              <div className="flex items-center space-x-3 text-gloster-white">
+                <Shield className="h-5 w-5 text-gloster-yellow" />
+                <span className="font-rubik">Gestión segura de documentos</span>
               </div>
-              <div className="flex items-center space-x-3 text-slate-200">
-                <FileText className="h-5 w-5 text-orange-400" />
-                <span>Certificados F30 y documentación contractual</span>
+              <div className="flex items-center space-x-3 text-gloster-white">
+                <FileText className="h-5 w-5 text-gloster-yellow" />
+                <span className="font-rubik">Certificados F30 y documentación contractual</span>
               </div>
-              <div className="flex items-center space-x-3 text-slate-200">
-                <Clock className="h-5 w-5 text-orange-400" />
-                <span>Estados de pago en tiempo real</span>
+              <div className="flex items-center space-x-3 text-gloster-white">
+                <Clock className="h-5 w-5 text-gloster-yellow" />
+                <span className="font-rubik">Estados de pago en tiempo real</span>
               </div>
             </div>
           </div>
 
           {/* Login Form */}
           <div className="flex justify-center lg:justify-end">
-            <Card className="w-full max-w-md bg-white/10 backdrop-blur-lg border-white/20">
+            <Card className="w-full max-w-md bg-gloster-white/10 backdrop-blur-lg border-gloster-white/20">
               <CardHeader className="space-y-1">
-                <CardTitle className="text-2xl text-white">Iniciar Sesión</CardTitle>
-                <CardDescription className="text-slate-300">
+                <CardTitle className="text-2xl text-gloster-white font-rubik">Iniciar Sesión</CardTitle>
+                <CardDescription className="text-gloster-white/80 font-rubik">
                   Accede a tu panel de proyectos
                 </CardDescription>
               </CardHeader>
@@ -99,7 +101,7 @@ const Index = () => {
                       placeholder="correo@empresa.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="bg-white/10 border-white/20 text-white placeholder:text-slate-400"
+                      className="bg-gloster-white/10 border-gloster-white/20 text-gloster-white placeholder:text-gloster-white/60 font-rubik"
                       required
                     />
                   </div>
@@ -109,13 +111,13 @@ const Index = () => {
                       placeholder="Contraseña"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="bg-white/10 border-white/20 text-white placeholder:text-slate-400"
+                      className="bg-gloster-white/10 border-gloster-white/20 text-gloster-white placeholder:text-gloster-white/60 font-rubik"
                       required
                     />
                   </div>
                   <Button 
                     type="submit" 
-                    className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+                    className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold font-rubik"
                     disabled={isLoading}
                   >
                     {isLoading ? 'Iniciando sesión...' : 'Acceder'}
@@ -128,9 +130,9 @@ const Index = () => {
       </div>
 
       {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-20">
+      <div className="absolute inset-0 opacity-10">
         <div className="w-full h-full bg-repeat" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23F5DF4D' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
         }}></div>
       </div>
     </div>

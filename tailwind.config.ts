@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -18,7 +19,15 @@ export default {
 			}
 		},
 		extend: {
+			fontFamily: {
+				'sans': ['Rubik', 'sans-serif'],
+			},
 			colors: {
+				// Gloster brand colors
+				'gloster-yellow': '#F5DF4D',
+				'gloster-gray': '#939597',
+				'gloster-white': '#FFFFFF',
+				
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
 				ring: 'hsl(var(--ring))',

@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Building2, Calendar, DollarSign, FileText, LogOut, User } from 'lucide-react';
+import { Calendar, DollarSign, FileText, LogOut, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 
@@ -27,7 +27,7 @@ const Dashboard = () => {
     {
       id: 2,
       name: "Centro Comercial Plaza Norte",
-      description: "Obras de acabados y instalaciones eléctricas",
+      description: "Obras de acabados e instalaciones eléctricas",
       status: "activo",
       progress: 40,
       nextPayment: "2024-06-30",
@@ -67,20 +67,22 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 font-rubik">
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 shadow-sm">
+      <header className="bg-gloster-white border-b border-gloster-gray/20 shadow-sm">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
-                <Building2 className="h-5 w-5 text-white" />
-              </div>
+              <img 
+                src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
+                alt="Gloster Logo" 
+                className="w-8 h-8"
+              />
               <h1 className="text-xl font-bold text-slate-800">Gloster</h1>
             </div>
             
             <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2 text-slate-600">
+              <div className="flex items-center space-x-2 text-gloster-gray">
                 <User className="h-4 w-4" />
                 <span className="text-sm">Juan Pérez - Subcontratista</span>
               </div>
@@ -88,7 +90,7 @@ const Dashboard = () => {
                 variant="outline" 
                 size="sm" 
                 onClick={handleLogout}
-                className="text-slate-600 hover:text-slate-800"
+                className="text-gloster-gray hover:text-slate-800 border-gloster-gray/30"
               >
                 <LogOut className="h-4 w-4 mr-2" />
                 Cerrar Sesión
@@ -102,29 +104,35 @@ const Dashboard = () => {
         {/* Page Title */}
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-slate-800 mb-2">Mis Proyectos</h2>
-          <p className="text-slate-600">Gestiona tus proyectos activos y estados de pago</p>
+          <p className="text-gloster-gray">Gestiona tus proyectos activos y estados de pago</p>
         </div>
 
         {/* Summary Cards */}
         <div className="grid md:grid-cols-3 gap-6 mb-8">
-          <Card>
+          <Card className="border-gloster-gray/20">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-slate-600">
+              <CardTitle className="text-sm font-medium text-gloster-gray">
                 Proyectos Activos
               </CardTitle>
-              <Building2 className="h-4 w-4 text-orange-500" />
+              <div className="w-8 h-8 bg-gloster-yellow/20 rounded-lg flex items-center justify-center">
+                <img 
+                  src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
+                  alt="Gloster Logo" 
+                  className="w-4 h-4"
+                />
+              </div>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-slate-800">{projects.length}</div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-gloster-gray/20">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-slate-600">
+              <CardTitle className="text-sm font-medium text-gloster-gray">
                 Valor Total Contratos
               </CardTitle>
-              <DollarSign className="h-4 w-4 text-green-500" />
+              <DollarSign className="h-4 w-4 text-gloster-yellow" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-slate-800">
@@ -133,12 +141,12 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-gloster-gray/20">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-slate-600">
+              <CardTitle className="text-sm font-medium text-gloster-gray">
                 Total Pagado
               </CardTitle>
-              <FileText className="h-4 w-4 text-blue-500" />
+              <FileText className="h-4 w-4 text-gloster-yellow" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-slate-800">
@@ -148,80 +156,82 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Projects Grid */}
-        <div className="grid gap-6">
-          {projects.map((project) => (
-            <Card key={project.id} className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardHeader>
+        {/* Projects Mosaic Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {projects.map((project, index) => (
+            <Card 
+              key={project.id} 
+              className={`hover:shadow-xl transition-all duration-300 cursor-pointer border-gloster-gray/20 hover:border-gloster-yellow/50 ${
+                index === 0 ? 'md:col-span-2 lg:col-span-2' : ''
+              } ${
+                index === 1 ? 'lg:row-span-2' : ''
+              }`}
+            >
+              <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
-                    <CardTitle className="text-xl text-slate-800">{project.name}</CardTitle>
-                    <CardDescription className="text-slate-600">
+                    <CardTitle className="text-lg text-slate-800 leading-tight">{project.name}</CardTitle>
+                    <CardDescription className="text-gloster-gray text-sm">
                       {project.description}
                     </CardDescription>
-                    <div className="flex items-center space-x-4 text-sm text-slate-500">
+                    <div className="flex items-center space-x-2 text-xs text-gloster-gray/80">
                       <span>{project.client}</span>
                       <span>•</span>
                       <span>{project.location}</span>
                     </div>
                   </div>
-                  <Badge variant="secondary" className="bg-green-100 text-green-700">
+                  <Badge variant="secondary" className="bg-gloster-yellow/20 text-gloster-gray border-gloster-yellow/30">
                     {project.status}
                   </Badge>
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div>
-                      <div className="flex justify-between text-sm mb-2">
-                        <span className="text-slate-600">Progreso del proyecto</span>
-                        <span className="font-medium text-slate-800">{project.progress}%</span>
-                      </div>
-                      <div className="w-full bg-slate-200 rounded-full h-2">
-                        <div 
-                          className="bg-orange-500 h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${project.progress}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2 text-slate-600">
-                      <Calendar className="h-4 w-4" />
-                      <span className="text-sm">Próximo pago: {project.nextPayment}</span>
-                    </div>
+              <CardContent className="space-y-4">
+                <div>
+                  <div className="flex justify-between text-sm mb-2">
+                    <span className="text-gloster-gray">Progreso</span>
+                    <span className="font-medium text-slate-800">{project.progress}%</span>
                   </div>
+                  <div className="w-full bg-gloster-gray/20 rounded-full h-2">
+                    <div 
+                      className="bg-gloster-yellow h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${project.progress}%` }}
+                    ></div>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-2 text-gloster-gray text-sm">
+                  <Calendar className="h-3 w-3" />
+                  <span>Próximo pago: {project.nextPayment}</span>
+                </div>
 
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-slate-600">Valor total:</span>
-                      <span className="font-semibold text-slate-800">
-                        {formatCurrency(project.totalValue)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-600">Pagado:</span>
-                      <span className="font-semibold text-green-600">
-                        {formatCurrency(project.paidValue)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-600">Pendiente:</span>
-                      <span className="font-semibold text-orange-600">
-                        {formatCurrency(project.totalValue - project.paidValue)}
-                      </span>
-                    </div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gloster-gray">Valor total:</span>
+                    <span className="font-semibold text-slate-800">
+                      {formatCurrency(project.totalValue)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gloster-gray">Pagado:</span>
+                    <span className="font-semibold text-green-600">
+                      {formatCurrency(project.paidValue)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gloster-gray">Pendiente:</span>
+                    <span className="font-semibold text-red-600">
+                      {formatCurrency(project.totalValue - project.paidValue)}
+                    </span>
                   </div>
                 </div>
 
-                <div className="flex justify-end mt-6">
-                  <Button 
-                    onClick={() => navigate(`/project/${project.id}`)}
-                    className="bg-orange-500 hover:bg-orange-600 text-white"
-                  >
-                    Ver Detalles del Proyecto
-                  </Button>
-                </div>
+                <Button 
+                  onClick={() => navigate(`/project/${project.id}`)}
+                  className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold"
+                  size="sm"
+                >
+                  Ver Detalles
+                </Button>
               </CardContent>
             </Card>
           ))}

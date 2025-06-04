@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -127,7 +128,9 @@ const Dashboard = () => {
               <CardTitle className="text-sm font-medium text-gloster-gray font-rubik">
                 Valor Total Contratos
               </CardTitle>
-              <DollarSign className="h-4 w-4 text-gloster-gray" />
+              <div className="w-8 h-8 bg-gloster-yellow/20 rounded-lg flex items-center justify-center">
+                <DollarSign className="h-4 w-4 text-gloster-gray" />
+              </div>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-slate-800 font-rubik">
@@ -141,7 +144,9 @@ const Dashboard = () => {
               <CardTitle className="text-sm font-medium text-gloster-gray font-rubik">
                 Total Pagado
               </CardTitle>
-              <FileText className="h-4 w-4 text-gloster-gray" />
+              <div className="w-8 h-8 bg-gloster-yellow/20 rounded-lg flex items-center justify-center">
+                <FileText className="h-4 w-4 text-gloster-gray" />
+              </div>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-slate-800 font-rubik">

@@ -30,30 +30,19 @@ const ProjectDetail = () => {
 
   const paymentStates = [
     {
-      id: 1,
-      month: "Enero 2024",
-      status: "pagado",
-      amount: 25000000,
-      dueDate: "2024-01-30",
-      paidDate: "2024-01-28",
+      id: 6,
+      month: "Junio 2024",
+      status: "programado",
+      amount: 24500000,
+      dueDate: "2024-06-30",
       documents: ["F30", "F30-1", "Finiquito", "Planilla de Avance"]
     },
     {
-      id: 2,
-      month: "Febrero 2024",
-      status: "pagado",
-      amount: 22000000,
-      dueDate: "2024-02-29",
-      paidDate: "2024-02-27",
-      documents: ["F30", "F30-1", "Finiquito", "Planilla de Avance"]
-    },
-    {
-      id: 3,
-      month: "Marzo 2024",
-      status: "pagado",
-      amount: 25500000,
-      dueDate: "2024-03-30",
-      paidDate: "2024-03-29",
+      id: 5,
+      month: "Mayo 2024",
+      status: "pendiente",
+      amount: 28000000,
+      dueDate: "2024-05-30",
       documents: ["F30", "F30-1", "Finiquito", "Planilla de Avance"]
     },
     {
@@ -66,19 +55,30 @@ const ProjectDetail = () => {
       documents: ["F30", "F30-1", "Finiquito", "Planilla de Avance"]
     },
     {
-      id: 5,
-      month: "Mayo 2024",
-      status: "pendiente",
-      amount: 28000000,
-      dueDate: "2024-05-30",
+      id: 3,
+      month: "Marzo 2024",
+      status: "pagado",
+      amount: 25500000,
+      dueDate: "2024-03-30",
+      paidDate: "2024-03-29",
       documents: ["F30", "F30-1", "Finiquito", "Planilla de Avance"]
     },
     {
-      id: 6,
-      month: "Junio 2024",
-      status: "programado",
-      amount: 24500000,
-      dueDate: "2024-06-30",
+      id: 2,
+      month: "Febrero 2024",
+      status: "pagado",
+      amount: 22000000,
+      dueDate: "2024-02-29",
+      paidDate: "2024-02-27",
+      documents: ["F30", "F30-1", "Finiquito", "Planilla de Avance"]
+    },
+    {
+      id: 1,
+      month: "Enero 2024",
+      status: "pagado",
+      amount: 25000000,
+      dueDate: "2024-01-30",
+      paidDate: "2024-01-28",
       documents: ["F30", "F30-1", "Finiquito", "Planilla de Avance"]
     }
   ];

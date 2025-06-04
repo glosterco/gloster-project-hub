@@ -138,12 +138,12 @@ const PaymentDetail = () => {
 
       <div className="container mx-auto px-6 py-8">
         {/* Payment Info Banner */}
-        <Card className="mb-8 bg-gradient-to-r from-gloster-yellow to-gloster-yellow/80 text-slate-800">
+        <Card className="mb-8 bg-gradient-to-r from-gloster-gray to-gloster-gray/80 text-gloster-white">
           <CardHeader>
             <div className="flex items-start justify-between">
               <div>
                 <CardTitle className="text-2xl mb-2 font-rubik">{paymentState.month}</CardTitle>
-                <CardDescription className="text-slate-700 font-rubik">
+                <CardDescription className="text-gloster-white/80 font-rubik">
                   {paymentState.projectName}
                 </CardDescription>
               </div>
@@ -155,15 +155,15 @@ const PaymentDetail = () => {
           <CardContent>
             <div className="grid md:grid-cols-3 gap-6">
               <div>
-                <p className="text-slate-700 text-sm font-rubik">Monto del Estado</p>
+                <p className="text-gloster-white/80 text-sm font-rubik">Monto del Estado</p>
                 <p className="font-bold text-xl font-rubik">{formatCurrency(paymentState.amount)}</p>
               </div>
               <div>
-                <p className="text-slate-700 text-sm font-rubik">Fecha de Vencimiento</p>
+                <p className="text-gloster-white/80 text-sm font-rubik">Fecha de Vencimiento</p>
                 <p className="font-semibold font-rubik">{paymentState.dueDate}</p>
               </div>
               <div>
-                <p className="text-slate-700 text-sm font-rubik">Destinatario</p>
+                <p className="text-gloster-white/80 text-sm font-rubik">Destinatario</p>
                 <p className="font-semibold font-rubik">{paymentState.recipient}</p>
               </div>
             </div>
@@ -174,7 +174,9 @@ const PaymentDetail = () => {
         <Card className="mb-8 border-gloster-gray/20">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2 font-rubik">
-              <FileText className="h-5 w-5 text-gloster-gray" />
+              <div className="w-8 h-8 bg-gloster-yellow/20 rounded-lg flex items-center justify-center">
+                <FileText className="h-5 w-5 text-gloster-gray" />
+              </div>
               <span>Instrucciones</span>
             </CardTitle>
           </CardHeader>
@@ -191,17 +193,15 @@ const PaymentDetail = () => {
           </CardContent>
         </Card>
 
-        {/* Documents List in Mosaic */}
+        {/* Documents List - Changed to vertical layout */}
         <div className="space-y-4 mb-8">
           <h3 className="text-xl font-bold text-slate-800 font-rubik">Documentación Requerida</h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {documents.map((doc, index) => (
+          <div className="space-y-4">
+            {documents.map((doc) => (
               <Card 
                 key={doc.id} 
-                className={`border-l-4 border-l-gloster-yellow hover:shadow-lg transition-shadow ${
-                  index === 0 ? 'md:col-span-2' : ''
-                }`}
+                className="border-l-4 border-l-gloster-gray"
               >
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
@@ -235,7 +235,7 @@ const PaymentDetail = () => {
                             <Button
                               size="sm"
                               onClick={() => handleDocumentUpload(doc.id)}
-                              className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-slate-800 font-rubik"
+                              className="bg-gloster-gray hover:bg-gloster-gray/90 text-slate-50 font-rubik"
                             >
                               <Upload className="h-4 w-4 mr-2" />
                               Cargar Documento

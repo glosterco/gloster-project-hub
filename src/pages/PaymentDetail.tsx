@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, Download, Upload, FileText, ExternalLink, Send, Calendar, DollarSign } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -14,11 +15,17 @@ const PaymentDetail = () => {
   const { toast } = useToast();
 
   const [documentStatus, setDocumentStatus] = useState({
+    eepp: false,
+    planilla: false,
+    cotizaciones: false,
     f30: false,
     f30_1: false,
+    examenes: false,
     finiquito: false,
-    planilla: false
+    factura: false
   });
+
+  const [achs_selection, setAchsSelection] = useState('');
 
   // Datos simulados del estado de pago
   const paymentState = {
@@ -27,42 +34,79 @@ const PaymentDetail = () => {
     status: "pendiente",
     amount: 28000000,
     dueDate: "2024-05-30",
-    projectName: "Edificio Residencial Las Torres",
-    recipient: "ana.rodriguez@delvalle.cl"
+    projectName: "Centro Comercial Plaza Norte",
+    recipient: "ana.rodriguez@inversiones.cl"
   };
 
   const documents = [
     {
+      id: 'eepp',
+      name: 'Carátula EEPP',
+      description: 'Exámenes preocupacionales',
+      downloadUrl: null,
+      uploaded: false,
+      required: true,
+      isUploadOnly: true
+    },
+    {
+      id: 'planilla',
+      name: 'Avance Periódico',
+      description: 'Planilla detallada del avance de obras del período',
+      downloadUrl: null,
+      uploaded: false,
+      required: true,
+      isUploadOnly: true
+    },
+    {
+      id: 'cotizaciones',
+      name: 'Certificado de Pago de Cotizaciones Previsionales',
+      description: 'Certificado de cumplimiento de obligaciones previsionales',
+      downloadUrl: 'https://www.previred.com/wPortal/login/login.jsp',
+      uploaded: false,
+      required: true
+    },
+    {
       id: 'f30',
       name: 'Certificado F30',
       description: 'Certificado de cumplimiento de obligaciones previsionales',
-      downloadUrl: 'https://www.dt.gob.cl/legislacion/1611/articles-95516_recurso_1.pdf',
+      downloadUrl: 'https://midt.dirtrab.cl/empleador/certificadosLaboralesPrevisionales',
       uploaded: false,
       required: true
     },
     {
       id: 'f30_1',
-      name: 'Formulario F30-1',
+      name: 'Certificado F30-1',
       description: 'Formulario complementario F30-1 para trabajadores extranjeros',
-      downloadUrl: 'https://www.dt.gob.cl/legislacion/1611/articles-95516_recurso_2.pdf',
+      downloadUrl: 'https://midt.dirtrab.cl/empleador/certificadosLaboralesPrevisionales',
       uploaded: false,
       required: true
+    },
+    {
+      id: 'examenes',
+      name: 'Exámenes Preocupacionales',
+      description: 'Exámenes médicos preocupacionales de trabajadores',
+      downloadUrl: null,
+      uploaded: false,
+      required: true,
+      hasDropdown: true,
+      allowMultiple: true
     },
     {
       id: 'finiquito',
       name: 'Finiquitos',
       description: 'Finiquitos de trabajadores que terminaron en el período',
-      downloadUrl: 'https://www.dt.gob.cl/portal/1628/articles-60141_recurso_1.pdf',
+      downloadUrl: 'https://midt.dirtrab.cl/empleador/finiquitos',
       uploaded: false,
-      required: true
+      required: false,
+      allowMultiple: true
     },
     {
-      id: 'planilla',
-      name: 'Planilla de Avance',
-      description: 'Planilla detallada del avance de obras del período',
-      downloadUrl: '#',
+      id: 'factura',
+      name: 'Factura',
+      description: 'Factura del período correspondiente',
+      downloadUrl: 'https://zeusr.sii.cl/AUT2000/InicioAutenticacion/IngresoRutClave.html?https://www1.sii.cl/cgi-bin/Portal001/mipeSelEmpresa.cgi?DESDE_DONDE_URL=OPCION%3D33%26TIPO%3D4',
       uploaded: false,
-      required: true
+      required: false
     }
   ];
 
@@ -86,10 +130,24 @@ const PaymentDetail = () => {
     });
   };
 
+  const getExamenesUrl = () => {
+    switch (achs_selection) {
+      case 'achs':
+        return 'https://achsvirtual.achs.cl/achs/';
+      case 'ist':
+        return 'https://evaluacioneslaborales.ist.cl/istreservas/web';
+      case 'mutual':
+        return 'https://www.mutual.cl/portal/publico/mutual/inicio/cuenta-usuario/inicio-sesion/';
+      default:
+        return '';
+    }
+  };
+
   const handleSendDocuments = () => {
-    const allDocumentsUploaded = Object.values(documentStatus).every(status => status);
+    const requiredDocuments = documents.filter(doc => doc.required);
+    const allRequiredUploaded = requiredDocuments.every(doc => documentStatus[doc.id as keyof typeof documentStatus]);
     
-    if (!allDocumentsUploaded) {
+    if (!allRequiredUploaded) {
       toast({
         title: "Documentos incompletos",
         description: "Por favor, carga todos los documentos requeridos antes de enviar",
@@ -105,7 +163,7 @@ const PaymentDetail = () => {
     
     // Redirigir de vuelta al proyecto después de un delay
     setTimeout(() => {
-      navigate('/project/1');
+      navigate('/project/2');
     }, 2000);
   };
 
@@ -118,7 +176,7 @@ const PaymentDetail = () => {
             <Button 
               variant="ghost" 
               size="sm" 
-              onClick={() => navigate('/project/1')}
+              onClick={() => navigate('/project/2')}
               className="text-gloster-gray hover:text-slate-800"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -143,7 +201,7 @@ const PaymentDetail = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Payment Info Banner Card - Spans 2 columns on larger screens */}
-            <Card className="md:col-span-2 lg:col-span-2 border-l-4 border-l-gloster-yellow hover:shadow-xl transition-all duration-300">
+            <Card className="md:col-span-2 lg:col-span-2 border-l-4 border-l-gloster-gray hover:shadow-xl transition-all duration-300">
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex items-center space-x-3">
@@ -157,7 +215,7 @@ const PaymentDetail = () => {
                       </CardDescription>
                     </div>
                   </div>
-                  <Badge variant="secondary" className="bg-gloster-yellow/20 text-gloster-gray border-gloster-yellow/30">
+                  <Badge variant="secondary" className="bg-gloster-gray/20 text-gloster-gray border-gloster-gray/30">
                     {paymentState.status}
                   </Badge>
                 </div>
@@ -194,7 +252,7 @@ const PaymentDetail = () => {
                 <div className="space-y-3 text-gloster-gray">
                   <p className="font-rubik text-sm">Para procesar este estado de pago:</p>
                   <ol className="list-decimal list-inside space-y-2 ml-4 font-rubik text-sm">
-                    <li>Descarga cada documento</li>
+                    <li>Obtén cada documento</li>
                     <li>Completa la información</li>
                     <li>Carga los documentos</li>
                     <li>Presiona "Enviar"</li>
@@ -224,24 +282,52 @@ const PaymentDetail = () => {
                         className="mt-1"
                       />
                       <div className="flex-1">
-                        <h4 className="font-semibold text-slate-800 mb-1 font-rubik">{doc.name}</h4>
+                        <div className="flex items-center space-x-2 mb-1">
+                          <h4 className="font-semibold text-slate-800 font-rubik">{doc.name}</h4>
+                          {!doc.required && (
+                            <Badge variant="secondary" className="bg-blue-100 text-blue-700 text-xs">
+                              Opcional
+                            </Badge>
+                          )}
+                        </div>
                         <p className="text-gloster-gray text-sm mb-3 font-rubik">{doc.description}</p>
                         
+                        {doc.hasDropdown && (
+                          <div className="mb-3">
+                            <Select onValueChange={setAchsSelection}>
+                              <SelectTrigger className="w-64">
+                                <SelectValue placeholder="Selecciona el organismo" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="achs">ACHS</SelectItem>
+                                <SelectItem value="ist">IST</SelectItem>
+                                <SelectItem value="mutual">Mutual</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                        
                         <div className="flex items-center space-x-3">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => window.open(doc.downloadUrl, '_blank')}
-                            className="text-gloster-gray hover:text-slate-800 border-gloster-gray/30 font-rubik"
-                          >
-                            <Download className="h-4 w-4 mr-2" />
-                            Descargar Formulario
-                            <ExternalLink className="h-3 w-3 ml-2" />
-                          </Button>
+                          {!doc.isUploadOnly && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const url = doc.hasDropdown ? getExamenesUrl() : doc.downloadUrl;
+                                if (url) window.open(url, '_blank');
+                              }}
+                              disabled={doc.hasDropdown && !achs_selection}
+                              className="text-gloster-gray hover:text-slate-800 border-gloster-gray/30 font-rubik"
+                            >
+                              <Download className="h-4 w-4 mr-2" />
+                              Obtener Documentos
+                              <ExternalLink className="h-3 w-3 ml-2" />
+                            </Button>
+                          )}
                           
                           {documentStatus[doc.id as keyof typeof documentStatus] ? (
                             <Badge variant="secondary" className="bg-green-100 text-green-700">
-                              ✓ Cargado
+                              ✓ Cargado{doc.allowMultiple ? ' (múltiples)' : ''}
                             </Badge>
                           ) : (
                             <Button
@@ -250,7 +336,7 @@ const PaymentDetail = () => {
                               className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
                             >
                               <Upload className="h-4 w-4 mr-2" />
-                              Cargar Documento
+                              Cargar Documento{doc.allowMultiple ? 's' : ''}
                             </Button>
                           )}
                         </div>
@@ -270,12 +356,12 @@ const PaymentDetail = () => {
               <div>
                 <h4 className="font-semibold text-slate-800 mb-1 font-rubik">Enviar Documentación</h4>
                 <p className="text-gloster-gray text-sm font-rubik">
-                  Una vez que todos los documentos estén cargados, podrás enviarlos al destinatario.
+                  Una vez que todos los documentos requeridos estén cargados, podrás enviarlos al destinatario.
                 </p>
               </div>
               <Button
                 onClick={handleSendDocuments}
-                disabled={!Object.values(documentStatus).every(status => status)}
+                disabled={!documents.filter(d => d.required).every(d => documentStatus[d.id as keyof typeof documentStatus])}
                 className="bg-green-600 hover:bg-green-700 text-white disabled:bg-slate-300 font-rubik"
               >
                 <Send className="h-4 w-4 mr-2" />

@@ -14,18 +14,18 @@ const ProjectDetail = () => {
   // Datos simulados del proyecto
   const project = {
     id: parseInt(id || '1'),
-    name: "Edificio Residencial Las Torres",
-    description: "Construcción de complejo habitacional de 15 pisos con 120 departamentos. Incluye obras civiles, instalaciones eléctricas, sanitarias y acabados completos.",
+    name: "Centro Comercial Plaza Norte",
+    description: "Obras de acabados e instalaciones eléctricas en centro comercial de 3 pisos. Incluye obras civiles, instalaciones eléctricas, sanitarias y acabados completos.",
     status: "activo",
-    progress: 65,
-    totalValue: 150000000,
-    paidValue: 97500000,
-    client: "Constructora Del Valle S.A.",
-    location: "Santiago Centro",
+    progress: 40,
+    totalValue: 85000000,
+    paidValue: 34000000,
+    client: "Inversiones Comerciales Ltda.",
+    location: "Las Condes",
     startDate: "2024-01-15",
     estimatedEndDate: "2024-12-30",
     projectManager: "Ana Rodríguez",
-    contactEmail: "ana.rodriguez@delvalle.cl"
+    contactEmail: "ana.rodriguez@inversiones.cl"
   };
 
   const paymentStates = [
@@ -33,9 +33,9 @@ const ProjectDetail = () => {
       id: 6,
       month: "Junio 2024",
       status: "programado",
-      amount: 24500000,
+      amount: null,
       dueDate: "2024-06-30",
-      documents: ["F30", "F30-1", "Finiquito", "Planilla de Avance"]
+      documents: ["EEPP", "Planilla de Avance", "F30", "F30-1", "Finiquito"]
     },
     {
       id: 5,
@@ -43,7 +43,7 @@ const ProjectDetail = () => {
       status: "pendiente",
       amount: 28000000,
       dueDate: "2024-05-30",
-      documents: ["F30", "F30-1", "Finiquito", "Planilla de Avance"]
+      documents: ["EEPP", "Planilla de Avance", "F30", "F30-1", "Finiquito"]
     },
     {
       id: 4,
@@ -52,7 +52,7 @@ const ProjectDetail = () => {
       amount: 25000000,
       dueDate: "2024-04-30",
       paidDate: "2024-04-28",
-      documents: ["F30", "F30-1", "Finiquito", "Planilla de Avance"]
+      documents: ["EEPP", "Planilla de Avance", "F30", "F30-1", "Finiquito"]
     },
     {
       id: 3,
@@ -61,7 +61,7 @@ const ProjectDetail = () => {
       amount: 25500000,
       dueDate: "2024-03-30",
       paidDate: "2024-03-29",
-      documents: ["F30", "F30-1", "Finiquito", "Planilla de Avance"]
+      documents: ["EEPP", "Planilla de Avance", "F30", "F30-1", "Finiquito"]
     },
     {
       id: 2,
@@ -70,7 +70,7 @@ const ProjectDetail = () => {
       amount: 22000000,
       dueDate: "2024-02-29",
       paidDate: "2024-02-27",
-      documents: ["F30", "F30-1", "Finiquito", "Planilla de Avance"]
+      documents: ["EEPP", "Planilla de Avance", "F30", "F30-1", "Finiquito"]
     },
     {
       id: 1,
@@ -79,7 +79,7 @@ const ProjectDetail = () => {
       amount: 25000000,
       dueDate: "2024-01-30",
       paidDate: "2024-01-28",
-      documents: ["F30", "F30-1", "Finiquito", "Planilla de Avance"]
+      documents: ["EEPP", "Planilla de Avance", "F30", "F30-1", "Finiquito"]
     }
   ];
 
@@ -138,7 +138,7 @@ const ProjectDetail = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Project Banner Card - Spans 2 columns on larger screens */}
-            <Card className="md:col-span-2 lg:col-span-2 border-l-4 border-l-gloster-yellow hover:shadow-xl transition-all duration-300">
+            <Card className="md:col-span-2 lg:col-span-2 border-l-4 border-l-gloster-gray hover:shadow-xl transition-all duration-300">
               <CardHeader className="pb-4">
                 <div className="flex items-start justify-between">
                   <div>
@@ -147,7 +147,7 @@ const ProjectDetail = () => {
                       {project.description}
                     </CardDescription>
                   </div>
-                  <Badge variant="secondary" className="bg-gloster-yellow/20 text-gloster-gray border-gloster-yellow/30 font-rubik">
+                  <Badge variant="secondary" className="bg-gloster-gray/20 text-gloster-gray border-gloster-gray/30 font-rubik">
                     {project.status}
                   </Badge>
                 </div>
@@ -172,7 +172,7 @@ const ProjectDetail = () => {
                     <div>
                       <p className="text-gloster-gray text-sm font-rubik">Progreso</p>
                       <div className="flex items-center space-x-2">
-                        <Progress value={project.progress} className="flex-1 bg-gloster-gray/20" />
+                        <Progress value={project.progress} className="flex-1 bg-gloster-gray/20 [&>div]:bg-gloster-yellow" />
                         <span className="font-semibold text-sm text-slate-800 font-rubik">{project.progress}%</span>
                       </div>
                     </div>
@@ -185,7 +185,7 @@ const ProjectDetail = () => {
             {paymentStates.map((payment, index) => (
               <Card 
                 key={payment.id} 
-                className={`hover:shadow-xl transition-all duration-300 cursor-pointer border-gloster-gray/20 hover:border-gloster-yellow/50 ${
+                className={`hover:shadow-xl transition-all duration-300 cursor-pointer border-gloster-gray/20 hover:border-gloster-gray/50 ${
                   index === 1 ? 'lg:row-span-2' : ''
                 }`}
               >
@@ -212,7 +212,7 @@ const ProjectDetail = () => {
                       <div className="flex justify-between items-center">
                         <span className="text-gloster-gray text-sm font-rubik">Monto:</span>
                         <span className="font-semibold text-slate-800 font-rubik">
-                          {formatCurrency(payment.amount)}
+                          {payment.amount ? formatCurrency(payment.amount) : '-'}
                         </span>
                       </div>
                       {payment.paidDate && (
@@ -239,7 +239,7 @@ const ProjectDetail = () => {
                         <Button
                           variant="outline"
                           onClick={() => navigate(`/payment/${payment.id}`)}
-                          className="w-full border-gloster-gray/30 hover:bg-gloster-yellow/10 font-rubik"
+                          className="w-full border-gloster-gray/30 hover:bg-gloster-gray/10 font-rubik"
                           size="sm"
                         >
                           Ver Documentos

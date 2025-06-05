@@ -13,18 +13,6 @@ const Dashboard = () => {
 
   const projects = [
     {
-      id: 1,
-      name: "Edificio Residencial Las Torres",
-      description: "Construcción de complejo habitacional de 15 pisos",
-      status: "activo",
-      progress: 65,
-      nextPayment: "2024-06-15",
-      totalValue: 150000000,
-      paidValue: 97500000,
-      client: "Constructora Del Valle S.A.",
-      location: "Santiago Centro"
-    },
-    {
       id: 2,
       name: "Centro Comercial Plaza Norte",
       description: "Obras de acabados e instalaciones eléctricas",
@@ -157,15 +145,11 @@ const Dashboard = () => {
         </div>
 
         {/* Projects Mosaic Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {projects.map((project, index) => (
             <Card 
               key={project.id} 
-              className={`hover:shadow-xl transition-all duration-300 cursor-pointer border-gloster-gray/20 hover:border-gloster-yellow/50 ${
-                index === 0 ? 'md:col-span-2 lg:col-span-2' : ''
-              } ${
-                index === 1 ? 'lg:row-span-2' : ''
-              }`}
+              className="hover:shadow-xl transition-all duration-300 cursor-pointer border-gloster-gray/20 hover:border-gloster-yellow/50"
             >
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">

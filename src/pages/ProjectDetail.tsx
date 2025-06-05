@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -109,25 +108,23 @@ const ProjectDetail = () => {
       {/* Header */}
       <header className="bg-gloster-white border-b border-gloster-gray/20 shadow-sm">
         <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center space-x-4">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => navigate('/dashboard')}
-              className="text-gloster-gray hover:text-slate-800"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Volver al Dashboard
-            </Button>
-            <div className="flex items-center space-x-3">
-              <img 
-                src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
-                alt="Gloster Logo" 
-                className="w-8 h-8"
-              />
-              <h1 className="text-xl font-bold text-slate-800 font-rubik">Gloster</h1>
-            </div>
+          <div className="flex items-center space-x-3 mb-3">
+            <img 
+              src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
+              alt="Gloster Logo" 
+              className="w-8 h-8"
+            />
+            <h1 className="text-xl font-bold text-slate-800 font-rubik">Gloster</h1>
           </div>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => navigate('/dashboard')}
+            className="text-gloster-gray hover:text-slate-800"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Volver al Dashboard
+          </Button>
         </div>
       </header>
 

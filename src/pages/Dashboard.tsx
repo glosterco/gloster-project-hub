@@ -15,26 +15,32 @@ const Dashboard = () => {
     {
       id: 2,
       name: "Centro Comercial Plaza Norte",
-      description: "Obras de acabados e instalaciones eléctricas",
+      description: "Obras de acabados e instalaciones eléctricas en centro comercial de 3 pisos. Incluye obras civiles, instalaciones eléctricas, sanitarias y acabados completos.",
       status: "activo",
       progress: 40,
-      nextPayment: "2024-06-30",
       totalValue: 85000000,
       paidValue: 34000000,
-      client: "Inversiones Comerciales Ltda.",
-      location: "Las Condes"
+      client: "Inversiones Comerciales Ltda."
     },
     {
       id: 3,
       name: "Proyecto Habitacional Vista Mar",
-      description: "Construcción de 45 casas unifamiliares",
+      description: "Instalaciones sanitarias completas para complejo habitacional de 80 departamentos, incluyendo redes de agua potable, alcantarillado y sistemas de presurización.",
       status: "activo",
-      progress: 80,
-      nextPayment: "2024-06-10",
-      totalValue: 200000000,
-      paidValue: 160000000,
-      client: "Inmobiliaria Costa S.A.",
-      location: "Viña del Mar"
+      progress: 75,
+      totalValue: 45000000,
+      paidValue: 33750000,
+      client: "Constructora Pacífico SpA"
+    },
+    {
+      id: 4,
+      name: "Oficinas Corporativas Las Américas",
+      description: "Instalación eléctrica y automatización de edificio corporativo de 15 pisos, incluyendo sistemas de climatización y seguridad.",
+      status: "planificado",
+      progress: 0,
+      totalValue: 120000000,
+      paidValue: 0,
+      client: "Grupo Empresarial Las Américas"
     }
   ];
 

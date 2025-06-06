@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { ArrowLeft, Download, Upload, FileText, ExternalLink, Send, Calendar, DollarSign, HelpCircle } from 'lucide-react';
+import { ArrowLeft, Download, Upload, FileText, ExternalLink, Send, Calendar, DollarSign, HelpCircle, CheckCircle, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const PaymentDetail = () => {
@@ -197,13 +197,31 @@ const PaymentDetail = () => {
     }, 2000);
   };
 
+  const getCompletedDocumentsCount = () => {
+    return documents.filter(doc => documentStatus[doc.id as keyof typeof documentStatus]).length;
+  };
+
   return (
     <TooltipProvider>
       <div className="min-h-screen bg-slate-50 font-rubik">
         {/* Header */}
+        <div className="bg-gloster-gray py-4">
+          <div className="container mx-auto px-6">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => navigate('/project/2')}
+              className="text-gloster-white hover:text-gloster-white hover:bg-gloster-white/10"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Volver al Proyecto
+            </Button>
+          </div>
+        </div>
+        
         <header className="bg-gloster-white border-b border-gloster-gray/20 shadow-sm">
           <div className="container mx-auto px-6 py-4">
-            <div className="flex items-center space-x-3 mb-3">
+            <div className="flex items-center space-x-3">
               <img 
                 src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
                 alt="Gloster Logo" 
@@ -211,15 +229,6 @@ const PaymentDetail = () => {
               />
               <h1 className="text-xl font-bold text-slate-800 font-rubik">Estado de Pago - {paymentState.month}</h1>
             </div>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => navigate('/project/2')}
-              className="text-gloster-gray hover:text-slate-800"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Volver al Proyecto
-            </Button>
           </div>
         </header>
 
@@ -230,7 +239,7 @@ const PaymentDetail = () => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* Payment Info Banner Card - Spans 2 columns on larger screens */}
-              <Card className="md:col-span-2 lg:col-span-2 border-l-4 border-l-gloster-yellow hover:shadow-xl transition-all duration-300">
+              <Card className="md:col-span-2 lg:col-span-1 border-l-4 border-l-gloster-yellow hover:shadow-xl transition-all duration-300">
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex items-center space-x-3">
@@ -286,6 +295,46 @@ const PaymentDetail = () => {
                       <li>Carga los documentos</li>
                       <li>Presiona "Enviar"</li>
                     </ol>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Summary Card - New */}
+              <Card className="border-gloster-gray/20 hover:shadow-xl transition-all duration-300">
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2 font-rubik">
+                    <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                      <CheckCircle className="h-5 w-5 text-green-600" />
+                    </div>
+                    <span className="text-slate-800">Resumen</span>
+                  </CardTitle>
+                  <CardDescription className="font-rubik">
+                    {getCompletedDocumentsCount()} de {documents.length} documentos cargados
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2 mb-4">
+                    {documents.map((doc) => (
+                      <div key={doc.id} className="flex items-center justify-between text-sm">
+                        <span className="font-rubik text-slate-700 truncate flex-1">{doc.name}</span>
+                        {documentStatus[doc.id as keyof typeof documentStatus] ? (
+                          <CheckCircle className="h-4 w-4 text-green-600 ml-2" />
+                        ) : (
+                          <Clock className="h-4 w-4 text-gloster-gray ml-2" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex justify-end">
+                    <Button
+                      onClick={handleSendDocuments}
+                      disabled={!documents.filter(d => d.required).every(d => documentStatus[d.id as keyof typeof documentStatus])}
+                      className="bg-green-600 hover:bg-green-700 text-white disabled:bg-slate-300 font-rubik"
+                      size="sm"
+                    >
+                      <Send className="h-4 w-4 mr-2" />
+                      Enviar
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -396,28 +445,6 @@ const PaymentDetail = () => {
               ))}
             </div>
           </div>
-
-          {/* Send Button */}
-          <Card className="border-gloster-gray/20">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="font-semibold text-slate-800 mb-1 font-rubik">Enviar Documentación</h4>
-                  <p className="text-gloster-gray text-sm font-rubik">
-                    Una vez que todos los documentos requeridos estén cargados, podrás enviarlos al destinatario.
-                  </p>
-                </div>
-                <Button
-                  onClick={handleSendDocuments}
-                  disabled={!documents.filter(d => d.required).every(d => documentStatus[d.id as keyof typeof documentStatus])}
-                  className="bg-green-600 hover:bg-green-700 text-white disabled:bg-slate-300 font-rubik"
-                >
-                  <Send className="h-4 w-4 mr-2" />
-                  Enviar
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </TooltipProvider>

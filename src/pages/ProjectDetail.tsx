@@ -54,7 +54,7 @@ const ProjectDetail = () => {
     {
       id: 4,
       month: "Abril 2024",
-      status: "pagado",
+      status: "aprobado",
       amount: 25000000,
       dueDate: "2024-04-30",
       paidDate: "2024-04-28",
@@ -63,7 +63,7 @@ const ProjectDetail = () => {
     {
       id: 3,
       month: "Marzo 2024",
-      status: "pagado",
+      status: "aprobado",
       amount: 25500000,
       dueDate: "2024-03-30",
       paidDate: "2024-03-29",
@@ -72,7 +72,7 @@ const ProjectDetail = () => {
     {
       id: 2,
       month: "Febrero 2024",
-      status: "pagado",
+      status: "aprobado",
       amount: 22000000,
       dueDate: "2024-02-29",
       paidDate: "2024-02-27",
@@ -81,7 +81,7 @@ const ProjectDetail = () => {
     {
       id: 1,
       month: "Enero 2024",
-      status: "pagado",
+      status: "aprobado",
       amount: 25000000,
       dueDate: "2024-01-30",
       paidDate: "2024-01-28",
@@ -99,7 +99,7 @@ const ProjectDetail = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pagado':
+      case 'aprobado':
         return 'bg-green-100 text-green-700';
       case 'pendiente':
         return 'bg-gloster-yellow/20 text-gloster-gray';
@@ -141,9 +141,23 @@ const ProjectDetail = () => {
   return (
     <div className="min-h-screen bg-slate-50 font-rubik">
       {/* Header */}
+      <div className="bg-gloster-gray py-4">
+        <div className="container mx-auto px-6">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => navigate('/dashboard')}
+            className="text-gloster-white hover:text-gloster-white hover:bg-gloster-white/10"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Volver al Dashboard
+          </Button>
+        </div>
+      </div>
+      
       <header className="bg-gloster-white border-b border-gloster-gray/20 shadow-sm">
         <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center space-x-3 mb-3">
+          <div className="flex items-center space-x-3">
             <img 
               src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
               alt="Gloster Logo" 
@@ -151,15 +165,6 @@ const ProjectDetail = () => {
             />
             <h1 className="text-xl font-bold text-slate-800 font-rubik">Gloster</h1>
           </div>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => navigate('/dashboard')}
-            className="text-gloster-gray hover:text-slate-800"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Volver al Dashboard
-          </Button>
         </div>
       </header>
 
@@ -208,58 +213,58 @@ const ProjectDetail = () => {
           </CardContent>
         </Card>
 
-        {/* Search, Filter and Sort Controls - Moved here after project description */}
-        <div className="mb-6 p-4 bg-white rounded-lg border border-gloster-gray/20">
-          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-            <div className="flex flex-col md:flex-row gap-4 items-center flex-1">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gloster-gray h-4 w-4" />
-                <Input
-                  placeholder="Buscar estados de pago..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 font-rubik"
-                />
-              </div>
-              
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-48 font-rubik">
-                  <SelectValue placeholder="Ordenar por" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="month">Mes</SelectItem>
-                  <SelectItem value="amount">Monto</SelectItem>
-                  <SelectItem value="status">Estado</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={filterBy} onValueChange={setFilterBy}>
-                <SelectTrigger className="w-48 font-rubik">
-                  <Filter className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Filtrar por estado" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="pagado">Pagado</SelectItem>
-                  <SelectItem value="pendiente">Pendiente</SelectItem>
-                  <SelectItem value="programado">Programado</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <Button 
-              onClick={handleAddExtraordinaryPayment}
-              className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold font-rubik"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Agregar Estado Extraordinario
-            </Button>
-          </div>
-        </div>
-
         {/* Estados de Pago in Mosaic Layout */}
         <div className="space-y-6">
           <h3 className="text-2xl font-bold text-slate-800 mb-6 font-rubik">Estados de Pago</h3>
+          
+          {/* Search, Filter and Sort Controls - Moved here under the title */}
+          <div className="mb-6 p-4 bg-white rounded-lg border border-gloster-gray/20">
+            <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+              <div className="flex flex-col md:flex-row gap-4 items-center flex-1">
+                <div className="relative flex-1 max-w-md">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gloster-gray h-4 w-4" />
+                  <Input
+                    placeholder="Buscar estados de pago..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 font-rubik"
+                  />
+                </div>
+                
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="w-48 font-rubik">
+                    <SelectValue placeholder="Ordenar por" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="month">Mes</SelectItem>
+                    <SelectItem value="amount">Monto</SelectItem>
+                    <SelectItem value="status">Estado</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={filterBy} onValueChange={setFilterBy}>
+                  <SelectTrigger className="w-48 font-rubik">
+                    <Filter className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Filtrar por estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="aprobado">Aprobado</SelectItem>
+                    <SelectItem value="pendiente">Pendiente</SelectItem>
+                    <SelectItem value="programado">Programado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Button 
+                onClick={handleAddExtraordinaryPayment}
+                className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold font-rubik"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Agregar Estado Extraordinario
+              </Button>
+            </div>
+          </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Payment States Cards */}
@@ -298,7 +303,7 @@ const ProjectDetail = () => {
                       </div>
                       {payment.paidDate && (
                         <div className="flex justify-between items-center">
-                          <span className="text-gloster-gray text-sm font-rubik">Pagado:</span>
+                          <span className="text-gloster-gray text-sm font-rubik">Aprobado:</span>
                           <span className="text-green-600 text-sm font-rubik">{payment.paidDate}</span>
                         </div>
                       )}
@@ -316,7 +321,7 @@ const ProjectDetail = () => {
                         </Button>
                       )}
                       
-                      {payment.status === 'pagado' && (
+                      {payment.status === 'aprobado' && (
                         <Button
                           variant="outline"
                           onClick={() => navigate(`/payment/${payment.id}`)}

@@ -15,7 +15,7 @@ const Dashboard = () => {
     {
       id: 2,
       name: "Centro Comercial Plaza Norte",
-      description: "Obras de acabados e instalaciones eléctricas en centro comercial de 3 pisos. Incluye obras civiles, instalaciones eléctricas, sanitarias y acabados completos.",
+      description: "Obras de acabados e instalaciones eléctricas en centro comercial de 3 pisos.",
       status: "activo",
       progress: 40,
       totalValue: 85000000,
@@ -27,7 +27,7 @@ const Dashboard = () => {
     {
       id: 3,
       name: "Proyecto Habitacional Vista Mar",
-      description: "Instalaciones sanitarias completas para complejo habitacional de 80 departamentos, incluyendo redes de agua potable, alcantarillado y sistemas de presurización.",
+      description: "Instalaciones sanitarias completas para complejo habitacional de 80 departamentos.",
       status: "activo",
       progress: 75,
       totalValue: 45000000,
@@ -39,7 +39,7 @@ const Dashboard = () => {
     {
       id: 4,
       name: "Oficinas Corporativas Las Américas",
-      description: "Instalación eléctrica y automatización de edificio corporativo de 15 pisos, incluyendo sistemas de climatización y seguridad.",
+      description: "Instalación eléctrica y automatización de edificio corporativo de 15 pisos.",
       status: "planificado",
       progress: 0,
       totalValue: 120000000,

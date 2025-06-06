@@ -205,41 +205,40 @@ const PaymentDetail = () => {
     <TooltipProvider>
       <div className="min-h-screen bg-slate-50 font-rubik">
         {/* Header */}
-        <div className="bg-gloster-gray py-4">
-          <div className="container mx-auto px-6">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => navigate('/project/2')}
-              className="text-gloster-white hover:text-gloster-white hover:bg-gloster-white/10"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Volver al Proyecto
-            </Button>
-          </div>
-        </div>
-        
         <header className="bg-gloster-white border-b border-gloster-gray/20 shadow-sm">
           <div className="container mx-auto px-6 py-4">
-            <div className="flex items-center space-x-3">
-              <img 
-                src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
-                alt="Gloster Logo" 
-                className="w-8 h-8"
-              />
-              <h1 className="text-xl font-bold text-slate-800 font-rubik">Estado de Pago - {paymentState.month}</h1>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <img 
+                  src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
+                  alt="Gloster Logo" 
+                  className="w-8 h-8"
+                />
+                <h1 className="text-xl font-bold text-slate-800 font-rubik">Estado de Pago - {paymentState.month}</h1>
+              </div>
+            </div>
+            <div className="mt-4">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => navigate('/project/2')}
+                className="text-gloster-gray hover:text-slate-800 p-0"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Volver al Proyecto
+              </Button>
             </div>
           </div>
         </header>
 
         <div className="container mx-auto px-6 py-8">
-          {/* Mosaic Layout with Payment Banner and Documents */}
+          {/* Mosaic Layout with Payment Banner and Summary */}
           <div className="space-y-6">
             <h3 className="text-2xl font-bold text-slate-800 mb-6 font-rubik">Estado de Pago y Documentación</h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Payment Info Banner Card - Spans 2 columns on larger screens */}
-              <Card className="md:col-span-2 lg:col-span-1 border-l-4 border-l-gloster-yellow hover:shadow-xl transition-all duration-300">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Payment Info Banner Card */}
+              <Card className="border-l-4 border-l-gloster-yellow hover:shadow-xl transition-all duration-300">
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex items-center space-x-3">
@@ -276,30 +275,7 @@ const PaymentDetail = () => {
                 </CardContent>
               </Card>
 
-              {/* Instructions Card */}
-              <Card className="border-gloster-gray/20 hover:shadow-xl transition-all duration-300">
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2 font-rubik">
-                    <div className="w-8 h-8 bg-gloster-yellow/20 rounded-lg flex items-center justify-center">
-                      <FileText className="h-5 w-5 text-gloster-gray" />
-                    </div>
-                    <span className="text-slate-800">Instrucciones</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3 text-gloster-gray">
-                    <p className="font-rubik text-sm">Para procesar este estado de pago:</p>
-                    <ol className="list-decimal list-inside space-y-2 ml-4 font-rubik text-sm">
-                      <li>Obtén cada documento</li>
-                      <li>Completa la información</li>
-                      <li>Carga los documentos</li>
-                      <li>Presiona "Enviar"</li>
-                    </ol>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Summary Card - New */}
+              {/* Summary Card with Instructions */}
               <Card className="border-gloster-gray/20 hover:shadow-xl transition-all duration-300">
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2 font-rubik">
@@ -313,6 +289,11 @@ const PaymentDetail = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
+                  <div className="space-y-3 mb-4">
+                    <p className="text-gloster-gray font-rubik text-sm">
+                      Para procesar este estado de pago, debes obtener cada documento, cargar los archivos y luego enviarlos.
+                    </p>
+                  </div>
                   <div className="space-y-2 mb-4">
                     {documents.map((doc) => (
                       <div key={doc.id} className="flex items-center justify-between text-sm">
@@ -444,6 +425,19 @@ const PaymentDetail = () => {
                 </Card>
               ))}
             </div>
+          </div>
+
+          {/* Send Button at the end of the page */}
+          <div className="flex justify-center mt-8">
+            <Button
+              onClick={handleSendDocuments}
+              disabled={!documents.filter(d => d.required).every(d => documentStatus[d.id as keyof typeof documentStatus])}
+              className="bg-green-600 hover:bg-green-700 text-white disabled:bg-slate-300 font-rubik px-8 py-3"
+              size="lg"
+            >
+              <Send className="h-5 w-5 mr-2" />
+              Enviar Documentos
+            </Button>
           </div>
         </div>
       </div>

@@ -141,29 +141,28 @@ const ProjectDetail = () => {
   return (
     <div className="min-h-screen bg-slate-50 font-rubik">
       {/* Header */}
-      <div className="bg-gloster-gray py-4">
-        <div className="container mx-auto px-6">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => navigate('/dashboard')}
-            className="text-gloster-white hover:text-gloster-white hover:bg-gloster-white/10"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Volver al Dashboard
-          </Button>
-        </div>
-      </div>
-      
       <header className="bg-gloster-white border-b border-gloster-gray/20 shadow-sm">
         <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center space-x-3">
-            <img 
-              src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
-              alt="Gloster Logo" 
-              className="w-8 h-8"
-            />
-            <h1 className="text-xl font-bold text-slate-800 font-rubik">Gloster</h1>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <img 
+                src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
+                alt="Gloster Logo" 
+                className="w-8 h-8"
+              />
+              <h1 className="text-xl font-bold text-slate-800 font-rubik">Gloster</h1>
+            </div>
+          </div>
+          <div className="mt-4">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => navigate('/dashboard')}
+              className="text-gloster-gray hover:text-slate-800 p-0"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Volver al Dashboard
+            </Button>
           </div>
         </div>
       </header>
@@ -217,7 +216,7 @@ const ProjectDetail = () => {
         <div className="space-y-6">
           <h3 className="text-2xl font-bold text-slate-800 mb-6 font-rubik">Estados de Pago</h3>
           
-          {/* Search, Filter and Sort Controls - Moved here under the title */}
+          {/* Search, Filter and Sort Controls */}
           <div className="mb-6 p-4 bg-white rounded-lg border border-gloster-gray/20">
             <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
               <div className="flex flex-col md:flex-row gap-4 items-center flex-1">
@@ -268,12 +267,10 @@ const ProjectDetail = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Payment States Cards */}
-            {filteredAndSortedPayments.map((payment, index) => (
+            {filteredAndSortedPayments.map((payment) => (
               <Card 
                 key={payment.id} 
-                className={`hover:shadow-xl transition-all duration-300 cursor-pointer border-gloster-gray/20 hover:border-gloster-gray/50 ${
-                  index === 1 ? 'lg:row-span-2' : ''
-                }`}
+                className="hover:shadow-xl transition-all duration-300 cursor-pointer border-gloster-gray/20 hover:border-gloster-gray/50"
               >
                 <CardContent className="p-6">
                   <div className="space-y-4">

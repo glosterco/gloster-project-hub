@@ -2,18 +2,13 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar, DollarSign, FileText, LogOut, User, FolderOpen, Search, Filter, Plus } from 'lucide-react';
+import { DollarSign, FileText, LogOut, User, FolderOpen } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState('name');
-  const [filterBy, setFilterBy] = useState('all');
 
   const projects = [
     {
@@ -68,33 +63,6 @@ const Dashboard = () => {
       currency: 'CLP',
       minimumFractionDigits: 0,
     }).format(amount);
-  };
-
-  const filteredAndSortedProjects = projects
-    .filter(project => {
-      const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           project.client.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesFilter = filterBy === 'all' || project.status === filterBy;
-      return matchesSearch && matchesFilter;
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case 'name':
-          return a.name.localeCompare(b.name);
-        case 'progress':
-          return b.progress - a.progress;
-        case 'value':
-          return b.totalValue - a.totalValue;
-        default:
-          return 0;
-      }
-    });
-
-  const handleAddExtraordinaryPayment = () => {
-    toast({
-      title: "Función en desarrollo",
-      description: "La funcionalidad para agregar estados de pago extraordinarios estará disponible pronto",
-    });
   };
 
   return (
@@ -187,58 +155,9 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Search, Filter and Sort Controls */}
-        <div className="mb-6 p-4 bg-white rounded-lg border border-gloster-gray/20">
-          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-            <div className="flex flex-col md:flex-row gap-4 items-center flex-1">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gloster-gray h-4 w-4" />
-                <Input
-                  placeholder="Buscar por nombre o cliente..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 font-rubik"
-                />
-              </div>
-              
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-48 font-rubik">
-                  <SelectValue placeholder="Ordenar por" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="name">Nombre</SelectItem>
-                  <SelectItem value="progress">Progreso</SelectItem>
-                  <SelectItem value="value">Valor</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={filterBy} onValueChange={setFilterBy}>
-                <SelectTrigger className="w-48 font-rubik">
-                  <Filter className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Filtrar por estado" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="activo">Activo</SelectItem>
-                  <SelectItem value="planificado">Planificado</SelectItem>
-                  <SelectItem value="completado">Completado</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <Button 
-              onClick={handleAddExtraordinaryPayment}
-              className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold font-rubik"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Agregar Estado Extraordinario
-            </Button>
-          </div>
-        </div>
-
         {/* Projects Mosaic Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {filteredAndSortedProjects.map((project, index) => (
+          {projects.map((project, index) => (
             <Card 
               key={project.id} 
               className="hover:shadow-xl transition-all duration-300 cursor-pointer border-gloster-gray/20 hover:border-gloster-yellow/50"

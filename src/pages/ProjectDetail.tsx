@@ -1,14 +1,22 @@
+
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, Calendar, DollarSign, ChevronRight, User } from 'lucide-react';
+import { ArrowLeft, Calendar, DollarSign, ChevronRight, User, Search, Filter, Plus } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const ProjectDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState('month');
+  const [filterBy, setFilterBy] = useState('all');
 
   // Datos simulados del proyecto
   const project = {
@@ -103,6 +111,34 @@ const ProjectDetail = () => {
     }
   };
 
+  const handleAddExtraordinaryPayment = () => {
+    toast({
+      title: "Función en desarrollo",
+      description: "La funcionalidad para agregar estados de pago extraordinarios estará disponible pronto",
+    });
+  };
+
+  const filteredAndSortedPayments = paymentStates
+    .filter(payment => {
+      const matchesSearch = payment.month.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesFilter = filterBy === 'all' || payment.status === filterBy;
+      return matchesSearch && matchesFilter;
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'month':
+          return b.id - a.id; // Más reciente primero
+        case 'amount':
+          const amountA = a.amount || 0;
+          const amountB = b.amount || 0;
+          return amountB - amountA;
+        case 'status':
+          return a.status.localeCompare(b.status);
+        default:
+          return 0;
+      }
+    });
+
   return (
     <div className="min-h-screen bg-slate-50 font-rubik">
       {/* Header */}
@@ -129,6 +165,55 @@ const ProjectDetail = () => {
       </header>
 
       <div className="container mx-auto px-6 py-8">
+        {/* Search, Filter and Sort Controls */}
+        <div className="mb-6 p-4 bg-white rounded-lg border border-gloster-gray/20">
+          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="flex flex-col md:flex-row gap-4 items-center flex-1">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gloster-gray h-4 w-4" />
+                <Input
+                  placeholder="Buscar estados de pago..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 font-rubik"
+                />
+              </div>
+              
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-48 font-rubik">
+                  <SelectValue placeholder="Ordenar por" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="month">Mes</SelectItem>
+                  <SelectItem value="amount">Monto</SelectItem>
+                  <SelectItem value="status">Estado</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={filterBy} onValueChange={setFilterBy}>
+                <SelectTrigger className="w-48 font-rubik">
+                  <Filter className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Filtrar por estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="pagado">Pagado</SelectItem>
+                  <SelectItem value="pendiente">Pendiente</SelectItem>
+                  <SelectItem value="programado">Programado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Button 
+              onClick={handleAddExtraordinaryPayment}
+              className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold font-rubik"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Agregar Estado Extraordinario
+            </Button>
+          </div>
+        </div>
+
         {/* Estados de Pago in Mosaic Layout with Project Banner as first card */}
         <div className="space-y-6">
           <h3 className="text-2xl font-bold text-slate-800 mb-6 font-rubik">Detalles del Proyecto y Estados de Pago</h3>
@@ -179,7 +264,7 @@ const ProjectDetail = () => {
             </Card>
 
             {/* Payment States Cards */}
-            {paymentStates.map((payment, index) => (
+            {filteredAndSortedPayments.map((payment, index) => (
               <Card 
                 key={payment.id} 
                 className={`hover:shadow-xl transition-all duration-300 cursor-pointer border-gloster-gray/20 hover:border-gloster-gray/50 ${

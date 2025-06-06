@@ -18,6 +18,8 @@ const Index = () => {
     e.preventDefault();
     setIsLoading(true);
     
+    console.log('Login attempt:', { email, password });
+    
     // Simulamos autenticación
     setTimeout(() => {
       if (email && password) {
@@ -35,6 +37,16 @@ const Index = () => {
       }
       setIsLoading(false);
     }, 1000);
+  };
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('Email changed:', e.target.value);
+    setEmail(e.target.value);
+  };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('Password changed:', e.target.value);
+    setPassword(e.target.value);
   };
 
   return (
@@ -100,9 +112,10 @@ const Index = () => {
                       type="email"
                       placeholder="correo@empresa.com"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="bg-gloster-white/10 border-gloster-white/20 text-gloster-white placeholder:text-gloster-white/60 font-rubik"
+                      onChange={handleEmailChange}
+                      className="bg-gloster-white/10 border-gloster-white/20 text-gloster-white placeholder:text-gloster-white/60 font-rubik focus:bg-gloster-white/20 focus:border-gloster-white/40"
                       required
+                      autoComplete="email"
                     />
                   </div>
                   <div className="space-y-2">
@@ -110,14 +123,15 @@ const Index = () => {
                       type="password"
                       placeholder="Contraseña"
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="bg-gloster-white/10 border-gloster-white/20 text-gloster-white placeholder:text-gloster-white/60 font-rubik"
+                      onChange={handlePasswordChange}
+                      className="bg-gloster-white/10 border-gloster-white/20 text-gloster-white placeholder:text-gloster-white/60 font-rubik focus:bg-gloster-white/20 focus:border-gloster-white/40"
                       required
+                      autoComplete="current-password"
                     />
                   </div>
                   <Button 
                     type="submit" 
-                    className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold font-rubik"
+                    className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold font-rubik transition-colors"
                     disabled={isLoading}
                   >
                     {isLoading ? 'Iniciando sesión...' : 'Acceder'}
@@ -130,7 +144,7 @@ const Index = () => {
       </div>
 
       {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-10">
+      <div className="absolute inset-0 opacity-10 pointer-events-none">
         <div className="w-full h-full bg-repeat" style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23F5DF4D' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
         }}></div>

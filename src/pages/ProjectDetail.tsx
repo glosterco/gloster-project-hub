@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -165,7 +164,51 @@ const ProjectDetail = () => {
       </header>
 
       <div className="container mx-auto px-6 py-8">
-        {/* Search, Filter and Sort Controls */}
+        {/* Project Banner Card */}
+        <Card className="mb-6 border-l-4 border-l-gloster-gray hover:shadow-xl transition-all duration-300">
+          <CardHeader className="pb-4">
+            <div className="flex items-start justify-between">
+              <div>
+                <CardTitle className="text-2xl mb-2 font-rubik text-slate-800">{project.name}</CardTitle>
+                <CardDescription className="text-gloster-gray text-base font-rubik">
+                  {project.description}
+                </CardDescription>
+              </div>
+              <Badge variant="secondary" className="bg-gloster-gray/20 text-gloster-gray border-gloster-gray/30 font-rubik">
+                {project.status}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <p className="text-gloster-gray text-sm font-rubik">Cliente</p>
+                  <p className="font-semibold text-slate-800 font-rubik">{project.client}</p>
+                </div>
+                <div>
+                  <p className="text-gloster-gray text-sm font-rubik">Ubicación</p>
+                  <p className="font-semibold text-slate-800 font-rubik">{project.location}</p>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <p className="text-gloster-gray text-sm font-rubik">Valor Total</p>
+                  <p className="font-semibold text-slate-800 font-rubik">{formatCurrency(project.totalValue)}</p>
+                </div>
+                <div>
+                  <p className="text-gloster-gray text-sm font-rubik">Progreso</p>
+                  <div className="flex items-center space-x-2">
+                    <Progress value={project.progress} className="flex-1 bg-gloster-gray/20 [&>div]:bg-gloster-yellow" />
+                    <span className="font-semibold text-sm text-slate-800 font-rubik">{project.progress}%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Search, Filter and Sort Controls - Moved here after project description */}
         <div className="mb-6 p-4 bg-white rounded-lg border border-gloster-gray/20">
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
             <div className="flex flex-col md:flex-row gap-4 items-center flex-1">
@@ -214,55 +257,11 @@ const ProjectDetail = () => {
           </div>
         </div>
 
-        {/* Estados de Pago in Mosaic Layout with Project Banner as first card */}
+        {/* Estados de Pago in Mosaic Layout */}
         <div className="space-y-6">
-          <h3 className="text-2xl font-bold text-slate-800 mb-6 font-rubik">Detalles del Proyecto y Estados de Pago</h3>
+          <h3 className="text-2xl font-bold text-slate-800 mb-6 font-rubik">Estados de Pago</h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Project Banner Card - Spans 2 columns on larger screens */}
-            <Card className="md:col-span-2 lg:col-span-2 border-l-4 border-l-gloster-gray hover:shadow-xl transition-all duration-300">
-              <CardHeader className="pb-4">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle className="text-2xl mb-2 font-rubik text-slate-800">{project.name}</CardTitle>
-                    <CardDescription className="text-gloster-gray text-base font-rubik">
-                      {project.description}
-                    </CardDescription>
-                  </div>
-                  <Badge variant="secondary" className="bg-gloster-gray/20 text-gloster-gray border-gloster-gray/30 font-rubik">
-                    {project.status}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-gloster-gray text-sm font-rubik">Cliente</p>
-                      <p className="font-semibold text-slate-800 font-rubik">{project.client}</p>
-                    </div>
-                    <div>
-                      <p className="text-gloster-gray text-sm font-rubik">Ubicación</p>
-                      <p className="font-semibold text-slate-800 font-rubik">{project.location}</p>
-                    </div>
-                  </div>
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-gloster-gray text-sm font-rubik">Valor Total</p>
-                      <p className="font-semibold text-slate-800 font-rubik">{formatCurrency(project.totalValue)}</p>
-                    </div>
-                    <div>
-                      <p className="text-gloster-gray text-sm font-rubik">Progreso</p>
-                      <div className="flex items-center space-x-2">
-                        <Progress value={project.progress} className="flex-1 bg-gloster-gray/20 [&>div]:bg-gloster-yellow" />
-                        <span className="font-semibold text-sm text-slate-800 font-rubik">{project.progress}%</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
             {/* Payment States Cards */}
             {filteredAndSortedPayments.map((payment, index) => (
               <Card 

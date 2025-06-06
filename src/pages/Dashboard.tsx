@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -192,11 +193,6 @@ const Dashboard = () => {
                       style={{ width: `${project.progress}%` }}
                     ></div>
                   </div>
-                </div>
-                
-                <div className="flex items-center space-x-2 text-gloster-gray text-sm">
-                  <Calendar className="h-3 w-3" />
-                  <span className="font-rubik">Próximo pago: {project.nextPayment}</span>
                 </div>
 
                 <div className="space-y-2 text-sm">

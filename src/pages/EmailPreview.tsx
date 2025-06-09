@@ -8,7 +8,7 @@ import EmailTemplate from '@/components/EmailTemplate';
 const EmailPreview = () => {
   const navigate = useNavigate();
 
-  // Datos de ejemplo
+  // Datos de ejemplo actualizados
   const samplePaymentState = {
     month: "Mayo 2024",
     amount: 28000000,
@@ -20,6 +20,7 @@ const EmailPreview = () => {
   const sampleProject = {
     name: "Centro Comercial Plaza Norte",
     client: "Inversiones Comerciales Ltda.",
+    contractor: "Constructora ABC Ltda.",
     location: "Las Condes",
     projectManager: "Ana Rodríguez",
     contactEmail: "ana.rodriguez@inversiones.cl"
@@ -79,16 +80,12 @@ const EmailPreview = () => {
       <div className="bg-white border-b border-gloster-gray/20 shadow-sm print:hidden">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => navigate(-1)}
-                className="text-gloster-gray hover:text-slate-800"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Volver
-              </Button>
+            <div className="flex items-center space-x-3">
+              <img 
+                src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
+                alt="Gloster Logo" 
+                className="w-8 h-8"
+              />
               <h1 className="text-xl font-bold text-slate-800 font-rubik">Vista previa del Email</h1>
             </div>
             
@@ -119,6 +116,19 @@ const EmailPreview = () => {
               </Button>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Volver - fuera del banner blanco */}
+      <div className="bg-slate-50 py-2 print:hidden">
+        <div className="container mx-auto px-6">
+          <button 
+            onClick={() => navigate(-1)}
+            className="text-gloster-gray hover:text-slate-800 text-sm font-rubik flex items-center"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Volver
+          </button>
         </div>
       </div>
 

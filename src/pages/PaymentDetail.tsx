@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { ArrowLeft, Download, Upload, FileText, ExternalLink, Send, Calendar, DollarSign, HelpCircle, CheckCircle, Clock } from 'lucide-react';
+import { ArrowLeft, Download, Upload, FileText, ExternalLink, Send, Calendar, DollarSign, HelpCircle, CheckCircle, Clock, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const PaymentDetail = () => {
@@ -197,6 +197,10 @@ const PaymentDetail = () => {
     }, 2000);
   };
 
+  const handlePreviewEmail = () => {
+    navigate('/email-preview');
+  };
+
   const getCompletedDocumentsCount = () => {
     return documents.filter(doc => documentStatus[doc.id as keyof typeof documentStatus]).length;
   };
@@ -309,7 +313,16 @@ const PaymentDetail = () => {
                       </div>
                     ))}
                   </div>
-                  <div className="flex justify-end">
+                  <div className="flex flex-col space-y-2">
+                    <Button
+                      onClick={handlePreviewEmail}
+                      variant="outline"
+                      className="border-gloster-gray/30 hover:bg-gloster-gray/10 font-rubik"
+                      size="sm"
+                    >
+                      <Eye className="h-4 w-4 mr-1" />
+                      Vista Previa
+                    </Button>
                     <Button
                       onClick={handleSendDocuments}
                       disabled={!documents.filter(d => d.required).every(d => documentStatus[d.id as keyof typeof documentStatus])}
@@ -445,15 +458,26 @@ const PaymentDetail = () => {
                     </p>
                   </div>
                 </div>
-                <Button
-                  onClick={handleSendDocuments}
-                  disabled={!documents.filter(d => d.required).every(d => documentStatus[d.id as keyof typeof documentStatus])}
-                  className="bg-green-600 hover:bg-green-700 text-white disabled:bg-slate-300 font-rubik px-6 md:px-8 py-3 w-full md:w-auto"
-                  size="lg"
-                >
-                  <Send className="h-5 w-5 mr-2" />
-                  Enviar Documentos
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                  <Button
+                    onClick={handlePreviewEmail}
+                    variant="outline"
+                    className="border-gloster-gray/30 hover:bg-gloster-gray/10 font-rubik px-6 md:px-8 py-3 w-full sm:w-auto"
+                    size="lg"
+                  >
+                    <Eye className="h-5 w-5 mr-2" />
+                    Vista Previa
+                  </Button>
+                  <Button
+                    onClick={handleSendDocuments}
+                    disabled={!documents.filter(d => d.required).every(d => documentStatus[d.id as keyof typeof documentStatus])}
+                    className="bg-green-600 hover:bg-green-700 text-white disabled:bg-slate-300 font-rubik px-6 md:px-8 py-3 w-full sm:w-auto"
+                    size="lg"
+                  >
+                    <Send className="h-5 w-5 mr-2" />
+                    Enviar Documentos
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>

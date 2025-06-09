@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,6 +27,7 @@ const ProjectDetail = () => {
     progress: 40,
     totalValue: 85000000,
     paidValue: 34000000,
+    contractor: "Constructora ABC Ltda.",
     client: "Inversiones Comerciales Ltda.",
     location: "Las Condes",
     startDate: "2024-01-15",
@@ -189,8 +191,12 @@ const ProjectDetail = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <div>
-                  <p className="text-gloster-gray text-sm font-rubik">Cliente</p>
+                  <p className="text-gloster-gray text-sm font-rubik">Mandante</p>
                   <p className="font-semibold text-slate-800 font-rubik break-words">{project.client}</p>
+                </div>
+                <div>
+                  <p className="text-gloster-gray text-sm font-rubik">Contratista</p>
+                  <p className="font-semibold text-slate-800 font-rubik break-words">{project.contractor}</p>
                 </div>
                 <div>
                   <p className="text-gloster-gray text-sm font-rubik">Ubicación</p>
@@ -218,48 +224,44 @@ const ProjectDetail = () => {
         <div className="space-y-6">
           <h3 className="text-2xl font-bold text-slate-800 mb-6 font-rubik">Estados de Pago</h3>
           
-          {/* Search, Filter and Sort Controls */}
+          {/* Search, Filter and Sort Controls - Single Row Layout */}
           <div className="mb-6 p-4 bg-white rounded-lg border border-gloster-gray/20">
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col md:flex-row gap-4 items-center flex-1">
-                <div className="relative w-full md:flex-1 max-w-md">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gloster-gray h-4 w-4" />
-                  <Input
-                    placeholder="Buscar estados de pago..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 font-rubik"
-                  />
-                </div>
-                
-                <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-                  <Select value={sortBy} onValueChange={setSortBy}>
-                    <SelectTrigger className="w-full sm:w-48 font-rubik">
-                      <SelectValue placeholder="Ordenar por" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="month">Mes</SelectItem>
-                      <SelectItem value="amount">Monto</SelectItem>
-                      <SelectItem value="status">Estado</SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  <Select value={filterBy} onValueChange={setFilterBy}>
-                    <SelectTrigger className="w-full sm:w-48 font-rubik">
-                      <Filter className="h-4 w-4 mr-2" />
-                      <SelectValue placeholder="Filtrar por estado" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      <SelectItem value="aprobado">Aprobado</SelectItem>
-                      <SelectItem value="pendiente">Pendiente</SelectItem>
-                      <SelectItem value="programado">Programado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+            <div className="flex flex-col lg:flex-row gap-4 items-center">
+              <div className="relative w-full lg:flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gloster-gray h-4 w-4" />
+                <Input
+                  placeholder="Buscar estados de pago..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 font-rubik"
+                />
               </div>
+              
+              <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="w-full sm:w-48 font-rubik">
+                    <SelectValue placeholder="Ordenar por" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="month">Mes</SelectItem>
+                    <SelectItem value="amount">Monto</SelectItem>
+                    <SelectItem value="status">Estado</SelectItem>
+                  </SelectContent>
+                </Select>
 
-              <div className="flex justify-center md:justify-end">
+                <Select value={filterBy} onValueChange={setFilterBy}>
+                  <SelectTrigger className="w-full sm:w-48 font-rubik">
+                    <Filter className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Filtrar por estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="aprobado">Aprobado</SelectItem>
+                    <SelectItem value="pendiente">Pendiente</SelectItem>
+                    <SelectItem value="programado">Programado</SelectItem>
+                  </SelectContent>
+                </Select>
+
                 <Button 
                   onClick={handleAddExtraordinaryPayment}
                   className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold font-rubik w-full sm:w-auto"

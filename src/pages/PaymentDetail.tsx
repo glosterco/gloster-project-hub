@@ -213,7 +213,7 @@ const PaymentDetail = () => {
                 alt="Gloster Logo" 
                 className="w-8 h-8"
               />
-              <h1 className="text-xl font-bold text-slate-800 font-rubik">Estado de Pago - {paymentState.month}</h1>
+              <h1 className="text-lg md:text-xl font-bold text-slate-800 font-rubik">Estado de Pago - {paymentState.month}</h1>
             </div>
           </div>
         </header>
@@ -233,44 +233,44 @@ const PaymentDetail = () => {
 
         <div className="container mx-auto px-6 py-8">
           {/* Título */}
-          <h3 className="text-2xl font-bold text-slate-800 mb-6 font-rubik">Estado de Pago y Documentación</h3>
+          <h3 className="text-xl md:text-2xl font-bold text-slate-800 mb-6 font-rubik">Estado de Pago y Documentación</h3>
           
           {/* Banners superiores ajustados */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             {/* Payment Info Banner Card - más ancho */}
             <div className="lg:col-span-2">
               <Card className="border-l-4 border-l-gloster-yellow hover:shadow-xl transition-all duration-300 h-full">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-12 h-12 bg-gloster-yellow/20 rounded-lg flex items-center justify-center">
+                <CardHeader className="pb-4">
+                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                    <div className="flex items-center space-x-3 min-w-0 flex-1">
+                      <div className="w-12 h-12 bg-gloster-yellow/20 rounded-lg flex items-center justify-center shrink-0">
                         <Calendar className="h-6 w-6 text-gloster-gray" />
                       </div>
-                      <div>
-                        <CardTitle className="text-2xl mb-2 font-rubik text-slate-800">{paymentState.month}</CardTitle>
-                        <CardDescription className="text-gloster-gray font-rubik">
+                      <div className="min-w-0 flex-1">
+                        <CardTitle className="text-xl md:text-2xl mb-2 font-rubik text-slate-800">{paymentState.month}</CardTitle>
+                        <CardDescription className="text-gloster-gray font-rubik text-sm md:text-base">
                           {paymentState.projectName}
                         </CardDescription>
                       </div>
                     </div>
-                    <Badge variant="secondary" className="bg-gloster-gray/20 text-gloster-gray border-gloster-gray/30">
+                    <Badge variant="secondary" className="bg-gloster-gray/20 text-gloster-gray border-gloster-gray/30 self-start shrink-0">
                       {paymentState.status}
                     </Badge>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div>
                       <p className="text-gloster-gray text-sm font-rubik">Monto del Estado</p>
-                      <p className="font-bold text-xl text-slate-800 font-rubik">{formatCurrency(paymentState.amount)}</p>
+                      <p className="font-bold text-lg md:text-xl text-slate-800 font-rubik break-words">{formatCurrency(paymentState.amount)}</p>
                     </div>
                     <div>
                       <p className="text-gloster-gray text-sm font-rubik">Fecha de Vencimiento</p>
                       <p className="font-semibold text-slate-800 font-rubik">{paymentState.dueDate}</p>
                     </div>
-                    <div>
+                    <div className="sm:col-span-2 lg:col-span-1">
                       <p className="text-gloster-gray text-sm font-rubik">Destinatario</p>
-                      <p className="font-semibold text-slate-800 font-rubik">{paymentState.recipient}</p>
+                      <p className="font-semibold text-slate-800 font-rubik break-words">{paymentState.recipient}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -297,14 +297,14 @@ const PaymentDetail = () => {
                       Para procesar este estado de pago, debes obtener cada documento, cargar los archivos y luego enviarlos.
                     </p>
                   </div>
-                  <div className="space-y-1 mb-4 max-h-40 overflow-y-auto">
+                  <div className="space-y-1 mb-4 max-h-32 md:max-h-40 overflow-y-auto">
                     {documents.map((doc) => (
                       <div key={doc.id} className="flex items-center justify-between text-xs">
-                        <span className="font-rubik text-slate-700 truncate flex-1">{doc.name}</span>
+                        <span className="font-rubik text-slate-700 truncate flex-1 pr-2">{doc.name}</span>
                         {documentStatus[doc.id as keyof typeof documentStatus] ? (
-                          <CheckCircle className="h-3 w-3 text-green-600 ml-2" />
+                          <CheckCircle className="h-3 w-3 text-green-600 shrink-0" />
                         ) : (
-                          <Clock className="h-3 w-3 text-gloster-gray ml-2" />
+                          <Clock className="h-3 w-3 text-gloster-gray shrink-0" />
                         )}
                       </div>
                     ))}
@@ -327,7 +327,7 @@ const PaymentDetail = () => {
 
           {/* Documents List - Vertical Layout */}
           <div className="space-y-4 mb-8">
-            <h3 className="text-xl font-bold text-slate-800 font-rubik">Documentación Requerida</h3>
+            <h3 className="text-lg md:text-xl font-bold text-slate-800 font-rubik">Documentación Requerida</h3>
             
             <div className="space-y-4">
               {documents.map((doc) => (
@@ -335,20 +335,20 @@ const PaymentDetail = () => {
                   key={doc.id} 
                   className="border-l-4 border-l-gloster-gray/30"
                 >
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start space-x-4 flex-1">
+                  <CardContent className="p-4 md:p-6">
+                    <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+                      <div className="flex items-start space-x-4 flex-1 min-w-0">
                         <Checkbox 
                           checked={documentStatus[doc.id as keyof typeof documentStatus]} 
                           disabled
-                          className="mt-1"
+                          className="mt-1 shrink-0"
                         />
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                           <div className="flex items-center space-x-2 mb-1">
-                            <h4 className="font-semibold text-slate-800 font-rubik">{doc.name}</h4>
+                            <h4 className="font-semibold text-slate-800 font-rubik text-sm md:text-base">{doc.name}</h4>
                             <Tooltip>
                               <TooltipTrigger>
-                                <HelpCircle className="h-4 w-4 text-gloster-gray hover:text-slate-800" />
+                                <HelpCircle className="h-4 w-4 text-gloster-gray hover:text-slate-800 shrink-0" />
                               </TooltipTrigger>
                               <TooltipContent className="max-w-xs">
                                 <p className="font-rubik text-sm">{doc.helpText}</p>
@@ -360,7 +360,7 @@ const PaymentDetail = () => {
                           {doc.hasDropdown && (
                             <div className="mb-3">
                               <Select onValueChange={setAchsSelection}>
-                                <SelectTrigger className="w-64">
+                                <SelectTrigger className="w-full md:w-64">
                                   <SelectValue placeholder="Selecciona el organismo" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -372,7 +372,7 @@ const PaymentDetail = () => {
                             </div>
                           )}
                           
-                          <div className="flex items-center space-x-3">
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
                             {!doc.isUploadOnly && (
                               <Button
                                 variant="outline"
@@ -382,7 +382,7 @@ const PaymentDetail = () => {
                                   if (url) window.open(url, '_blank');
                                 }}
                                 disabled={doc.hasDropdown && !achs_selection}
-                                className="text-gloster-gray hover:text-slate-800 border-gloster-gray/30 font-rubik"
+                                className="text-gloster-gray hover:text-slate-800 border-gloster-gray/30 font-rubik w-full sm:w-auto"
                               >
                                 <Download className="h-4 w-4 mr-2" />
                                 Obtener Documentos
@@ -398,7 +398,7 @@ const PaymentDetail = () => {
                               <Button
                                 size="sm"
                                 onClick={() => handleDocumentUpload(doc.id)}
-                                className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
+                                className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik w-full sm:w-auto"
                               >
                                 <Upload className="h-4 w-4 mr-2" />
                                 Cargar Documento{doc.allowMultiple ? 's' : ''}
@@ -410,7 +410,7 @@ const PaymentDetail = () => {
                       
                       {/* File Preview Section */}
                       {uploadedFiles[doc.id].length > 0 && (
-                        <div className="ml-4 min-w-0 max-w-xs">
+                        <div className="w-full lg:w-auto lg:ml-4 min-w-0 lg:max-w-xs">
                           <p className="text-gloster-gray text-xs font-rubik mb-2">Archivos cargados:</p>
                           <div className="space-y-1">
                             {uploadedFiles[doc.id].map((fileName, index) => (
@@ -432,10 +432,10 @@ const PaymentDetail = () => {
 
           {/* Banner de envío al final */}
           <Card className="border-l-4 border-l-green-500 bg-green-50/50">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
+            <CardContent className="p-4 md:p-6">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                 <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center shrink-0">
                     <Send className="h-6 w-6 text-green-600" />
                   </div>
                   <div>
@@ -448,7 +448,7 @@ const PaymentDetail = () => {
                 <Button
                   onClick={handleSendDocuments}
                   disabled={!documents.filter(d => d.required).every(d => documentStatus[d.id as keyof typeof documentStatus])}
-                  className="bg-green-600 hover:bg-green-700 text-white disabled:bg-slate-300 font-rubik px-8 py-3"
+                  className="bg-green-600 hover:bg-green-700 text-white disabled:bg-slate-300 font-rubik px-6 md:px-8 py-3 w-full md:w-auto"
                   size="lg"
                 >
                   <Send className="h-5 w-5 mr-2" />

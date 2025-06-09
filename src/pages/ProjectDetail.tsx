@@ -153,42 +153,44 @@ const ProjectDetail = () => {
               <h1 className="text-xl font-bold text-slate-800 font-rubik">Gloster</h1>
             </div>
           </div>
-          <div className="mt-4">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => navigate('/dashboard')}
-              className="text-gloster-gray hover:text-slate-800 p-0"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Volver al Dashboard
-            </Button>
-          </div>
         </div>
       </header>
+
+      {/* Volver al Dashboard - fuera del banner blanco */}
+      <div className="bg-slate-50 py-2">
+        <div className="container mx-auto px-6">
+          <button 
+            onClick={() => navigate('/dashboard')}
+            className="text-gloster-gray hover:text-slate-800 text-sm font-rubik flex items-center"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Volver al Dashboard
+          </button>
+        </div>
+      </div>
 
       <div className="container mx-auto px-6 py-8">
         {/* Project Banner Card */}
         <Card className="mb-6 border-l-4 border-l-gloster-gray hover:shadow-xl transition-all duration-300">
           <CardHeader className="pb-4">
-            <div className="flex items-start justify-between">
-              <div>
+            <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+              <div className="flex-1">
                 <CardTitle className="text-2xl mb-2 font-rubik text-slate-800">{project.name}</CardTitle>
                 <CardDescription className="text-gloster-gray text-base font-rubik">
                   {project.description}
                 </CardDescription>
               </div>
-              <Badge variant="secondary" className="bg-gloster-gray/20 text-gloster-gray border-gloster-gray/30 font-rubik">
+              <Badge variant="secondary" className="bg-gloster-gray/20 text-gloster-gray border-gloster-gray/30 font-rubik self-start">
                 {project.status}
               </Badge>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <div>
                   <p className="text-gloster-gray text-sm font-rubik">Cliente</p>
-                  <p className="font-semibold text-slate-800 font-rubik">{project.client}</p>
+                  <p className="font-semibold text-slate-800 font-rubik break-words">{project.client}</p>
                 </div>
                 <div>
                   <p className="text-gloster-gray text-sm font-rubik">Ubicación</p>
@@ -198,7 +200,7 @@ const ProjectDetail = () => {
               <div className="space-y-4">
                 <div>
                   <p className="text-gloster-gray text-sm font-rubik">Valor Total</p>
-                  <p className="font-semibold text-slate-800 font-rubik">{formatCurrency(project.totalValue)}</p>
+                  <p className="font-semibold text-slate-800 font-rubik text-sm md:text-base">{formatCurrency(project.totalValue)}</p>
                 </div>
                 <div>
                   <p className="text-gloster-gray text-sm font-rubik">Progreso</p>
@@ -218,9 +220,9 @@ const ProjectDetail = () => {
           
           {/* Search, Filter and Sort Controls */}
           <div className="mb-6 p-4 bg-white rounded-lg border border-gloster-gray/20">
-            <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="flex flex-col gap-4">
               <div className="flex flex-col md:flex-row gap-4 items-center flex-1">
-                <div className="relative flex-1 max-w-md">
+                <div className="relative w-full md:flex-1 max-w-md">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gloster-gray h-4 w-4" />
                   <Input
                     placeholder="Buscar estados de pago..."
@@ -230,38 +232,42 @@ const ProjectDetail = () => {
                   />
                 </div>
                 
-                <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-48 font-rubik">
-                    <SelectValue placeholder="Ordenar por" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="month">Mes</SelectItem>
-                    <SelectItem value="amount">Monto</SelectItem>
-                    <SelectItem value="status">Estado</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+                  <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger className="w-full sm:w-48 font-rubik">
+                      <SelectValue placeholder="Ordenar por" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="month">Mes</SelectItem>
+                      <SelectItem value="amount">Monto</SelectItem>
+                      <SelectItem value="status">Estado</SelectItem>
+                    </SelectContent>
+                  </Select>
 
-                <Select value={filterBy} onValueChange={setFilterBy}>
-                  <SelectTrigger className="w-48 font-rubik">
-                    <Filter className="h-4 w-4 mr-2" />
-                    <SelectValue placeholder="Filtrar por estado" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="aprobado">Aprobado</SelectItem>
-                    <SelectItem value="pendiente">Pendiente</SelectItem>
-                    <SelectItem value="programado">Programado</SelectItem>
-                  </SelectContent>
-                </Select>
+                  <Select value={filterBy} onValueChange={setFilterBy}>
+                    <SelectTrigger className="w-full sm:w-48 font-rubik">
+                      <Filter className="h-4 w-4 mr-2" />
+                      <SelectValue placeholder="Filtrar por estado" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="aprobado">Aprobado</SelectItem>
+                      <SelectItem value="pendiente">Pendiente</SelectItem>
+                      <SelectItem value="programado">Programado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
-              <Button 
-                onClick={handleAddExtraordinaryPayment}
-                className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold font-rubik"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Agregar Estado Extraordinario
-              </Button>
+              <div className="flex justify-center md:justify-end">
+                <Button 
+                  onClick={handleAddExtraordinaryPayment}
+                  className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold font-rubik w-full sm:w-auto"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Agregar Estado Extraordinario
+                </Button>
+              </div>
             </div>
           </div>
           
@@ -270,72 +276,72 @@ const ProjectDetail = () => {
             {filteredAndSortedPayments.map((payment) => (
               <Card 
                 key={payment.id} 
-                className="hover:shadow-xl transition-all duration-300 cursor-pointer border-gloster-gray/20 hover:border-gloster-gray/50"
+                className="hover:shadow-xl transition-all duration-300 cursor-pointer border-gloster-gray/20 hover:border-gloster-gray/50 h-full"
               >
-                <CardContent className="p-6">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-gloster-yellow/20 rounded-lg flex items-center justify-center">
+                <CardContent className="p-4 md:p-6 h-full flex flex-col">
+                  <div className="space-y-4 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center space-x-3 min-w-0 flex-1">
+                        <div className="w-10 h-10 bg-gloster-yellow/20 rounded-lg flex items-center justify-center shrink-0">
                           <Calendar className="h-5 w-5 text-gloster-gray" />
                         </div>
-                        <div>
-                          <h4 className="font-semibold text-slate-800 font-rubik">{payment.month}</h4>
-                          <p className="text-gloster-gray text-sm font-rubik">
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-semibold text-slate-800 font-rubik text-sm md:text-base">{payment.month}</h4>
+                          <p className="text-gloster-gray text-xs md:text-sm font-rubik">
                             Vencimiento: {payment.dueDate}
                           </p>
                         </div>
                       </div>
-                      <Badge variant="secondary" className={getStatusColor(payment.status)}>
+                      <Badge variant="secondary" className={`${getStatusColor(payment.status)} text-xs shrink-0`}>
                         {payment.status}
                       </Badge>
                     </div>
                     
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
-                        <span className="text-gloster-gray text-sm font-rubik">Monto:</span>
-                        <span className="font-semibold text-slate-800 font-rubik">
+                        <span className="text-gloster-gray text-xs md:text-sm font-rubik">Monto:</span>
+                        <span className="font-semibold text-slate-800 font-rubik text-xs md:text-sm">
                           {payment.amount ? formatCurrency(payment.amount) : '-'}
                         </span>
                       </div>
                       {payment.paidDate && (
                         <div className="flex justify-between items-center">
-                          <span className="text-gloster-gray text-sm font-rubik">Aprobado:</span>
-                          <span className="text-green-600 text-sm font-rubik">{payment.paidDate}</span>
+                          <span className="text-gloster-gray text-xs md:text-sm font-rubik">Aprobado:</span>
+                          <span className="text-green-600 text-xs md:text-sm font-rubik">{payment.paidDate}</span>
                         </div>
                       )}
                     </div>
+                  </div>
 
-                    <div className="pt-2">
-                      {payment.status === 'pendiente' && (
-                        <Button
-                          onClick={() => navigate(`/payment/${payment.id}`)}
-                          className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold font-rubik"
-                          size="sm"
-                        >
-                          Gestionar Documentos
-                          <ChevronRight className="h-4 w-4 ml-2" />
-                        </Button>
-                      )}
-                      
-                      {payment.status === 'aprobado' && (
-                        <Button
-                          variant="outline"
-                          onClick={() => navigate(`/payment/${payment.id}`)}
-                          className="w-full border-gloster-gray/30 hover:bg-gloster-gray/10 font-rubik"
-                          size="sm"
-                        >
-                          Ver Documentos
-                          <ChevronRight className="h-4 w-4 ml-2" />
-                        </Button>
-                      )}
-                      
-                      {payment.status === 'programado' && (
-                        <Button variant="ghost" disabled className="w-full font-rubik" size="sm">
-                          Programado
-                        </Button>
-                      )}
-                    </div>
+                  <div className="pt-4 mt-auto">
+                    {payment.status === 'pendiente' && (
+                      <Button
+                        onClick={() => navigate(`/payment/${payment.id}`)}
+                        className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold font-rubik"
+                        size="sm"
+                      >
+                        Gestionar Documentos
+                        <ChevronRight className="h-4 w-4 ml-2" />
+                      </Button>
+                    )}
+                    
+                    {payment.status === 'aprobado' && (
+                      <Button
+                        variant="outline"
+                        onClick={() => navigate(`/payment/${payment.id}`)}
+                        className="w-full border-gloster-gray/30 hover:bg-gloster-gray/10 font-rubik"
+                        size="sm"
+                      >
+                        Ver Documentos
+                        <ChevronRight className="h-4 w-4 ml-2" />
+                      </Button>
+                    )}
+                    
+                    {payment.status === 'programado' && (
+                      <Button variant="ghost" disabled className="w-full font-rubik" size="sm">
+                        Programado
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -349,7 +355,7 @@ const ProjectDetail = () => {
             <CardTitle className="font-rubik text-slate-800">Información del Proyecto</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <div>
                   <p className="text-gloster-gray text-sm font-rubik">Fecha de Inicio</p>
@@ -367,7 +373,7 @@ const ProjectDetail = () => {
                 </div>
                 <div>
                   <p className="text-gloster-gray text-sm font-rubik">Contacto</p>
-                  <p className="font-medium font-rubik">{project.contactEmail}</p>
+                  <p className="font-medium font-rubik break-words">{project.contactEmail}</p>
                 </div>
               </div>
             </div>

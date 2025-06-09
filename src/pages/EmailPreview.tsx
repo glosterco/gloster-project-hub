@@ -90,40 +90,31 @@ const EmailPreview = () => {
             </div>
             
             <div className="flex items-center space-x-3">
-              <div className="text-sm text-gloster-gray">
-                <span className="font-rubik">Constructora ABC Ltda.</span>
-              </div>
-              <Button variant="ghost" size="sm" className="text-gloster-gray hover:text-slate-800 font-rubik">
-                Cerrar sesión
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePrint}
+                className="font-rubik"
+              >
+                Imprimir
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDownloadPDF}
+                className="font-rubik"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Descargar PDF
+              </Button>
+              <Button
+                size="sm"
+                className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
+              >
+                <Send className="h-4 w-4 mr-2" />
+                Enviar Email
               </Button>
             </div>
-          </div>
-          
-          <div className="flex items-center space-x-3 mt-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handlePrint}
-              className="font-rubik"
-            >
-              Imprimir
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDownloadPDF}
-              className="font-rubik"
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Descargar PDF
-            </Button>
-            <Button
-              size="sm"
-              className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
-            >
-              <Send className="h-4 w-4 mr-2" />
-              Enviar Email
-            </Button>
           </div>
         </div>
       </div>
@@ -132,18 +123,18 @@ const EmailPreview = () => {
       <div className="bg-slate-50 py-2 print:hidden">
         <div className="container mx-auto px-6">
           <button 
-            onClick={() => navigate('/payment/5')}
+            onClick={() => navigate(-1)}
             className="text-gloster-gray hover:text-slate-800 text-sm font-rubik flex items-center"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Volver al Estado de Pago
+            Volver
           </button>
         </div>
       </div>
 
-      {/* Contenido de la plantilla - ancho ajustado */}
+      {/* Contenido de la plantilla */}
       <div className="container mx-auto px-6 py-8">
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden max-w-4xl mx-auto">
+        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
           <EmailTemplate 
             paymentState={samplePaymentState}
             project={sampleProject}

@@ -209,7 +209,7 @@ const PaymentDetail = () => {
                   <p className="text-gloster-gray text-sm font-rubik">Documentos</p>
                   <p className="font-semibold text-slate-800 font-rubik">{uploadedCount}/{totalCount} completados</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <Button
                     onClick={handlePreview}
                     variant="outline"
@@ -339,7 +339,7 @@ const PaymentDetail = () => {
                     Todos los documentos han sido cargados. Puedes enviar el estado de pago al mandante.
                   </p>
                 </div>
-                <div className="flex gap-3 min-w-fit">
+                <div className="flex flex-col sm:flex-row gap-3 min-w-fit">
                   <Button
                     onClick={handlePreview}
                     variant="outline"

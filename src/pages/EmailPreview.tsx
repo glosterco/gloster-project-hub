@@ -141,9 +141,9 @@ const EmailPreview = () => {
         </div>
       </div>
 
-      {/* Contenido de la plantilla - ajustado al ancho del banner amarillo */}
+      {/* Contenido de la plantilla - ancho ajustado */}
       <div className="container mx-auto px-6 py-8">
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden" style={{ maxWidth: '800px', margin: '0 auto' }}>
+        <div className="bg-white rounded-lg shadow-lg overflow-hidden max-w-4xl mx-auto">
           <EmailTemplate 
             paymentState={samplePaymentState}
             project={sampleProject}

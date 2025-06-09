@@ -6,44 +6,72 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, Calendar, DollarSign, ChevronRight, User, Search, Filter, Plus } from 'lucide-react';
+import { ArrowLeft, Calendar, DollarSign, FileText, Search, Plus, Filter, ArrowUpDown, MapPin, User, Mail, Building } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const ProjectDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Estado para filtros y búsqueda
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState('month');
-  const [filterBy, setFilterBy] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [sortOrder, setSortOrder] = useState('recent');
 
   // Datos simulados del proyecto
   const project = {
     id: parseInt(id || '1'),
     name: "Centro Comercial Plaza Norte",
-    description: "Obras de acabados e instalaciones eléctricas en centro comercial de 3 pisos. Incluye obras civiles, instalaciones eléctricas, sanitarias y acabados completos.",
-    status: "activo",
-    progress: 40,
-    totalValue: 85000000,
-    paidValue: 34000000,
+    mandante: "Inversiones Comerciales Ltda.",
     contractor: "Constructora ABC Ltda.",
-    client: "Inversiones Comerciales Ltda.",
     location: "Las Condes",
-    startDate: "2024-01-15",
-    estimatedEndDate: "2024-12-30",
     projectManager: "Ana Rodríguez",
-    contactEmail: "ana.rodriguez@inversiones.cl"
+    contactEmail: "ana.rodriguez@inversiones.cl",
+    status: "activo",
+    progress: 68,
+    budget: 2450000000,
+    startDate: "2024-01-15",
+    endDate: "2024-12-30"
   };
 
-  const paymentStates = [
+  // Estados de pago simulados
+  const [paymentStates] = useState([
     {
-      id: 6,
-      month: "Junio 2024",
-      status: "programado",
-      amount: null,
-      dueDate: "2024-06-30",
-      documents: ["EEPP", "Planilla de Avance", "F30", "F30-1", "Finiquito"]
+      id: 1,
+      month: "Enero 2024",
+      status: "aprobado",
+      amount: 28000000,
+      dueDate: "2024-01-30",
+      uploadedDocs: 6,
+      totalDocs: 6
+    },
+    {
+      id: 2,
+      month: "Febrero 2024", 
+      status: "aprobado",
+      amount: 32000000,
+      dueDate: "2024-02-28",
+      uploadedDocs: 6,
+      totalDocs: 6
+    },
+    {
+      id: 3,
+      month: "Marzo 2024",
+      status: "aprobado", 
+      amount: 29500000,
+      dueDate: "2024-03-30",
+      uploadedDocs: 6,
+      totalDocs: 6
+    },
+    {
+      id: 4,
+      month: "Abril 2024",
+      status: "pendiente",
+      amount: 31000000,
+      dueDate: "2024-04-30",
+      uploadedDocs: 4,
+      totalDocs: 6
     },
     {
       id: 5,
@@ -51,45 +79,28 @@ const ProjectDetail = () => {
       status: "pendiente",
       amount: 28000000,
       dueDate: "2024-05-30",
-      documents: ["EEPP", "Planilla de Avance", "F30", "F30-1", "Finiquito"]
-    },
-    {
-      id: 4,
-      month: "Abril 2024",
-      status: "aprobado",
-      amount: 25000000,
-      dueDate: "2024-04-30",
-      paidDate: "2024-04-28",
-      documents: ["EEPP", "Planilla de Avance", "F30", "F30-1", "Finiquito"]
-    },
-    {
-      id: 3,
-      month: "Marzo 2024",
-      status: "aprobado",
-      amount: 25500000,
-      dueDate: "2024-03-30",
-      paidDate: "2024-03-29",
-      documents: ["EEPP", "Planilla de Avance", "F30", "F30-1", "Finiquito"]
-    },
-    {
-      id: 2,
-      month: "Febrero 2024",
-      status: "aprobado",
-      amount: 22000000,
-      dueDate: "2024-02-29",
-      paidDate: "2024-02-27",
-      documents: ["EEPP", "Planilla de Avance", "F30", "F30-1", "Finiquito"]
-    },
-    {
-      id: 1,
-      month: "Enero 2024",
-      status: "aprobado",
-      amount: 25000000,
-      dueDate: "2024-01-30",
-      paidDate: "2024-01-28",
-      documents: ["EEPP", "Planilla de Avance", "F30", "F30-1", "Finiquito"]
+      uploadedDocs: 5,
+      totalDocs: 6
     }
-  ];
+  ]);
+
+  // Filtrar estados de pago
+  const filteredPaymentStates = paymentStates.filter(state => {
+    const matchesSearch = state.month.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || state.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  }).sort((a, b) => {
+    if (sortOrder === 'recent') {
+      return b.id - a.id;
+    } else if (sortOrder === 'oldest') {
+      return a.id - b.id;
+    } else if (sortOrder === 'amount-high') {
+      return b.amount - a.amount;
+    } else if (sortOrder === 'amount-low') {
+      return a.amount - b.amount;
+    }
+    return 0;
+  });
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-CL', {
@@ -102,43 +113,27 @@ const ProjectDetail = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'aprobado':
-        return 'bg-green-100 text-green-700';
+        return 'bg-green-100 text-green-800 border-green-200';
       case 'pendiente':
-        return 'bg-gloster-yellow/20 text-gloster-gray';
-      case 'programado':
-        return 'bg-blue-100 text-blue-700';
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'rechazado':
+        return 'bg-red-100 text-red-800 border-red-200';
       default:
-        return 'bg-gray-100 text-gray-700';
+        return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
-  const handleAddExtraordinaryPayment = () => {
+  const handleAddExtraordinaryState = () => {
     toast({
-      title: "Función en desarrollo",
-      description: "La funcionalidad para agregar estados de pago extraordinarios estará disponible pronto",
+      title: "Estado Extraordinario",
+      description: "Funcionalidad próximamente disponible",
     });
   };
 
-  const filteredAndSortedPayments = paymentStates
-    .filter(payment => {
-      const matchesSearch = payment.month.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesFilter = filterBy === 'all' || payment.status === filterBy;
-      return matchesSearch && matchesFilter;
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case 'month':
-          return b.id - a.id; // Más reciente primero
-        case 'amount':
-          const amountA = a.amount || 0;
-          const amountB = b.amount || 0;
-          return amountB - amountA;
-        case 'status':
-          return a.status.localeCompare(b.status);
-        default:
-          return 0;
-      }
-    });
+  const totalAmount = paymentStates.reduce((sum, state) => sum + state.amount, 0);
+  const approvedAmount = paymentStates
+    .filter(state => state.status === 'aprobado')
+    .reduce((sum, state) => sum + state.amount, 0);
 
   return (
     <div className="min-h-screen bg-slate-50 font-rubik">
@@ -152,7 +147,7 @@ const ProjectDetail = () => {
                 alt="Gloster Logo" 
                 className="w-8 h-8"
               />
-              <h1 className="text-xl font-bold text-slate-800 font-rubik">Gloster</h1>
+              <h1 className="text-xl font-bold text-slate-800 font-rubik">{project.name}</h1>
             </div>
             
             <div className="flex items-center space-x-3">
@@ -181,215 +176,192 @@ const ProjectDetail = () => {
       </div>
 
       <div className="container mx-auto px-6 py-8">
-        {/* Project Banner Card */}
-        <Card className="mb-6 border-l-4 border-l-gloster-gray hover:shadow-xl transition-all duration-300">
+        {/* Banner de Información del Proyecto */}
+        <Card className="mb-8 border-l-4 border-l-gloster-yellow hover:shadow-xl transition-all duration-300">
           <CardHeader className="pb-4">
-            <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
-              <div className="flex-1">
-                <CardTitle className="text-2xl mb-2 font-rubik text-slate-800">{project.name}</CardTitle>
-                <CardDescription className="text-gloster-gray text-base font-rubik">
-                  {project.description}
-                </CardDescription>
-              </div>
-              <Badge variant="secondary" className="bg-gloster-gray/20 text-gloster-gray border-gloster-gray/30 font-rubik self-start">
-                {project.status}
-              </Badge>
-            </div>
+            <CardTitle className="text-2xl font-rubik text-slate-800">Información del Proyecto</CardTitle>
+            <CardDescription className="text-gloster-gray font-rubik">
+              Detalles generales y resumen financiero
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+              <div className="space-y-3">
                 <div>
                   <p className="text-gloster-gray text-sm font-rubik">Mandante</p>
-                  <p className="font-semibold text-slate-800 font-rubik break-words">{project.client}</p>
+                  <p className="font-semibold text-slate-800 font-rubik">{project.mandante}</p>
                 </div>
                 <div>
                   <p className="text-gloster-gray text-sm font-rubik">Contratista</p>
-                  <p className="font-semibold text-slate-800 font-rubik break-words">{project.contractor}</p>
-                </div>
-                <div>
-                  <p className="text-gloster-gray text-sm font-rubik">Ubicación</p>
-                  <p className="font-semibold text-slate-800 font-rubik">{project.location}</p>
+                  <p className="font-semibold text-slate-800 font-rubik">{project.contractor}</p>
                 </div>
               </div>
-              <div className="space-y-4">
+              
+              <div className="space-y-3">
                 <div>
-                  <p className="text-gloster-gray text-sm font-rubik">Valor Total</p>
-                  <p className="font-semibold text-slate-800 font-rubik text-sm md:text-base">{formatCurrency(project.totalValue)}</p>
+                  <p className="text-gloster-gray text-sm font-rubik">Ubicación</p>
+                  <p className="font-semibold text-slate-800 font-rubik flex items-center space-x-1">
+                    <MapPin className="h-4 w-4 text-gloster-gray" />
+                    <span>{project.location}</span>
+                  </p>
                 </div>
+                <div>
+                  <p className="text-gloster-gray text-sm font-rubik">Project Manager</p>
+                  <p className="font-semibold text-slate-800 font-rubik flex items-center space-x-1">
+                    <User className="h-4 w-4 text-gloster-gray" />
+                    <span>{project.projectManager}</span>
+                  </p>
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <div>
+                  <p className="text-gloster-gray text-sm font-rubik">Presupuesto Total</p>
+                  <p className="font-bold text-lg text-slate-800 font-rubik">{formatCurrency(project.budget)}</p>
+                </div>
+                <div>
+                  <p className="text-gloster-gray text-sm font-rubik">Monto Aprobado</p>
+                  <p className="font-bold text-lg text-green-600 font-rubik">{formatCurrency(approvedAmount)}</p>
+                </div>
+              </div>
+              
+              <div className="space-y-3">
                 <div>
                   <p className="text-gloster-gray text-sm font-rubik">Progreso</p>
                   <div className="flex items-center space-x-2">
-                    <Progress value={project.progress} className="flex-1 bg-gloster-gray/20 [&>div]:bg-gloster-yellow" />
-                    <span className="font-semibold text-sm text-slate-800 font-rubik">{project.progress}%</span>
+                    <div className="flex-1 bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-gloster-yellow h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${project.progress}%` }}
+                      />
+                    </div>
+                    <span className="font-semibold text-slate-800 font-rubik text-sm">{project.progress}%</span>
                   </div>
+                </div>
+                <div>
+                  <p className="text-gloster-gray text-sm font-rubik">Estados de Pago</p>
+                  <p className="font-semibold text-slate-800 font-rubik">{paymentStates.length} registrados</p>
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Estados de Pago in Mosaic Layout */}
-        <div className="space-y-6">
-          <h3 className="text-2xl font-bold text-slate-800 mb-6 font-rubik">Estados de Pago</h3>
-          
-          {/* Search, Filter and Sort Controls - Optimized Layout */}
-          <div className="mb-6 p-4 bg-white rounded-lg border border-gloster-gray/20">
-            <div className="flex flex-col lg:flex-row gap-4">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gloster-gray h-4 w-4" />
-                <Input
-                  placeholder="Buscar estados de pago..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 font-rubik"
-                />
-              </div>
-              
-              <div className="flex flex-1 justify-end gap-3">
-                <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-40 font-rubik">
+        {/* Banner de Controles - Una fila justificada */}
+        <Card className="mb-6 border-gloster-gray/20">
+          <CardContent className="p-4">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div className="flex flex-col sm:flex-row gap-3 flex-1">
+                <div className="relative flex-1 max-w-xs">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gloster-gray h-4 w-4" />
+                  <Input
+                    placeholder="Buscar por período..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-9 font-rubik border-gloster-gray/30"
+                  />
+                </div>
+                
+                <Select value={sortOrder} onValueChange={setSortOrder}>
+                  <SelectTrigger className="w-full sm:w-44 font-rubik border-gloster-gray/30">
+                    <ArrowUpDown className="h-4 w-4 mr-2 text-gloster-gray" />
                     <SelectValue placeholder="Ordenar por" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="month">Mes</SelectItem>
-                    <SelectItem value="amount">Monto</SelectItem>
-                    <SelectItem value="status">Estado</SelectItem>
+                    <SelectItem value="recent">Más reciente</SelectItem>
+                    <SelectItem value="oldest">Más antiguo</SelectItem>
+                    <SelectItem value="amount-high">Monto mayor</SelectItem>
+                    <SelectItem value="amount-low">Monto menor</SelectItem>
                   </SelectContent>
                 </Select>
-
-                <Select value={filterBy} onValueChange={setFilterBy}>
-                  <SelectTrigger className="w-40 font-rubik">
-                    <Filter className="h-4 w-4 mr-2" />
+                
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-full sm:w-40 font-rubik border-gloster-gray/30">
+                    <Filter className="h-4 w-4 mr-2 text-gloster-gray" />
                     <SelectValue placeholder="Filtrar" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="aprobado">Aprobado</SelectItem>
-                    <SelectItem value="pendiente">Pendiente</SelectItem>
-                    <SelectItem value="programado">Programado</SelectItem>
+                    <SelectItem value="aprobado">Aprobados</SelectItem>
+                    <SelectItem value="pendiente">Pendientes</SelectItem>
+                    <SelectItem value="rechazado">Rechazados</SelectItem>
                   </SelectContent>
                 </Select>
-
-                <Button 
-                  onClick={handleAddExtraordinaryPayment}
-                  className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold font-rubik whitespace-nowrap"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Estado Extraordinario
-                </Button>
               </div>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Payment States Cards */}
-            {filteredAndSortedPayments.map((payment) => (
-              <Card 
-                key={payment.id} 
-                className="hover:shadow-xl transition-all duration-300 cursor-pointer border-gloster-gray/20 hover:border-gloster-gray/50 h-full"
+              
+              <Button
+                onClick={handleAddExtraordinaryState}
+                className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik whitespace-nowrap"
               >
-                <CardContent className="p-4 md:p-6 h-full flex flex-col">
-                  <div className="space-y-4 flex-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center space-x-3 min-w-0 flex-1">
-                        <div className="w-10 h-10 bg-gloster-yellow/20 rounded-lg flex items-center justify-center shrink-0">
-                          <Calendar className="h-5 w-5 text-gloster-gray" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <h4 className="font-semibold text-slate-800 font-rubik text-sm md:text-base">{payment.month}</h4>
-                          <p className="text-gloster-gray text-xs md:text-sm font-rubik">
-                            Vencimiento: {payment.dueDate}
-                          </p>
-                        </div>
-                      </div>
-                      <Badge variant="secondary" className={`${getStatusColor(payment.status)} text-xs shrink-0`}>
-                        {payment.status}
-                      </Badge>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="text-gloster-gray text-xs md:text-sm font-rubik">Monto:</span>
-                        <span className="font-semibold text-slate-800 font-rubik text-xs md:text-sm">
-                          {payment.amount ? formatCurrency(payment.amount) : '-'}
-                        </span>
-                      </div>
-                      {payment.paidDate && (
-                        <div className="flex justify-between items-center">
-                          <span className="text-gloster-gray text-xs md:text-sm font-rubik">Aprobado:</span>
-                          <span className="text-green-600 text-xs md:text-sm font-rubik">{payment.paidDate}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="pt-4 mt-auto">
-                    {payment.status === 'pendiente' && (
-                      <Button
-                        onClick={() => navigate(`/payment/${payment.id}`)}
-                        className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold font-rubik"
-                        size="sm"
-                      >
-                        Gestionar Documentos
-                        <ChevronRight className="h-4 w-4 ml-2" />
-                      </Button>
-                    )}
-                    
-                    {payment.status === 'aprobado' && (
-                      <Button
-                        variant="outline"
-                        onClick={() => navigate(`/payment/${payment.id}`)}
-                        className="w-full border-gloster-gray/30 hover:bg-gloster-gray/10 font-rubik"
-                        size="sm"
-                      >
-                        Ver Documentos
-                        <ChevronRight className="h-4 w-4 ml-2" />
-                      </Button>
-                    )}
-                    
-                    {payment.status === 'programado' && (
-                      <Button variant="ghost" disabled className="w-full font-rubik" size="sm">
-                        Programado
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-
-        {/* Project Info */}
-        <Card className="mt-8 border-gloster-gray/20">
-          <CardHeader>
-            <CardTitle className="font-rubik text-slate-800">Información del Proyecto</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <div>
-                  <p className="text-gloster-gray text-sm font-rubik">Fecha de Inicio</p>
-                  <p className="font-medium font-rubik">{project.startDate}</p>
-                </div>
-                <div>
-                  <p className="text-gloster-gray text-sm font-rubik">Fecha Estimada de Término</p>
-                  <p className="font-medium font-rubik">{project.estimatedEndDate}</p>
-                </div>
-              </div>
-              <div className="space-y-4">
-                <div>
-                  <p className="text-gloster-gray text-sm font-rubik">Project Manager</p>
-                  <p className="font-medium font-rubik">{project.projectManager}</p>
-                </div>
-                <div>
-                  <p className="text-gloster-gray text-sm font-rubik">Contacto</p>
-                  <p className="font-medium font-rubik break-words">{project.contactEmail}</p>
-                </div>
-              </div>
+                <Plus className="h-4 w-4 mr-2" />
+                Agregar Estado Extraordinario
+              </Button>
             </div>
           </CardContent>
         </Card>
+
+        {/* Lista de Estados de Pago */}
+        <div className="space-y-4">
+          <h2 className="text-xl font-bold text-slate-800 font-rubik">Estados de Pago ({filteredPaymentStates.length})</h2>
+          
+          {filteredPaymentStates.map((state) => (
+            <Card 
+              key={state.id} 
+              className="border-gloster-gray/20 hover:shadow-lg transition-all duration-200 cursor-pointer"
+              onClick={() => navigate(`/payment/${state.id}`)}
+            >
+              <CardContent className="p-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex-1">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+                      <h3 className="text-lg font-bold text-slate-800 font-rubik">{state.month}</h3>
+                      <Badge 
+                        variant="outline" 
+                        className={`${getStatusColor(state.status)} font-rubik w-fit`}
+                      >
+                        {state.status}
+                      </Badge>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div>
+                        <p className="text-gloster-gray text-sm font-rubik">Monto</p>
+                        <p className="font-bold text-slate-800 font-rubik">{formatCurrency(state.amount)}</p>
+                      </div>
+                      <div>
+                        <p className="text-gloster-gray text-sm font-rubik">Fecha de Vencimiento</p>
+                        <p className="font-medium text-slate-800 font-rubik">{state.dueDate}</p>
+                      </div>
+                      <div>
+                        <p className="text-gloster-gray text-sm font-rubik">Documentos</p>
+                        <p className="font-medium text-slate-800 font-rubik">
+                          {state.uploadedDocs}/{state.totalDocs} completados
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-end">
+                    <div className="text-right">
+                      <div className="w-8 h-8 bg-gloster-yellow/20 rounded-full flex items-center justify-center">
+                        <ArrowLeft className="h-4 w-4 text-gloster-gray rotate-180" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+          
+          {filteredPaymentStates.length === 0 && (
+            <Card className="border-gloster-gray/20">
+              <CardContent className="p-8 text-center">
+                <FileText className="h-12 w-12 text-gloster-gray mx-auto mb-3" />
+                <p className="text-gloster-gray font-rubik">No se encontraron estados de pago que coincidan con los filtros.</p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
     </div>
   );

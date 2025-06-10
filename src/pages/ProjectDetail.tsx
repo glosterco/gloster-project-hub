@@ -154,15 +154,6 @@ const ProjectDetail = () => {
               />
               <h1 className="text-xl font-bold text-slate-800 font-rubik">Gloster</h1>
             </div>
-            
-            <div className="flex items-center space-x-3">
-              <div className="text-sm text-gloster-gray">
-                <span className="font-rubik">Constructora ABC Ltda.</span>
-              </div>
-              <Button variant="ghost" size="sm" className="text-gloster-gray hover:text-slate-800 font-rubik">
-                Cerrar sesión
-              </Button>
-            </div>
           </div>
         </div>
       </header>
@@ -233,10 +224,10 @@ const ProjectDetail = () => {
         <div className="space-y-6">
           <h3 className="text-2xl font-bold text-slate-800 mb-6 font-rubik">Estados de Pago</h3>
           
-          {/* Search, Filter and Sort Controls - Optimized Layout */}
+          {/* Search, Filter and Sort Controls - Single Row Layout */}
           <div className="mb-6 p-4 bg-white rounded-lg border border-gloster-gray/20">
-            <div className="flex flex-col lg:flex-row gap-4">
-              <div className="relative flex-1 max-w-md">
+            <div className="flex flex-col lg:flex-row gap-4 items-center">
+              <div className="relative w-full lg:flex-1 max-w-md">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gloster-gray h-4 w-4" />
                 <Input
                   placeholder="Buscar estados de pago..."
@@ -246,9 +237,9 @@ const ProjectDetail = () => {
                 />
               </div>
               
-              <div className="flex flex-1 justify-end gap-3">
+              <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
                 <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-40 font-rubik">
+                  <SelectTrigger className="w-full sm:w-48 font-rubik">
                     <SelectValue placeholder="Ordenar por" />
                   </SelectTrigger>
                   <SelectContent>
@@ -259,9 +250,9 @@ const ProjectDetail = () => {
                 </Select>
 
                 <Select value={filterBy} onValueChange={setFilterBy}>
-                  <SelectTrigger className="w-40 font-rubik">
+                  <SelectTrigger className="w-full sm:w-48 font-rubik">
                     <Filter className="h-4 w-4 mr-2" />
-                    <SelectValue placeholder="Filtrar" />
+                    <SelectValue placeholder="Filtrar por estado" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos</SelectItem>
@@ -273,10 +264,10 @@ const ProjectDetail = () => {
 
                 <Button 
                   onClick={handleAddExtraordinaryPayment}
-                  className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold font-rubik whitespace-nowrap"
+                  className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold font-rubik w-full sm:w-auto"
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Estado Extraordinario
+                  Agregar Estado Extraordinario
                 </Button>
               </div>
             </div>

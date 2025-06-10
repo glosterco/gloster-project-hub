@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,7 +17,6 @@ const Register = () => {
     // Información de la empresa
     companyName: '',
     companyRut: '',
-    companyType: '',
     companySize: '',
     
     // Información del contacto
@@ -34,6 +32,7 @@ const Register = () => {
     
     // Información de especialidad
     specialties: '',
+    customSpecialty: '',
     yearsExperience: '',
     
     // Credenciales
@@ -95,13 +94,14 @@ const Register = () => {
   const isStepValid = () => {
     switch (currentStep) {
       case 1:
-        return formData.companyName && formData.companyRut && formData.companyType && formData.companySize;
+        return formData.companyName && formData.companyRut && formData.companySize;
       case 2:
         return formData.contactName && formData.contactEmail && formData.contactPhone && formData.contactPosition;
       case 3:
         return formData.address && formData.city && formData.region;
       case 4:
-        return formData.specialties && formData.yearsExperience && formData.password && formData.confirmPassword && formData.password === formData.confirmPassword;
+        const specialtyValid = formData.specialties && (formData.specialties !== 'otro' || formData.customSpecialty);
+        return specialtyValid && formData.yearsExperience && formData.password && formData.confirmPassword && formData.password === formData.confirmPassword;
       default:
         return false;
     }
@@ -130,19 +130,6 @@ const Register = () => {
               onChange={(e) => handleInputChange('companyRut', e.target.value)}
               className="font-rubik"
             />
-            
-            <Select onValueChange={(value) => handleInputChange('companyType', value)}>
-              <SelectTrigger className="font-rubik">
-                <SelectValue placeholder="Tipo de empresa" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ltda">Sociedad Limitada</SelectItem>
-                <SelectItem value="spa">Sociedad por Acciones</SelectItem>
-                <SelectItem value="sa">Sociedad Anónima</SelectItem>
-                <SelectItem value="eirl">Empresa Individual</SelectItem>
-                <SelectItem value="otro">Otro</SelectItem>
-              </SelectContent>
-            </Select>
             
             <Select onValueChange={(value) => handleInputChange('companySize', value)}>
               <SelectTrigger className="font-rubik">
@@ -258,6 +245,15 @@ const Register = () => {
                 <SelectItem value="otro">Otro</SelectItem>
               </SelectContent>
             </Select>
+
+            {formData.specialties === 'otro' && (
+              <Input
+                placeholder="Especifica tu especialidad"
+                value={formData.customSpecialty}
+                onChange={(e) => handleInputChange('customSpecialty', e.target.value)}
+                className="font-rubik"
+              />
+            )}
             
             <Select onValueChange={(value) => handleInputChange('yearsExperience', value)}>
               <SelectTrigger className="font-rubik">

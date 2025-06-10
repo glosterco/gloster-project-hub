@@ -123,7 +123,7 @@ const EmailPreview = () => {
       <div className="bg-slate-50 py-2 print:hidden">
         <div className="container mx-auto px-6">
           <button 
-            onClick={() => navigate(-1)}
+            onClick={() => navigate('/payment/5')}
             className="text-gloster-gray hover:text-slate-800 text-sm font-rubik flex items-center"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -134,7 +134,7 @@ const EmailPreview = () => {
 
       {/* Contenido de la plantilla */}
       <div className="container mx-auto px-6 py-8">
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+        <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
           <EmailTemplate 
             paymentState={samplePaymentState}
             project={sampleProject}

@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ArrowLeft, Download, Upload, FileText, ExternalLink, Send, Calendar, DollarSign, HelpCircle, CheckCircle, Clock, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import PageHeader from '@/components/PageHeader';
 
 const PaymentDetail = () => {
   const { id } = useParams();
@@ -208,19 +209,7 @@ const PaymentDetail = () => {
   return (
     <TooltipProvider>
       <div className="min-h-screen bg-slate-50 font-rubik">
-        {/* Header */}
-        <header className="bg-gloster-white border-b border-gloster-gray/20 shadow-sm">
-          <div className="container mx-auto px-6 py-4">
-            <div className="flex items-center space-x-3">
-              <img 
-                src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
-                alt="Gloster Logo" 
-                className="w-8 h-8"
-              />
-              <h1 className="text-lg md:text-xl font-bold text-slate-800 font-rubik">Estado de Pago - {paymentState.month}</h1>
-            </div>
-          </div>
-        </header>
+        <PageHeader />
 
         {/* Volver al Proyecto - fuera del banner blanco */}
         <div className="bg-slate-50 py-2">
@@ -313,7 +302,7 @@ const PaymentDetail = () => {
                       </div>
                     ))}
                   </div>
-                  <div className="flex flex-col space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
                     <Button
                       onClick={handlePreviewEmail}
                       variant="outline"

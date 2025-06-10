@@ -3,13 +3,16 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { DollarSign, FileText, LogOut, User, FolderOpen } from 'lucide-react';
+import { DollarSign, FileText, FolderOpen, Plus, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import PageHeader from '@/components/PageHeader';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [isCreateProjectDialogOpen, setIsCreateProjectDialogOpen] = useState(false);
 
   const projects = [
     {
@@ -50,12 +53,18 @@ const Dashboard = () => {
     }
   ];
 
-  const handleLogout = () => {
+  const handleCreateProject = () => {
+    setIsCreateProjectDialogOpen(true);
+  };
+
+  const handleContactGloster = () => {
     toast({
-      title: "Sesión cerrada",
-      description: "Has cerrado sesión exitosamente",
+      title: "Contactando equipo Gloster",
+      description: "Te redirigiremos a nuestro formulario de contacto",
     });
-    navigate('/');
+    // Redirigir a formulario de contacto o email
+    window.open('mailto:soporte.gloster@gmail.com?subject=Solicitud%20de%20Creación%20de%20Nuevo%20Proyecto', '_blank');
+    setIsCreateProjectDialogOpen(false);
   };
 
   const formatCurrency = (amount: number) => {
@@ -68,43 +77,59 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 font-rubik">
-      {/* Header */}
-      <header className="bg-gloster-white border-b border-gloster-gray/20 shadow-sm">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <img 
-                src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
-                alt="Gloster Logo" 
-                className="w-8 h-8"
-              />
-              <h1 className="text-xl font-bold text-slate-800 font-rubik">Gloster</h1>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2 text-gloster-gray">
-                <User className="h-4 w-4" />
-                <span className="text-sm font-rubik">Juan Pérez - Subcontratista</span>
-              </div>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleLogout}
-                className="text-gloster-gray hover:text-slate-800 border-gloster-gray/30 font-rubik"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Cerrar Sesión
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <PageHeader />
 
       <div className="container mx-auto px-6 py-8">
         {/* Page Title */}
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-slate-800 mb-2 font-rubik">Mis Proyectos - Constructora San Miguel Ltda.</h2>
-          <p className="text-gloster-gray font-rubik">Gestiona tus proyectos activos y estados de pago</p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold text-slate-800 mb-2 font-rubik">Mis Proyectos - Constructora San Miguel Ltda.</h2>
+            <p className="text-gloster-gray font-rubik">Gestiona tus proyectos activos y estados de pago</p>
+          </div>
+          
+          <Dialog open={isCreateProjectDialogOpen} onOpenChange={setIsCreateProjectDialogOpen}>
+            <DialogTrigger asChild>
+              <Button 
+                onClick={handleCreateProject}
+                className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold font-rubik"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Crear Nuevo Proyecto
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center space-x-2 font-rubik">
+                  <AlertCircle className="h-5 w-5 text-gloster-yellow" />
+                  <span>Función Premium</span>
+                </DialogTitle>
+                <DialogDescription className="font-rubik">
+                  La creación de nuevos proyectos está fuera del período de prueba gratuita.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <p className="text-sm text-gloster-gray font-rubik">
+                  Para acceder a esta funcionalidad y crear nuevos proyectos, necesitas contactar 
+                  directamente con el equipo de Gloster.
+                </p>
+                <div className="flex space-x-3">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setIsCreateProjectDialogOpen(false)}
+                    className="flex-1 font-rubik"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button 
+                    onClick={handleContactGloster}
+                    className="flex-1 bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
+                  >
+                    Contactar Gloster
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* Summary Cards */}

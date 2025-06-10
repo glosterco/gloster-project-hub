@@ -18,7 +18,6 @@ const Register = () => {
     // Información de la empresa
     companyName: '',
     companyRut: '',
-    companySize: '',
     
     // Información del contacto
     contactName: '',
@@ -33,7 +32,6 @@ const Register = () => {
     
     // Información de especialidad
     specialties: '',
-    customSpecialty: '',
     yearsExperience: '',
     
     // Credenciales
@@ -41,11 +39,30 @@ const Register = () => {
     confirmPassword: ''
   });
 
+  const [showCustomSpecialty, setShowCustomSpecialty] = useState(false);
+  const [customSpecialtyText, setCustomSpecialtyText] = useState('');
+
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
+  };
+
+  const handleSpecialtyChange = (value: string) => {
+    if (value === 'otro') {
+      setShowCustomSpecialty(true);
+      setCustomSpecialtyText('');
+    } else {
+      setShowCustomSpecialty(false);
+      setCustomSpecialtyText('');
+      handleInputChange('specialties', value);
+    }
+  };
+
+  const handleCustomSpecialtyChange = (value: string) => {
+    setCustomSpecialtyText(value);
+    handleInputChange('specialties', value);
   };
 
   const validateEmail = (email: string) => {
@@ -100,13 +117,13 @@ const Register = () => {
   const isStepValid = () => {
     switch (currentStep) {
       case 1:
-        return formData.companyName && formData.companyRut && formData.companySize;
+        return formData.companyName && formData.companyRut;
       case 2:
         return formData.contactName && formData.contactEmail && validateEmail(formData.contactEmail) && formData.contactPhone && formData.contactPosition;
       case 3:
         return formData.address && formData.city && formData.region;
       case 4:
-        const specialtyValid = formData.specialties && (formData.specialties !== 'otro' || formData.customSpecialty);
+        const specialtyValid = formData.specialties && formData.specialties.trim() !== '';
         return specialtyValid && formData.yearsExperience && formData.password && formData.confirmPassword && formData.password === formData.confirmPassword;
       default:
         return false;
@@ -136,19 +153,6 @@ const Register = () => {
               onChange={(e) => handleInputChange('companyRut', e.target.value)}
               className="font-rubik"
             />
-            
-            <Select onValueChange={(value) => handleInputChange('companySize', value)}>
-              <SelectTrigger className="font-rubik">
-                <SelectValue placeholder="Tamaño de la empresa" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1-5">1-5 empleados</SelectItem>
-                <SelectItem value="6-20">6-20 empleados</SelectItem>
-                <SelectItem value="21-50">21-50 empleados</SelectItem>
-                <SelectItem value="51-100">51-100 empleados</SelectItem>
-                <SelectItem value="100+">Más de 100 empleados</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         );
 
@@ -241,7 +245,7 @@ const Register = () => {
               <h3 className="text-lg font-semibold text-slate-800 font-rubik">Especialidad y Credenciales</h3>
             </div>
             
-            <Select onValueChange={(value) => handleInputChange('specialties', value)}>
+            <Select onValueChange={handleSpecialtyChange}>
               <SelectTrigger className="font-rubik">
                 <SelectValue placeholder="Especialidad principal" />
               </SelectTrigger>
@@ -256,11 +260,11 @@ const Register = () => {
               </SelectContent>
             </Select>
 
-            {formData.specialties === 'otro' && (
+            {showCustomSpecialty && (
               <Input
                 placeholder="Especifica tu especialidad"
-                value={formData.customSpecialty}
-                onChange={(e) => handleInputChange('customSpecialty', e.target.value)}
+                value={customSpecialtyText}
+                onChange={(e) => handleCustomSpecialtyChange(e.target.value)}
                 className="font-rubik"
               />
             )}
@@ -390,7 +394,7 @@ const Register = () => {
                   <Button
                     onClick={handleSubmit}
                     disabled={!isStepValid() || isLoading}
-                    className="bg-green-600 hover:bg-green-700 text-white font-rubik"
+                    className="bg-slate-800 hover:bg-slate-700 text-white font-rubik"
                   >
                     {isLoading ? 'Creando cuenta...' : 'Crear Cuenta'}
                   </Button>

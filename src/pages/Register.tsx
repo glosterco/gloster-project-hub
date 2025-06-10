@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,6 +46,11 @@ const Register = () => {
       ...prev,
       [field]: value
     }));
+  };
+
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
   };
 
   const handleNextStep = () => {
@@ -96,7 +102,7 @@ const Register = () => {
       case 1:
         return formData.companyName && formData.companyRut && formData.companySize;
       case 2:
-        return formData.contactName && formData.contactEmail && formData.contactPhone && formData.contactPosition;
+        return formData.contactName && formData.contactEmail && validateEmail(formData.contactEmail) && formData.contactPhone && formData.contactPosition;
       case 3:
         return formData.address && formData.city && formData.region;
       case 4:
@@ -168,6 +174,10 @@ const Register = () => {
               onChange={(e) => handleInputChange('contactEmail', e.target.value)}
               className="font-rubik"
             />
+            
+            {formData.contactEmail && !validateEmail(formData.contactEmail) && (
+              <p className="text-red-500 text-sm font-rubik">Por favor ingresa un email válido</p>
+            )}
             
             <Input
               placeholder="Teléfono de contacto"

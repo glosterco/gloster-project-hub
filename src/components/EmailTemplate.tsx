@@ -179,19 +179,23 @@ const EmailTemplate: React.FC<EmailTemplateProps> = ({ paymentState, project, do
           <CardHeader>
             <CardTitle className="flex items-center space-x-2 font-rubik text-slate-800">
               <User className="h-5 w-5 text-gloster-gray" />
-              <span>Información de Contacto del Contratista</span>
+              <span>Información del Contratista</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
+              <p className="text-gloster-gray text-sm font-rubik">Empresa</p>
+              <p className="font-semibold text-slate-800 font-rubik">Constructora ABC Ltda.</p>
+            </div>
+            <div>
               <p className="text-gloster-gray text-sm font-rubik">Project Manager</p>
-              <p className="font-semibold text-slate-800 font-rubik">{project.projectManager}</p>
+              <p className="font-semibold text-slate-800 font-rubik">Carlos Mendoza</p>
             </div>
             <div>
               <p className="text-gloster-gray text-sm font-rubik">Email de Contacto</p>
               <p className="font-semibold text-slate-800 font-rubik flex items-center space-x-2">
                 <Mail className="h-4 w-4 text-gloster-gray" />
-                <span>{project.contactEmail}</span>
+                <span>carlos.mendoza@constructoraabc.cl</span>
               </p>
             </div>
           </CardContent>

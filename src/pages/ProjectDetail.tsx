@@ -7,8 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, Calendar, DollarSign, ChevronRight, User, Search, Filter, Plus } from 'lucide-react';
+import { ArrowLeft, Calendar, ChevronRight, Search, Filter, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import PageHeader from '@/components/PageHeader';
 
 const ProjectDetail = () => {
   const { id } = useParams();
@@ -142,21 +143,7 @@ const ProjectDetail = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 font-rubik">
-      {/* Header */}
-      <header className="bg-gloster-white border-b border-gloster-gray/20 shadow-sm">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <img 
-                src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
-                alt="Gloster Logo" 
-                className="w-8 h-8"
-              />
-              <h1 className="text-xl font-bold text-slate-800 font-rubik">Gloster</h1>
-            </div>
-          </div>
-        </div>
-      </header>
+      <PageHeader title="Gloster" />
 
       {/* Volver al Dashboard - fuera del banner blanco */}
       <div className="bg-slate-50 py-2">
@@ -224,9 +211,9 @@ const ProjectDetail = () => {
         <div className="space-y-6">
           <h3 className="text-2xl font-bold text-slate-800 mb-6 font-rubik">Estados de Pago</h3>
           
-          {/* Search, Filter and Sort Controls - Single Row Layout */}
+          {/* Search, Filter and Sort Controls - Optimized Layout */}
           <div className="mb-6 p-4 bg-white rounded-lg border border-gloster-gray/20">
-            <div className="flex flex-col lg:flex-row gap-4 items-center">
+            <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
               <div className="relative w-full lg:flex-1 max-w-md">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gloster-gray h-4 w-4" />
                 <Input
@@ -237,9 +224,9 @@ const ProjectDetail = () => {
                 />
               </div>
               
-              <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
+              <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto lg:flex-shrink-0">
                 <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-full sm:w-48 font-rubik">
+                  <SelectTrigger className="w-full sm:w-40 font-rubik">
                     <SelectValue placeholder="Ordenar por" />
                   </SelectTrigger>
                   <SelectContent>
@@ -250,9 +237,9 @@ const ProjectDetail = () => {
                 </Select>
 
                 <Select value={filterBy} onValueChange={setFilterBy}>
-                  <SelectTrigger className="w-full sm:w-48 font-rubik">
+                  <SelectTrigger className="w-full sm:w-40 font-rubik">
                     <Filter className="h-4 w-4 mr-2" />
-                    <SelectValue placeholder="Filtrar por estado" />
+                    <SelectValue placeholder="Filtrar" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos</SelectItem>
@@ -264,10 +251,10 @@ const ProjectDetail = () => {
 
                 <Button 
                   onClick={handleAddExtraordinaryPayment}
-                  className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold font-rubik w-full sm:w-auto"
+                  className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold font-rubik w-full sm:w-auto whitespace-nowrap"
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Agregar Estado Extraordinario
+                  Estado Extraordinario
                 </Button>
               </div>
             </div>

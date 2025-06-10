@@ -121,7 +121,7 @@ const Index = () => {
                   Accede a tu panel de proyectos
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-2">
                     <Input
@@ -155,6 +155,20 @@ const Index = () => {
                     {isLoading ? 'Iniciando sesión...' : 'Acceder'}
                   </Button>
                 </form>
+                
+                {/* Registration Link */}
+                <div className="text-center">
+                  <p className="text-gloster-white/80 text-sm font-rubik mb-2">
+                    ¿No tienes cuenta?
+                  </p>
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => navigate('/register')}
+                    className="text-gloster-yellow hover:text-gloster-yellow/80 hover:bg-gloster-white/10 font-rubik"
+                  >
+                    Regístrate aquí
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </div>

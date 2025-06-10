@@ -1,13 +1,12 @@
 
 import React from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Download, Send } from 'lucide-react';
 import EmailTemplate from '@/components/EmailTemplate';
 
 const EmailPreview = () => {
   const navigate = useNavigate();
-  const { id } = useParams();
 
   // Datos de ejemplo actualizados
   const samplePaymentState = {
@@ -91,31 +90,40 @@ const EmailPreview = () => {
             </div>
             
             <div className="flex items-center space-x-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handlePrint}
-                className="font-rubik"
-              >
-                Imprimir
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDownloadPDF}
-                className="font-rubik"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Descargar PDF
-              </Button>
-              <Button
-                size="sm"
-                className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
-              >
-                <Send className="h-4 w-4 mr-2" />
-                Enviar Email
+              <div className="text-sm text-gloster-gray">
+                <span className="font-rubik">Constructora ABC Ltda.</span>
+              </div>
+              <Button variant="ghost" size="sm" className="text-gloster-gray hover:text-slate-800 font-rubik">
+                Cerrar sesión
               </Button>
             </div>
+          </div>
+          
+          <div className="flex items-center space-x-3 mt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePrint}
+              className="font-rubik"
+            >
+              Imprimir
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDownloadPDF}
+              className="font-rubik"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Descargar PDF
+            </Button>
+            <Button
+              size="sm"
+              className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
+            >
+              <Send className="h-4 w-4 mr-2" />
+              Enviar Email
+            </Button>
           </div>
         </div>
       </div>
@@ -124,18 +132,18 @@ const EmailPreview = () => {
       <div className="bg-slate-50 py-2 print:hidden">
         <div className="container mx-auto px-6">
           <button 
-            onClick={() => navigate(`/payment/${id || '5'}`)}
+            onClick={() => navigate('/payment/5')}
             className="text-gloster-gray hover:text-slate-800 text-sm font-rubik flex items-center"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Volver
+            Volver al Estado de Pago
           </button>
         </div>
       </div>
 
-      {/* Contenido de la plantilla - ajustado al ancho del banner amarillo */}
+      {/* Contenido de la plantilla - ancho ajustado */}
       <div className="container mx-auto px-6 py-8">
-        <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
+        <div className="bg-white rounded-lg shadow-lg overflow-hidden max-w-4xl mx-auto">
           <EmailTemplate 
             paymentState={samplePaymentState}
             project={sampleProject}

@@ -7,9 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, Calendar, ChevronRight, Search, Filter, Plus } from 'lucide-react';
+import { ArrowLeft, Calendar, DollarSign, ChevronRight, User, Search, Filter, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import PageHeader from '@/components/PageHeader';
 
 const ProjectDetail = () => {
   const { id } = useParams();
@@ -143,7 +142,30 @@ const ProjectDetail = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 font-rubik">
-      <PageHeader title="Gloster" />
+      {/* Header */}
+      <header className="bg-gloster-white border-b border-gloster-gray/20 shadow-sm">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <img 
+                src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
+                alt="Gloster Logo" 
+                className="w-8 h-8"
+              />
+              <h1 className="text-xl font-bold text-slate-800 font-rubik">Gloster</h1>
+            </div>
+            
+            <div className="flex items-center space-x-3">
+              <div className="text-sm text-gloster-gray">
+                <span className="font-rubik">Constructora ABC Ltda.</span>
+              </div>
+              <Button variant="ghost" size="sm" className="text-gloster-gray hover:text-slate-800 font-rubik">
+                Cerrar sesión
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
 
       {/* Volver al Dashboard - fuera del banner blanco */}
       <div className="bg-slate-50 py-2">
@@ -213,8 +235,8 @@ const ProjectDetail = () => {
           
           {/* Search, Filter and Sort Controls - Optimized Layout */}
           <div className="mb-6 p-4 bg-white rounded-lg border border-gloster-gray/20">
-            <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
-              <div className="relative w-full lg:flex-1 max-w-md">
+            <div className="flex flex-col lg:flex-row gap-4">
+              <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gloster-gray h-4 w-4" />
                 <Input
                   placeholder="Buscar estados de pago..."
@@ -224,9 +246,9 @@ const ProjectDetail = () => {
                 />
               </div>
               
-              <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto lg:flex-shrink-0">
+              <div className="flex flex-1 justify-end gap-3">
                 <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-full sm:w-40 font-rubik">
+                  <SelectTrigger className="w-40 font-rubik">
                     <SelectValue placeholder="Ordenar por" />
                   </SelectTrigger>
                   <SelectContent>
@@ -237,7 +259,7 @@ const ProjectDetail = () => {
                 </Select>
 
                 <Select value={filterBy} onValueChange={setFilterBy}>
-                  <SelectTrigger className="w-full sm:w-40 font-rubik">
+                  <SelectTrigger className="w-40 font-rubik">
                     <Filter className="h-4 w-4 mr-2" />
                     <SelectValue placeholder="Filtrar" />
                   </SelectTrigger>
@@ -251,7 +273,7 @@ const ProjectDetail = () => {
 
                 <Button 
                   onClick={handleAddExtraordinaryPayment}
-                  className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold font-rubik w-full sm:w-auto whitespace-nowrap"
+                  className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold font-rubik whitespace-nowrap"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Estado Extraordinario

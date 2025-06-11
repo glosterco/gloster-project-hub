@@ -1,178 +1,183 @@
 
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Shield, FileText, Clock } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { useToast } from '@/hooks/use-toast';
+import { Button } from "@/components/ui/button";
+import { ArrowRight, CheckCircle, Users, FileText, TrendingUp } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    
-    console.log('Login attempt:', { email, password });
-    
-    // Simulamos autenticación
-    setTimeout(() => {
-      if (email && password) {
-        toast({
-          title: "¡Bienvenido a Gloster!",
-          description: "Sesión iniciada exitosamente",
-        });
-        navigate('/dashboard');
-      } else {
-        toast({
-          title: "Error de autenticación",
-          description: "Por favor verifica tus credenciales",
-          variant: "destructive",
-        });
-      }
-      setIsLoading(false);
-    }, 1000);
-  };
-
-  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log('Email changed:', e.target.value);
-    setEmail(e.target.value);
-  };
-
-  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log('Password changed:', e.target.value);
-    setPassword(e.target.value);
-  };
 
   return (
-    <div className="min-h-screen relative">
-      {/* Header - White strip */}
-      <header className="relative z-10 bg-gloster-white p-6 shadow-sm">
-        <div className="flex items-center space-x-3">
-          <img 
-            src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
-            alt="Gloster Logo" 
-            className="w-12 h-12"
-          />
-          <h1 className="text-2xl font-bold text-slate-800 font-rubik">Gloster</h1>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      {/* Header */}
+      <header className="bg-white/80 backdrop-blur-sm border-b border-gloster-gray/20 sticky top-0 z-50">
+        <div className="container mx-auto px-6 py-4 flex justify-between items-center">
+          <div className="flex items-center space-x-3">
+            <img 
+              src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
+              alt="Gloster Logo" 
+              className="w-8 h-8"
+            />
+            <h1 className="text-xl font-bold text-slate-800 font-rubik">Gloster</h1>
+          </div>
+          <Button
+            onClick={() => navigate('/register')}
+            className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
+          >
+            Registrarse
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
         </div>
       </header>
 
-      {/* Background with construction theme */}
-      <div className="absolute inset-0 bg-gradient-to-br from-gloster-gray via-slate-600 to-gloster-gray">
-        {/* Construction-themed background pattern */}
-        <div className="absolute inset-0 opacity-20">
-          <div className="w-full h-full bg-repeat opacity-30" style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23F5DF4D' fill-opacity='0.15'%3E%3Cpath d='M50 5L90 25v50L50 95L10 75V25L50 5z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-          }}></div>
+      {/* Hero Section */}
+      <section className="container mx-auto px-6 py-16 text-center">
+        <div className="max-w-4xl mx-auto space-y-8">
+          <h2 className="text-5xl font-bold text-slate-800 leading-tight font-rubik">
+            Gestiona tus contratos de construcción de forma
+            <span className="text-gloster-yellow"> inteligente</span>
+          </h2>
+          <p className="text-xl text-slate-600 leading-relaxed font-rubik">
+            Automatiza la presentación de estados de pago, mantén control total de tus proyectos 
+            y asegura el cumplimiento normativo con nuestra plataforma especializada.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <Button
+              size="lg"
+              onClick={() => navigate('/register')}
+              className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik px-8 py-3 text-lg"
+            >
+              Comenzar Gratis
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+            <p className="text-sm text-slate-500 italic font-rubik">
+              Sin compromisos • Configuración en 5 minutos
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Grid */}
+      <section className="container mx-auto px-6 py-16">
+        <div className="text-center mb-16">
+          <h3 className="text-3xl font-bold text-slate-800 mb-4 font-rubik">
+            ¿Por qué elegir Gloster?
+          </h3>
+          <p className="text-lg text-slate-600 font-rubik">
+            Diseñado específicamente para empresas constructoras chilenas
+          </p>
         </div>
         
-        {/* Subtle crane silhouettes */}
-        <div className="absolute bottom-0 left-0 w-full h-1/3 opacity-10">
-          <div className="w-full h-full bg-gradient-to-t from-gloster-yellow/20 to-transparent"></div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="relative z-10 container mx-auto px-6 py-12">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <div className="grid md:grid-cols-3 gap-8">
+          <div className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
+            <div className="w-12 h-12 bg-gloster-yellow/20 rounded-lg flex items-center justify-center mb-6">
+              <FileText className="h-6 w-6 text-gloster-yellow" />
+            </div>
+            <h4 className="text-xl font-semibold text-slate-800 mb-4 font-rubik">
+              Estados de Pago Automatizados
+            </h4>
+            <p className="text-slate-600 leading-relaxed font-rubik">
+              Genera automáticamente toda la documentación requerida: carátulas EEPP, 
+              certificados F30, comprobantes de cotizaciones y más.
+            </p>
+          </div>
           
-          {/* Hero Section */}
-          <div className="space-y-8">
-            <div className="space-y-4">
-              <h2 className="text-5xl font-bold text-gloster-white leading-tight font-rubik">
-                Gestiona tus proyectos de
-                <span className="text-gloster-yellow"> construcción</span>
-              </h2>
-              <p className="text-xl text-gloster-white/80 leading-relaxed font-rubik">
-                La plataforma integral para subcontratistas. Administra estados de pago, 
-                documentación contractual y mantén el control total de tus proyectos.
+          <div className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
+            <div className="w-12 h-12 bg-gloster-yellow/20 rounded-lg flex items-center justify-center mb-6">
+              <TrendingUp className="h-6 w-6 text-gloster-yellow" />
+            </div>
+            <h4 className="text-xl font-semibold text-slate-800 mb-4 font-rubik">
+              Control Financiero Total
+            </h4>
+            <p className="text-slate-600 leading-relaxed font-rubik">
+              Monitorea el flujo de caja, fechas de vencimiento y el estado de cada 
+              proyecto en tiempo real desde un dashboard centralizado.
+            </p>
+          </div>
+          
+          <div className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
+            <div className="w-12 h-12 bg-gloster-yellow/20 rounded-lg flex items-center justify-center mb-6">
+              <CheckCircle className="h-6 w-6 text-gloster-yellow" />
+            </div>
+            <h4 className="text-xl font-semibold text-slate-800 mb-4 font-rubik">
+              Cumplimiento Normativo
+            </h4>
+            <p className="text-slate-600 leading-relaxed font-rubik">
+              Asegura el cumplimiento de todas las normativas laborales y tributarias 
+              con validaciones automáticas y recordatorios inteligentes.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Social Proof */}
+      <section className="container mx-auto px-6 py-16 bg-white/50">
+        <div className="text-center space-y-8">
+          <div className="flex items-center justify-center space-x-2">
+            <Users className="h-6 w-6 text-gloster-yellow" />
+            <span className="text-2xl font-bold text-slate-800 font-rubik">500+</span>
+            <span className="text-lg text-slate-600 font-rubik">empresas constructoras confían en nosotros</span>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            <div className="text-center">
+              <div className="text-3xl font-bold text-gloster-yellow mb-2 font-rubik">98%</div>
+              <div className="text-slate-600 font-rubik">Reducción en errores de documentación</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-gloster-yellow mb-2 font-rubik">15 horas</div>
+              <div className="text-slate-600 font-rubik">Ahorro promedio por semana</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-gloster-yellow mb-2 font-rubik">100%</div>
+              <div className="text-slate-600 font-rubik">Cumplimiento normativo garantizado</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="container mx-auto px-6 py-16 text-center">
+        <div className="max-w-2xl mx-auto space-y-8">
+          <h3 className="text-3xl font-bold text-slate-800 font-rubik">
+            ¿Listo para transformar tu gestión de contratos?
+          </h3>
+          <p className="text-lg text-slate-600 font-rubik">
+            Únete a cientos de empresas que ya optimizaron sus procesos administrativos
+          </p>
+          <Button
+            size="lg"
+            onClick={() => navigate('/register')}
+            className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik px-8 py-3 text-lg"
+          >
+            Crear Mi Cuenta Gratis
+            <ArrowRight className="ml-2 h-5 w-5" />
+          </Button>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-slate-800 text-white py-12">
+        <div className="container mx-auto px-6">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <div className="flex items-center space-x-3 mb-4 md:mb-0">
+              <img 
+                src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
+                alt="Gloster Logo" 
+                className="w-8 h-8"
+              />
+              <span className="text-xl font-bold font-rubik">Gloster</span>
+            </div>
+            <div className="text-center md:text-right">
+              <p className="text-slate-400 font-rubik">
+                © 2024 Gloster. Todos los derechos reservados.
+              </p>
+              <p className="text-slate-500 text-sm font-rubik">
+                Hecho con ❤️ para la industria de la construcción chilena
               </p>
             </div>
-
-            {/* Features */}
-            <div className="grid gap-4">
-              <div className="flex items-center space-x-3 text-gloster-white">
-                <Shield className="h-5 w-5 text-gloster-yellow" />
-                <span className="font-rubik">Gestión segura de documentos</span>
-              </div>
-              <div className="flex items-center space-x-3 text-gloster-white">
-                <FileText className="h-5 w-5 text-gloster-yellow" />
-                <span className="font-rubik">Certificados F30 y documentación contractual</span>
-              </div>
-              <div className="flex items-center space-x-3 text-gloster-white">
-                <Clock className="h-5 w-5 text-gloster-yellow" />
-                <span className="font-rubik">Estados de pago en tiempo real</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Login Form */}
-          <div className="flex justify-center lg:justify-end">
-            <Card className="w-full max-w-md bg-gloster-white/10 backdrop-blur-lg border-gloster-white/20">
-              <CardHeader className="space-y-1">
-                <CardTitle className="text-2xl text-gloster-white font-rubik">Iniciar Sesión</CardTitle>
-                <CardDescription className="text-gloster-white/80 font-rubik">
-                  Accede a tu panel de proyectos
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div className="space-y-2">
-                    <Input
-                      type="email"
-                      placeholder="correo@empresa.com"
-                      value={email}
-                      onChange={handleEmailChange}
-                      className="bg-gloster-white/10 border-gloster-white/20 text-gloster-white placeholder:text-gloster-white/60 font-rubik focus:bg-gloster-white/20 focus:border-gloster-white/40"
-                      required
-                      autoComplete="email"
-                      disabled={isLoading}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Input
-                      type="password"
-                      placeholder="Contraseña"
-                      value={password}
-                      onChange={handlePasswordChange}
-                      className="bg-gloster-white/10 border-gloster-white/20 text-gloster-white placeholder:text-gloster-white/60 font-rubik focus:bg-gloster-white/20 focus:border-gloster-white/40"
-                      required
-                      autoComplete="current-password"
-                      disabled={isLoading}
-                    />
-                  </div>
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold font-rubik transition-colors"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? 'Iniciando sesión...' : 'Acceder'}
-                  </Button>
-                </form>
-                
-                <div className="text-center pt-4 border-t border-gloster-white/20">
-                  <p className="text-gloster-white/80 text-sm font-rubik mb-3">
-                    ¿No tienes cuenta?
-                  </p>
-                  <Button 
-                    variant="outline"
-                    onClick={() => navigate('/register')}
-                    className="w-full border-gloster-white/20 text-gloster-white hover:bg-gloster-white/10 font-rubik"
-                  >
-                    Registrarse como Contratista
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </div>
-      </div>
+      </footer>
     </div>
   );
 };

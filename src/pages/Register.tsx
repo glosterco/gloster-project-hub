@@ -7,13 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ArrowLeft, ArrowRight, Check, CalendarIcon } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
 
 const Register = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -43,7 +39,7 @@ const Register = () => {
   const [projectAddress, setProjectAddress] = useState('');
   const [projectDescription, setProjectDescription] = useState('');
   const [contractAmount, setContractAmount] = useState('');
-  const [startDate, setStartDate] = useState<Date>();
+  const [startDate, setStartDate] = useState('');
   const [duration, setDuration] = useState('');
 
   // Client Information
@@ -53,41 +49,14 @@ const Register = () => {
   const [clientPhone, setClientPhone] = useState('');
 
   // Payment Information
-  const [firstPaymentDate, setFirstPaymentDate] = useState<Date>();
+  const [firstPaymentDate, setFirstPaymentDate] = useState('');
   const [paymentPeriod, setPaymentPeriod] = useState('');
   const [customPeriod, setCustomPeriod] = useState('');
   const [requiredDocuments, setRequiredDocuments] = useState<string[]>([]);
   const [otherDocuments, setOtherDocuments] = useState('');
 
-  const validateRut = (rut: string) => {
-    const rutRegex = /^\d{1,2}\.\d{3}\.\d{3}-[\dkK]$/;
-    if (!rutRegex.test(rut)) return false;
-    
-    const cleanRut = rut.replace(/[.-]/g, '');
-    const rutDigits = cleanRut.slice(0, -1);
-    const dv = cleanRut.slice(-1).toUpperCase();
-    
-    let sum = 0;
-    let multiplier = 2;
-    
-    for (let i = rutDigits.length - 1; i >= 0; i--) {
-      sum += parseInt(rutDigits[i]) * multiplier;
-      multiplier = multiplier === 7 ? 2 : multiplier + 1;
-    }
-    
-    const remainder = sum % 11;
-    const calculatedDv = remainder === 0 ? '0' : remainder === 1 ? 'K' : (11 - remainder).toString();
-    
-    return dv === calculatedDv;
-  };
-
-  const validateEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
   const validatePhone = (phone: string) => {
-    const phoneRegex = /^\+569\d{8}$/;
+    const phoneRegex = /^\+56\s9\s\d{8}$/;
     return phoneRegex.test(phone);
   };
 
@@ -114,10 +83,10 @@ const Register = () => {
         });
         return;
       }
-      if (!validateRut(rut)) {
+      if (!validateNumber(experience)) {
         toast({
-          title: "RUT inválido",
-          description: "El formato debe ser 12.345.678-9 y el dígito verificador debe ser correcto",
+          title: "Error en años de experiencia",
+          description: "Por favor ingresa solo números",
           variant: "destructive",
         });
         return;
@@ -134,18 +103,10 @@ const Register = () => {
         });
         return;
       }
-      if (!validateEmail(email)) {
-        toast({
-          title: "Email inválido",
-          description: "Por favor ingresa un email válido",
-          variant: "destructive",
-        });
-        return;
-      }
       if (!validatePhone(phone)) {
         toast({
           title: "Teléfono inválido",
-          description: "El formato debe ser +569xxxxxxxx",
+          description: "El formato debe ser +56 9 xxxxxxxx",
           variant: "destructive",
         });
         return;
@@ -190,18 +151,10 @@ const Register = () => {
         });
         return;
       }
-      if (!validateEmail(clientEmail)) {
-        toast({
-          title: "Email inválido",
-          description: "Por favor ingresa un email válido",
-          variant: "destructive",
-        });
-        return;
-      }
       if (!validatePhone(clientPhone)) {
         toast({
           title: "Teléfono inválido",
-          description: "El formato debe ser +569xxxxxxxx",
+          description: "El formato debe ser +56 9 xxxxxxxx",
           variant: "destructive",
         });
         return;
@@ -249,13 +202,13 @@ const Register = () => {
       projectAddress,
       projectDescription,
       contractAmount,
-      startDate: startDate ? format(startDate, 'yyyy-MM-dd') : '',
+      startDate,
       duration,
       clientCompany,
       clientContact,
       clientEmail,
       clientPhone,
-      firstPaymentDate: firstPaymentDate ? format(firstPaymentDate, 'yyyy-MM-dd') : '',
+      firstPaymentDate,
       paymentPeriod: finalPaymentPeriod,
       requiredDocuments: finalDocuments
     };
@@ -327,34 +280,6 @@ const Register = () => {
           ></div>
         </div>
       </div>
-    );
-  };
-
-  const DatePickerField = ({ date, onDateChange, placeholder }: { date: Date | undefined, onDateChange: (date: Date | undefined) => void, placeholder: string }) => {
-    return (
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            className={cn(
-              "w-full justify-start text-left font-normal font-rubik",
-              !date && "text-muted-foreground"
-            )}
-          >
-            <CalendarIcon className="mr-2 h-4 w-4" />
-            {date ? format(date, "PPP") : <span>{placeholder}</span>}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
-          <Calendar
-            mode="single"
-            selected={date}
-            onSelect={onDateChange}
-            initialFocus
-            className="p-3 pointer-events-auto"
-          />
-        </PopoverContent>
-      </Popover>
     );
   };
 
@@ -431,19 +356,13 @@ const Register = () => {
               
               <div className="space-y-2">
                 <Label htmlFor="experience">Años de Experiencia</Label>
-                <Select value={experience} onValueChange={setExperience}>
-                  <SelectTrigger className="font-rubik">
-                    <SelectValue placeholder="Selecciona los años de experiencia" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="0-1">0-1 años</SelectItem>
-                    <SelectItem value="2-5">2-5 años</SelectItem>
-                    <SelectItem value="6-10">6-10 años</SelectItem>
-                    <SelectItem value="11-15">11-15 años</SelectItem>
-                    <SelectItem value="16-20">16-20 años</SelectItem>
-                    <SelectItem value="21+">Más de 21 años</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Input
+                  id="experience"
+                  value={experience}
+                  onChange={(e) => setExperience(e.target.value)}
+                  placeholder="Años de experiencia"
+                  className="font-rubik"
+                />
               </div>
             </div>
 
@@ -509,7 +428,7 @@ const Register = () => {
                 id="phone"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="Teléfono de contacto: +569xxxxxxxx"
+                placeholder="Teléfono de contacto: +56 9 xxxxxxxx"
                 className="font-rubik"
               />
             </div>
@@ -621,11 +540,13 @@ const Register = () => {
             </div>
 
             <div className="space-y-2">
-              <Label>Fecha de inicio contractual</Label>
-              <DatePickerField 
-                date={startDate} 
-                onDateChange={setStartDate} 
-                placeholder="Selecciona la fecha de inicio"
+              <Label htmlFor="startDate">Fecha de inicio contractual</Label>
+              <Input
+                id="startDate"
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="font-rubik"
               />
             </div>
           </div>
@@ -677,7 +598,7 @@ const Register = () => {
                   id="clientPhone"
                   value={clientPhone}
                   onChange={(e) => setClientPhone(e.target.value)}
-                  placeholder="Teléfono de contacto: +569xxxxxxxx"
+                  placeholder="Teléfono de contacto: +56 9 xxxxxxxx"
                   className="font-rubik"
                 />
               </div>
@@ -689,11 +610,13 @@ const Register = () => {
         return (
           <div className="space-y-6">
             <div className="space-y-2">
-              <Label>Fecha de presentación del primer estado de pago</Label>
-              <DatePickerField 
-                date={firstPaymentDate} 
-                onDateChange={setFirstPaymentDate} 
-                placeholder="Selecciona la fecha de presentación"
+              <Label htmlFor="firstPaymentDate">Fecha de presentación del primer estado de pago</Label>
+              <Input
+                id="firstPaymentDate"
+                type="date"
+                value={firstPaymentDate}
+                onChange={(e) => setFirstPaymentDate(e.target.value)}
+                className="font-rubik"
               />
             </div>
 
@@ -799,7 +722,7 @@ const Register = () => {
               {renderStep()}
               
               <div className="flex justify-between pt-6">
-                {currentStep > 1 && (
+                {currentStep > 1 && currentStep !== 3 && (
                   <Button
                     variant="outline"
                     onClick={handlePrevious}
@@ -810,23 +733,47 @@ const Register = () => {
                   </Button>
                 )}
                 
-                {currentStep < totalSteps ? (
-                  <div className={currentStep === 1 ? "ml-auto" : ""}>
+                {(currentStep === 1 || currentStep > 3) && (
+                  <div className="ml-auto">
+                    {currentStep < totalSteps ? (
+                      <Button
+                        onClick={handleNext}
+                        className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
+                      >
+                        Continuar
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={handleSubmit}
+                        className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
+                      >
+                        Crear Cuenta
+                      </Button>
+                    )}
+                  </div>
+                )}
+
+                {currentStep === 2 && (
+                  <div className="ml-auto">
                     <Button
                       onClick={handleNext}
                       className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
                     >
-                      {currentStep === 3 ? "Ingresar Proyecto" : "Continuar"}
+                      Continuar
                       <ArrowRight className="h-4 w-4 ml-2" />
                     </Button>
                   </div>
-                ) : (
-                  <div className="ml-auto">
+                )}
+
+                {currentStep === 3 && (
+                  <div className="w-full flex justify-center">
                     <Button
-                      onClick={handleSubmit}
+                      onClick={handleNext}
                       className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
                     >
-                      Crear Cuenta
+                      Ingresar Proyecto
+                      <ArrowRight className="h-4 w-4 ml-2" />
                     </Button>
                   </div>
                 )}

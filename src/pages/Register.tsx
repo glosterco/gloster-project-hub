@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, ArrowRight, CheckCircle, Building, User, Mail, Phone, MapPin } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ArrowLeft, ArrowRight, CheckCircle, Building, User, Mail, Phone, MapPin, FileText, Calendar, DollarSign } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 
@@ -15,28 +16,40 @@ const Register = () => {
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
-    // Información de la empresa
+    // Información de la empresa (Paso 1)
     companyName: '',
     companyRut: '',
+    specialties: '',
+    yearsExperience: '',
+    address: '',
+    city: '',
     
-    // Información del contacto
+    // Información del contacto (Paso 2)
     contactName: '',
     contactEmail: '',
     contactPhone: '',
     contactPosition: '',
-    
-    // Información de ubicación
-    address: '',
-    city: '',
-    region: '',
-    
-    // Información de especialidad
-    specialties: '',
-    yearsExperience: '',
-    
-    // Credenciales
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    
+    // Información del proyecto (Paso 4)
+    projectName: '',
+    projectAddress: '',
+    projectDescription: '',
+    contractAmount: '',
+    startDate: '',
+    duration: '',
+    
+    // Información del mandante (Paso 5)
+    clientCompany: '',
+    clientContactName: '',
+    clientEmail: '',
+    clientPhone: '',
+    
+    // Estados de pago (Paso 6)
+    firstPaymentDate: '',
+    paymentPeriod: '',
+    requiredDocuments: []
   });
 
   const [showCustomSpecialty, setShowCustomSpecialty] = useState(false);
@@ -65,13 +78,22 @@ const Register = () => {
     handleInputChange('specialties', value);
   };
 
+  const handleDocumentChange = (document: string, checked: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      requiredDocuments: checked 
+        ? [...prev.requiredDocuments, document]
+        : prev.requiredDocuments.filter(doc => doc !== document)
+    }));
+  };
+
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
 
   const handleNextStep = () => {
-    if (currentStep < 4) {
+    if (currentStep < 6) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -96,8 +118,8 @@ const Register = () => {
 
       if (response.ok) {
         toast({
-          title: "¡Registro exitoso!",
-          description: "Tu cuenta ha sido creada. El equipo de Gloster se pondrá en contacto contigo pronto.",
+          title: "¡Cuenta creada exitosamente!",
+          description: "El equipo de Gloster se contactará contigo para ingresar tu primer proyecto.",
         });
         navigate('/');
       } else {
@@ -117,14 +139,22 @@ const Register = () => {
   const isStepValid = () => {
     switch (currentStep) {
       case 1:
-        return formData.companyName && formData.companyRut;
+        return formData.companyName && formData.companyRut && formData.specialties && 
+               formData.yearsExperience && formData.address && formData.city;
       case 2:
-        return formData.contactName && formData.contactEmail && validateEmail(formData.contactEmail) && formData.contactPhone && formData.contactPosition;
+        return formData.contactName && formData.contactEmail && validateEmail(formData.contactEmail) && 
+               formData.contactPhone && formData.contactPosition && formData.password && 
+               formData.confirmPassword && formData.password === formData.confirmPassword;
       case 3:
-        return formData.address && formData.city && formData.region;
+        return true; // Paso de transición
       case 4:
-        const specialtyValid = formData.specialties && formData.specialties.trim() !== '';
-        return specialtyValid && formData.yearsExperience && formData.password && formData.confirmPassword && formData.password === formData.confirmPassword;
+        return formData.projectName && formData.projectAddress && formData.projectDescription && 
+               formData.contractAmount && formData.startDate && formData.duration;
+      case 5:
+        return formData.clientCompany && formData.clientContactName && formData.clientEmail && 
+               validateEmail(formData.clientEmail) && formData.clientPhone;
+      case 6:
+        return formData.firstPaymentDate && formData.paymentPeriod && formData.requiredDocuments.length > 0;
       default:
         return false;
     }
@@ -153,98 +183,7 @@ const Register = () => {
               onChange={(e) => handleInputChange('companyRut', e.target.value)}
               className="font-rubik"
             />
-          </div>
-        );
 
-      case 2:
-        return (
-          <div className="space-y-4">
-            <div className="flex items-center space-x-2 mb-4">
-              <User className="h-5 w-5 text-gloster-yellow" />
-              <h3 className="text-lg font-semibold text-slate-800 font-rubik">Información de Contacto</h3>
-            </div>
-            
-            <Input
-              placeholder="Nombre completo del contacto"
-              value={formData.contactName}
-              onChange={(e) => handleInputChange('contactName', e.target.value)}
-              className="font-rubik"
-            />
-            
-            <Input
-              type="email"
-              placeholder="Email de contacto"
-              value={formData.contactEmail}
-              onChange={(e) => handleInputChange('contactEmail', e.target.value)}
-              className="font-rubik"
-            />
-            
-            {formData.contactEmail && !validateEmail(formData.contactEmail) && (
-              <p className="text-red-500 text-sm font-rubik">Por favor ingresa un email válido</p>
-            )}
-            
-            <Input
-              placeholder="Teléfono de contacto"
-              value={formData.contactPhone}
-              onChange={(e) => handleInputChange('contactPhone', e.target.value)}
-              className="font-rubik"
-            />
-            
-            <Input
-              placeholder="Cargo en la empresa"
-              value={formData.contactPosition}
-              onChange={(e) => handleInputChange('contactPosition', e.target.value)}
-              className="font-rubik"
-            />
-          </div>
-        );
-
-      case 3:
-        return (
-          <div className="space-y-4">
-            <div className="flex items-center space-x-2 mb-4">
-              <MapPin className="h-5 w-5 text-gloster-yellow" />
-              <h3 className="text-lg font-semibold text-slate-800 font-rubik">Ubicación</h3>
-            </div>
-            
-            <Input
-              placeholder="Dirección completa"
-              value={formData.address}
-              onChange={(e) => handleInputChange('address', e.target.value)}
-              className="font-rubik"
-            />
-            
-            <Input
-              placeholder="Ciudad"
-              value={formData.city}
-              onChange={(e) => handleInputChange('city', e.target.value)}
-              className="font-rubik"
-            />
-            
-            <Select onValueChange={(value) => handleInputChange('region', value)}>
-              <SelectTrigger className="font-rubik">
-                <SelectValue placeholder="Región" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="metropolitana">Región Metropolitana</SelectItem>
-                <SelectItem value="valparaiso">Valparaíso</SelectItem>
-                <SelectItem value="biobio">Biobío</SelectItem>
-                <SelectItem value="araucania">La Araucanía</SelectItem>
-                <SelectItem value="los-lagos">Los Lagos</SelectItem>
-                <SelectItem value="otra">Otra región</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        );
-
-      case 4:
-        return (
-          <div className="space-y-4">
-            <div className="flex items-center space-x-2 mb-4">
-              <CheckCircle className="h-5 w-5 text-gloster-yellow" />
-              <h3 className="text-lg font-semibold text-slate-800 font-rubik">Especialidad y Credenciales</h3>
-            </div>
-            
             <Select onValueChange={handleSpecialtyChange}>
               <SelectTrigger className="font-rubik">
                 <SelectValue placeholder="Especialidad principal" />
@@ -280,7 +219,69 @@ const Register = () => {
                 <SelectItem value="15+">Más de 15 años</SelectItem>
               </SelectContent>
             </Select>
+
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                placeholder="Dirección"
+                value={formData.address}
+                onChange={(e) => handleInputChange('address', e.target.value)}
+                className="font-rubik"
+              />
+              
+              <Input
+                placeholder="Ciudad"
+                value={formData.city}
+                onChange={(e) => handleInputChange('city', e.target.value)}
+                className="font-rubik"
+              />
+            </div>
+          </div>
+        );
+
+      case 2:
+        return (
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2 mb-4">
+              <User className="h-5 w-5 text-gloster-yellow" />
+              <h3 className="text-lg font-semibold text-slate-800 font-rubik">Información de Contacto</h3>
+            </div>
+            <p className="text-sm text-slate-600 font-rubik mb-4">
+              Complete con la información de la persona que va a manejar la cuenta ya que tendrá que iniciar sesión con ese correo
+            </p>
             
+            <Input
+              placeholder="Nombre completo del contacto"
+              value={formData.contactName}
+              onChange={(e) => handleInputChange('contactName', e.target.value)}
+              className="font-rubik"
+            />
+            
+            <Input
+              type="email"
+              placeholder="Email de contacto"
+              value={formData.contactEmail}
+              onChange={(e) => handleInputChange('contactEmail', e.target.value)}
+              className="font-rubik"
+            />
+            
+            {formData.contactEmail && !validateEmail(formData.contactEmail) && (
+              <p className="text-red-500 text-sm font-rubik">Por favor ingresa un email válido</p>
+            )}
+            
+            <Input
+              placeholder="Teléfono de contacto"
+              value={formData.contactPhone}
+              onChange={(e) => handleInputChange('contactPhone', e.target.value)}
+              className="font-rubik"
+            />
+            
+            <Input
+              placeholder="Cargo en la empresa"
+              value={formData.contactPosition}
+              onChange={(e) => handleInputChange('contactPosition', e.target.value)}
+              className="font-rubik"
+            />
+
             <Input
               type="password"
               placeholder="Contraseña"
@@ -303,10 +304,205 @@ const Register = () => {
           </div>
         );
 
+      case 3:
+        return (
+          <div className="space-y-6 text-center">
+            <div className="flex items-center justify-center space-x-2 mb-4">
+              <CheckCircle className="h-6 w-6 text-gloster-yellow" />
+              <h3 className="text-xl font-semibold text-slate-800 font-rubik">¡Tu información está lista!</h3>
+            </div>
+            
+            <p className="text-slate-600 font-rubik leading-relaxed">
+              Toda tu información ya está lista para que empieces a gestionar tus contratos, pero antes necesitamos información sobre tu primer proyecto.
+            </p>
+            
+            <p className="text-slate-600 font-rubik">
+              Entréganos la información del primer contrato que quieres administrar para que podamos crear tu espacio de trabajo.
+            </p>
+            
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <p className="text-yellow-800 font-rubik text-sm">
+                <strong>Importante:</strong> Es necesario llenar la información del primer proyecto para crear la cuenta.
+              </p>
+            </div>
+            
+            <Button
+              onClick={handleNextStep}
+              className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik px-8 py-3"
+            >
+              Ingresar Proyecto
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </Button>
+          </div>
+        );
+
+      case 4:
+        return (
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2 mb-4">
+              <FileText className="h-5 w-5 text-gloster-yellow" />
+              <h3 className="text-lg font-semibold text-slate-800 font-rubik">Información del Proyecto</h3>
+            </div>
+            
+            <Input
+              placeholder="Nombre del proyecto"
+              value={formData.projectName}
+              onChange={(e) => handleInputChange('projectName', e.target.value)}
+              className="font-rubik"
+            />
+            
+            <Input
+              placeholder="Dirección del proyecto"
+              value={formData.projectAddress}
+              onChange={(e) => handleInputChange('projectAddress', e.target.value)}
+              className="font-rubik"
+            />
+            
+            <Input
+              placeholder="Breve descripción del proyecto"
+              value={formData.projectDescription}
+              onChange={(e) => handleInputChange('projectDescription', e.target.value)}
+              className="font-rubik"
+            />
+            
+            <Input
+              placeholder="Monto del contrato"
+              value={formData.contractAmount}
+              onChange={(e) => handleInputChange('contractAmount', e.target.value)}
+              className="font-rubik"
+            />
+            
+            <Input
+              type="date"
+              placeholder="Fecha de inicio de los trabajos"
+              value={formData.startDate}
+              onChange={(e) => handleInputChange('startDate', e.target.value)}
+              className="font-rubik"
+            />
+            
+            <Input
+              placeholder="Duración del proyecto (ej: 6 meses)"
+              value={formData.duration}
+              onChange={(e) => handleInputChange('duration', e.target.value)}
+              className="font-rubik"
+            />
+          </div>
+        );
+
+      case 5:
+        return (
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2 mb-4">
+              <Building className="h-5 w-5 text-gloster-yellow" />
+              <h3 className="text-lg font-semibold text-slate-800 font-rubik">Información del Mandante</h3>
+            </div>
+            
+            <Input
+              placeholder="Empresa mandante"
+              value={formData.clientCompany}
+              onChange={(e) => handleInputChange('clientCompany', e.target.value)}
+              className="font-rubik"
+            />
+            
+            <div className="space-y-2">
+              <Input
+                placeholder="Nombre de contacto"
+                value={formData.clientContactName}
+                onChange={(e) => handleInputChange('clientContactName', e.target.value)}
+                className="font-rubik"
+              />
+              <p className="text-sm text-slate-500 font-rubik">
+                Se refiere a quien se le va a enviar toda la documentación
+              </p>
+            </div>
+            
+            <Input
+              type="email"
+              placeholder="Email de contacto"
+              value={formData.clientEmail}
+              onChange={(e) => handleInputChange('clientEmail', e.target.value)}
+              className="font-rubik"
+            />
+            
+            {formData.clientEmail && !validateEmail(formData.clientEmail) && (
+              <p className="text-red-500 text-sm font-rubik">Por favor ingresa un email válido</p>
+            )}
+            
+            <Input
+              placeholder="Teléfono de contacto"
+              value={formData.clientPhone}
+              onChange={(e) => handleInputChange('clientPhone', e.target.value)}
+              className="font-rubik"
+            />
+          </div>
+        );
+
+      case 6:
+        return (
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2 mb-4">
+              <Calendar className="h-5 w-5 text-gloster-yellow" />
+              <h3 className="text-lg font-semibold text-slate-800 font-rubik">Estados de Pago</h3>
+            </div>
+            
+            <Input
+              type="date"
+              placeholder="Fecha de presentación del primer estado de pago"
+              value={formData.firstPaymentDate}
+              onChange={(e) => handleInputChange('firstPaymentDate', e.target.value)}
+              className="font-rubik"
+            />
+            
+            <Select onValueChange={(value) => handleInputChange('paymentPeriod', value)}>
+              <SelectTrigger className="font-rubik">
+                <SelectValue placeholder="Periodo de caducidad" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="quincenal">Quincenal</SelectItem>
+                <SelectItem value="mensual">Mensual</SelectItem>
+                <SelectItem value="otro">Otro</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <div className="space-y-3">
+              <p className="text-sm font-medium text-slate-700 font-rubik">
+                Selecciona la documentación obligatoria para los estados de pago:
+              </p>
+              
+              {[
+                'Certificado F30',
+                'Factura de avance',
+                'Informe fotográfico',
+                'Planillas de cubicación',
+                'Certificado de calidad',
+                'Boletas de garantía',
+                'Análisis de precios unitarios',
+                'Programa de trabajo actualizado'
+              ].map((document) => (
+                <div key={document} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={document}
+                    checked={formData.requiredDocuments.includes(document)}
+                    onCheckedChange={(checked) => handleDocumentChange(document, checked as boolean)}
+                  />
+                  <label
+                    htmlFor={document}
+                    className="text-sm font-rubik text-slate-700 cursor-pointer"
+                  >
+                    {document}
+                  </label>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+
       default:
         return null;
     }
   };
+
+  const totalSteps = 6;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -337,14 +533,14 @@ const Register = () => {
           {/* Progress indicator */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-2">
-              {[1, 2, 3, 4].map((step) => (
-                <div key={step} className={`flex items-center ${step < 4 ? 'flex-1' : ''}`}>
+              {Array.from({ length: totalSteps }, (_, i) => i + 1).map((step) => (
+                <div key={step} className={`flex items-center ${step < totalSteps ? 'flex-1' : ''}`}>
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-rubik ${
                     step <= currentStep ? 'bg-gloster-yellow text-black' : 'bg-gloster-gray/20 text-gloster-gray'
                   }`}>
                     {step}
                   </div>
-                  {step < 4 && (
+                  {step < totalSteps && (
                     <div className={`flex-1 h-1 mx-2 ${
                       step < currentStep ? 'bg-gloster-yellow' : 'bg-gloster-gray/20'
                     }`}></div>
@@ -353,7 +549,7 @@ const Register = () => {
               ))}
             </div>
             <p className="text-center text-gloster-gray text-sm font-rubik">
-              Paso {currentStep} de 4
+              Paso {currentStep} de {totalSteps}
             </p>
           </div>
 
@@ -361,10 +557,15 @@ const Register = () => {
           <Card>
             <CardHeader>
               <CardTitle className="text-xl font-rubik text-slate-800">
-                Únete a Gloster
+                {currentStep <= 2 ? 'Únete a Gloster' : currentStep === 3 ? 'Información Lista' : 'Información del Proyecto'}
               </CardTitle>
               <CardDescription className="font-rubik">
-                Completa tu perfil para comenzar a gestionar tus proyectos
+                {currentStep <= 2 
+                  ? 'Completa tu perfil para comenzar a gestionar tus proyectos'
+                  : currentStep === 3
+                  ? 'Prepárate para ingresar tu primer proyecto'
+                  : 'Completa los datos de tu primer proyecto para crear tu espacio de trabajo'
+                }
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -381,20 +582,20 @@ const Register = () => {
                   Anterior
                 </Button>
                 
-                {currentStep < 4 ? (
+                {currentStep < totalSteps ? (
                   <Button
                     onClick={handleNextStep}
                     disabled={!isStepValid()}
-                    className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
+                    className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik font-semibold"
                   >
-                    Siguiente
+                    {currentStep === 3 ? 'Continuar' : 'Siguiente'}
                     <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
                 ) : (
                   <Button
                     onClick={handleSubmit}
                     disabled={!isStepValid() || isLoading}
-                    className="bg-slate-800 hover:bg-slate-700 text-white font-rubik"
+                    className="bg-slate-800 hover:bg-slate-700 text-white font-rubik font-semibold border-2 border-slate-800"
                   >
                     {isLoading ? 'Creando cuenta...' : 'Crear Cuenta'}
                   </Button>

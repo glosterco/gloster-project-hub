@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,7 @@ const PaymentDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const fileInputRefs = useRef<{[key: string]: HTMLInputElement | null}>({});
 
   const [documentStatus, setDocumentStatus] = useState({
     eepp: false,
@@ -47,7 +49,7 @@ const PaymentDetail = () => {
     amount: 28000000,
     dueDate: "2024-05-30",
     projectName: "Centro Comercial Plaza Norte",
-    recipient: "ana.rodriguez@inversiones.cl"
+    recipient: "aadelpino97@gmail.com"
   };
 
   const documents = [
@@ -138,27 +140,50 @@ const PaymentDetail = () => {
     }).format(amount);
   };
 
-  const handleDocumentUpload = (documentId: string) => {
-    // Simular carga de documento
-    const mockFileName = `documento_${documentId}_${Date.now()}.pdf`;
+  const handleFileUpload = (documentId: string, files: FileList | null) => {
+    if (!files || files.length === 0) return;
+
     const doc = documents.find(d => d.id === documentId);
+    const allowedTypes = ['application/pdf', 'text/csv', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel.sheet.macroEnabled.12', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
     
+    const validFiles = Array.from(files).filter(file => {
+      if (!allowedTypes.includes(file.type)) {
+        toast({
+          title: "Formato no válido",
+          description: `El archivo ${file.name} no es un formato válido. Solo se aceptan PDF, CSV, XLSX, XLSM y DOCX.`,
+          variant: "destructive",
+        });
+        return false;
+      }
+      return true;
+    });
+
+    if (validFiles.length === 0) return;
+
     setDocumentStatus(prev => ({
       ...prev,
       [documentId]: true
     }));
 
+    const fileNames = validFiles.map(file => file.name);
     setUploadedFiles(prev => ({
       ...prev,
       [documentId]: doc?.allowMultiple 
-        ? [...prev[documentId], mockFileName]
-        : [mockFileName]
+        ? [...prev[documentId], ...fileNames]
+        : fileNames
     }));
 
     toast({
-      title: "Documento cargado",
-      description: `${mockFileName} se ha cargado exitosamente`,
+      title: "Documento(s) cargado(s)",
+      description: `${validFiles.length} archivo(s) se han cargado exitosamente`,
     });
+  };
+
+  const handleDocumentUpload = (documentId: string) => {
+    const input = fileInputRefs.current[documentId];
+    if (input) {
+      input.click();
+    }
   };
 
   const getExamenesUrl = () => {
@@ -210,6 +235,19 @@ const PaymentDetail = () => {
     <TooltipProvider>
       <div className="min-h-screen bg-slate-50 font-rubik">
         <PageHeader />
+
+        {/* Hidden file inputs */}
+        {documents.map(doc => (
+          <input
+            key={doc.id}
+            type="file"
+            ref={el => fileInputRefs.current[doc.id] = el}
+            onChange={e => handleFileUpload(doc.id, e.target.files)}
+            accept=".pdf,.csv,.xlsx,.xlsm,.docx"
+            multiple={doc.allowMultiple}
+            style={{ display: 'none' }}
+          />
+        ))}
 
         {/* Volver al Proyecto - fuera del banner blanco */}
         <div className="bg-slate-50 py-2">

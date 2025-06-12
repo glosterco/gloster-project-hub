@@ -7,13 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, ArrowRight, Check, Calendar as CalendarIcon } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
 
 const Register = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -43,7 +39,7 @@ const Register = () => {
   const [projectAddress, setProjectAddress] = useState('');
   const [projectDescription, setProjectDescription] = useState('');
   const [contractAmount, setContractAmount] = useState('');
-  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [startDate, setStartDate] = useState('');
   const [duration, setDuration] = useState('');
 
   // Client Information
@@ -53,55 +49,14 @@ const Register = () => {
   const [clientPhone, setClientPhone] = useState('');
 
   // Payment Information
-  const [firstPaymentDate, setFirstPaymentDate] = useState<Date | undefined>(undefined);
+  const [firstPaymentDate, setFirstPaymentDate] = useState('');
   const [paymentPeriod, setPaymentPeriod] = useState('');
   const [customPeriod, setCustomPeriod] = useState('');
   const [requiredDocuments, setRequiredDocuments] = useState<string[]>([]);
   const [otherDocuments, setOtherDocuments] = useState('');
 
-  const validateRut = (rut: string) => {
-    // Remove dots and dashes
-    const cleanRut = rut.replace(/[.-]/g, '');
-    
-    // Check format: should be 8-9 digits + 1 verification digit (number or K)
-    if (!/^\d{8,9}[0-9Kk]$/.test(cleanRut)) {
-      return false;
-    }
-
-    // Extract body and verification digit
-    const body = cleanRut.slice(0, -1);
-    const verificationDigit = cleanRut.slice(-1).toUpperCase();
-
-    // Calculate verification digit
-    let sum = 0;
-    let multiplier = 2;
-
-    for (let i = body.length - 1; i >= 0; i--) {
-      sum += parseInt(body[i]) * multiplier;
-      multiplier = multiplier === 7 ? 2 : multiplier + 1;
-    }
-
-    const remainder = sum % 11;
-    let expectedDigit;
-
-    if (remainder === 0) {
-      expectedDigit = '0';
-    } else if (remainder === 1) {
-      expectedDigit = 'K';
-    } else {
-      expectedDigit = (11 - remainder).toString();
-    }
-
-    return verificationDigit === expectedDigit;
-  };
-
-  const validateEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
   const validatePhone = (phone: string) => {
-    const phoneRegex = /^\+569\d{8}$/;
+    const phoneRegex = /^\+56\s9\s\d{8}$/;
     return phoneRegex.test(phone);
   };
 
@@ -128,10 +83,10 @@ const Register = () => {
         });
         return;
       }
-      if (!validateRut(rut)) {
+      if (!validateNumber(experience)) {
         toast({
-          title: "RUT inválido",
-          description: "Por favor ingresa un RUT válido",
+          title: "Error en años de experiencia",
+          description: "Por favor ingresa solo números",
           variant: "destructive",
         });
         return;
@@ -148,18 +103,10 @@ const Register = () => {
         });
         return;
       }
-      if (!validateEmail(email)) {
-        toast({
-          title: "Email inválido",
-          description: "Por favor ingresa un email válido",
-          variant: "destructive",
-        });
-        return;
-      }
       if (!validatePhone(phone)) {
         toast({
           title: "Teléfono inválido",
-          description: "El formato debe ser +569xxxxxxxx",
+          description: "El formato debe ser +56 9 xxxxxxxx",
           variant: "destructive",
         });
         return;
@@ -204,18 +151,10 @@ const Register = () => {
         });
         return;
       }
-      if (!validateEmail(clientEmail)) {
-        toast({
-          title: "Email inválido",
-          description: "Por favor ingresa un email válido",
-          variant: "destructive",
-        });
-        return;
-      }
       if (!validatePhone(clientPhone)) {
         toast({
           title: "Teléfono inválido",
-          description: "El formato debe ser +569xxxxxxxx",
+          description: "El formato debe ser +56 9 xxxxxxxx",
           variant: "destructive",
         });
         return;
@@ -263,13 +202,13 @@ const Register = () => {
       projectAddress,
       projectDescription,
       contractAmount,
-      startDate: startDate ? format(startDate, 'yyyy-MM-dd') : '',
+      startDate,
       duration,
       clientCompany,
       clientContact,
       clientEmail,
       clientPhone,
-      firstPaymentDate: firstPaymentDate ? format(firstPaymentDate, 'yyyy-MM-dd') : '',
+      firstPaymentDate,
       paymentPeriod: finalPaymentPeriod,
       requiredDocuments: finalDocuments
     };
@@ -417,19 +356,13 @@ const Register = () => {
               
               <div className="space-y-2">
                 <Label htmlFor="experience">Años de Experiencia</Label>
-                <Select value={experience} onValueChange={setExperience}>
-                  <SelectTrigger className="font-rubik">
-                    <SelectValue placeholder="Selecciona años de experiencia" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="0-1">0-1 años</SelectItem>
-                    <SelectItem value="2-5">2-5 años</SelectItem>
-                    <SelectItem value="6-10">6-10 años</SelectItem>
-                    <SelectItem value="11-15">11-15 años</SelectItem>
-                    <SelectItem value="16-20">16-20 años</SelectItem>
-                    <SelectItem value="mas-20">Más de 20 años</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Input
+                  id="experience"
+                  value={experience}
+                  onChange={(e) => setExperience(e.target.value)}
+                  placeholder="Años de experiencia"
+                  className="font-rubik"
+                />
               </div>
             </div>
 
@@ -495,7 +428,7 @@ const Register = () => {
                 id="phone"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="Teléfono de contacto: +569xxxxxxxx"
+                placeholder="Teléfono de contacto: +56 9 xxxxxxxx"
                 className="font-rubik"
               />
             </div>
@@ -535,7 +468,7 @@ const Register = () => {
             </div>
             <div className="space-y-4">
               <h3 className="text-xl font-semibold text-gray-800 font-rubik">
-                ¡Perfecto! Tu información de contratista está lista
+                ¡Perfecto! Tu información ya está lista
               </h3>
               <p className="text-gray-600 font-rubik">
                 Ahora necesitamos información sobre tu primer proyecto para crear tu espacio de trabajo y comenzar a gestionar tus contratos.
@@ -608,29 +541,13 @@ const Register = () => {
 
             <div className="space-y-2">
               <Label htmlFor="startDate">Fecha de inicio contractual</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal font-rubik",
-                      !startDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {startDate ? format(startDate, "dd/MM/yyyy") : <span>Selecciona fecha de inicio</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={startDate}
-                    onSelect={setStartDate}
-                    initialFocus
-                    className="p-3 pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
+              <Input
+                id="startDate"
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="font-rubik"
+              />
             </div>
           </div>
         );
@@ -681,7 +598,7 @@ const Register = () => {
                   id="clientPhone"
                   value={clientPhone}
                   onChange={(e) => setClientPhone(e.target.value)}
-                  placeholder="Teléfono de contacto: +569xxxxxxxx"
+                  placeholder="Teléfono de contacto: +56 9 xxxxxxxx"
                   className="font-rubik"
                 />
               </div>
@@ -694,29 +611,13 @@ const Register = () => {
           <div className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="firstPaymentDate">Fecha de presentación del primer estado de pago</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal font-rubik",
-                      !firstPaymentDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {firstPaymentDate ? format(firstPaymentDate, "dd/MM/yyyy") : <span>Selecciona fecha del primer estado de pago</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={firstPaymentDate}
-                    onSelect={setFirstPaymentDate}
-                    initialFocus
-                    className="p-3 pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
+              <Input
+                id="firstPaymentDate"
+                type="date"
+                value={firstPaymentDate}
+                onChange={(e) => setFirstPaymentDate(e.target.value)}
+                className="font-rubik"
+              />
             </div>
 
             <div className="space-y-2">
@@ -831,19 +732,8 @@ const Register = () => {
                     Anterior
                   </Button>
                 )}
-
-                {currentStep === 3 && (
-                  <Button
-                    variant="outline"
-                    onClick={handlePrevious}
-                    className="font-rubik"
-                  >
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Anterior
-                  </Button>
-                )}
                 
-                {(currentStep === 1 || currentStep === 2 || currentStep > 3) && (
+                {(currentStep === 1 || currentStep > 3) && (
                   <div className="ml-auto">
                     {currentStep < totalSteps ? (
                       <Button
@@ -864,8 +754,20 @@ const Register = () => {
                   </div>
                 )}
 
-                {currentStep === 3 && (
+                {currentStep === 2 && (
                   <div className="ml-auto">
+                    <Button
+                      onClick={handleNext}
+                      className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
+                    >
+                      Continuar
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  </div>
+                )}
+
+                {currentStep === 3 && (
+                  <div className="w-full flex justify-center">
                     <Button
                       onClick={handleNext}
                       className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"

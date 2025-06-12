@@ -311,19 +311,27 @@ const Register = () => {
     console.log('Sending form data:', formData);
 
     try {
-      // Simulate successful registration since we don't have a real webhook
-      toast({
-        title: "¡Registro exitoso!",
-        description: "Tu cuenta ha sido creada correctamente",
+      const response = await fetch('https://hook.us2.make.com/bvnog1pu3vyvisfhw96hfsgtf29bib7l', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
       });
-      
-      // Store the data in localStorage for development purposes
-      localStorage.setItem('registrationData', JSON.stringify(formData));
-      
-      // Navigate to dashboard after a short delay
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 1500);
+
+      if (response.ok) {
+        toast({
+          title: "¡Registro exitoso!",
+          description: "Tu cuenta ha sido creada correctamente",
+        });
+        
+        // Navigate to dashboard after a short delay
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 1500);
+      } else {
+        throw new Error('Network response was not ok');
+      }
       
     } catch (error) {
       console.error('Registration error:', error);

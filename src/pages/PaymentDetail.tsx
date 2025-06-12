@@ -232,19 +232,27 @@ const PaymentDetail = () => {
     console.log('Sending payment data to webhook:', webhookData);
 
     try {
-      // Simular envío exitoso ya que no tenemos webhook real
-      toast({
-        title: "Documentos enviados",
-        description: `Documentos enviados exitosamente a ${paymentState.recipient}`,
+      const response = await fetch('https://hook.us2.make.com/o8erdz2h12zdqs5owdjcbnaq5uj6a5rq', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(webhookData),
       });
-      
-      // Almacenar en localStorage para propósitos de desarrollo
-      localStorage.setItem('paymentSubmission', JSON.stringify(webhookData));
-      
-      // Redirigir de vuelta al proyecto después de un delay
-      setTimeout(() => {
-        navigate('/project/2');
-      }, 2000);
+
+      if (response.ok) {
+        toast({
+          title: "Documentos enviados",
+          description: `Documentos enviados exitosamente a ${paymentState.recipient}`,
+        });
+        
+        // Redirigir de vuelta al proyecto después de un delay
+        setTimeout(() => {
+          navigate('/project/2');
+        }, 2000);
+      } else {
+        throw new Error('Network response was not ok');
+      }
       
     } catch (error) {
       console.error('Error sending documents:', error);

@@ -19,6 +19,7 @@ interface CompanyInfoStepProps {
   setAddress: (value: string) => void;
   city: string;
   setCity: (value: string) => void;
+  errors: {[key: string]: string};
 }
 
 const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
@@ -36,6 +37,7 @@ const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
   setAddress,
   city,
   setCity,
+  errors,
 }) => {
   return (
     <div className="space-y-6">
@@ -57,8 +59,11 @@ const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
             value={rut}
             onChange={(e) => setRut(e.target.value)}
             placeholder="12.345.678-9"
-            className="font-rubik"
+            className={`font-rubik ${errors.rut ? 'border-red-500' : ''}`}
           />
+          {errors.rut && (
+            <p className="text-red-500 text-sm">{errors.rut}</p>
+          )}
         </div>
       </div>
 

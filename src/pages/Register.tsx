@@ -56,6 +56,9 @@ const Register = () => {
   const [requiredDocuments, setRequiredDocuments] = useState<string[]>([]);
   const [otherDocuments, setOtherDocuments] = useState('');
 
+  // Validation errors
+  const [errors, setErrors] = useState<{[key: string]: string}>({});
+
   // Required documents list
   const documentsList = [
     'Carátula EEPP (resumen)',
@@ -68,6 +71,111 @@ const Register = () => {
     'Factura'
   ];
 
+  // Real-time validation functions
+  const validateField = (fieldName: string, value: string) => {
+    const newErrors = { ...errors };
+    
+    switch (fieldName) {
+      case 'rut':
+        if (value && !validateRut(value)) {
+          newErrors.rut = 'RUT inválido';
+        } else {
+          delete newErrors.rut;
+        }
+        break;
+      case 'email':
+      case 'clientEmail':
+        if (value && !validateEmail(value)) {
+          newErrors[fieldName] = 'Email inválido';
+        } else {
+          delete newErrors[fieldName];
+        }
+        break;
+      case 'phone':
+      case 'clientPhone':
+        if (value && !validatePhone(value)) {
+          newErrors[fieldName] = 'Formato debe ser +569xxxxxxxx';
+        } else {
+          delete newErrors[fieldName];
+        }
+        break;
+      case 'password':
+        if (value && !validatePassword(value)) {
+          newErrors.password = 'Mínimo 8 caracteres alfanuméricos';
+        } else {
+          delete newErrors.password;
+        }
+        break;
+      case 'confirmPassword':
+        if (value && value !== password) {
+          newErrors.confirmPassword = 'Las contraseñas no coinciden';
+        } else {
+          delete newErrors.confirmPassword;
+        }
+        break;
+      case 'contractAmount':
+      case 'duration':
+        if (value && !validateNumber(value)) {
+          newErrors[fieldName] = 'Solo números permitidos';
+        } else {
+          delete newErrors[fieldName];
+        }
+        break;
+    }
+    
+    setErrors(newErrors);
+  };
+
+  // Enhanced setter functions with validation
+  const setRutWithValidation = (value: string) => {
+    setRut(value);
+    validateField('rut', value);
+  };
+
+  const setEmailWithValidation = (value: string) => {
+    setEmail(value);
+    validateField('email', value);
+  };
+
+  const setPhoneWithValidation = (value: string) => {
+    setPhone(value);
+    validateField('phone', value);
+  };
+
+  const setPasswordWithValidation = (value: string) => {
+    setPassword(value);
+    validateField('password', value);
+    // Also revalidate confirm password if it exists
+    if (confirmPassword) {
+      validateField('confirmPassword', confirmPassword);
+    }
+  };
+
+  const setConfirmPasswordWithValidation = (value: string) => {
+    setConfirmPassword(value);
+    validateField('confirmPassword', value);
+  };
+
+  const setClientEmailWithValidation = (value: string) => {
+    setClientEmail(value);
+    validateField('clientEmail', value);
+  };
+
+  const setClientPhoneWithValidation = (value: string) => {
+    setClientPhone(value);
+    validateField('clientPhone', value);
+  };
+
+  const setContractAmountWithValidation = (value: string) => {
+    setContractAmount(value);
+    validateField('contractAmount', value);
+  };
+
+  const setDurationWithValidation = (value: string) => {
+    setDuration(value);
+    validateField('duration', value);
+  };
+
   const handleNext = () => {
     // Validation for step 1
     if (currentStep === 1) {
@@ -79,10 +187,10 @@ const Register = () => {
         });
         return;
       }
-      if (!validateRut(rut)) {
+      if (errors.rut) {
         toast({
           title: "RUT inválido",
-          description: "Por favor ingresa un RUT válido",
+          description: "Por favor corrige el RUT antes de continuar",
           variant: "destructive",
         });
         return;
@@ -99,34 +207,10 @@ const Register = () => {
         });
         return;
       }
-      if (!validateEmail(email)) {
+      if (errors.email || errors.phone || errors.password || errors.confirmPassword) {
         toast({
-          title: "Email inválido",
-          description: "Por favor ingresa un email válido",
-          variant: "destructive",
-        });
-        return;
-      }
-      if (!validatePhone(phone)) {
-        toast({
-          title: "Teléfono inválido",
-          description: "El formato debe ser +569xxxxxxxx",
-          variant: "destructive",
-        });
-        return;
-      }
-      if (!validatePassword(password)) {
-        toast({
-          title: "Contraseña inválida",
-          description: "La contraseña debe tener al menos 8 caracteres alfanuméricos",
-          variant: "destructive",
-        });
-        return;
-      }
-      if (password !== confirmPassword) {
-        toast({
-          title: "Error en contraseñas",
-          description: "Las contraseñas no coinciden",
+          title: "Errores en los campos",
+          description: "Por favor corrige los errores antes de continuar",
           variant: "destructive",
         });
         return;
@@ -143,10 +227,10 @@ const Register = () => {
         });
         return;
       }
-      if (!validateNumber(contractAmount) || !validateNumber(duration)) {
+      if (errors.contractAmount || errors.duration) {
         toast({
-          title: "Error en campos numéricos",
-          description: "El monto del contrato y duración deben ser solo números",
+          title: "Errores en campos numéricos",
+          description: "Por favor corrige los errores antes de continuar",
           variant: "destructive",
         });
         return;
@@ -163,18 +247,10 @@ const Register = () => {
         });
         return;
       }
-      if (!validateEmail(clientEmail)) {
+      if (errors.clientEmail || errors.clientPhone) {
         toast({
-          title: "Email inválido",
-          description: "Por favor ingresa un email válido",
-          variant: "destructive",
-        });
-        return;
-      }
-      if (!validatePhone(clientPhone)) {
-        toast({
-          title: "Teléfono inválido",
-          description: "El formato debe ser +569xxxxxxxx",
+          title: "Errores en los campos",
+          description: "Por favor corrige los errores antes de continuar",
           variant: "destructive",
         });
         return;
@@ -235,23 +311,20 @@ const Register = () => {
     console.log('Sending form data:', formData);
 
     try {
-      const response = await fetch('https://hook.us2.make.com/your-webhook-url', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
+      // Simulate successful registration since we don't have a real webhook
+      toast({
+        title: "¡Registro exitoso!",
+        description: "Tu cuenta ha sido creada correctamente",
       });
-
-      if (response.ok) {
-        toast({
-          title: "¡Registro exitoso!",
-          description: "Tu cuenta ha sido creada correctamente",
-        });
+      
+      // Store the data in localStorage for development purposes
+      localStorage.setItem('registrationData', JSON.stringify(formData));
+      
+      // Navigate to dashboard after a short delay
+      setTimeout(() => {
         navigate('/dashboard');
-      } else {
-        throw new Error('Error en el registro');
-      }
+      }, 1500);
+      
     } catch (error) {
       console.error('Registration error:', error);
       toast({
@@ -298,7 +371,7 @@ const Register = () => {
             companyName={companyName}
             setCompanyName={setCompanyName}
             rut={rut}
-            setRut={setRut}
+            setRut={setRutWithValidation}
             specialties={specialties}
             setSpecialties={setSpecialties}
             customSpecialty={customSpecialty}
@@ -309,6 +382,7 @@ const Register = () => {
             setAddress={setAddress}
             city={city}
             setCity={setCity}
+            errors={errors}
           />
         );
 
@@ -318,13 +392,14 @@ const Register = () => {
             contactName={contactName}
             setContactName={setContactName}
             email={email}
-            setEmail={setEmail}
+            setEmail={setEmailWithValidation}
             phone={phone}
-            setPhone={setPhone}
+            setPhone={setPhoneWithValidation}
             password={password}
-            setPassword={setPassword}
+            setPassword={setPasswordWithValidation}
             confirmPassword={confirmPassword}
-            setConfirmPassword={setConfirmPassword}
+            setConfirmPassword={setConfirmPasswordWithValidation}
+            errors={errors}
           />
         );
 
@@ -338,11 +413,12 @@ const Register = () => {
             projectDescription={projectDescription}
             setProjectDescription={setProjectDescription}
             contractAmount={contractAmount}
-            setContractAmount={setContractAmount}
+            setContractAmount={setContractAmountWithValidation}
             startDate={startDate}
             setStartDate={setStartDate}
             duration={duration}
-            setDuration={setDuration}
+            setDuration={setDurationWithValidation}
+            errors={errors}
           />
         );
 
@@ -354,9 +430,10 @@ const Register = () => {
             clientContact={clientContact}
             setClientContact={setClientContact}
             clientEmail={clientEmail}
-            setClientEmail={setClientEmail}
+            setClientEmail={setClientEmailWithValidation}
             clientPhone={clientPhone}
-            setClientPhone={setClientPhone}
+            setClientPhone={setClientPhoneWithValidation}
+            errors={errors}
           />
         );
 

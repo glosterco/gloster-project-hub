@@ -12,6 +12,7 @@ interface ClientInfoStepProps {
   setClientEmail: (value: string) => void;
   clientPhone: string;
   setClientPhone: (value: string) => void;
+  errors: {[key: string]: string};
 }
 
 const ClientInfoStep: React.FC<ClientInfoStepProps> = ({
@@ -23,6 +24,7 @@ const ClientInfoStep: React.FC<ClientInfoStepProps> = ({
   setClientEmail,
   clientPhone,
   setClientPhone,
+  errors,
 }) => {
   return (
     <div className="space-y-6">
@@ -60,8 +62,11 @@ const ClientInfoStep: React.FC<ClientInfoStepProps> = ({
             value={clientEmail}
             onChange={(e) => setClientEmail(e.target.value)}
             placeholder="correo@mandante.com"
-            className="font-rubik"
+            className={`font-rubik ${errors.clientEmail ? 'border-red-500' : ''}`}
           />
+          {errors.clientEmail && (
+            <p className="text-red-500 text-sm">{errors.clientEmail}</p>
+          )}
         </div>
         <div className="space-y-2">
           <Label htmlFor="clientPhone">Teléfono de Contacto</Label>
@@ -70,8 +75,11 @@ const ClientInfoStep: React.FC<ClientInfoStepProps> = ({
             value={clientPhone}
             onChange={(e) => setClientPhone(e.target.value)}
             placeholder="+569xxxxxxxx"
-            className="font-rubik"
+            className={`font-rubik ${errors.clientPhone ? 'border-red-500' : ''}`}
           />
+          {errors.clientPhone && (
+            <p className="text-red-500 text-sm">{errors.clientPhone}</p>
+          )}
         </div>
       </div>
     </div>

@@ -23,6 +23,7 @@ interface ProjectInfoStepProps {
   setStartDate: (date: Date | undefined) => void;
   duration: string;
   setDuration: (value: string) => void;
+  errors: {[key: string]: string};
 }
 
 const ProjectInfoStep: React.FC<ProjectInfoStepProps> = ({
@@ -38,6 +39,7 @@ const ProjectInfoStep: React.FC<ProjectInfoStepProps> = ({
   setStartDate,
   duration,
   setDuration,
+  errors,
 }) => {
   return (
     <div className="space-y-6">
@@ -82,8 +84,11 @@ const ProjectInfoStep: React.FC<ProjectInfoStepProps> = ({
             value={contractAmount}
             onChange={(e) => setContractAmount(e.target.value)}
             placeholder="Monto en UF"
-            className="font-rubik"
+            className={`font-rubik ${errors.contractAmount ? 'border-red-500' : ''}`}
           />
+          {errors.contractAmount && (
+            <p className="text-red-500 text-sm">{errors.contractAmount}</p>
+          )}
         </div>
         <div className="space-y-2">
           <Label htmlFor="duration">Duración (meses)</Label>
@@ -92,8 +97,11 @@ const ProjectInfoStep: React.FC<ProjectInfoStepProps> = ({
             value={duration}
             onChange={(e) => setDuration(e.target.value)}
             placeholder="Duración en meses"
-            className="font-rubik"
+            className={`font-rubik ${errors.duration ? 'border-red-500' : ''}`}
           />
+          {errors.duration && (
+            <p className="text-red-500 text-sm">{errors.duration}</p>
+          )}
         </div>
       </div>
 

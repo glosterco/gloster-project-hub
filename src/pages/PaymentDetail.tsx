@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -49,6 +48,8 @@ const PaymentDetail = () => {
     amount: 28000000,
     dueDate: "2024-05-30",
     projectName: "Centro Comercial Plaza Norte",
+    contractorName: "Constructora ABC Ltda",
+    clientName: "Inversiones Norte S.A.",
     recipient: "aadelpino97@gmail.com"
   };
 
@@ -199,7 +200,7 @@ const PaymentDetail = () => {
     }
   };
 
-  const handleSendDocuments = () => {
+  const handleSendDocuments = async () => {
     const requiredDocuments = documents.filter(doc => doc.required);
     const allRequiredUploaded = requiredDocuments.every(doc => documentStatus[doc.id as keyof typeof documentStatus]);
     
@@ -212,15 +213,47 @@ const PaymentDetail = () => {
       return;
     }
 
-    toast({
-      title: "Documentos enviados",
-      description: `Documentos enviados exitosamente a ${paymentState.recipient}`,
-    });
-    
-    // Redirigir de vuelta al proyecto después de un delay
-    setTimeout(() => {
-      navigate('/project/2');
-    }, 2000);
+    // Preparar datos para enviar al webhook
+    const webhookData = {
+      projectName: paymentState.projectName,
+      contractorName: paymentState.contractorName,
+      clientName: paymentState.clientName,
+      month: paymentState.month,
+      year: "2024",
+      amount: paymentState.amount,
+      recipient: paymentState.recipient,
+      documents: documents.filter(doc => documentStatus[doc.id as keyof typeof documentStatus]).map(doc => ({
+        name: doc.name,
+        files: uploadedFiles[doc.id] || []
+      })),
+      timestamp: new Date().toISOString()
+    };
+
+    console.log('Sending payment data to webhook:', webhookData);
+
+    try {
+      // Simular envío exitoso ya que no tenemos webhook real
+      toast({
+        title: "Documentos enviados",
+        description: `Documentos enviados exitosamente a ${paymentState.recipient}`,
+      });
+      
+      // Almacenar en localStorage para propósitos de desarrollo
+      localStorage.setItem('paymentSubmission', JSON.stringify(webhookData));
+      
+      // Redirigir de vuelta al proyecto después de un delay
+      setTimeout(() => {
+        navigate('/project/2');
+      }, 2000);
+      
+    } catch (error) {
+      console.error('Error sending documents:', error);
+      toast({
+        title: "Error al enviar",
+        description: "Hubo un problema al enviar los documentos. Intenta nuevamente.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handlePreviewEmail = () => {

@@ -17,14 +17,13 @@ import { cn } from '@/lib/utils';
 
 const Register = () => {
   const [currentStep, setCurrentStep] = useState(1);
-  const totalSteps = 6;
+  const totalSteps = 5;
   const navigate = useNavigate();
   const { toast } = useToast();
 
   // Company Information
   const [companyName, setCompanyName] = useState('');
   const [rut, setRut] = useState('');
-  const [companyType, setCompanyType] = useState('');
   const [specialties, setSpecialties] = useState('');
   const [customSpecialty, setCustomSpecialty] = useState('');
   const [experience, setExperience] = useState('');
@@ -58,6 +57,18 @@ const Register = () => {
   const [customPeriod, setCustomPeriod] = useState('');
   const [requiredDocuments, setRequiredDocuments] = useState<string[]>([]);
   const [otherDocuments, setOtherDocuments] = useState('');
+
+  // Required documents list
+  const documentsList = [
+    'Carátula EEPP (resumen)',
+    'Avance del período',
+    'Certificado de pago de cotizaciones',
+    'Certificado F30',
+    'Certificado F30-1',
+    'Exámenes preocupacionales',
+    'Finiquitos',
+    'Factura'
+  ];
 
   const validateRut = (rut: string) => {
     // Remove dots and dashes
@@ -105,6 +116,10 @@ const Register = () => {
     return phoneRegex.test(phone);
   };
 
+  const validatePassword = (password: string) => {
+    return password.length >= 8 && /^[a-zA-Z0-9]+$/.test(password);
+  };
+
   const validateNumber = (value: string) => {
     return /^\d+$/.test(value);
   };
@@ -120,7 +135,7 @@ const Register = () => {
   const handleNext = () => {
     // Validation for step 1
     if (currentStep === 1) {
-      if (!companyName || !rut || !companyType || !specialties || !experience || !address || !city) {
+      if (!companyName || !rut || !specialties || !experience || !address || !city) {
         toast({
           title: "Campos requeridos",
           description: "Por favor completa todos los campos",
@@ -164,6 +179,14 @@ const Register = () => {
         });
         return;
       }
+      if (!validatePassword(password)) {
+        toast({
+          title: "Contraseña inválida",
+          description: "La contraseña debe tener al menos 8 caracteres alfanuméricos",
+          variant: "destructive",
+        });
+        return;
+      }
       if (password !== confirmPassword) {
         toast({
           title: "Error en contraseñas",
@@ -174,8 +197,8 @@ const Register = () => {
       }
     }
 
-    // Validation for step 4 (project info)
-    if (currentStep === 4) {
+    // Validation for step 3 (project info)
+    if (currentStep === 3) {
       if (!projectName || !projectAddress || !projectDescription || !contractAmount || !startDate || !duration) {
         toast({
           title: "Campos requeridos",
@@ -194,8 +217,8 @@ const Register = () => {
       }
     }
 
-    // Validation for step 5 (client info)
-    if (currentStep === 5) {
+    // Validation for step 4 (client info)
+    if (currentStep === 4) {
       if (!clientCompany || !clientContact || !clientEmail || !clientPhone) {
         toast({
           title: "Campos requeridos",
@@ -250,7 +273,6 @@ const Register = () => {
     const formData = {
       companyName,
       rut,
-      companyType,
       specialties: finalSpecialties,
       experience,
       address,
@@ -308,36 +330,24 @@ const Register = () => {
     switch (currentStep) {
       case 1: return 'Información de la Empresa';
       case 2: return 'Información de Contacto';
-      case 3: return '¡Información Lista!';
-      case 4: return 'Información del Proyecto';
-      case 5: return 'Información del Mandante';
-      case 6: return 'Estados de Pago';
+      case 3: return 'Información del Proyecto';
+      case 4: return 'Información del Mandante';
+      case 5: return 'Estados de Pago';
       default: return '';
     }
   };
 
   const renderProgressBar = () => {
-    if (currentStep === 3) {
-      return (
-        <div className="w-full flex items-center justify-center mb-8">
-          <div className="w-1 h-20 bg-gloster-yellow"></div>
-        </div>
-      );
-    }
-
-    const actualStep = currentStep > 3 ? currentStep - 1 : currentStep;
-    const actualTotal = totalSteps - 1;
-
     return (
       <div className="w-full mb-8">
         <div className="flex justify-between mb-2">
-          <span className="text-sm text-gray-600">Paso {actualStep} de {actualTotal}</span>
-          <span className="text-sm text-gray-600">{Math.round((actualStep / actualTotal) * 100)}%</span>
+          <span className="text-sm text-gray-600">Paso {currentStep} de {totalSteps}</span>
+          <span className="text-sm text-gray-600">{Math.round((currentStep / totalSteps) * 100)}%</span>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-2">
           <div 
             className="bg-gloster-yellow h-2 rounded-full transition-all duration-300"
-            style={{ width: `${(actualStep / actualTotal) * 100}%` }}
+            style={{ width: `${(currentStep / totalSteps) * 100}%` }}
           ></div>
         </div>
       </div>
@@ -370,22 +380,6 @@ const Register = () => {
                   className="font-rubik"
                 />
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="companyType">Tipo de Empresa</Label>
-              <Select value={companyType} onValueChange={setCompanyType}>
-                <SelectTrigger className="font-rubik">
-                  <SelectValue placeholder="Selecciona el tipo de empresa" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="spa">SPA</SelectItem>
-                  <SelectItem value="ltda">Ltda</SelectItem>
-                  <SelectItem value="sa">SA</SelectItem>
-                  <SelectItem value="eirl">EIRL</SelectItem>
-                  <SelectItem value="persona-natural">Persona Natural</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -422,12 +416,9 @@ const Register = () => {
                     <SelectValue placeholder="Selecciona años de experiencia" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="0-1">0-1 años</SelectItem>
                     <SelectItem value="2-5">2-5 años</SelectItem>
-                    <SelectItem value="6-10">6-10 años</SelectItem>
-                    <SelectItem value="11-15">11-15 años</SelectItem>
-                    <SelectItem value="16-20">16-20 años</SelectItem>
-                    <SelectItem value="mas-20">Más de 20 años</SelectItem>
+                    <SelectItem value="5-10">5-10 años</SelectItem>
+                    <SelectItem value="15+">+15 años</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -495,7 +486,7 @@ const Register = () => {
                 id="phone"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="Teléfono de contacto: +569xxxxxxxx"
+                placeholder="+569xxxxxxxx"
                 className="font-rubik"
               />
             </div>
@@ -508,7 +499,7 @@ const Register = () => {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Establecer contraseña de usuario"
+                  placeholder="Al menos 8 caracteres alfanuméricos"
                   className="font-rubik"
                 />
               </div>
@@ -528,26 +519,6 @@ const Register = () => {
         );
 
       case 3:
-        return (
-          <div className="text-center space-y-6">
-            <div className="w-20 h-20 bg-gloster-yellow rounded-full flex items-center justify-center mx-auto">
-              <Check className="h-10 w-10 text-white" />
-            </div>
-            <div className="space-y-4">
-              <h3 className="text-xl font-semibold text-gray-800 font-rubik">
-                ¡Perfecto! Tu información de contratista está lista
-              </h3>
-              <p className="text-gray-600 font-rubik">
-                Ahora necesitamos información sobre tu primer proyecto para crear tu espacio de trabajo y comenzar a gestionar tus contratos.
-              </p>
-              <p className="text-sm text-red-600 italic">
-                Es necesario completar la información del primer proyecto para crear tu cuenta.
-              </p>
-            </div>
-          </div>
-        );
-
-      case 4:
         return (
           <div className="space-y-6">
             <div className="space-y-2">
@@ -590,7 +561,7 @@ const Register = () => {
                   id="contractAmount"
                   value={contractAmount}
                   onChange={(e) => setContractAmount(e.target.value)}
-                  placeholder="Monto en pesos chilenos"
+                  placeholder="Monto en UF"
                   className="font-rubik"
                 />
               </div>
@@ -627,7 +598,7 @@ const Register = () => {
                     selected={startDate}
                     onSelect={setStartDate}
                     initialFocus
-                    className="p-3 pointer-events-auto"
+                    className="p-3"
                   />
                 </PopoverContent>
               </Popover>
@@ -635,7 +606,7 @@ const Register = () => {
           </div>
         );
 
-      case 5:
+      case 4:
         return (
           <div className="space-y-6">
             <div className="space-y-2">
@@ -681,7 +652,7 @@ const Register = () => {
                   id="clientPhone"
                   value={clientPhone}
                   onChange={(e) => setClientPhone(e.target.value)}
-                  placeholder="Teléfono de contacto: +569xxxxxxxx"
+                  placeholder="+569xxxxxxxx"
                   className="font-rubik"
                 />
               </div>
@@ -689,7 +660,7 @@ const Register = () => {
           </div>
         );
 
-      case 6:
+      case 5:
         return (
           <div className="space-y-6">
             <div className="space-y-2">
@@ -713,7 +684,7 @@ const Register = () => {
                     selected={firstPaymentDate}
                     onSelect={setFirstPaymentDate}
                     initialFocus
-                    className="p-3 pointer-events-auto"
+                    className="p-3"
                   />
                 </PopoverContent>
               </Popover>
@@ -747,16 +718,7 @@ const Register = () => {
             <div className="space-y-4">
               <Label>Documentación Requerida</Label>
               <div className="space-y-3">
-                {[
-                  'Carátula EEPP (resumen)',
-                  'Avance del período',
-                  'Certificado de pago de cotizaciones',
-                  'Certificado F30',
-                  'Certificado F30-1',
-                  'Exámenes preocupacionales',
-                  'Finiquitos',
-                  'Factura'
-                ].map((doc) => (
+                {documentsList.map((doc) => (
                   <div key={doc} className="flex items-center space-x-2">
                     <Checkbox
                       id={doc}
@@ -810,10 +772,7 @@ const Register = () => {
             <CardHeader>
               <CardTitle className="text-2xl text-center font-rubik">{getStepTitle()}</CardTitle>
               <CardDescription className="text-center font-rubik">
-                {currentStep === 3 
-                  ? "Preparando tu espacio de trabajo"
-                  : "Completa la información para crear tu cuenta"
-                }
+                Completa la información para crear tu cuenta
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -821,18 +780,7 @@ const Register = () => {
               {renderStep()}
               
               <div className="flex justify-between pt-6">
-                {currentStep > 1 && currentStep !== 3 && (
-                  <Button
-                    variant="outline"
-                    onClick={handlePrevious}
-                    className="font-rubik"
-                  >
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Anterior
-                  </Button>
-                )}
-
-                {currentStep === 3 && (
+                {currentStep > 1 && (
                   <Button
                     variant="outline"
                     onClick={handlePrevious}
@@ -843,38 +791,24 @@ const Register = () => {
                   </Button>
                 )}
                 
-                {(currentStep === 1 || currentStep === 2 || currentStep > 3) && (
-                  <div className="ml-auto">
-                    {currentStep < totalSteps ? (
-                      <Button
-                        onClick={handleNext}
-                        className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
-                      >
-                        Continuar
-                        <ArrowRight className="h-4 w-4 ml-2" />
-                      </Button>
-                    ) : (
-                      <Button
-                        onClick={handleSubmit}
-                        className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
-                      >
-                        Crear Cuenta
-                      </Button>
-                    )}
-                  </div>
-                )}
-
-                {currentStep === 3 && (
-                  <div className="ml-auto">
+                <div className="ml-auto">
+                  {currentStep < totalSteps ? (
                     <Button
                       onClick={handleNext}
                       className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
                     >
-                      Ingresar Proyecto
+                      Continuar
                       <ArrowRight className="h-4 w-4 ml-2" />
                     </Button>
-                  </div>
-                )}
+                  ) : (
+                    <Button
+                      onClick={handleSubmit}
+                      className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
+                    >
+                      Crear Cuenta
+                    </Button>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>

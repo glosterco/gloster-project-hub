@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -14,7 +13,7 @@ const EmailPreview = () => {
     amount: 28000000,
     dueDate: "2024-05-30",
     projectName: "Centro Comercial Plaza Norte",
-    recipient: "ana.rodriguez@inversiones.cl"
+    recipient: "aadelpino97@gmail.com"
   };
 
   const sampleProject = {
@@ -23,7 +22,7 @@ const EmailPreview = () => {
     contractor: "Constructora ABC Ltda.",
     location: "Las Condes",
     projectManager: "Ana Rodríguez",
-    contactEmail: "ana.rodriguez@inversiones.cl"
+    contactEmail: "aadelpino97@gmail.com"
   };
 
   const sampleDocuments = [

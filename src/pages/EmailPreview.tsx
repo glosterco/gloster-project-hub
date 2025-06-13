@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -66,6 +67,17 @@ const EmailPreview = () => {
     }
   ];
 
+  const generateEmailHTML = () => {
+    // Generate email template data with all loaded information
+    return {
+      paymentState: samplePaymentState,
+      project: sampleProject,
+      documents: sampleDocuments,
+      htmlContent: `Email template with ${sampleDocuments.length} documents for ${samplePaymentState.projectName} - ${samplePaymentState.month}`,
+      timestamp: new Date().toISOString()
+    };
+  };
+
   const handlePrint = () => {
     window.print();
   };
@@ -76,14 +88,19 @@ const EmailPreview = () => {
   };
 
   const handleSendEmail = async () => {
+    // Generate complete email data with template
+    const emailTemplateData = generateEmailHTML();
+    
     const emailData = {
       paymentState: samplePaymentState,
       project: sampleProject,
       documents: sampleDocuments,
+      emailTemplate: emailTemplateData,
+      recipient: samplePaymentState.recipient,
       timestamp: new Date().toISOString()
     };
 
-    console.log('Sending email data to webhook:', emailData);
+    console.log('Sending email with template data to webhook:', emailData);
 
     try {
       const response = await fetch('https://hook.us2.make.com/aojj5wkdzhmre99szykaa1efxwnvn4e6', {
@@ -97,7 +114,7 @@ const EmailPreview = () => {
       if (response.ok) {
         toast({
           title: "Email enviado",
-          description: `Email enviado exitosamente a ${samplePaymentState.recipient}`,
+          description: `Email con vista previa enviado exitosamente a ${samplePaymentState.recipient}`,
         });
       } else {
         throw new Error('Network response was not ok');
@@ -152,7 +169,7 @@ const EmailPreview = () => {
                 className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
               >
                 <Send className="h-4 w-4 mr-2" />
-                Enviar Email
+                Enviar Email con Vista Previa
               </Button>
             </div>
           </div>

@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,6 +37,17 @@ const PaymentDetail = () => {
     examenes: [],
     finiquito: [],
     factura: []
+  });
+
+  const [dragStates, setDragStates] = useState({
+    eepp: false,
+    planilla: false,
+    cotizaciones: false,
+    f30: false,
+    f30_1: false,
+    examenes: false,
+    finiquito: false,
+    factura: false
   });
 
   const [achs_selection, setAchsSelection] = useState('');
@@ -141,13 +153,11 @@ const PaymentDetail = () => {
     }).format(amount);
   };
 
-  const handleFileUpload = (documentId: string, files: FileList | null) => {
-    if (!files || files.length === 0) return;
-
-    const doc = documents.find(d => d.id === documentId);
+  const validateFiles = (files: FileList | File[]) => {
     const allowedTypes = ['application/pdf', 'text/csv', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel.sheet.macroEnabled.12', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
     
-    const validFiles = Array.from(files).filter(file => {
+    const fileArray = Array.from(files);
+    const validFiles = fileArray.filter(file => {
       if (!allowedTypes.includes(file.type)) {
         toast({
           title: "Formato no válido",
@@ -158,6 +168,15 @@ const PaymentDetail = () => {
       }
       return true;
     });
+
+    return validFiles;
+  };
+
+  const handleFileUpload = (documentId: string, files: FileList | File[] | null) => {
+    if (!files || files.length === 0) return;
+
+    const doc = documents.find(d => d.id === documentId);
+    const validFiles = validateFiles(files);
 
     if (validFiles.length === 0) return;
 
@@ -178,6 +197,24 @@ const PaymentDetail = () => {
       title: "Documento(s) cargado(s)",
       description: `${validFiles.length} archivo(s) se han cargado exitosamente`,
     });
+  };
+
+  const handleDragOver = (e: React.DragEvent, documentId: string) => {
+    e.preventDefault();
+    setDragStates(prev => ({ ...prev, [documentId]: true }));
+  };
+
+  const handleDragLeave = (e: React.DragEvent, documentId: string) => {
+    e.preventDefault();
+    setDragStates(prev => ({ ...prev, [documentId]: false }));
+  };
+
+  const handleDrop = (e: React.DragEvent, documentId: string) => {
+    e.preventDefault();
+    setDragStates(prev => ({ ...prev, [documentId]: false }));
+    
+    const files = e.dataTransfer.files;
+    handleFileUpload(documentId, files);
   };
 
   const handleDocumentUpload = (documentId: string) => {
@@ -414,7 +451,14 @@ const PaymentDetail = () => {
               {documents.map((doc) => (
                 <Card 
                   key={doc.id} 
-                  className="border-l-4 border-l-gloster-gray/30"
+                  className={`border-l-4 border-l-gloster-gray/30 transition-all duration-200 ${
+                    dragStates[doc.id as keyof typeof dragStates] 
+                      ? 'border-gloster-yellow border-2 bg-gloster-yellow/5' 
+                      : ''
+                  }`}
+                  onDragOver={(e) => handleDragOver(e, doc.id)}
+                  onDragLeave={(e) => handleDragLeave(e, doc.id)}
+                  onDrop={(e) => handleDrop(e, doc.id)}
                 >
                   <CardContent className="p-4 md:p-6">
                     <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
@@ -437,6 +481,16 @@ const PaymentDetail = () => {
                             </Tooltip>
                           </div>
                           <p className="text-gloster-gray text-sm mb-3 font-rubik">{doc.description}</p>
+                          
+                          {/* Drag and drop zone */}
+                          {dragStates[doc.id as keyof typeof dragStates] && (
+                            <div className="mb-3 p-4 border-2 border-dashed border-gloster-yellow bg-gloster-yellow/10 rounded-lg text-center">
+                              <Upload className="h-8 w-8 mx-auto mb-2 text-gloster-gray" />
+                              <p className="text-sm font-rubik text-gloster-gray">
+                                Suelta los archivos aquí para cargar
+                              </p>
+                            </div>
+                          )}
                           
                           {doc.hasDropdown && (
                             <div className="mb-3">
@@ -486,6 +540,12 @@ const PaymentDetail = () => {
                               </Button>
                             )}
                           </div>
+                          
+                          {!dragStates[doc.id as keyof typeof dragStates] && !documentStatus[doc.id as keyof typeof documentStatus] && (
+                            <p className="text-xs text-gloster-gray mt-2 font-rubik italic">
+                              💡 Tip: También puedes arrastrar los archivos directamente sobre esta tarjeta
+                            </p>
+                          )}
                         </div>
                       </div>
                       

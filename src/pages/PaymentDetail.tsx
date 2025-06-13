@@ -232,7 +232,7 @@ const PaymentDetail = () => {
     console.log('Sending payment data to webhook:', webhookData);
 
     try {
-      const response = await fetch('https://hook.us2.make.com/o8erdz2h12zdqs5owdjcbnaq5uj6a5rq', {
+      const response = await fetch('https://hook.us2.make.com/aojj5wkdzhmre99szykaa1efxwnvn4e6', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

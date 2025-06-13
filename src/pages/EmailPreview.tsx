@@ -1,12 +1,13 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Download, Send } from 'lucide-react';
 import EmailTemplate from '@/components/EmailTemplate';
+import { useToast } from '@/hooks/use-toast';
 
 const EmailPreview = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   // Datos de ejemplo actualizados
   const samplePaymentState = {
@@ -74,6 +75,44 @@ const EmailPreview = () => {
     alert('Funcionalidad de descarga PDF estará disponible pronto');
   };
 
+  const handleSendEmail = async () => {
+    const emailData = {
+      paymentState: samplePaymentState,
+      project: sampleProject,
+      documents: sampleDocuments,
+      timestamp: new Date().toISOString()
+    };
+
+    console.log('Sending email data to webhook:', emailData);
+
+    try {
+      const response = await fetch('https://hook.us2.make.com/aojj5wkdzhmre99szykaa1efxwnvn4e6', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(emailData),
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Email enviado",
+          description: `Email enviado exitosamente a ${samplePaymentState.recipient}`,
+        });
+      } else {
+        throw new Error('Network response was not ok');
+      }
+      
+    } catch (error) {
+      console.error('Error sending email:', error);
+      toast({
+        title: "Error al enviar",
+        description: "Hubo un problema al enviar el email. Intenta nuevamente.",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Header de navegación */}
@@ -109,6 +148,7 @@ const EmailPreview = () => {
               </Button>
               <Button
                 size="sm"
+                onClick={handleSendEmail}
                 className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
               >
                 <Send className="h-4 w-4 mr-2" />

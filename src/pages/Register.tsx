@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,10 +11,11 @@ import ProjectInfoStep from '@/components/registration/ProjectInfoStep';
 import ClientInfoStep from '@/components/registration/ClientInfoStep';
 import PaymentInfoStep from '@/components/registration/PaymentInfoStep';
 import { validateRut, validateEmail, validatePhone, validatePassword, validateNumber } from '@/components/registration/validationUtils';
+import { CheckCircle } from 'lucide-react';
 
 const Register = () => {
   const [currentStep, setCurrentStep] = useState(1);
-  const totalSteps = 5;
+  const totalSteps = 6; // Cambiado de 5 a 6 para incluir la página de break
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -217,8 +217,10 @@ const Register = () => {
       }
     }
 
-    // Validation for step 3
-    if (currentStep === 3) {
+    // No validation for step 3 (break page)
+
+    // Validation for step 4 (previously step 3)
+    if (currentStep === 4) {
       if (!projectName || !projectAddress || !projectDescription || !contractAmount || !startDate || !duration) {
         toast({
           title: "Campos requeridos",
@@ -237,8 +239,8 @@ const Register = () => {
       }
     }
 
-    // Validation for step 4
-    if (currentStep === 4) {
+    // Validation for step 5 (previously step 4)
+    if (currentStep === 5) {
       if (!clientCompany || !clientContact || !clientEmail || !clientPhone) {
         toast({
           title: "Campos requeridos",
@@ -311,7 +313,7 @@ const Register = () => {
     console.log('Sending form data:', formData);
 
     try {
-      const response = await fetch('https://hook.us2.make.com/bvnog1pu3vyvisfhw96hfsgtf29bib7l', {
+      const response = await fetch('https://hook.us2.make.com/242usgpf93xy3waeagqgsefvi2vhsiyc', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -325,9 +327,9 @@ const Register = () => {
           description: "Tu cuenta ha sido creada correctamente",
         });
         
-        // Navigate to dashboard after a short delay
+        // Navigate to home after a short delay
         setTimeout(() => {
-          navigate('/dashboard');
+          navigate('/');
         }, 1500);
       } else {
         throw new Error('Network response was not ok');
@@ -347,9 +349,10 @@ const Register = () => {
     switch (currentStep) {
       case 1: return 'Información de la Empresa';
       case 2: return 'Información de Contacto';
-      case 3: return 'Información del Proyecto';
-      case 4: return 'Información del Mandante';
-      case 5: return 'Estados de Pago';
+      case 3: return 'Información Recopilada';
+      case 4: return 'Información del Proyecto';
+      case 5: return 'Información del Mandante';
+      case 6: return 'Estados de Pago';
       default: return '';
     }
   };
@@ -366,6 +369,32 @@ const Register = () => {
             className="bg-gloster-yellow h-2 rounded-full transition-all duration-300"
             style={{ width: `${(currentStep / totalSteps) * 100}%` }}
           ></div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderBreakPage = () => {
+    return (
+      <div className="space-y-6 text-center">
+        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+          <CheckCircle className="h-8 w-8 text-green-600" />
+        </div>
+        <div className="space-y-4">
+          <h3 className="text-xl font-bold text-slate-800 font-rubik">
+            ¡Información del Usuario Recopilada!
+          </h3>
+          <p className="text-gloster-gray font-rubik">
+            Hemos registrado exitosamente tu información personal y de contacto.
+          </p>
+          <div className="bg-gloster-yellow/10 border border-gloster-yellow/20 rounded-lg p-4">
+            <p className="text-sm text-slate-700 font-rubik">
+              <strong>Próximo paso:</strong> Ahora necesitamos la información del proyecto para crear tu espacio de trabajo.
+            </p>
+            <p className="text-xs text-gloster-gray font-rubik mt-2">
+              La información del proyecto es requerida para completar la creación de tu cuenta.
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -412,6 +441,9 @@ const Register = () => {
         );
 
       case 3:
+        return renderBreakPage();
+
+      case 4:
         return (
           <ProjectInfoStep
             projectName={projectName}
@@ -430,7 +462,7 @@ const Register = () => {
           />
         );
 
-      case 4:
+      case 5:
         return (
           <ClientInfoStep
             clientCompany={clientCompany}
@@ -445,7 +477,7 @@ const Register = () => {
           />
         );
 
-      case 5:
+      case 6:
         return (
           <PaymentInfoStep
             firstPaymentDate={firstPaymentDate}
@@ -491,9 +523,15 @@ const Register = () => {
             <CardHeader>
               <CardTitle className="text-2xl text-center font-rubik">{getStepTitle()}</CardTitle>
               <CardDescription className="text-center font-rubik">
-                Completa la información para crear tu cuenta
-                <br />
-                <span className="text-sm text-gloster-gray">Tiempo estimado: 8-12 minutos</span>
+                {currentStep === 3 ? (
+                  "Información del usuario completada"
+                ) : (
+                  <>
+                    Completa la información para crear tu cuenta
+                    <br />
+                    <span className="text-sm text-gloster-gray">Tiempo estimado: 8-12 minutos</span>
+                  </>
+                )}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">

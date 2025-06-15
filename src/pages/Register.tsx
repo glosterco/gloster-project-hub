@@ -13,6 +13,7 @@ import PaymentInfoStep from '@/components/registration/PaymentInfoStep';
 import { validateRut, validateEmail, validatePhone, validatePassword, validateNumber } from '@/components/registration/validationUtils';
 import { CheckCircle } from 'lucide-react';
 import { useContratistas } from '@/hooks/useContratistas';
+import { useMandantes } from '@/hooks/useMandantes';
 
 const Register = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -20,6 +21,7 @@ const Register = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { createContratista, loading: contratistaLoading } = useContratistas();
+  const { createMandante, loading: mandanteLoading } = useMandantes();
 
   // Company Information
   const [companyName, setCompanyName] = useState('');
@@ -288,6 +290,26 @@ const Register = () => {
         });
         return;
       }
+
+      // Save mandante info to Supabase
+      const mandanteData = {
+        CompanyName: clientCompany,
+        ContactName: clientContact,
+        ContactEmail: clientEmail,
+        ContactPhone: parseInt(clientPhone.replace(/\D/g, '')), // Remove non-numeric characters
+        Status: true
+      };
+
+      console.log('Saving mandante data:', mandanteData);
+
+      const { data, error } = await createMandante(mandanteData);
+      
+      if (error) {
+        console.error('Error saving mandante:', error);
+        return; // Don't proceed if there's an error
+      }
+
+      console.log('Mandante saved successfully:', data);
     }
 
     if (currentStep < totalSteps) {
@@ -565,7 +587,7 @@ const Register = () => {
                     variant="outline"
                     onClick={handlePrevious}
                     className="font-rubik"
-                    disabled={contratistaLoading}
+                    disabled={contratistaLoading || mandanteLoading}
                   >
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     Anterior
@@ -577,18 +599,18 @@ const Register = () => {
                     <Button
                       onClick={handleNext}
                       className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
-                      disabled={contratistaLoading}
+                      disabled={contratistaLoading || mandanteLoading}
                     >
-                      {contratistaLoading ? 'Guardando...' : 'Continuar'}
+                      {(contratistaLoading || mandanteLoading) ? 'Guardando...' : 'Continuar'}
                       <ArrowRight className="h-4 w-4 ml-2" />
                     </Button>
                   ) : (
                     <Button
                       onClick={handleSubmit}
                       className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
-                      disabled={contratistaLoading}
+                      disabled={contratistaLoading || mandanteLoading}
                     >
-                      {contratistaLoading ? 'Guardando...' : 'Crear Cuenta'}
+                      {(contratistaLoading || mandanteLoading) ? 'Guardando...' : 'Crear Cuenta'}
                     </Button>
                   )}
                 </div>

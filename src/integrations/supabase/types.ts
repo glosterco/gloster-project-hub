@@ -57,6 +57,33 @@ export type Database = {
         }
         Relationships: []
       }
+      Mandantes: {
+        Row: {
+          CompanyName: string
+          ContactEmail: string | null
+          ContactName: string | null
+          ContactPhone: number | null
+          id: number
+          Status: boolean | null
+        }
+        Insert: {
+          CompanyName: string
+          ContactEmail?: string | null
+          ContactName?: string | null
+          ContactPhone?: number | null
+          id?: number
+          Status?: boolean | null
+        }
+        Update: {
+          CompanyName?: string
+          ContactEmail?: string | null
+          ContactName?: string | null
+          ContactPhone?: number | null
+          id?: number
+          Status?: boolean | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

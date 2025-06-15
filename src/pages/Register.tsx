@@ -1,67 +1,33 @@
-import React, { useState } from 'react';
+
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
 import CompanyInfoStep from '@/components/registration/CompanyInfoStep';
 import ContactInfoStep from '@/components/registration/ContactInfoStep';
 import ProjectInfoStep from '@/components/registration/ProjectInfoStep';
 import ClientInfoStep from '@/components/registration/ClientInfoStep';
 import PaymentInfoStep from '@/components/registration/PaymentInfoStep';
-import { validateRut, validateEmail, validatePhone, validatePassword, validateNumber } from '@/components/registration/validationUtils';
-import { CheckCircle } from 'lucide-react';
-import { useContratistas } from '@/hooks/useContratistas';
-import { useMandantes } from '@/hooks/useMandantes';
+import { useRegistrationForm } from '@/hooks/useRegistrationForm';
+import { useFormValidation } from '@/hooks/useFormValidation';
+import { useRegistrationSteps } from '@/hooks/useRegistrationSteps';
+import { RegistrationProgressBar } from '@/components/registration/RegistrationProgressBar';
+import { RegistrationBreakPage } from '@/components/registration/RegistrationBreakPage';
 
 const Register = () => {
-  const [currentStep, setCurrentStep] = useState(1);
-  const totalSteps = 6; // Cambiado de 5 a 6 para incluir la página de break
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const { createContratista, loading: contratistaLoading } = useContratistas();
-  const { createMandante, loading: mandanteLoading } = useMandantes();
-
-  // Company Information
-  const [companyName, setCompanyName] = useState('');
-  const [rut, setRut] = useState('');
-  const [specialties, setSpecialties] = useState('');
-  const [customSpecialty, setCustomSpecialty] = useState('');
-  const [experience, setExperience] = useState('');
-  const [address, setAddress] = useState('');
-  const [city, setCity] = useState('');
-
-  // Contact Information
-  const [contactName, setContactName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-
-  // Project Information
-  const [projectName, setProjectName] = useState('');
-  const [projectAddress, setProjectAddress] = useState('');
-  const [projectDescription, setProjectDescription] = useState('');
-  const [contractAmount, setContractAmount] = useState('');
-  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
-  const [duration, setDuration] = useState('');
-
-  // Client Information
-  const [clientCompany, setClientCompany] = useState('');
-  const [clientContact, setClientContact] = useState('');
-  const [clientEmail, setClientEmail] = useState('');
-  const [clientPhone, setClientPhone] = useState('');
-
-  // Payment Information
-  const [firstPaymentDate, setFirstPaymentDate] = useState<Date | undefined>(undefined);
-  const [paymentPeriod, setPaymentPeriod] = useState('');
-  const [customPeriod, setCustomPeriod] = useState('');
-  const [requiredDocuments, setRequiredDocuments] = useState<string[]>([]);
-  const [otherDocuments, setOtherDocuments] = useState('');
-
-  // Validation errors
-  const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const formData = useRegistrationForm();
+  const { errors, validateField } = useFormValidation();
+  const { 
+    currentStep, 
+    totalSteps, 
+    handleNext, 
+    handlePrevious, 
+    handleSubmit, 
+    contratistaLoading, 
+    mandanteLoading 
+  } = useRegistrationSteps({ formData, errors });
 
   // Required documents list
   const documentsList = [
@@ -75,317 +41,53 @@ const Register = () => {
     'Factura'
   ];
 
-  // Real-time validation functions
-  const validateField = (fieldName: string, value: string) => {
-    const newErrors = { ...errors };
-    
-    switch (fieldName) {
-      case 'rut':
-        if (value && !validateRut(value)) {
-          newErrors.rut = 'RUT inválido';
-        } else {
-          delete newErrors.rut;
-        }
-        break;
-      case 'email':
-      case 'clientEmail':
-        if (value && !validateEmail(value)) {
-          newErrors[fieldName] = 'Email inválido';
-        } else {
-          delete newErrors[fieldName];
-        }
-        break;
-      case 'phone':
-      case 'clientPhone':
-        if (value && !validatePhone(value)) {
-          newErrors[fieldName] = 'Formato debe ser +569xxxxxxxx';
-        } else {
-          delete newErrors[fieldName];
-        }
-        break;
-      case 'password':
-        if (value && !validatePassword(value)) {
-          newErrors.password = 'Mínimo 8 caracteres alfanuméricos';
-        } else {
-          delete newErrors.password;
-        }
-        break;
-      case 'confirmPassword':
-        if (value && value !== password) {
-          newErrors.confirmPassword = 'Las contraseñas no coinciden';
-        } else {
-          delete newErrors.confirmPassword;
-        }
-        break;
-      case 'contractAmount':
-      case 'duration':
-        if (value && !validateNumber(value)) {
-          newErrors[fieldName] = 'Solo números permitidos';
-        } else {
-          delete newErrors[fieldName];
-        }
-        break;
-    }
-    
-    setErrors(newErrors);
-  };
-
   // Enhanced setter functions with validation
   const setRutWithValidation = (value: string) => {
-    setRut(value);
+    formData.setRut(value);
     validateField('rut', value);
   };
 
   const setEmailWithValidation = (value: string) => {
-    setEmail(value);
+    formData.setEmail(value);
     validateField('email', value);
   };
 
   const setPhoneWithValidation = (value: string) => {
-    setPhone(value);
+    formData.setPhone(value);
     validateField('phone', value);
   };
 
   const setPasswordWithValidation = (value: string) => {
-    setPassword(value);
+    formData.setPassword(value);
     validateField('password', value);
-    // Also revalidate confirm password if it exists
-    if (confirmPassword) {
-      validateField('confirmPassword', confirmPassword);
+    if (formData.confirmPassword) {
+      validateField('confirmPassword', formData.confirmPassword);
     }
   };
 
   const setConfirmPasswordWithValidation = (value: string) => {
-    setConfirmPassword(value);
-    validateField('confirmPassword', value);
+    formData.setConfirmPassword(value);
+    validateField('confirmPassword', value, formData.password);
   };
 
   const setClientEmailWithValidation = (value: string) => {
-    setClientEmail(value);
+    formData.setClientEmail(value);
     validateField('clientEmail', value);
   };
 
   const setClientPhoneWithValidation = (value: string) => {
-    setClientPhone(value);
+    formData.setClientPhone(value);
     validateField('clientPhone', value);
   };
 
   const setContractAmountWithValidation = (value: string) => {
-    setContractAmount(value);
+    formData.setContractAmount(value);
     validateField('contractAmount', value);
   };
 
   const setDurationWithValidation = (value: string) => {
-    setDuration(value);
+    formData.setDuration(value);
     validateField('duration', value);
-  };
-
-  const handleNext = async () => {
-    // Validation for step 1
-    if (currentStep === 1) {
-      if (!companyName || !rut || !specialties || !experience || !address || !city) {
-        toast({
-          title: "Campos requeridos",
-          description: "Por favor completa todos los campos",
-          variant: "destructive",
-        });
-        return;
-      }
-      if (errors.rut) {
-        toast({
-          title: "RUT inválido",
-          description: "Por favor corrige el RUT antes de continuar",
-          variant: "destructive",
-        });
-        return;
-      }
-    }
-
-    // Validation for step 2 and save to database
-    if (currentStep === 2) {
-      if (!contactName || !email || !phone || !password || !confirmPassword) {
-        toast({
-          title: "Campos requeridos",
-          description: "Por favor completa todos los campos",
-          variant: "destructive",
-        });
-        return;
-      }
-      if (errors.email || errors.phone || errors.password || errors.confirmPassword) {
-        toast({
-          title: "Errores en los campos",
-          description: "Por favor corrige los errores antes de continuar",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Save company and contact info to Supabase
-      const finalSpecialties = specialties === 'otra' ? customSpecialty : specialties;
-      
-      const contratistaData = {
-        CompanyName: companyName,
-        RUT: rut,
-        Specialization: finalSpecialties,
-        Experience: experience,
-        Adress: address,
-        City: city,
-        ContactName: contactName,
-        ContactEmail: email,
-        ContactPhone: parseInt(phone.replace(/\D/g, '')), // Remove non-numeric characters
-        Username: email, // Using email as username
-        Password: password,
-        Status: true
-      };
-
-      console.log('Saving contratista data:', contratistaData);
-
-      const { data, error } = await createContratista(contratistaData);
-      
-      if (error) {
-        console.error('Error saving contratista:', error);
-        return; // Don't proceed if there's an error
-      }
-
-      console.log('Contratista saved successfully:', data);
-    }
-
-    // No validation for step 3 (break page)
-
-    // Validation for step 4 (previously step 3)
-    if (currentStep === 4) {
-      if (!projectName || !projectAddress || !projectDescription || !contractAmount || !startDate || !duration) {
-        toast({
-          title: "Campos requeridos",
-          description: "Por favor completa todos los campos del proyecto",
-          variant: "destructive",
-        });
-        return;
-      }
-      if (errors.contractAmount || errors.duration) {
-        toast({
-          title: "Errores en campos numéricos",
-          description: "Por favor corrige los errores antes de continuar",
-          variant: "destructive",
-        });
-        return;
-      }
-    }
-
-    // Validation for step 5 (previously step 4)
-    if (currentStep === 5) {
-      if (!clientCompany || !clientContact || !clientEmail || !clientPhone) {
-        toast({
-          title: "Campos requeridos",
-          description: "Por favor completa todos los campos del mandante",
-          variant: "destructive",
-        });
-        return;
-      }
-      if (errors.clientEmail || errors.clientPhone) {
-        toast({
-          title: "Errores en los campos",
-          description: "Por favor corrige los errores antes de continuar",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Save mandante info to Supabase
-      const mandanteData = {
-        CompanyName: clientCompany,
-        ContactName: clientContact,
-        ContactEmail: clientEmail,
-        ContactPhone: parseInt(clientPhone.replace(/\D/g, '')), // Remove non-numeric characters
-        Status: true
-      };
-
-      console.log('Saving mandante data:', mandanteData);
-
-      const { data, error } = await createMandante(mandanteData);
-      
-      if (error) {
-        console.error('Error saving mandante:', error);
-        return; // Don't proceed if there's an error
-      }
-
-      console.log('Mandante saved successfully:', data);
-    }
-
-    if (currentStep < totalSteps) {
-      setCurrentStep(currentStep + 1);
-    }
-  };
-
-  const handlePrevious = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-
-  const handleSubmit = async () => {
-    if (!firstPaymentDate || !paymentPeriod) {
-      toast({
-        title: "Campos requeridos",
-        description: "Por favor completa todos los campos de estados de pago",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const finalPaymentPeriod = paymentPeriod === 'otro' ? customPeriod : paymentPeriod;
-    const finalDocuments = otherDocuments ? [...requiredDocuments, otherDocuments] : requiredDocuments;
-
-    const projectFormData = {
-      projectName,
-      projectAddress,
-      projectDescription,
-      contractAmount,
-      startDate: startDate ? format(startDate, 'yyyy-MM-dd') : '',
-      duration,
-      clientCompany,
-      clientContact,
-      clientEmail,
-      clientPhone,
-      firstPaymentDate: firstPaymentDate ? format(firstPaymentDate, 'yyyy-MM-dd') : '',
-      paymentPeriod: finalPaymentPeriod,
-      requiredDocuments: finalDocuments,
-      contractorEmail: email // Link project to the contractor
-    };
-
-    console.log('Sending project data to webhook:', projectFormData);
-
-    try {
-      const response = await fetch('https://hook.us2.make.com/242usgpf93xy3waeagqgsefvi2vhsiyc', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(projectFormData),
-      });
-
-      if (response.ok) {
-        toast({
-          title: "¡Registro exitoso!",
-          description: "Tu cuenta y proyecto han sido creados correctamente",
-        });
-        
-        // Navigate to home after a short delay
-        setTimeout(() => {
-          navigate('/');
-        }, 1500);
-      } else {
-        throw new Error('Network response was not ok');
-      }
-      
-    } catch (error) {
-      console.error('Project registration error:', error);
-      toast({
-        title: "Error en el registro del proyecto",
-        description: "Por favor intenta nuevamente",
-        variant: "destructive",
-      });
-    }
   };
 
   const getStepTitle = () => {
@@ -400,68 +102,25 @@ const Register = () => {
     }
   };
 
-  const renderProgressBar = () => {
-    return (
-      <div className="w-full mb-8">
-        <div className="flex justify-between mb-2">
-          <span className="text-sm text-gray-600">Paso {currentStep} de {totalSteps}</span>
-          <span className="text-sm text-gray-600">{Math.round((currentStep / totalSteps) * 100)}%</span>
-        </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
-          <div 
-            className="bg-gloster-yellow h-2 rounded-full transition-all duration-300"
-            style={{ width: `${(currentStep / totalSteps) * 100}%` }}
-          ></div>
-        </div>
-      </div>
-    );
-  };
-
-  const renderBreakPage = () => {
-    return (
-      <div className="space-y-6 text-center">
-        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-          <CheckCircle className="h-8 w-8 text-green-600" />
-        </div>
-        <div className="space-y-4">
-          <h3 className="text-xl font-bold text-slate-800 font-rubik">
-            ¡Información del Usuario Recopilada!
-          </h3>
-          <p className="text-gloster-gray font-rubik">
-            Hemos registrado exitosamente tu información personal y de contacto.
-          </p>
-          <div className="bg-gloster-yellow/10 border border-gloster-yellow/20 rounded-lg p-4">
-            <p className="text-sm text-slate-700 font-rubik">
-              <strong>Próximo paso:</strong> Ahora necesitamos la información del proyecto para crear tu espacio de trabajo.
-            </p>
-            <p className="text-xs text-gloster-gray font-rubik mt-2">
-              La información del proyecto es requerida para completar la creación de tu cuenta.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   const renderStep = () => {
     switch (currentStep) {
       case 1:
         return (
           <CompanyInfoStep
-            companyName={companyName}
-            setCompanyName={setCompanyName}
-            rut={rut}
+            companyName={formData.companyName}
+            setCompanyName={formData.setCompanyName}
+            rut={formData.rut}
             setRut={setRutWithValidation}
-            specialties={specialties}
-            setSpecialties={setSpecialties}
-            customSpecialty={customSpecialty}
-            setCustomSpecialty={setCustomSpecialty}
-            experience={experience}
-            setExperience={setExperience}
-            address={address}
-            setAddress={setAddress}
-            city={city}
-            setCity={setCity}
+            specialties={formData.specialties}
+            setSpecialties={formData.setSpecialties}
+            customSpecialty={formData.customSpecialty}
+            setCustomSpecialty={formData.setCustomSpecialty}
+            experience={formData.experience}
+            setExperience={formData.setExperience}
+            address={formData.address}
+            setAddress={formData.setAddress}
+            city={formData.city}
+            setCity={formData.setCity}
             errors={errors}
           />
         );
@@ -469,37 +128,37 @@ const Register = () => {
       case 2:
         return (
           <ContactInfoStep
-            contactName={contactName}
-            setContactName={setContactName}
-            email={email}
+            contactName={formData.contactName}
+            setContactName={formData.setContactName}
+            email={formData.email}
             setEmail={setEmailWithValidation}
-            phone={phone}
+            phone={formData.phone}
             setPhone={setPhoneWithValidation}
-            password={password}
+            password={formData.password}
             setPassword={setPasswordWithValidation}
-            confirmPassword={confirmPassword}
+            confirmPassword={formData.confirmPassword}
             setConfirmPassword={setConfirmPasswordWithValidation}
             errors={errors}
           />
         );
 
       case 3:
-        return renderBreakPage();
+        return <RegistrationBreakPage />;
 
       case 4:
         return (
           <ProjectInfoStep
-            projectName={projectName}
-            setProjectName={setProjectName}
-            projectAddress={projectAddress}
-            setProjectAddress={setProjectAddress}
-            projectDescription={projectDescription}
-            setProjectDescription={setProjectDescription}
-            contractAmount={contractAmount}
+            projectName={formData.projectName}
+            setProjectName={formData.setProjectName}
+            projectAddress={formData.projectAddress}
+            setProjectAddress={formData.setProjectAddress}
+            projectDescription={formData.projectDescription}
+            setProjectDescription={formData.setProjectDescription}
+            contractAmount={formData.contractAmount}
             setContractAmount={setContractAmountWithValidation}
-            startDate={startDate}
-            setStartDate={setStartDate}
-            duration={duration}
+            startDate={formData.startDate}
+            setStartDate={formData.setStartDate}
+            duration={formData.duration}
             setDuration={setDurationWithValidation}
             errors={errors}
           />
@@ -508,13 +167,13 @@ const Register = () => {
       case 5:
         return (
           <ClientInfoStep
-            clientCompany={clientCompany}
-            setClientCompany={setClientCompany}
-            clientContact={clientContact}
-            setClientContact={setClientContact}
-            clientEmail={clientEmail}
+            clientCompany={formData.clientCompany}
+            setClientCompany={formData.setClientCompany}
+            clientContact={formData.clientContact}
+            setClientContact={formData.setClientContact}
+            clientEmail={formData.clientEmail}
             setClientEmail={setClientEmailWithValidation}
-            clientPhone={clientPhone}
+            clientPhone={formData.clientPhone}
             setClientPhone={setClientPhoneWithValidation}
             errors={errors}
           />
@@ -523,22 +182,31 @@ const Register = () => {
       case 6:
         return (
           <PaymentInfoStep
-            firstPaymentDate={firstPaymentDate}
-            setFirstPaymentDate={setFirstPaymentDate}
-            paymentPeriod={paymentPeriod}
-            setPaymentPeriod={setPaymentPeriod}
-            customPeriod={customPeriod}
-            setCustomPeriod={setCustomPeriod}
-            requiredDocuments={requiredDocuments}
-            setRequiredDocuments={setRequiredDocuments}
-            otherDocuments={otherDocuments}
-            setOtherDocuments={setOtherDocuments}
+            firstPaymentDate={formData.firstPaymentDate}
+            setFirstPaymentDate={formData.setFirstPaymentDate}
+            paymentPeriod={formData.paymentPeriod}
+            setPaymentPeriod={formData.setPaymentPeriod}
+            customPeriod={formData.customPeriod}
+            setCustomPeriod={formData.setCustomPeriod}
+            requiredDocuments={formData.requiredDocuments}
+            setRequiredDocuments={formData.setRequiredDocuments}
+            otherDocuments={formData.otherDocuments}
+            setOtherDocuments={formData.setOtherDocuments}
             documentsList={documentsList}
           />
         );
 
       default:
         return null;
+    }
+  };
+
+  const onSubmit = async () => {
+    const success = await handleSubmit();
+    if (success) {
+      setTimeout(() => {
+        navigate('/');
+      }, 1500);
     }
   };
 
@@ -578,7 +246,7 @@ const Register = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {renderProgressBar()}
+              <RegistrationProgressBar currentStep={currentStep} totalSteps={totalSteps} />
               {renderStep()}
               
               <div className="flex justify-between pt-6">
@@ -606,7 +274,7 @@ const Register = () => {
                     </Button>
                   ) : (
                     <Button
-                      onClick={handleSubmit}
+                      onClick={onSubmit}
                       className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
                       disabled={contratistaLoading || mandanteLoading}
                     >

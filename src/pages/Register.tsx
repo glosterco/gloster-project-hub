@@ -12,12 +12,14 @@ import ClientInfoStep from '@/components/registration/ClientInfoStep';
 import PaymentInfoStep from '@/components/registration/PaymentInfoStep';
 import { validateRut, validateEmail, validatePhone, validatePassword, validateNumber } from '@/components/registration/validationUtils';
 import { CheckCircle } from 'lucide-react';
+import { useContratistas } from '@/hooks/useContratistas';
 
 const Register = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 6; // Cambiado de 5 a 6 para incluir la página de break
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { createContratista, loading: contratistaLoading } = useContratistas();
 
   // Company Information
   const [companyName, setCompanyName] = useState('');
@@ -176,7 +178,7 @@ const Register = () => {
     validateField('duration', value);
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     // Validation for step 1
     if (currentStep === 1) {
       if (!companyName || !rut || !specialties || !experience || !address || !city) {
@@ -197,7 +199,7 @@ const Register = () => {
       }
     }
 
-    // Validation for step 2
+    // Validation for step 2 and save to database
     if (currentStep === 2) {
       if (!contactName || !email || !phone || !password || !confirmPassword) {
         toast({
@@ -215,6 +217,35 @@ const Register = () => {
         });
         return;
       }
+
+      // Save company and contact info to Supabase
+      const finalSpecialties = specialties === 'otra' ? customSpecialty : specialties;
+      
+      const contratistaData = {
+        CompanyName: companyName,
+        RUT: rut,
+        Specialization: finalSpecialties,
+        Experience: experience,
+        Adress: address,
+        City: city,
+        ContactName: contactName,
+        ContactEmail: email,
+        ContactPhone: parseInt(phone.replace(/\D/g, '')), // Remove non-numeric characters
+        Username: email, // Using email as username
+        Password: password,
+        Status: true
+      };
+
+      console.log('Saving contratista data:', contratistaData);
+
+      const { data, error } = await createContratista(contratistaData);
+      
+      if (error) {
+        console.error('Error saving contratista:', error);
+        return; // Don't proceed if there's an error
+      }
+
+      console.log('Contratista saved successfully:', data);
     }
 
     // No validation for step 3 (break page)
@@ -280,21 +311,10 @@ const Register = () => {
       return;
     }
 
-    const finalSpecialties = specialties === 'otra' ? customSpecialty : specialties;
     const finalPaymentPeriod = paymentPeriod === 'otro' ? customPeriod : paymentPeriod;
     const finalDocuments = otherDocuments ? [...requiredDocuments, otherDocuments] : requiredDocuments;
 
-    const formData = {
-      companyName,
-      rut,
-      specialties: finalSpecialties,
-      experience,
-      address,
-      city,
-      contactName,
-      email,
-      phone,
-      password,
+    const projectFormData = {
       projectName,
       projectAddress,
       projectDescription,
@@ -307,10 +327,11 @@ const Register = () => {
       clientPhone,
       firstPaymentDate: firstPaymentDate ? format(firstPaymentDate, 'yyyy-MM-dd') : '',
       paymentPeriod: finalPaymentPeriod,
-      requiredDocuments: finalDocuments
+      requiredDocuments: finalDocuments,
+      contractorEmail: email // Link project to the contractor
     };
 
-    console.log('Sending form data:', formData);
+    console.log('Sending project data to webhook:', projectFormData);
 
     try {
       const response = await fetch('https://hook.us2.make.com/242usgpf93xy3waeagqgsefvi2vhsiyc', {
@@ -318,13 +339,13 @@ const Register = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(projectFormData),
       });
 
       if (response.ok) {
         toast({
           title: "¡Registro exitoso!",
-          description: "Tu cuenta ha sido creada correctamente",
+          description: "Tu cuenta y proyecto han sido creados correctamente",
         });
         
         // Navigate to home after a short delay
@@ -336,9 +357,9 @@ const Register = () => {
       }
       
     } catch (error) {
-      console.error('Registration error:', error);
+      console.error('Project registration error:', error);
       toast({
-        title: "Error en el registro",
+        title: "Error en el registro del proyecto",
         description: "Por favor intenta nuevamente",
         variant: "destructive",
       });
@@ -524,7 +545,7 @@ const Register = () => {
               <CardTitle className="text-2xl text-center font-rubik">{getStepTitle()}</CardTitle>
               <CardDescription className="text-center font-rubik">
                 {currentStep === 3 ? (
-                  "Información del usuario completada"
+                  "Información del usuario completada y guardada en la base de datos"
                 ) : (
                   <>
                     Completa la información para crear tu cuenta
@@ -544,6 +565,7 @@ const Register = () => {
                     variant="outline"
                     onClick={handlePrevious}
                     className="font-rubik"
+                    disabled={contratistaLoading}
                   >
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     Anterior
@@ -555,16 +577,18 @@ const Register = () => {
                     <Button
                       onClick={handleNext}
                       className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
+                      disabled={contratistaLoading}
                     >
-                      Continuar
+                      {contratistaLoading ? 'Guardando...' : 'Continuar'}
                       <ArrowRight className="h-4 w-4 ml-2" />
                     </Button>
                   ) : (
                     <Button
                       onClick={handleSubmit}
                       className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
+                      disabled={contratistaLoading}
                     >
-                      Crear Cuenta
+                      {contratistaLoading ? 'Guardando...' : 'Crear Cuenta'}
                     </Button>
                   )}
                 </div>

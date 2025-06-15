@@ -84,6 +84,72 @@ export type Database = {
         }
         Relationships: []
       }
+      Proyectos: {
+        Row: {
+          Budget: number | null
+          Contratista: number
+          Description: string | null
+          Duration: number | null
+          ExpiryRate: number | null
+          FirstPayment: string | null
+          id: number
+          Location: string | null
+          Name: string | null
+          Owner: number | null
+          Requierment: string[] | null
+          StartDate: string | null
+          Status: boolean | null
+          URL: string | null
+        }
+        Insert: {
+          Budget?: number | null
+          Contratista: number
+          Description?: string | null
+          Duration?: number | null
+          ExpiryRate?: number | null
+          FirstPayment?: string | null
+          id?: number
+          Location?: string | null
+          Name?: string | null
+          Owner?: number | null
+          Requierment?: string[] | null
+          StartDate?: string | null
+          Status?: boolean | null
+          URL?: string | null
+        }
+        Update: {
+          Budget?: number | null
+          Contratista?: number
+          Description?: string | null
+          Duration?: number | null
+          ExpiryRate?: number | null
+          FirstPayment?: string | null
+          id?: number
+          Location?: string | null
+          Name?: string | null
+          Owner?: number | null
+          Requierment?: string[] | null
+          StartDate?: string | null
+          Status?: boolean | null
+          URL?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "Proyectos_Contratista_fkey"
+            columns: ["Contratista"]
+            isOneToOne: false
+            referencedRelation: "Contratistas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "Proyectos_Owner_fkey"
+            columns: ["Owner"]
+            isOneToOne: false
+            referencedRelation: "Mandantes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

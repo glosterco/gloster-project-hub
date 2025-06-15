@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useContratistas } from '@/hooks/useContratistas';
 import { useMandantes } from '@/hooks/useMandantes';
+import { useProyectos } from '@/hooks/useProyectos';
 import { format } from 'date-fns';
 
 interface UseRegistrationStepsProps {
@@ -12,10 +13,13 @@ interface UseRegistrationStepsProps {
 
 export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsProps) => {
   const [currentStep, setCurrentStep] = useState(1);
+  const [savedContratistaId, setSavedContratistaId] = useState<number | null>(null);
+  const [savedMandanteId, setSavedMandanteId] = useState<number | null>(null);
   const totalSteps = 6;
   const { toast } = useToast();
   const { createContratista, loading: contratistaLoading } = useContratistas();
   const { createMandante, loading: mandanteLoading } = useMandantes();
+  const { createProyecto, loading: proyectoLoading } = useProyectos();
 
   const validateStep = (step: number): boolean => {
     switch (step) {
@@ -128,6 +132,9 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
     }
 
     console.log('Contratista saved successfully:', data);
+    if (data && data[0]) {
+      setSavedContratistaId(data[0].id);
+    }
     return true;
   };
 
@@ -150,6 +157,50 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
     }
 
     console.log('Mandante saved successfully:', data);
+    if (data && data[0]) {
+      setSavedMandanteId(data[0].id);
+    }
+    return true;
+  };
+
+  const saveProyectoData = async () => {
+    if (!savedContratistaId || !savedMandanteId) {
+      console.error('Missing contratista or mandante ID');
+      toast({
+        title: "Error",
+        description: "Faltan datos del contratista o mandante",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    const finalPaymentPeriod = formData.paymentPeriod === 'otro' ? formData.customPeriod : formData.paymentPeriod;
+    const finalDocuments = formData.otherDocuments ? [...formData.requiredDocuments, formData.otherDocuments] : formData.requiredDocuments;
+
+    const proyectoData = {
+      Name: formData.projectName,
+      Description: formData.projectDescription,
+      Location: formData.projectAddress,
+      Budget: parseInt(formData.contractAmount),
+      StartDate: formData.startDate ? format(formData.startDate, 'yyyy-MM-dd') : '',
+      Duration: parseInt(formData.duration),
+      Contratista: savedContratistaId,
+      Owner: savedMandanteId,
+      FirstPayment: formData.firstPaymentDate ? format(formData.firstPaymentDate, 'yyyy-MM-dd') : '',
+      ExpiryRate: finalPaymentPeriod,
+      Requierment: finalDocuments
+    };
+
+    console.log('Saving proyecto data:', proyectoData);
+
+    const { data, error } = await createProyecto(proyectoData);
+    
+    if (error) {
+      console.error('Error saving proyecto:', error);
+      return false;
+    }
+
+    console.log('Proyecto saved successfully:', data);
     return true;
   };
 
@@ -191,6 +242,13 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
       return;
     }
 
+    // Guardar el proyecto en la base de datos
+    const proyectoSuccess = await saveProyectoData();
+    if (!proyectoSuccess) {
+      return false;
+    }
+
+    // Enviar datos al webhook como respaldo
     const finalPaymentPeriod = formData.paymentPeriod === 'otro' ? formData.customPeriod : formData.paymentPeriod;
     const finalDocuments = formData.otherDocuments ? [...formData.requiredDocuments, formData.otherDocuments] : formData.requiredDocuments;
 
@@ -250,7 +308,7 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
     handleNext,
     handlePrevious,
     handleSubmit,
-    contratistaLoading,
-    mandanteLoading
+    contratistaLoading: contratistaLoading || mandanteLoading || proyectoLoading,
+    mandanteLoading: mandanteLoading || proyectoLoading
   };
 };

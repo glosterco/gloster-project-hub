@@ -30,6 +30,7 @@ export interface ProjectWithDetails {
   EstadosPago: Array<{
     id: number;
     Name: string;
+    Project: number; // Added this field
     ExpiryDate: string;
     Status: string;
     Completion: boolean;

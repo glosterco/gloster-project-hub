@@ -226,6 +226,7 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
         Description: formData.projectDescription,
         Location: formData.projectAddress,
         Budget: parseInt(formData.contractAmount),
+        Currency: formData.contractCurrency,
         StartDate: formData.startDate ? format(formData.startDate, 'yyyy-MM-dd') : '',
         Duration: parseInt(formData.duration),
         Contratista: contratistaId,

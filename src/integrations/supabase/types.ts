@@ -12,6 +12,7 @@ export type Database = {
       Contratistas: {
         Row: {
           Adress: string | null
+          auth_user_id: string | null
           City: string | null
           CompanyName: string
           ContactEmail: string | null
@@ -27,6 +28,7 @@ export type Database = {
         }
         Insert: {
           Adress?: string | null
+          auth_user_id?: string | null
           City?: string | null
           CompanyName: string
           ContactEmail?: string | null
@@ -42,6 +44,7 @@ export type Database = {
         }
         Update: {
           Adress?: string | null
+          auth_user_id?: string | null
           City?: string | null
           CompanyName?: string
           ContactEmail?: string | null

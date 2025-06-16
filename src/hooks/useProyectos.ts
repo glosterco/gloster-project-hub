@@ -25,9 +25,20 @@ export const useProyectos = () => {
     try {
       console.log('Creating proyecto with data:', proyectoData);
       
+      // Convert payment period to numeric value
+      let numericExpiryRate: number;
+      if (proyectoData.ExpiryRate === 'mensual') {
+        numericExpiryRate = 30;
+      } else if (proyectoData.ExpiryRate === 'quincenal') {
+        numericExpiryRate = 15;
+      } else {
+        // For custom periods, try to parse as number, default to 30 if not a number
+        numericExpiryRate = parseInt(proyectoData.ExpiryRate) || 30;
+      }
+      
       const { data, error } = await supabase
         .from('Proyectos')
-        .insert([{
+        .insert({
           Name: proyectoData.Name,
           Description: proyectoData.Description,
           Location: proyectoData.Location,
@@ -37,10 +48,10 @@ export const useProyectos = () => {
           Contratista: proyectoData.Contratista,
           Owner: proyectoData.Owner,
           FirstPayment: proyectoData.FirstPayment,
-          ExpiryRate: proyectoData.ExpiryRate,
+          ExpiryRate: numericExpiryRate,
           Requierment: proyectoData.Requierment,
           Status: true
-        }])
+        })
         .select();
 
       if (error) {

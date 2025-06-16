@@ -187,7 +187,6 @@ const Dashboard = () => {
             {projects.map((project) => {
               const progress = getProjectProgress(project);
               const paidValue = getProjectPaidValue(project);
-              const nextPayment = getNextPaymentDate(project);
               
               return (
                 <Card 

@@ -76,7 +76,7 @@ export type Database = {
           ExpiryDate?: string | null
           id?: number
           Mes?: string | null
-          Name?: string
+          Name: string
           Project?: number | null
           Status?: string | null
           Total?: number | null

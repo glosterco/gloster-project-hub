@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { PageHeader } from '@/components/PageHeader';
+import PageHeader from '@/components/PageHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -13,10 +13,11 @@ const DataViewer = () => {
   const { projects, loading, refetch } = useProjectsWithDetails();
   const [activeTab, setActiveTab] = useState('projects');
 
-  // Flatten all payment states from all projects
+  // Flatten all payment states from all projects with proper structure
   const allPaymentStates = projects.flatMap(project => 
     project.EstadosPago.map(ep => ({
       ...ep,
+      Project: ep.Project || project.id, // Ensure Project field is present
       projectName: project.Name
     }))
   );

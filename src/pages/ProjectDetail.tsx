@@ -22,12 +22,51 @@ const ProjectDetail = () => {
   
   const { project, loading } = useProjectDetail(id || '');
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-CL', {
-      style: 'currency',
-      currency: 'CLP',
-      minimumFractionDigits: 0,
-    }).format(amount);
+  const formatCurrency = (amount: number, currency: string = 'CLP') => {
+    const currencyMap = {
+      'CLP': { style: 'currency', currency: 'CLP', minimumFractionDigits: 0 },
+      'USD': { style: 'currency', currency: 'USD', minimumFractionDigits: 0 },
+      'UF': { style: 'decimal', minimumFractionDigits: 2 }
+    };
+
+    const config = currencyMap[currency as keyof typeof currencyMap] || currencyMap.CLP;
+    
+    if (currency === 'UF') {
+      return `UF ${new Intl.NumberFormat('es-CL', config).format(amount)}`;
+    }
+    
+    return new Intl.NumberFormat('es-CL', config).format(amount);
+  };
+
+  const getPaymentStatus = (payment: any, allPayments: any[]) => {
+    const today = new Date();
+    const expiryDate = new Date(payment.ExpiryDate);
+    
+    // Si ya está marcado como completado, es aprobado
+    if (payment.Completion) {
+      return 'aprobado';
+    }
+    
+    // Si la fecha de vencimiento es en el futuro, es programado
+    if (expiryDate > today) {
+      return 'programado';
+    }
+    
+    // Encontrar el estado de pago más cercano a la fecha actual (que no esté completado)
+    const pendingPayments = allPayments.filter(p => !p.Completion && new Date(p.ExpiryDate) <= today);
+    const closestPayment = pendingPayments.reduce((closest, current) => {
+      const closestDate = new Date(closest.ExpiryDate);
+      const currentDate = new Date(current.ExpiryDate);
+      return Math.abs(currentDate.getTime() - today.getTime()) < Math.abs(closestDate.getTime() - today.getTime()) ? current : closest;
+    }, pendingPayments[0]);
+    
+    // Si es el más cercano, es pendiente
+    if (closestPayment && closestPayment.id === payment.id) {
+      return 'pendiente';
+    }
+    
+    // Si no está completado y ya venció pero no es el más cercano, sigue siendo programado
+    return 'programado';
   };
 
   const getStatusColor = (status: string) => {
@@ -48,7 +87,7 @@ const ProjectDetail = () => {
     
     const totalPayments = project.EstadosPago.length;
     const completedPayments = project.EstadosPago.filter(payment => 
-      payment.Status === 'aprobado' || payment.Completion === true
+      payment.Completion === true
     ).length;
     
     return Math.round((completedPayments / totalPayments) * 100);
@@ -58,7 +97,7 @@ const ProjectDetail = () => {
     if (!project?.EstadosPago || project.EstadosPago.length === 0) return 0;
     
     return project.EstadosPago
-      .filter(payment => payment.Status === 'aprobado' || payment.Completion === true)
+      .filter(payment => payment.Completion === true)
       .reduce((sum, payment) => sum + (payment.Total || 0), 0);
   };
 
@@ -69,12 +108,28 @@ const ProjectDetail = () => {
     });
   };
 
+  const handlePaymentClick = (payment: any) => {
+    const status = getPaymentStatus(payment, project?.EstadosPago || []);
+    
+    if (status === 'programado') {
+      toast({
+        title: "Estado programado",
+        description: "Este estado de pago aún no está disponible para gestionar",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    navigate(`/payment/${payment.id}`);
+  };
+
   const filteredAndSortedPayments = project?.EstadosPago
     ? project.EstadosPago
         .filter(payment => {
           const matchesSearch = payment.Name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                                payment.Mes?.toLowerCase().includes(searchTerm.toLowerCase());
-          const matchesFilter = filterBy === 'all' || payment.Status === filterBy;
+          const status = getPaymentStatus(payment, project.EstadosPago);
+          const matchesFilter = filterBy === 'all' || status === filterBy;
           return matchesSearch && matchesFilter;
         })
         .sort((a, b) => {
@@ -86,7 +141,9 @@ const ProjectDetail = () => {
               const amountB = b.Total || 0;
               return amountB - amountA;
             case 'status':
-              return a.Status.localeCompare(b.Status);
+              const statusA = getPaymentStatus(a, project.EstadosPago);
+              const statusB = getPaymentStatus(b, project.EstadosPago);
+              return statusA.localeCompare(statusB);
             default:
               return 0;
           }
@@ -176,7 +233,7 @@ const ProjectDetail = () => {
                 <div>
                   <p className="text-gloster-gray text-sm font-rubik">Valor Total</p>
                   <p className="font-semibold text-slate-800 font-rubik text-sm md:text-base">
-                    {formatCurrency(project.Budget || 0)}
+                    {formatCurrency(project.Budget || 0, project.Currency)}
                   </p>
                 </div>
                 <div>
@@ -188,7 +245,7 @@ const ProjectDetail = () => {
                 </div>
                 <div>
                   <p className="text-gloster-gray text-sm font-rubik">Total Pagado</p>
-                  <p className="font-semibold text-green-600 font-rubik">{formatCurrency(paidValue)}</p>
+                  <p className="font-semibold text-green-600 font-rubik">{formatCurrency(paidValue, project.Currency)}</p>
                 </div>
               </div>
             </div>
@@ -254,78 +311,84 @@ const ProjectDetail = () => {
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredAndSortedPayments.map((payment) => (
-                <Card 
-                  key={payment.id} 
-                  className="hover:shadow-xl transition-all duration-300 cursor-pointer border-gloster-gray/20 hover:border-gloster-gray/50 h-full"
-                >
-                  <CardContent className="p-4 md:p-6 h-full flex flex-col">
-                    <div className="space-y-4 flex-1">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-center space-x-3 min-w-0 flex-1">
-                          <div className="w-10 h-10 bg-gloster-yellow/20 rounded-lg flex items-center justify-center shrink-0">
-                            <Calendar className="h-5 w-5 text-gloster-gray" />
+              {filteredAndSortedPayments.map((payment) => {
+                const status = getPaymentStatus(payment, project.EstadosPago);
+                
+                return (
+                  <Card 
+                    key={payment.id} 
+                    className={`hover:shadow-xl transition-all duration-300 border-gloster-gray/20 hover:border-gloster-gray/50 h-full ${
+                      status === 'programado' ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'
+                    }`}
+                  >
+                    <CardContent className="p-4 md:p-6 h-full flex flex-col">
+                      <div className="space-y-4 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center space-x-3 min-w-0 flex-1">
+                            <div className="w-10 h-10 bg-gloster-yellow/20 rounded-lg flex items-center justify-center shrink-0">
+                              <Calendar className="h-5 w-5 text-gloster-gray" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <h4 className="font-semibold text-slate-800 font-rubik text-sm md:text-base">
+                                {payment.Name}
+                              </h4>
+                              <p className="text-gloster-gray text-xs md:text-sm font-rubik">
+                                {payment.Mes} {payment.Año}
+                              </p>
+                              <p className="text-gloster-gray text-xs md:text-sm font-rubik">
+                                Vencimiento: {new Date(payment.ExpiryDate).toLocaleDateString('es-CL')}
+                              </p>
+                            </div>
                           </div>
-                          <div className="min-w-0 flex-1">
-                            <h4 className="font-semibold text-slate-800 font-rubik text-sm md:text-base">
-                              {payment.Name}
-                            </h4>
-                            <p className="text-gloster-gray text-xs md:text-sm font-rubik">
-                              {payment.Mes} {payment.Año}
-                            </p>
-                            <p className="text-gloster-gray text-xs md:text-sm font-rubik">
-                              Vencimiento: {new Date(payment.ExpiryDate).toLocaleDateString('es-CL')}
-                            </p>
+                          <Badge variant="secondary" className={`${getStatusColor(status)} text-xs shrink-0`}>
+                            {status}
+                          </Badge>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-gloster-gray text-xs md:text-sm font-rubik">Monto:</span>
+                            <span className="font-semibold text-slate-800 font-rubik text-xs md:text-sm">
+                              {payment.Total ? formatCurrency(payment.Total, project.Currency) : 'Sin monto definido'}
+                            </span>
                           </div>
                         </div>
-                        <Badge variant="secondary" className={`${getStatusColor(payment.Status)} text-xs shrink-0`}>
-                          {payment.Status}
-                        </Badge>
                       </div>
-                      
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-gloster-gray text-xs md:text-sm font-rubik">Monto:</span>
-                          <span className="font-semibold text-slate-800 font-rubik text-xs md:text-sm">
-                            {payment.Total ? formatCurrency(payment.Total) : 'Sin monto definido'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
 
-                    <div className="pt-4 mt-auto">
-                      {payment.Status === 'pendiente' && (
-                        <Button
-                          onClick={() => navigate(`/payment/${payment.id}`)}
-                          className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold font-rubik"
-                          size="sm"
-                        >
-                          Gestionar Documentos
-                          <ChevronRight className="h-4 w-4 ml-2" />
-                        </Button>
-                      )}
-                      
-                      {payment.Status === 'aprobado' && (
-                        <Button
-                          variant="outline"
-                          onClick={() => navigate(`/payment/${payment.id}`)}
-                          className="w-full border-gloster-gray/30 hover:bg-gloster-gray/10 font-rubik"
-                          size="sm"
-                        >
-                          Ver Documentos
-                          <ChevronRight className="h-4 w-4 ml-2" />
-                        </Button>
-                      )}
-                      
-                      {payment.Status === 'programado' && (
-                        <Button variant="ghost" disabled className="w-full font-rubik" size="sm">
-                          Programado
-                        </Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                      <div className="pt-4 mt-auto">
+                        {status === 'pendiente' && (
+                          <Button
+                            onClick={() => handlePaymentClick(payment)}
+                            className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold font-rubik"
+                            size="sm"
+                          >
+                            Gestionar Documentos
+                            <ChevronRight className="h-4 w-4 ml-2" />
+                          </Button>
+                        )}
+                        
+                        {status === 'aprobado' && (
+                          <Button
+                            variant="outline"
+                            onClick={() => handlePaymentClick(payment)}
+                            className="w-full border-gloster-gray/30 hover:bg-gloster-gray/10 font-rubik"
+                            size="sm"
+                          >
+                            Ver Documentos
+                            <ChevronRight className="h-4 w-4 ml-2" />
+                          </Button>
+                        )}
+                        
+                        {status === 'programado' && (
+                          <Button variant="ghost" disabled className="w-full font-rubik" size="sm">
+                            Programado
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </div>
@@ -354,10 +417,6 @@ const ProjectDetail = () => {
                   <p className="text-gloster-gray text-sm font-rubik">Contacto Mandante</p>
                   <p className="font-medium font-rubik">{project.Owner?.ContactName}</p>
                   <p className="font-medium font-rubik break-words text-sm">{project.Owner?.ContactEmail}</p>
-                </div>
-                <div>
-                  <p className="text-gloster-gray text-sm font-rubik">Estados de Pago</p>
-                  <p className="font-medium font-rubik">{project.EstadosPago?.length || 0} estados</p>
                 </div>
               </div>
             </div>

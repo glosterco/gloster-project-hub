@@ -139,7 +139,7 @@ const EmailPreview = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50">
+      <div className="min-h-screen bg-slate-50 font-rubik">
         <div className="container mx-auto px-6 py-8">
           <div className="text-center">Cargando vista previa...</div>
         </div>
@@ -149,7 +149,7 @@ const EmailPreview = () => {
 
   if (!payment || !payment.projectData) {
     return (
-      <div className="min-h-screen bg-slate-50">
+      <div className="min-h-screen bg-slate-50 font-rubik">
         <div className="container mx-auto px-6 py-8">
           <div className="text-center">
             <p className="text-gloster-gray">Estado de pago no encontrado.</p>
@@ -165,7 +165,7 @@ const EmailPreview = () => {
   const emailData = generateEmailHTML();
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 font-rubik">
       {/* Header de navegación */}
       <div className="bg-white border-b border-gloster-gray/20 shadow-sm print:hidden">
         <div className="container mx-auto px-6 py-4">

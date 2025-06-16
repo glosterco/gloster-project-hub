@@ -59,6 +59,20 @@ export const useAuth = () => {
 
       if (error) {
         console.error('Login error:', error);
+        
+        // Detectar errores de credenciales incorrectas
+        if (error.message?.includes('Invalid login credentials') || 
+            error.message?.includes('Invalid email or password') ||
+            error.message?.includes('invalid_credentials')) {
+          return { 
+            data: null, 
+            error: { 
+              ...error, 
+              message: 'Email o contraseña incorrectos. Por favor verifica tus credenciales.' 
+            } 
+          };
+        }
+        
         return { data: null, error };
       }
 

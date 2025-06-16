@@ -156,6 +156,8 @@ const Register = () => {
             setProjectDescription={formData.setProjectDescription}
             contractAmount={formData.contractAmount}
             setContractAmount={setContractAmountWithValidation}
+            contractCurrency={formData.contractCurrency}
+            setContractCurrency={formData.setContractCurrency}
             startDate={formData.startDate}
             setStartDate={formData.setStartDate}
             duration={formData.duration}

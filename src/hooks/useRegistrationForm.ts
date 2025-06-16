@@ -23,6 +23,7 @@ export const useRegistrationForm = () => {
   const [projectAddress, setProjectAddress] = useState('');
   const [projectDescription, setProjectDescription] = useState('');
   const [contractAmount, setContractAmount] = useState('');
+  const [contractCurrency, setContractCurrency] = useState('CLP');
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [duration, setDuration] = useState('');
 
@@ -61,6 +62,7 @@ export const useRegistrationForm = () => {
     projectAddress, setProjectAddress,
     projectDescription, setProjectDescription,
     contractAmount, setContractAmount,
+    contractCurrency, setContractCurrency,
     startDate, setStartDate,
     duration, setDuration,
     

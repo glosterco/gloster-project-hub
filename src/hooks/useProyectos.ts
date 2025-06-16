@@ -12,6 +12,7 @@ export const useProyectos = () => {
     Description: string;
     Location: string;
     Budget: number;
+    Currency: string;
     StartDate: string;
     Duration: number;
     Contratista: number;
@@ -42,6 +43,7 @@ export const useProyectos = () => {
           Description: proyectoData.Description,
           Location: proyectoData.Location,
           Budget: proyectoData.Budget,
+          Currency: proyectoData.Currency,
           StartDate: proyectoData.StartDate,
           Duration: proyectoData.Duration,
           Contratista: proyectoData.Contratista,

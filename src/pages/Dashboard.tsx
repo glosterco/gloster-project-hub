@@ -32,6 +32,7 @@ const Dashboard = () => {
   const formatCurrency = (amount: number, currency: string = 'CLP') => {
     const currencyMap: { [key: string]: Intl.NumberFormatOptions } = {
       'CLP': { style: 'currency' as const, currency: 'CLP', minimumFractionDigits: 0 },
+      '$': { style: 'currency' as const, currency: 'CLP', minimumFractionDigits: 0 },
       'USD': { style: 'currency' as const, currency: 'USD', minimumFractionDigits: 0 },
       'UF': { style: 'decimal' as const, minimumFractionDigits: 2 }
     };
@@ -50,7 +51,7 @@ const Dashboard = () => {
     
     const totalPayments = project.EstadosPago.length;
     const completedPayments = project.EstadosPago.filter((payment: any) => 
-      payment.Status === 'aprobado' || payment.Completion === true
+      payment.Status === 'Aprobado' || payment.Completion === true
     ).length;
     
     return Math.round((completedPayments / totalPayments) * 100);
@@ -60,51 +61,31 @@ const Dashboard = () => {
     if (!project.EstadosPago || project.EstadosPago.length === 0) return 0;
     
     return project.EstadosPago
-      .filter((payment: any) => payment.Status === 'aprobado' || payment.Completion === true)
+      .filter((payment: any) => payment.Status === 'Aprobado' || payment.Completion === true)
       .reduce((sum: number, payment: any) => sum + (payment.Total || 0), 0);
   };
 
-  const getTotalContractValue = () => {
-    if (projects.length === 0) return { amount: 0, currency: 'CLP' };
-    
-    // Group by currency and sum
-    const currencyTotals = projects.reduce((acc, project) => {
-      const currency = project.Currency || 'CLP';
-      const budget = project.Budget || 0;
-      
-      if (!acc[currency]) {
-        acc[currency] = 0;
-      }
-      acc[currency] += budget;
-      
-      return acc;
-    }, {} as { [key: string]: number });
+  // Calculate totals for summary cards
+  const totalContractValue = projects.reduce((sum, project) => {
+    // Convert all to CLP for aggregation (simplified approach)
+    let value = project.Budget || 0;
+    if (project.Currency === 'USD') {
+      value = value * 900; // Approximate conversion
+    } else if (project.Currency === 'UF') {
+      value = value * 36000; // Approximate conversion
+    }
+    return sum + value;
+  }, 0);
 
-    // For display, use the first project's currency or CLP as default
-    const primaryCurrency = projects[0]?.Currency || 'CLP';
-    return { amount: currencyTotals[primaryCurrency] || 0, currency: primaryCurrency };
-  };
-
-  const getTotalPaidValue = () => {
-    if (projects.length === 0) return { amount: 0, currency: 'CLP' };
-    
-    // Group by currency and sum
-    const currencyTotals = projects.reduce((acc, project) => {
-      const currency = project.Currency || 'CLP';
-      const paidValue = getProjectPaidValue(project);
-      
-      if (!acc[currency]) {
-        acc[currency] = 0;
-      }
-      acc[currency] += paidValue;
-      
-      return acc;
-    }, {} as { [key: string]: number });
-
-    // For display, use the first project's currency or CLP as default
-    const primaryCurrency = projects[0]?.Currency || 'CLP';
-    return { amount: currencyTotals[primaryCurrency] || 0, currency: primaryCurrency };
-  };
+  const totalPaidValue = projects.reduce((sum, project) => {
+    let value = getProjectPaidValue(project);
+    if (project.Currency === 'USD') {
+      value = value * 900;
+    } else if (project.Currency === 'UF') {
+      value = value * 36000;
+    }
+    return sum + value;
+  }, 0);
 
   if (loading) {
     return (
@@ -116,9 +97,6 @@ const Dashboard = () => {
       </div>
     );
   }
-
-  const totalContractValue = getTotalContractValue();
-  const totalPaidValue = getTotalPaidValue();
 
   return (
     <div className="min-h-screen bg-slate-50 font-rubik">
@@ -206,7 +184,7 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-slate-800 font-rubik">
-                {formatCurrency(totalContractValue.amount, totalContractValue.currency)}
+                {formatCurrency(totalContractValue, 'CLP')}
               </div>
             </CardContent>
           </Card>
@@ -222,7 +200,7 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-slate-800 font-rubik">
-                {formatCurrency(totalPaidValue.amount, totalPaidValue.currency)}
+                {formatCurrency(totalPaidValue, 'CLP')}
               </div>
             </CardContent>
           </Card>

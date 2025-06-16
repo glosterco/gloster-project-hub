@@ -134,12 +134,43 @@ export const useProjectsWithDetails = () => {
         return;
       }
 
+      // Update payment statuses to ensure at least one is "En Progreso"
+      const today = new Date();
+      const updatedPayments = paymentsData || [];
+      
+      // For each project, ensure there's at least one "En Progreso" payment
+      for (const projectId of projectIds) {
+        const projectPayments = updatedPayments.filter(p => p.Project === projectId);
+        const hasInProgress = projectPayments.some(p => p.Status === 'En Progreso');
+        
+        if (!hasInProgress && projectPayments.length > 0) {
+          // Find the closest future payment
+          const futurePayments = projectPayments.filter(p => new Date(p.ExpiryDate) >= today);
+          if (futurePayments.length > 0) {
+            futurePayments.sort((a, b) => new Date(a.ExpiryDate).getTime() - new Date(b.ExpiryDate).getTime());
+            const targetPayment = futurePayments[0];
+            
+            // Update this payment to "En Progreso"
+            await supabase
+              .from('Estados de pago')
+              .update({ Status: 'En Progreso' })
+              .eq('id', targetPayment.id);
+            
+            // Update local data
+            const paymentIndex = updatedPayments.findIndex(p => p.id === targetPayment.id);
+            if (paymentIndex !== -1) {
+              updatedPayments[paymentIndex].Status = 'En Progreso';
+            }
+          }
+        }
+      }
+
       // Combine projects with their payment states
       const projectsWithDetails = (projectsData || []).map(project => ({
         ...project,
         Contratista: project.Contratistas,
         Owner: project.Mandantes,
-        EstadosPago: paymentsData?.filter(payment => payment.Project === project.id) || []
+        EstadosPago: updatedPayments.filter(payment => payment.Project === project.id) || []
       }));
 
       setProjects(projectsWithDetails);

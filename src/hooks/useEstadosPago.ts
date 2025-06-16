@@ -31,6 +31,7 @@ export const useEstadosPago = () => {
 
       const estadosPago = [];
       const baseDate = new Date(firstPaymentDate);
+      const today = new Date();
 
       for (let i = 0; i < totalPayments; i++) {
         let expiryDate: Date;
@@ -60,17 +61,41 @@ export const useEstadosPago = () => {
           'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
         ];
 
+        // Determine status based on expiry date vs today
+        let status = 'Programado';
+        if (expiryDate < today) {
+          status = 'Pendiente';
+        } else {
+          // Find the closest future date to set as "En Progreso"
+          const timeDiff = expiryDate.getTime() - today.getTime();
+          if (timeDiff > 0) {
+            // This will be handled after creating all payments
+            status = 'Programado';
+          }
+        }
+
         estadosPago.push({
           Name: `EP${i + 1}`,
           Project: projectId,
           ExpiryDate: format(expiryDate, 'yyyy-MM-dd'),
-          Status: 'Programado',
+          Status: status,
           Completion: false,
           Mes: monthNames[assignedMonth - 1],
           Año: assignedYear,
           Total: null,
           URL: null
         });
+      }
+
+      // Find the closest future payment to set as "En Progreso"
+      const futurePayments = estadosPago.filter(payment => new Date(payment.ExpiryDate) >= today);
+      if (futurePayments.length > 0) {
+        // Sort by expiry date and set the first one as "En Progreso"
+        futurePayments.sort((a, b) => new Date(a.ExpiryDate).getTime() - new Date(b.ExpiryDate).getTime());
+        const closestPaymentIndex = estadosPago.findIndex(payment => payment.ExpiryDate === futurePayments[0].ExpiryDate);
+        if (closestPaymentIndex !== -1) {
+          estadosPago[closestPaymentIndex].Status = 'En Progreso';
+        }
       }
 
       console.log('Estados de pago a insertar:', estadosPago);

@@ -19,6 +19,9 @@ export interface PaymentDetail {
     Description: string;
     Location: string;
     Budget: number;
+    Currency: string;
+    StartDate: string;
+    Duration: number;
     Contratista: {
       id: number;
       CompanyName: string;

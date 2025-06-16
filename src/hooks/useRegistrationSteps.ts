@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useContratistas } from '@/hooks/useContratistas';
@@ -125,57 +124,23 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
     }
   };
 
-  const handleSubmit = async () => {
-    if (!formData.firstPaymentDate || !formData.paymentPeriod) {
-      toast({
-        title: "Campos requeridos",
-        description: "Por favor completa todos los campos de estados de pago",
-        variant: "destructive",
-      });
-      return false;
-    }
-
+  const saveContratistaData = async () => {
     try {
-      console.log('=== INICIANDO PROCESO DE REGISTRO COMPLETO ===');
-      
-      // Paso 1: Crear usuario en autenticación
-      console.log('Paso 1: Creando usuario en Auth...');
+      console.log('=== CREANDO USUARIO EN AUTH ===');
       const { data: authData, error: authError } = await signUp(formData.email, formData.password);
       
       if (authError) {
         console.error('Error creating auth user:', authError);
-        
-        if (authError.message?.includes('ya está registrada') || 
-            authError.message?.includes('already registered')) {
-          toast({
-            title: "Email ya registrado",
-            description: authError.message,
-            variant: "destructive",
-          });
-          return false;
-        }
-        
-        toast({
-          title: "Error al crear usuario",
-          description: authError.message || "No se pudo crear la cuenta de usuario",
-          variant: "destructive",
-        });
-        return false;
+        return { success: false, error: authError.message };
       }
 
       if (!authData?.user?.id) {
-        toast({
-          title: "Error al crear usuario",
-          description: "No se pudo obtener el ID del usuario creado",
-          variant: "destructive",
-        });
-        return false;
+        return { success: false, error: "No se pudo obtener el ID del usuario creado" };
       }
 
       console.log('✅ Usuario creado en Auth:', authData.user.id);
 
-      // Paso 2: Crear contratista
-      console.log('Paso 2: Creando contratista...');
+      console.log('=== CREANDO CONTRATISTA ===');
       const finalSpecialties = formData.specialties === 'otra' ? formData.customSpecialty : formData.specialties;
       
       const contratistaData = {
@@ -193,39 +158,30 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
         Status: true
       };
 
-      console.log('Datos del contratista a crear:', contratistaData);
-
       const { data: contratistaResult, error: contratistaError } = await createContratista(
         contratistaData, 
         authData.user.id
       );
       
-      if (contratistaError) {
+      if (contratistaError || !contratistaResult || contratistaResult.length === 0) {
         console.error('Error al crear contratista:', contratistaError);
-        toast({
-          title: "Error al crear contratista",
-          description: "Hubo un error al crear los datos del contratista.",
-          variant: "destructive",
-        });
-        return false;
-      }
-
-      if (!contratistaResult || !Array.isArray(contratistaResult) || contratistaResult.length === 0) {
-        console.error('No se retornaron datos válidos del contratista');
-        toast({
-          title: "Error al crear contratista",
-          description: "No se obtuvieron datos del contratista creado",
-          variant: "destructive",
-        });
-        return false;
+        return { success: false, error: "Error al crear contratista" };
       }
 
       const contratistaId = contratistaResult[0].id;
       console.log('✅ Contratista creado con ID:', contratistaId);
       setSavedContratistaId(contratistaId);
 
-      // Paso 3: Crear mandante
-      console.log('Paso 3: Creando mandante...');
+      return { success: true, contratistaId };
+    } catch (error) {
+      console.error('Error inesperado:', error);
+      return { success: false, error: "Error inesperado" };
+    }
+  };
+
+  const saveMandanteData = async () => {
+    try {
+      console.log('=== CREANDO MANDANTE ===');
       const mandanteData = {
         CompanyName: formData.clientCompany,
         ContactName: formData.clientContact,
@@ -234,36 +190,27 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
         Status: true
       };
 
-      console.log('Datos del mandante a crear:', mandanteData);
-
       const { data: mandanteResult, error: mandanteError } = await createMandante(mandanteData);
       
-      if (mandanteError) {
+      if (mandanteError || !mandanteResult || mandanteResult.length === 0) {
         console.error('Error al crear mandante:', mandanteError);
-        toast({
-          title: "Error al crear mandante",
-          description: "No se pudo crear el mandante",
-          variant: "destructive",
-        });
-        return false;
-      }
-
-      if (!mandanteResult || !Array.isArray(mandanteResult) || mandanteResult.length === 0) {
-        console.error('No se retornaron datos válidos del mandante');
-        toast({
-          title: "Error al crear mandante",
-          description: "No se obtuvieron datos del mandante creado",
-          variant: "destructive",
-        });
-        return false;
+        return { success: false, error: "Error al crear mandante" };
       }
 
       const mandanteId = mandanteResult[0].id;
       console.log('✅ Mandante creado con ID:', mandanteId);
       setSavedMandanteId(mandanteId);
 
-      // Paso 4: Crear proyecto
-      console.log('Paso 4: Creando proyecto...');
+      return { success: true, mandanteId };
+    } catch (error) {
+      console.error('Error inesperado:', error);
+      return { success: false, error: "Error inesperado" };
+    }
+  };
+
+  const saveProyectoData = async (contratistaId: number, mandanteId: number) => {
+    try {
+      console.log('=== CREANDO PROYECTO ===');
       const finalPaymentPeriod = formData.paymentPeriod === 'otro' ? formData.customPeriod : formData.paymentPeriod;
       
       let finalDocuments: string[] = [];
@@ -288,36 +235,29 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
         Requierment: finalDocuments
       };
 
-      console.log('Datos del proyecto a crear:', proyectoData);
-
       const { data: proyectoResult, error: proyectoError } = await createProyecto(proyectoData);
       
-      if (proyectoError) {
+      if (proyectoError || !proyectoResult || proyectoResult.length === 0) {
         console.error('Error al crear proyecto:', proyectoError);
-        toast({
-          title: "Error al crear proyecto",
-          description: "No se pudo crear el proyecto",
-          variant: "destructive",
-        });
-        return false;
-      }
-
-      if (!proyectoResult || !Array.isArray(proyectoResult) || proyectoResult.length === 0) {
-        console.error('No se retornaron datos válidos del proyecto');
-        toast({
-          title: "Error al crear proyecto",
-          description: "No se obtuvieron datos del proyecto creado",
-          variant: "destructive",
-        });
-        return false;
+        return { success: false, error: "Error al crear proyecto" };
       }
 
       const proyectoId = proyectoResult[0].id;
       console.log('✅ Proyecto creado con ID:', proyectoId);
       setSavedProyectoId(proyectoId);
 
-      // Paso 5: Crear estados de pago
-      console.log('Paso 5: Creando estados de pago...');
+      return { success: true, proyectoId };
+    } catch (error) {
+      console.error('Error inesperado:', error);
+      return { success: false, error: "Error inesperado" };
+    }
+  };
+
+  const saveEstadosPagoData = async (proyectoId: number) => {
+    try {
+      console.log('=== CREANDO ESTADOS DE PAGO ===');
+      
+      const finalPaymentPeriod = formData.paymentPeriod === 'otro' ? formData.customPeriod : formData.paymentPeriod;
       
       let numericExpiryRate: number;
       if (finalPaymentPeriod === 'mensual') {
@@ -331,13 +271,6 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
       const firstPaymentDate = format(formData.firstPaymentDate, 'yyyy-MM-dd');
       const duration = parseInt(formData.duration);
 
-      console.log('Parámetros para estados de pago:', {
-        proyectoId,
-        firstPaymentDate,
-        numericExpiryRate,
-        duration
-      });
-
       const { data: estadosPagoResult, error: estadosPagoError } = await createEstadosPago(
         proyectoId,
         firstPaymentDate,
@@ -345,30 +278,78 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
         duration
       );
       
-      if (estadosPagoError) {
+      if (estadosPagoError || !estadosPagoResult || estadosPagoResult.length === 0) {
         console.error('Error al crear estados de pago:', estadosPagoError);
-        toast({
-          title: "Error al crear estados de pago",
-          description: "No se pudieron crear los estados de pago",
-          variant: "destructive",
-        });
-        return false;
-      }
-
-      if (!estadosPagoResult || !Array.isArray(estadosPagoResult) || estadosPagoResult.length === 0) {
-        console.error('No se retornaron datos válidos de estados de pago');
-        toast({
-          title: "Error al crear estados de pago",
-          description: "No se obtuvieron datos de los estados de pago creados",
-          variant: "destructive",
-        });
-        return false;
+        return { success: false, error: "Error al crear estados de pago" };
       }
 
       console.log('✅ Estados de pago creados exitosamente');
+      return { success: true, estadosPagoIds: estadosPagoResult.map(ep => ep.id) };
+    } catch (error) {
+      console.error('Error inesperado:', error);
+      return { success: false, error: "Error inesperado" };
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!formData.firstPaymentDate || !formData.paymentPeriod) {
+      toast({
+        title: "Campos requeridos",
+        description: "Por favor completa todos los campos de estados de pago",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    try {
+      console.log('=== INICIANDO PROCESO DE REGISTRO COMPLETO ===');
+      
+      // Paso 1 y 2: Crear usuario y contratista
+      const contratistaResult = await saveContratistaData();
+      if (!contratistaResult.success) {
+        toast({
+          title: "Error al crear contratista",
+          description: contratistaResult.error,
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      // Paso 3: Crear mandante
+      const mandanteResult = await saveMandanteData();
+      if (!mandanteResult.success) {
+        toast({
+          title: "Error al crear mandante",
+          description: mandanteResult.error,
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      // Paso 4: Crear proyecto
+      const proyectoResult = await saveProyectoData(contratistaResult.contratistaId!, mandanteResult.mandanteId!);
+      if (!proyectoResult.success) {
+        toast({
+          title: "Error al crear proyecto",
+          description: proyectoResult.error,
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      // Paso 5: Crear estados de pago
+      const estadosPagoResult = await saveEstadosPagoData(proyectoResult.proyectoId!);
+      if (!estadosPagoResult.success) {
+        toast({
+          title: "Error al crear estados de pago",
+          description: estadosPagoResult.error,
+          variant: "destructive",
+        });
+        return false;
+      }
 
       // Paso 6: Enviar datos al webhook como respaldo
-      console.log('Paso 6: Enviando datos al webhook...');
+      console.log('=== ENVIANDO DATOS AL WEBHOOK ===');
       
       const projectFormData = {
         projectName: formData.projectName,
@@ -382,8 +363,8 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
         clientEmail: formData.clientEmail,
         clientPhone: formData.clientPhone,
         firstPaymentDate: formData.firstPaymentDate ? format(formData.firstPaymentDate, 'yyyy-MM-dd') : '',
-        paymentPeriod: finalPaymentPeriod,
-        requiredDocuments: finalDocuments,
+        paymentPeriod: formData.paymentPeriod === 'otro' ? formData.customPeriod : formData.paymentPeriod,
+        requiredDocuments: Array.isArray(formData.requiredDocuments) ? formData.requiredDocuments : [],
         contractorEmail: formData.email
       };
 
@@ -431,6 +412,10 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
     handleNext,
     handlePrevious,
     handleSubmit,
+    saveContratistaData,
+    saveMandanteData,
+    saveProyectoData,
+    saveEstadosPagoData,
     contratistaLoading: contratistaLoading || mandanteLoading || proyectoLoading || estadosPagoLoading,
     mandanteLoading: mandanteLoading || proyectoLoading || estadosPagoLoading
   };

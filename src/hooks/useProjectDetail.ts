@@ -56,15 +56,25 @@ export const useProjectDetail = (projectId: string) => {
         return;
       }
 
-      // Get contractor data for current user
+      // Get contractor data for current user - use maybeSingle to handle no results
       const { data: contractorData, error: contractorError } = await supabase
         .from('Contratistas')
         .select('*')
         .eq('auth_user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (contractorError) {
         console.error('Error fetching contractor:', contractorError);
+        return;
+      }
+
+      if (!contractorData) {
+        console.log('No contractor found for current user');
+        toast({
+          title: "Acceso denegado",
+          description: "No tienes un perfil de contratista válido",
+          variant: "destructive",
+        });
         return;
       }
 
@@ -88,13 +98,22 @@ export const useProjectDetail = (projectId: string) => {
         `)
         .eq('id', parseInt(projectId))
         .eq('Contratista', contractorData.id)
-        .single();
+        .maybeSingle();
 
       if (projectError) {
         console.error('Error fetching project:', projectError);
         toast({
           title: "Error al cargar proyecto",
           description: projectError.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!projectData) {
+        toast({
+          title: "Proyecto no encontrado",
+          description: "No se encontró el proyecto o no tienes acceso a él",
           variant: "destructive",
         });
         return;

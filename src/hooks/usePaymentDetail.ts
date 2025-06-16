@@ -52,15 +52,25 @@ export const usePaymentDetail = (paymentId: string) => {
         return;
       }
 
-      // Get contractor data for current user
+      // Get contractor data for current user - use maybeSingle to handle no results
       const { data: contractorData, error: contractorError } = await supabase
         .from('Contratistas')
         .select('*')
         .eq('auth_user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (contractorError) {
         console.error('Error fetching contractor:', contractorError);
+        return;
+      }
+
+      if (!contractorData) {
+        console.log('No contractor found for current user');
+        toast({
+          title: "Acceso denegado",
+          description: "No tienes un perfil de contratista válido",
+          variant: "destructive",
+        });
         return;
       }
 
@@ -90,13 +100,22 @@ export const usePaymentDetail = (paymentId: string) => {
           )
         `)
         .eq('id', parseInt(paymentId))
-        .single();
+        .maybeSingle();
 
       if (paymentError) {
         console.error('Error fetching payment:', paymentError);
         toast({
           title: "Error al cargar estado de pago",
           description: paymentError.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!paymentData) {
+        toast({
+          title: "Estado de pago no encontrado",
+          description: "No se encontró el estado de pago solicitado",
           variant: "destructive",
         });
         return;

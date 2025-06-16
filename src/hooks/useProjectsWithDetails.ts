@@ -58,12 +58,12 @@ export const useProjectsWithDetails = () => {
         return;
       }
 
-      // Get contractor data for current user
+      // Get contractor data for current user - use maybeSingle to handle no results
       const { data: contractorData, error: contractorError } = await supabase
         .from('Contratistas')
         .select('*')
         .eq('auth_user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (contractorError) {
         console.error('Error fetching contractor:', contractorError);
@@ -78,6 +78,7 @@ export const useProjectsWithDetails = () => {
       if (!contractorData) {
         console.log('No contractor found for current user');
         setProjects([]);
+        setContractor(null);
         return;
       }
 
@@ -88,13 +89,13 @@ export const useProjectsWithDetails = () => {
         .from('Proyectos')
         .select(`
           *,
-          Contratistas!Proyectos_Contratista_fkey (
+          Contratistas (
             id,
             CompanyName,
             ContactName,
             ContactEmail
           ),
-          Mandantes!Proyectos_Owner_fkey (
+          Mandantes (
             id,
             CompanyName,
             ContactName,

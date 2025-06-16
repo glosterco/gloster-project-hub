@@ -199,7 +199,7 @@ const Index = () => {
                   <Button 
                     variant="outline"
                     onClick={() => navigate('/register')}
-                    className="w-full border-gloster-white/20 text-gloster-white hover:bg-gloster-white/10 font-rubik"
+                    className="w-full border-gloster-white/20 text-gloster-grey hover:bg-gloster-white/10 font-rubik"
                     disabled={loading}
                   >
                     Registrarse como Contratista

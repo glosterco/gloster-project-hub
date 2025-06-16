@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useContratistas } from '@/hooks/useContratistas';
@@ -261,49 +260,45 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
     }
 
     try {
-      // Paso 1: Crear usuario en autenticación (manejar caso donde ya existe)
+      // Paso 1: Crear usuario en autenticación
       const { data: authData, error: authError } = await signUp(formData.email, formData.password);
       
-      // Si el usuario ya existe, intentar iniciar sesión directamente
-      if (authError && authError.message?.includes('User already registered')) {
-        console.log('Usuario ya existe, intentando iniciar sesión...');
+      if (authError) {
+        console.error('Error creating auth user:', authError);
         
-        const { error: signInError } = await signIn(formData.email, formData.password);
-        
-        if (signInError) {
-          console.error('Error signing in existing user:', signInError);
+        // Mostrar mensaje específico para email ya registrado
+        if (authError.message?.includes('ya está registrada') || 
+            authError.message?.includes('already registered')) {
           toast({
-            title: "Error de autenticación",
-            description: "El usuario ya existe pero las credenciales no son correctas",
+            title: "Email ya registrado",
+            description: authError.message,
             variant: "destructive",
           });
           return false;
         }
         
-        console.log('Usuario existente autenticado correctamente');
-      } else if (authError) {
-        console.error('Error creating auth user:', authError);
+        // Si es cualquier otro error de autenticación
         toast({
           title: "Error al crear usuario",
           description: authError.message || "No se pudo crear la cuenta de usuario",
           variant: "destructive",
         });
         return false;
-      } else {
-        console.log('Auth user created successfully:', authData);
-        
-        // Paso 2: Iniciar sesión automáticamente para nuevos usuarios
-        const { error: signInError } = await signIn(formData.email, formData.password);
-        
-        if (signInError) {
-          console.error('Error signing in new user:', signInError);
-          toast({
-            title: "Error al iniciar sesión",
-            description: "Usuario creado pero no se pudo iniciar sesión automáticamente",
-            variant: "destructive",
-          });
-          return false;
-        }
+      }
+
+      console.log('Auth user created successfully:', authData);
+      
+      // Paso 2: Iniciar sesión automáticamente para nuevos usuarios
+      const { error: signInError } = await signIn(formData.email, formData.password);
+      
+      if (signInError) {
+        console.error('Error signing in new user:', signInError);
+        toast({
+          title: "Error al iniciar sesión",
+          description: "Usuario creado pero no se pudo iniciar sesión automáticamente",
+          variant: "destructive",
+        });
+        return false;
       }
 
       // Paso 3: Crear contratista

@@ -22,6 +22,20 @@ export const useAuth = () => {
 
       if (error) {
         console.error('Auth error:', error);
+        
+        // Detectar específicamente el error de usuario ya registrado
+        if (error.message?.includes('User already registered') || 
+            error.message?.includes('already registered') ||
+            error.message?.includes('already been registered')) {
+          return { 
+            data: null, 
+            error: { 
+              ...error, 
+              message: 'Esta dirección de correo electrónico ya está registrada. Por favor usa otro email o inicia sesión.' 
+            } 
+          };
+        }
+        
         return { data: null, error };
       }
 

@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Shield, FileText, Clock } from 'lucide-react';
+import { Shield, FileText, Clock, Database } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -129,6 +129,22 @@ const Index = () => {
                 <Clock className="h-5 w-5 text-gloster-yellow" />
                 <span className="font-rubik">Estados de pago en tiempo real</span>
               </div>
+              <div className="flex items-center space-x-3 text-gloster-white">
+                <Database className="h-5 w-5 text-gloster-yellow" />
+                <span className="font-rubik">Visualización completa de datos</span>
+              </div>
+            </div>
+
+            {/* Quick Access Button */}
+            <div className="pt-4">
+              <Button 
+                onClick={() => navigate('/data-viewer')}
+                variant="outline"
+                className="border-gloster-yellow text-gloster-yellow hover:bg-gloster-yellow hover:text-black font-rubik"
+              >
+                <Database className="h-4 w-4 mr-2" />
+                Ver Datos en Vivo
+              </Button>
             </div>
           </div>
 

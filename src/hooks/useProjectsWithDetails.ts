@@ -1,0 +1,127 @@
+
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+
+export interface ProjectWithDetails {
+  id: number;
+  Name: string;
+  Description: string;
+  Location: string;
+  Budget: number;
+  StartDate: string;
+  Duration: number;
+  FirstPayment: string;
+  ExpiryRate: number;
+  Requierment: string[];
+  Status: boolean;
+  Contratista: {
+    id: number;
+    CompanyName: string;
+    ContactName: string;
+    ContactEmail: string;
+  };
+  Owner: {
+    id: number;
+    CompanyName: string;
+    ContactName: string;
+    ContactEmail: string;
+  };
+  EstadosPago: Array<{
+    id: number;
+    Name: string;
+    ExpiryDate: string;
+    Status: string;
+    Completion: boolean;
+    Mes: string;
+    Año: number;
+    Total: number;
+  }>;
+}
+
+export const useProjectsWithDetails = () => {
+  const [projects, setProjects] = useState<ProjectWithDetails[]>([]);
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+
+  const fetchProjectsWithDetails = async () => {
+    setLoading(true);
+    try {
+      // Fetch projects with contractor and owner details
+      const { data: projectsData, error: projectsError } = await supabase
+        .from('Proyectos')
+        .select(`
+          *,
+          Contratistas!Proyectos_Contratista_fkey (
+            id,
+            CompanyName,
+            ContactName,
+            ContactEmail
+          ),
+          Mandantes!Proyectos_Owner_fkey (
+            id,
+            CompanyName,
+            ContactName,
+            ContactEmail
+          )
+        `)
+        .eq('Status', true);
+
+      if (projectsError) {
+        console.error('Error fetching projects:', projectsError);
+        toast({
+          title: "Error al cargar proyectos",
+          description: projectsError.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Fetch payment states for all projects
+      const { data: paymentsData, error: paymentsError } = await supabase
+        .from('Estados de pago')
+        .select('*')
+        .order('ExpiryDate', { ascending: true });
+
+      if (paymentsError) {
+        console.error('Error fetching payment states:', paymentsError);
+        toast({
+          title: "Error al cargar estados de pago",
+          description: paymentsError.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Combine projects with their payment states
+      const projectsWithDetails = projectsData.map(project => ({
+        ...project,
+        Contratista: project.Contratistas,
+        Owner: project.Mandantes,
+        EstadosPago: paymentsData.filter(payment => payment.Project === project.id)
+      }));
+
+      setProjects(projectsWithDetails);
+      console.log('Projects with details loaded:', projectsWithDetails);
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      toast({
+        title: "Error inesperado",
+        description: "Hubo un error al cargar los datos",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProjectsWithDetails();
+  }, []);
+
+  return {
+    projects,
+    loading,
+    refetch: fetchProjectsWithDetails
+  };
+};

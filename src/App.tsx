@@ -10,6 +10,7 @@ import ProjectDetail from "./pages/ProjectDetail";
 import PaymentDetail from "./pages/PaymentDetail";
 import EmailPreview from "./pages/EmailPreview";
 import Register from "./pages/Register";
+import DataViewer from "./pages/DataViewer";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/register" element={<Register />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/data-viewer" element={<DataViewer />} />
           <Route path="/project/:id" element={<ProjectDetail />} />
           <Route path="/payment/:id" element={<PaymentDetail />} />
           <Route path="/email-preview" element={<EmailPreview />} />

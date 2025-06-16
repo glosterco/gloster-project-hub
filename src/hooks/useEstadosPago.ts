@@ -82,38 +82,19 @@ export const useEstadosPago = () => {
 
       if (error) {
         console.error('Error en BD al crear estados de pago:', error);
-        toast({
-          title: "Error al crear estados de pago",
-          description: error.message,
-          variant: "destructive",
-        });
         return { data: null, error };
       }
 
       if (!data || data.length === 0) {
         console.error('No se retornaron datos de estados de pago');
-        toast({
-          title: "Error al crear estados de pago",
-          description: "No se obtuvieron datos de los estados de pago creados",
-          variant: "destructive",
-        });
         return { data: null, error: new Error('No data returned') };
       }
 
       console.log('Estados de pago creados exitosamente en BD:', data);
-      toast({
-        title: "Estados de pago creados",
-        description: `Se crearon ${totalPayments} estados de pago exitosamente`,
-      });
 
       return { data, error: null };
     } catch (error) {
       console.error('Error inesperado creando estados de pago:', error);
-      toast({
-        title: "Error inesperado",
-        description: "Hubo un error al crear los estados de pago",
-        variant: "destructive",
-      });
       return { data: null, error };
     } finally {
       setLoading(false);

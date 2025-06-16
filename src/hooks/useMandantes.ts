@@ -34,11 +34,6 @@ export const useMandantes = () => {
 
       if (error) {
         console.error('Error en BD al crear mandante:', error);
-        toast({
-          title: "Error al crear mandante",
-          description: error.message,
-          variant: "destructive",
-        });
         return { data: null, error };
       }
 
@@ -48,20 +43,11 @@ export const useMandantes = () => {
       }
 
       console.log('Mandante creado exitosamente en BD:', result);
-      toast({
-        title: "Mandante creado exitosamente",
-        description: "La información del mandante se ha guardado en la base de datos",
-      });
 
       // Retornar en formato de array para consistencia
       return { data: [result], error: null };
     } catch (error) {
       console.error('Error inesperado creando mandante:', error);
-      toast({
-        title: "Error inesperado",
-        description: "Por favor intenta nuevamente",
-        variant: "destructive",
-      });
       return { data: null, error };
     } finally {
       setLoading(false);

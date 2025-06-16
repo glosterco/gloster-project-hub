@@ -56,39 +56,20 @@ export const useProyectos = () => {
 
       if (error) {
         console.error('Error en BD al crear proyecto:', error);
-        toast({
-          title: "Error al crear proyecto",
-          description: error.message,
-          variant: "destructive",
-        });
         return { data: null, error };
       }
 
       if (!data) {
         console.error('No se retornó resultado del proyecto');
-        toast({
-          title: "Error al crear proyecto",
-          description: "No se obtuvieron datos del proyecto creado",
-          variant: "destructive",
-        });
         return { data: null, error: new Error('No data returned') };
       }
 
       console.log('Proyecto creado exitosamente en BD:', data);
-      toast({
-        title: "Proyecto creado",
-        description: "El proyecto ha sido creado exitosamente",
-      });
 
       // Retornar en formato de array para consistencia
       return { data: [data], error: null };
     } catch (error) {
       console.error('Error inesperado creando proyecto:', error);
-      toast({
-        title: "Error inesperado",
-        description: "Hubo un error al crear el proyecto",
-        variant: "destructive",
-      });
       return { data: null, error };
     } finally {
       setLoading(false);

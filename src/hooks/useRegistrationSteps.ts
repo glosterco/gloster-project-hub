@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useContratistas } from '@/hooks/useContratistas';
@@ -106,40 +107,6 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
     }
   };
 
-  const saveContratistaData = async () => {
-    const finalSpecialties = formData.specialties === 'otra' ? formData.customSpecialty : formData.specialties;
-    
-    const contratistaData = {
-      CompanyName: formData.companyName,
-      RUT: formData.rut,
-      Specialization: finalSpecialties,
-      Experience: formData.experience,
-      Adress: formData.address,
-      City: formData.city,
-      ContactName: formData.contactName,
-      ContactEmail: formData.email,
-      ContactPhone: parseInt(formData.phone.replace(/\D/g, '')),
-      Username: formData.email,
-      Password: formData.password,
-      Status: true
-    };
-
-    console.log('Saving contratista data with auth:', contratistaData);
-
-    const { data, error } = await createContratista(contratistaData);
-    
-    if (error) {
-      console.error('Error saving contratista:', error);
-      return false;
-    }
-
-    console.log('Contratista saved successfully:', data);
-    if (data && data[0]) {
-      setSavedContratistaId(data[0].id);
-    }
-    return true;
-  };
-
   const saveMandanteData = async () => {
     const mandanteData = {
       CompanyName: formData.clientCompany,
@@ -165,8 +132,8 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
     return true;
   };
 
-  const saveProyectoData = async () => {
-    if (!savedContratistaId || !savedMandanteId) {
+  const saveProyectoData = async (contratistaId: number) => {
+    if (!contratistaId || !savedMandanteId) {
       console.error('Missing contratista or mandante ID');
       toast({
         title: "Error",
@@ -186,7 +153,7 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
       Budget: parseInt(formData.contractAmount),
       StartDate: formData.startDate ? format(formData.startDate, 'yyyy-MM-dd') : '',
       Duration: parseInt(formData.duration),
-      Contratista: savedContratistaId,
+      Contratista: contratistaId,
       Owner: savedMandanteId,
       FirstPayment: formData.firstPaymentDate ? format(formData.firstPaymentDate, 'yyyy-MM-dd') : '',
       ExpiryRate: finalPaymentPeriod,
@@ -225,7 +192,6 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
       return false;
     }
 
-    // Convert payment period to numeric value
     const finalPaymentPeriod = formData.paymentPeriod === 'otro' ? formData.customPeriod : formData.paymentPeriod;
     let numericExpiryRate: number;
     if (finalPaymentPeriod === 'mensual') {
@@ -262,13 +228,7 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
       return;
     }
 
-    // Save data after step 2
-    if (currentStep === 2) {
-      const success = await saveContratistaData();
-      if (!success) return;
-    }
-
-    // Save data after step 5
+    // Save mandante data after step 5
     if (currentStep === 5) {
       const success = await saveMandanteData();
       if (!success) return;
@@ -295,8 +255,53 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
       return;
     }
 
+    // Ahora guardamos el contratista con autenticación en el último paso
+    const finalSpecialties = formData.specialties === 'otra' ? formData.customSpecialty : formData.specialties;
+    
+    const contratistaData = {
+      CompanyName: formData.companyName,
+      RUT: formData.rut,
+      Specialization: finalSpecialties,
+      Experience: formData.experience,
+      Adress: formData.address,
+      City: formData.city,
+      ContactName: formData.contactName,
+      ContactEmail: formData.email,
+      ContactPhone: parseInt(formData.phone.replace(/\D/g, '')),
+      Username: formData.email,
+      Password: formData.password,
+      Status: true
+    };
+
+    console.log('Saving contratista data with auth:', contratistaData);
+
+    const { data: contratistaData_result, error: contratistaError } = await createContratista(contratistaData);
+    
+    if (contratistaError) {
+      console.error('Error saving contratista:', contratistaError);
+      toast({
+        title: "Error al crear cuenta",
+        description: "Hubo un error al crear tu cuenta. Por favor intenta de nuevo.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    console.log('Contratista saved successfully:', contratistaData_result);
+    let contratistaId: number;
+    if (contratistaData_result && contratistaData_result[0]) {
+      contratistaId = contratistaData_result[0].id;
+    } else {
+      toast({
+        title: "Error",
+        description: "No se pudo obtener el ID del contratista",
+        variant: "destructive",
+      });
+      return false;
+    }
+
     // Guardar el proyecto en la base de datos
-    const proyectoSuccess = await saveProyectoData();
+    const proyectoSuccess = await saveProyectoData(contratistaId);
     if (!proyectoSuccess) {
       return false;
     }
@@ -356,7 +361,7 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
         title: "Registro completado con observaciones",
         description: "Tu cuenta fue creada exitosamente. Revisa tu email para confirmarla.",
       });
-      return true; // Return true since the core registration was successful
+      return true;
     }
   };
 

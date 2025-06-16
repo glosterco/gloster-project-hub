@@ -56,14 +56,14 @@ const Index = () => {
             <div className="flex items-center space-x-4">
               <Button 
                 variant="outline" 
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate('/auth')}
                 className="font-rubik border-gloster-gray/30 hover:bg-gloster-gray/10"
               >
                 Iniciar Sesión
               </Button>
               <Button 
                 onClick={() => navigate('/register')}
-                className="bg-slate-800 hover:bg-slate-900 text-white font-rubik font-semibold px-6 shadow-lg"
+                className="bg-slate-900 hover:bg-slate-950 text-white font-rubik font-semibold px-6 shadow-lg border-2 border-slate-900"
               >
                 Registrarse
               </Button>
@@ -87,7 +87,7 @@ const Index = () => {
             <Button 
               size="lg" 
               onClick={() => navigate('/register')}
-              className="bg-slate-800 hover:bg-slate-900 text-white font-rubik font-bold px-8 py-4 text-lg shadow-xl"
+              className="bg-slate-900 hover:bg-slate-950 text-white font-rubik font-bold px-8 py-4 text-lg shadow-xl border-2 border-slate-900"
             >
               Comenzar Ahora
               <ArrowRight className="ml-2 h-5 w-5" />
@@ -95,7 +95,7 @@ const Index = () => {
             <Button 
               size="lg" 
               variant="outline" 
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/auth')}
               className="font-rubik border-2 border-gloster-gray/30 hover:bg-gloster-gray/10 px-8 py-4 text-lg"
             >
               Ver Demo
@@ -159,7 +159,7 @@ const Index = () => {
               </p>
               <Button 
                 onClick={() => navigate('/register')}
-                className="w-full bg-slate-800 hover:bg-slate-900 text-white font-rubik font-bold py-3 shadow-lg"
+                className="w-full bg-slate-900 hover:bg-slate-950 text-white font-rubik font-bold py-3 shadow-lg border-2 border-slate-900"
               >
                 Crear cuenta gratuita
               </Button>

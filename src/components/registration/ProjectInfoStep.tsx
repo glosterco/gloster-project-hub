@@ -143,14 +143,14 @@ const ProjectInfoStep = ({
 
         <div className="space-y-2">
           <Label htmlFor="duration" className="text-sm font-medium text-gloster-gray">
-            Duración (días) *
+            Duración (meses) *
           </Label>
           <Input
             id="duration"
             type="text"
             value={duration}
             onChange={(e) => setDuration(e.target.value)}
-            placeholder="Ej: 365"
+            placeholder="Ej: 12"
             className={`w-full ${errors.duration ? 'border-red-500' : ''}`}
           />
           {errors.duration && (

@@ -120,22 +120,30 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
 
     console.log('Datos del mandante a guardar:', mandanteData);
 
-    const { data, error } = await createMandante(mandanteData);
-    
-    if (error || !data) {
-      console.error('Error al crear mandante:', error);
-      return false;
-    }
+    try {
+      const { data, error } = await createMandante(mandanteData);
+      
+      console.log('Resultado completo de createMandante:', { data, error });
+      
+      if (error) {
+        console.error('Error específico al crear mandante:', error);
+        return { success: false, mandanteId: null };
+      }
 
-    console.log('Resultado de createMandante:', data);
-    if (data && data[0]?.id) {
-      setSavedMandanteId(data[0].id);
-      console.log('✅ Mandante guardado con ID:', data[0].id);
-      return true;
+      if (!data || !Array.isArray(data) || data.length === 0) {
+        console.error('No se retornaron datos válidos del mandante');
+        return { success: false, mandanteId: null };
+      }
+
+      const mandanteId = data[0].id;
+      console.log('✅ Mandante creado exitosamente con ID:', mandanteId);
+      setSavedMandanteId(mandanteId);
+      return { success: true, mandanteId };
+
+    } catch (error) {
+      console.error('Error inesperado al crear mandante:', error);
+      return { success: false, mandanteId: null };
     }
-    
-    console.error('No se pudo obtener el ID del mandante creado');
-    return false;
   };
 
   const saveProyectoData = async (contratistaId: number, mandanteId: number) => {
@@ -144,12 +152,7 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
     
     if (!contratistaId || !mandanteId) {
       console.error('Faltan IDs necesarios:', { contratistaId, mandanteId });
-      toast({
-        title: "Error",
-        description: "Faltan datos del contratista o mandante",
-        variant: "destructive",
-      });
-      return false;
+      return { success: false, proyectoId: null };
     }
 
     const finalPaymentPeriod = formData.paymentPeriod === 'otro' ? formData.customPeriod : formData.paymentPeriod;
@@ -178,22 +181,30 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
 
     console.log('Datos del proyecto a guardar:', proyectoData);
 
-    const { data, error } = await createProyecto(proyectoData);
-    
-    if (error || !data) {
-      console.error('Error al crear proyecto:', error);
-      return false;
-    }
+    try {
+      const { data, error } = await createProyecto(proyectoData);
+      
+      console.log('Resultado completo de createProyecto:', { data, error });
+      
+      if (error) {
+        console.error('Error específico al crear proyecto:', error);
+        return { success: false, proyectoId: null };
+      }
 
-    console.log('Resultado de createProyecto:', data);
-    if (data && data[0]?.id) {
-      setSavedProyectoId(data[0].id);
-      console.log('✅ Proyecto guardado con ID:', data[0].id);
-      return true;
+      if (!data || !Array.isArray(data) || data.length === 0) {
+        console.error('No se retornaron datos válidos del proyecto');
+        return { success: false, proyectoId: null };
+      }
+
+      const proyectoId = data[0].id;
+      console.log('✅ Proyecto creado exitosamente con ID:', proyectoId);
+      setSavedProyectoId(proyectoId);
+      return { success: true, proyectoId };
+
+    } catch (error) {
+      console.error('Error inesperado al crear proyecto:', error);
+      return { success: false, proyectoId: null };
     }
-    
-    console.error('No se pudo obtener el ID del proyecto creado');
-    return false;
   };
 
   const saveEstadosPagoData = async (proyectoId: number) => {
@@ -202,22 +213,12 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
     
     if (!proyectoId) {
       console.error('Falta el ID del proyecto');
-      toast({
-        title: "Error",
-        description: "Falta el ID del proyecto",
-        variant: "destructive",
-      });
-      return false;
+      return { success: false };
     }
 
     if (!formData.firstPaymentDate) {
       console.error('Falta la fecha del primer pago');
-      toast({
-        title: "Error",
-        description: "Falta la fecha del primer pago",
-        variant: "destructive",
-      });
-      return false;
+      return { success: false };
     }
 
     const finalPaymentPeriod = formData.paymentPeriod === 'otro' ? formData.customPeriod : formData.paymentPeriod;
@@ -240,20 +241,28 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
       duration
     });
 
-    const { data, error } = await createEstadosPago(
-      proyectoId,
-      firstPaymentDate,
-      numericExpiryRate,
-      duration
-    );
-    
-    if (error) {
-      console.error('Error al crear estados de pago:', error);
-      return false;
-    }
+    try {
+      const { data, error } = await createEstadosPago(
+        proyectoId,
+        firstPaymentDate,
+        numericExpiryRate,
+        duration
+      );
+      
+      console.log('Resultado completo de createEstadosPago:', { data, error });
+      
+      if (error) {
+        console.error('Error específico al crear estados de pago:', error);
+        return { success: false };
+      }
 
-    console.log('✅ Estados de pago creados exitosamente:', data);
-    return true;
+      console.log('✅ Estados de pago creados exitosamente');
+      return { success: true };
+
+    } catch (error) {
+      console.error('Error inesperado al crear estados de pago:', error);
+      return { success: false };
+    }
   };
 
   const handleNext = async () => {
@@ -363,9 +372,8 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
 
       // Paso 3: Crear mandante
       console.log('Paso 3: Creando mandante...');
-      const mandanteSuccess = await saveMandanteData();
-      if (!mandanteSuccess || !savedMandanteId) {
-        console.error('Error al crear mandante');
+      const mandanteResult = await saveMandanteData();
+      if (!mandanteResult.success || !mandanteResult.mandanteId) {
         toast({
           title: "Error al crear mandante",
           description: "No se pudo crear el mandante",
@@ -373,29 +381,37 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
         });
         return false;
       }
-      console.log('✅ Mandante creado con ID:', savedMandanteId);
+      console.log('✅ Mandante creado con ID:', mandanteResult.mandanteId);
 
       // Paso 4: Crear proyecto
       console.log('Paso 4: Creando proyecto...');
-      const proyectoSuccess = await saveProyectoData(contratistaId, savedMandanteId);
-      if (!proyectoSuccess || !savedProyectoId) {
-        console.error('Error al crear proyecto');
+      const proyectoResult = await saveProyectoData(contratistaId, mandanteResult.mandanteId);
+      if (!proyectoResult.success || !proyectoResult.proyectoId) {
+        toast({
+          title: "Error al crear proyecto",
+          description: "No se pudo crear el proyecto",
+          variant: "destructive",
+        });
         return false;
       }
-      console.log('✅ Proyecto creado con ID:', savedProyectoId);
+      console.log('✅ Proyecto creado con ID:', proyectoResult.proyectoId);
 
       // Paso 5: Crear estados de pago
       console.log('Paso 5: Creando estados de pago...');
-      const estadosPagoSuccess = await saveEstadosPagoData(savedProyectoId);
-      if (!estadosPagoSuccess) {
-        console.error('Error al crear estados de pago');
+      const estadosPagoResult = await saveEstadosPagoData(proyectoResult.proyectoId);
+      if (!estadosPagoResult.success) {
+        toast({
+          title: "Error al crear estados de pago",
+          description: "No se pudieron crear los estados de pago",
+          variant: "destructive",
+        });
         return false;
       }
-      console.log('✅ Estados de pago creados');
+      console.log('✅ Estados de pago creados exitosamente');
 
       // Paso 6: Enviar datos al webhook como respaldo
       console.log('Paso 6: Enviando datos al webhook...');
-      // ... keep existing code (webhook logic)
+      
       const finalPaymentPeriod = formData.paymentPeriod === 'otro' ? formData.customPeriod : formData.paymentPeriod;
       let finalDocuments: string[] = [];
       if (Array.isArray(formData.requiredDocuments)) {
@@ -433,26 +449,24 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
 
         if (response.ok) {
           console.log('✅ Webhook enviado correctamente');
-          toast({
-            title: "¡Registro exitoso!",
-            description: "Tu cuenta ha sido creada. Revisa tu email para confirmar tu cuenta antes de iniciar sesión.",
-          });
-          
-          return true;
         } else {
-          throw new Error('Network response was not ok');
+          console.log('⚠️ Webhook falló, pero los datos se guardaron en BD');
         }
         
       } catch (error) {
-        console.error('Project registration error:', error);
-        toast({
-          title: "Registro completado con observaciones",
-          description: "Tu cuenta fue creada exitosamente. Revisa tu email para confirmarla.",
-        });
-        return true;
+        console.log('⚠️ Error en webhook, pero los datos se guardaron en BD:', error);
       }
+
+      // Éxito total
+      toast({
+        title: "¡Registro exitoso!",
+        description: "Tu cuenta ha sido creada exitosamente. Revisa tu email para confirmar tu cuenta antes de iniciar sesión.",
+      });
+      
+      return true;
+
     } catch (error) {
-      console.error('Unexpected error during registration:', error);
+      console.error('Error inesperado durante el registro:', error);
       toast({
         title: "Error inesperado",
         description: "Hubo un error durante el registro. Por favor intenta de nuevo.",

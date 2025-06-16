@@ -17,8 +17,7 @@ export const useEstadosPago = () => {
     setLoading(true);
     
     try {
-      console.log('=== CREANDO ESTADOS DE PAGO EN BASE DE DATOS ===');
-      console.log('Parámetros recibidos:', { projectId, firstPaymentDate, expiryRate, duration });
+      console.log('Creando estados de pago con parámetros:', { projectId, firstPaymentDate, expiryRate, duration });
       
       // Calculate how many payment states to create
       let totalPayments: number;
@@ -82,7 +81,7 @@ export const useEstadosPago = () => {
         .select();
 
       if (error) {
-        console.error('Error al insertar estados de pago en BD:', error);
+        console.error('Error en BD al crear estados de pago:', error);
         toast({
           title: "Error al crear estados de pago",
           description: error.message,
@@ -92,7 +91,7 @@ export const useEstadosPago = () => {
       }
 
       if (!data || data.length === 0) {
-        console.error('No se retornaron datos de los estados de pago creados');
+        console.error('No se retornaron datos de estados de pago');
         toast({
           title: "Error al crear estados de pago",
           description: "No se obtuvieron datos de los estados de pago creados",
@@ -101,7 +100,7 @@ export const useEstadosPago = () => {
         return { data: null, error: new Error('No data returned') };
       }
 
-      console.log('✅ Estados de pago insertados exitosamente en BD:', data);
+      console.log('Estados de pago creados exitosamente en BD:', data);
       toast({
         title: "Estados de pago creados",
         description: `Se crearon ${totalPayments} estados de pago exitosamente`,
@@ -109,7 +108,7 @@ export const useEstadosPago = () => {
 
       return { data, error: null };
     } catch (error) {
-      console.error('Error inesperado al crear estados de pago:', error);
+      console.error('Error inesperado creando estados de pago:', error);
       toast({
         title: "Error inesperado",
         description: "Hubo un error al crear los estados de pago",

@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -17,6 +18,8 @@ export const useMandantes = () => {
   const createMandante = async (data: MandanteData) => {
     setLoading(true);
     try {
+      console.log('Insertando mandante en BD:', data);
+      
       const { data: result, error } = await supabase
         .from('Mandantes')
         .insert([{
@@ -30,7 +33,7 @@ export const useMandantes = () => {
         .single();
 
       if (error) {
-        console.error('Error creating mandante:', error);
+        console.error('Error en BD al crear mandante:', error);
         toast({
           title: "Error al crear mandante",
           description: error.message,
@@ -39,16 +42,21 @@ export const useMandantes = () => {
         return { data: null, error };
       }
 
-      console.log('Mandante created successfully:', result);
+      if (!result) {
+        console.error('No se retornó resultado del mandante');
+        return { data: null, error: new Error('No data returned') };
+      }
+
+      console.log('Mandante creado exitosamente en BD:', result);
       toast({
         title: "Mandante creado exitosamente",
         description: "La información del mandante se ha guardado en la base de datos",
       });
 
-      // Retornar en formato de array para mantener consistencia
+      // Retornar en formato de array para consistencia
       return { data: [result], error: null };
     } catch (error) {
-      console.error('Unexpected error:', error);
+      console.error('Error inesperado creando mandante:', error);
       toast({
         title: "Error inesperado",
         description: "Por favor intenta nuevamente",

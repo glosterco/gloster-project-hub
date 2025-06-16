@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -22,8 +23,7 @@ export const useProyectos = () => {
     setLoading(true);
     
     try {
-      console.log('=== CREANDO PROYECTO EN BASE DE DATOS ===');
-      console.log('Datos del proyecto:', proyectoData);
+      console.log('Insertando proyecto en BD:', proyectoData);
       
       // Convert payment period to numeric value
       let numericExpiryRate: number;
@@ -51,10 +51,11 @@ export const useProyectos = () => {
           Requierment: proyectoData.Requierment,
           Status: true
         })
-        .select();
+        .select()
+        .single();
 
       if (error) {
-        console.error('Error al insertar proyecto en BD:', error);
+        console.error('Error en BD al crear proyecto:', error);
         toast({
           title: "Error al crear proyecto",
           description: error.message,
@@ -63,8 +64,8 @@ export const useProyectos = () => {
         return { data: null, error };
       }
 
-      if (!data || data.length === 0) {
-        console.error('No se retornaron datos del proyecto creado');
+      if (!data) {
+        console.error('No se retornó resultado del proyecto');
         toast({
           title: "Error al crear proyecto",
           description: "No se obtuvieron datos del proyecto creado",
@@ -73,15 +74,16 @@ export const useProyectos = () => {
         return { data: null, error: new Error('No data returned') };
       }
 
-      console.log('✅ Proyecto insertado exitosamente en BD:', data);
+      console.log('Proyecto creado exitosamente en BD:', data);
       toast({
         title: "Proyecto creado",
         description: "El proyecto ha sido creado exitosamente",
       });
 
-      return { data, error: null };
+      // Retornar en formato de array para consistencia
+      return { data: [data], error: null };
     } catch (error) {
-      console.error('Error inesperado al crear proyecto:', error);
+      console.error('Error inesperado creando proyecto:', error);
       toast({
         title: "Error inesperado",
         description: "Hubo un error al crear el proyecto",

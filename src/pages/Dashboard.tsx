@@ -161,7 +161,7 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-slate-800 font-rubik">
-                {formatCurrency(projects.reduce((sum, p) => sum + (p.Budget || 0), 0), project.Currency || 'CLP')}
+                {formatCurrency(projects.reduce((sum, p) => sum + (p.Budget || 0), 0))}
               </div>
             </CardContent>
           </Card>
@@ -237,19 +237,19 @@ const Dashboard = () => {
                       <div className="flex justify-between">
                         <span className="text-gloster-gray font-rubik">Valor total:</span>
                         <span className="font-semibold text-slate-800 font-rubik">
-                          {formatCurrency(projects.Budget || 0)}
+                          {formatCurrency(project.Budget || 0, project.Currency || 'CLP')}
                         </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gloster-gray font-rubik">Pagado:</span>
                         <span className="font-semibold text-green-600 font-rubik">
-                          {formatCurrency(paidValue)}
+                          {formatCurrency(paidValue, project.Currency || 'CLP')}
                         </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gloster-gray font-rubik">Pendiente:</span>
                         <span className="font-semibold text-red-600 font-rubik">
-                          {formatCurrency((projects.Budget || 0) - paidValue)}
+                          {formatCurrency((project.Budget || 0) - paidValue, project.Currency || 'CLP')}
                         </span>
                       </div>
                     </div>

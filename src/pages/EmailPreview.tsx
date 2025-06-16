@@ -1,32 +1,18 @@
 
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Download, Send } from 'lucide-react';
 import EmailTemplate from '@/components/EmailTemplate';
 import { useToast } from '@/hooks/use-toast';
+import { usePaymentDetail } from '@/hooks/usePaymentDetail';
 
 const EmailPreview = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const paymentId = searchParams.get('paymentId') || '5'; // Default fallback
+  const { payment, loading } = usePaymentDetail(paymentId);
   const { toast } = useToast();
-
-  // Datos de ejemplo actualizados
-  const samplePaymentState = {
-    month: "Mayo 2024",
-    amount: 28000000,
-    dueDate: "2024-05-30",
-    projectName: "Centro Comercial Plaza Norte",
-    recipient: "aadelpino97@gmail.com"
-  };
-
-  const sampleProject = {
-    name: "Centro Comercial Plaza Norte",
-    client: "Inversiones Comerciales Ltda.",
-    contractor: "Constructora ABC Ltda.",
-    location: "Las Condes",
-    projectManager: "Ana Rodríguez",
-    contactEmail: "aadelpino97@gmail.com"
-  };
 
   const sampleDocuments = [
     {
@@ -68,12 +54,26 @@ const EmailPreview = () => {
   ];
 
   const generateEmailHTML = () => {
-    // Generate email template data with all loaded information
+    if (!payment || !payment.projectData) return null;
+
     return {
-      paymentState: samplePaymentState,
-      project: sampleProject,
+      paymentState: {
+        month: `${payment.Mes} ${payment.Año}`,
+        amount: payment.Total || 0,
+        dueDate: payment.ExpiryDate,
+        projectName: payment.projectData.Name,
+        recipient: payment.projectData.Owner?.ContactEmail || ''
+      },
+      project: {
+        name: payment.projectData.Name,
+        client: payment.projectData.Owner?.CompanyName || '',
+        contractor: payment.projectData.Contratista?.CompanyName || '',
+        location: payment.projectData.Location || '',
+        projectManager: payment.projectData.Owner?.ContactName || '',
+        contactEmail: payment.projectData.Owner?.ContactEmail || ''
+      },
       documents: sampleDocuments,
-      htmlContent: `Email template with ${sampleDocuments.length} documents for ${samplePaymentState.projectName} - ${samplePaymentState.month}`,
+      htmlContent: `Email template with ${sampleDocuments.length} documents for ${payment.projectData.Name} - ${payment.Mes} ${payment.Año}`,
       timestamp: new Date().toISOString()
     };
   };
@@ -83,20 +83,27 @@ const EmailPreview = () => {
   };
 
   const handleDownloadPDF = () => {
-    // Simulación de descarga PDF
     alert('Funcionalidad de descarga PDF estará disponible pronto');
   };
 
   const handleSendEmail = async () => {
-    // Generate complete email data with template
+    if (!payment || !payment.projectData) {
+      toast({
+        title: "Error",
+        description: "No se pueden cargar los datos del estado de pago",
+        variant: "destructive"
+      });
+      return;
+    }
+
     const emailTemplateData = generateEmailHTML();
     
     const emailData = {
-      paymentState: samplePaymentState,
-      project: sampleProject,
+      paymentState: emailTemplateData?.paymentState,
+      project: emailTemplateData?.project,
       documents: sampleDocuments,
       emailTemplate: emailTemplateData,
-      recipient: samplePaymentState.recipient,
+      recipient: payment.projectData.Owner?.ContactEmail,
       timestamp: new Date().toISOString()
     };
 
@@ -114,7 +121,7 @@ const EmailPreview = () => {
       if (response.ok) {
         toast({
           title: "Email enviado",
-          description: `Email con vista previa enviado exitosamente a ${samplePaymentState.recipient}`,
+          description: `Email con vista previa enviado exitosamente a ${payment.projectData.Owner?.ContactEmail}`,
         });
       } else {
         throw new Error('Network response was not ok');
@@ -129,6 +136,33 @@ const EmailPreview = () => {
       });
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50">
+        <div className="container mx-auto px-6 py-8">
+          <div className="text-center">Cargando vista previa...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!payment || !payment.projectData) {
+    return (
+      <div className="min-h-screen bg-slate-50">
+        <div className="container mx-auto px-6 py-8">
+          <div className="text-center">
+            <p className="text-gloster-gray">Estado de pago no encontrado.</p>
+            <Button onClick={() => navigate('/dashboard')} className="mt-4">
+              Volver al Dashboard
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const emailData = generateEmailHTML();
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -176,11 +210,11 @@ const EmailPreview = () => {
         </div>
       </div>
 
-      {/* Volver - fuera del banner blanco */}
+      {/* Volver */}
       <div className="bg-slate-50 py-2 print:hidden">
         <div className="container mx-auto px-6">
           <button 
-            onClick={() => navigate('/payment/5')}
+            onClick={() => navigate(`/payment/${payment.id}`)}
             className="text-gloster-gray hover:text-slate-800 text-sm font-rubik flex items-center"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -192,11 +226,13 @@ const EmailPreview = () => {
       {/* Contenido de la plantilla */}
       <div className="container mx-auto px-6 py-8">
         <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
-          <EmailTemplate 
-            paymentState={samplePaymentState}
-            project={sampleProject}
-            documents={sampleDocuments}
-          />
+          {emailData && (
+            <EmailTemplate 
+              paymentState={emailData.paymentState}
+              project={emailData.project}
+              documents={sampleDocuments}
+            />
+          )}
         </div>
       </div>
     </div>

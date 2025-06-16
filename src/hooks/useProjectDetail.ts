@@ -3,7 +3,18 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
-export interface ProjectWithDetails {
+export interface PaymentState {
+  id: number;
+  Name: string;
+  Status: string;
+  Total: number | null;
+  ExpiryDate: string;
+  Completion: boolean;
+  Mes: string;
+  Año: number;
+}
+
+export interface ProjectDetail {
   id: number;
   Name: string;
   Description: string;
@@ -11,9 +22,6 @@ export interface ProjectWithDetails {
   Budget: number;
   StartDate: string;
   Duration: number;
-  FirstPayment: string;
-  ExpiryRate: number;
-  Requierment: string[];
   Status: boolean;
   Contratista: {
     id: number;
@@ -27,26 +35,17 @@ export interface ProjectWithDetails {
     ContactName: string;
     ContactEmail: string;
   };
-  EstadosPago: Array<{
-    id: number;
-    Name: string;
-    Project: number;
-    ExpiryDate: string;
-    Status: string;
-    Completion: boolean;
-    Mes: string;
-    Año: number;
-    Total: number;
-  }>;
+  EstadosPago: PaymentState[];
 }
 
-export const useProjectsWithDetails = () => {
-  const [projects, setProjects] = useState<ProjectWithDetails[]>([]);
+export const useProjectDetail = (projectId: string) => {
+  const [project, setProject] = useState<ProjectDetail | null>(null);
   const [loading, setLoading] = useState(false);
-  const [contractor, setContractor] = useState<any>(null);
   const { toast } = useToast();
 
-  const fetchProjectsWithDetails = async () => {
+  const fetchProjectDetail = async () => {
+    if (!projectId) return;
+    
     setLoading(true);
     try {
       // Get current user
@@ -54,7 +53,6 @@ export const useProjectsWithDetails = () => {
       
       if (!user) {
         console.log('No authenticated user found');
-        setProjects([]);
         return;
       }
 
@@ -67,24 +65,11 @@ export const useProjectsWithDetails = () => {
 
       if (contractorError) {
         console.error('Error fetching contractor:', contractorError);
-        toast({
-          title: "Error al cargar datos del contratista",
-          description: contractorError.message,
-          variant: "destructive",
-        });
         return;
       }
 
-      if (!contractorData) {
-        console.log('No contractor found for current user');
-        setProjects([]);
-        return;
-      }
-
-      setContractor(contractorData);
-
-      // Fetch projects for this contractor with contractor and owner details
-      const { data: projectsData, error: projectsError } = await supabase
+      // Fetch project details with relationships
+      const { data: projectData, error: projectError } = await supabase
         .from('Proyectos')
         .select(`
           *,
@@ -101,25 +86,25 @@ export const useProjectsWithDetails = () => {
             ContactEmail
           )
         `)
+        .eq('id', projectId)
         .eq('Contratista', contractorData.id)
-        .eq('Status', true);
+        .single();
 
-      if (projectsError) {
-        console.error('Error fetching projects:', projectsError);
+      if (projectError) {
+        console.error('Error fetching project:', projectError);
         toast({
-          title: "Error al cargar proyectos",
-          description: projectsError.message,
+          title: "Error al cargar proyecto",
+          description: projectError.message,
           variant: "destructive",
         });
         return;
       }
 
-      // Fetch payment states for all projects
-      const projectIds = projectsData?.map(p => p.id) || [];
+      // Fetch payment states for this project
       const { data: paymentsData, error: paymentsError } = await supabase
         .from('Estados de pago')
         .select('*')
-        .in('Project', projectIds)
+        .eq('Project', projectId)
         .order('ExpiryDate', { ascending: true });
 
       if (paymentsError) {
@@ -132,21 +117,20 @@ export const useProjectsWithDetails = () => {
         return;
       }
 
-      // Combine projects with their payment states
-      const projectsWithDetails = (projectsData || []).map(project => ({
-        ...project,
-        Contratista: project.Contratistas,
-        Owner: project.Mandantes,
-        EstadosPago: paymentsData?.filter(payment => payment.Project === project.id) || []
-      }));
+      const projectWithDetails = {
+        ...projectData,
+        Contratista: projectData.Contratistas,
+        Owner: projectData.Mandantes,
+        EstadosPago: paymentsData || []
+      };
 
-      setProjects(projectsWithDetails);
-      console.log('Projects with details loaded for contractor:', contractorData.CompanyName, projectsWithDetails);
+      setProject(projectWithDetails);
+      console.log('Project detail loaded:', projectWithDetails);
     } catch (error) {
       console.error('Unexpected error:', error);
       toast({
         title: "Error inesperado",
-        description: "Hubo un error al cargar los datos",
+        description: "Hubo un error al cargar el proyecto",
         variant: "destructive",
       });
     } finally {
@@ -155,13 +139,12 @@ export const useProjectsWithDetails = () => {
   };
 
   useEffect(() => {
-    fetchProjectsWithDetails();
-  }, []);
+    fetchProjectDetail();
+  }, [projectId]);
 
   return {
-    projects,
-    contractor,
+    project,
     loading,
-    refetch: fetchProjectsWithDetails
+    refetch: fetchProjectDetail
   };
 };

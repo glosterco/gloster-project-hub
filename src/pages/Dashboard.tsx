@@ -8,50 +8,13 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import PageHeader from '@/components/PageHeader';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { useProjectsWithDetails } from '@/hooks/useProjectsWithDetails';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isCreateProjectDialogOpen, setIsCreateProjectDialogOpen] = useState(false);
-
-  const projects = [
-    {
-      id: 2,
-      name: "Centro Comercial Plaza Norte",
-      description: "Obras de acabados e instalaciones eléctricas en centro comercial de 3 pisos.",
-      status: "activo",
-      progress: 40,
-      totalValue: 85000000,
-      paidValue: 34000000,
-      client: "Inversiones Comerciales Ltda.",
-      location: "Santiago Centro",
-      nextPayment: "15 Enero 2025"
-    },
-    {
-      id: 3,
-      name: "Proyecto Habitacional Vista Mar",
-      description: "Instalaciones sanitarias completas para complejo habitacional de 80 departamentos.",
-      status: "activo",
-      progress: 75,
-      totalValue: 45000000,
-      paidValue: 33750000,
-      client: "Constructora Pacífico SpA",
-      location: "Viña del Mar",
-      nextPayment: "22 Enero 2025"
-    },
-    {
-      id: 4,
-      name: "Oficinas Corporativas Las Américas",
-      description: "Instalación eléctrica y automatización de edificio corporativo de 15 pisos.",
-      status: "planificado",
-      progress: 0,
-      totalValue: 120000000,
-      paidValue: 0,
-      client: "Grupo Empresarial Las Américas",
-      location: "Las Condes",
-      nextPayment: "Por definir"
-    }
-  ];
+  const { projects, contractor, loading } = useProjectsWithDetails();
 
   const handleCreateProject = () => {
     setIsCreateProjectDialogOpen(true);
@@ -62,7 +25,6 @@ const Dashboard = () => {
       title: "Contactando equipo Gloster",
       description: "Te redirigiremos a nuestro formulario de contacto",
     });
-    // Redirigir a formulario de contacto o email
     window.open('mailto:soporte.gloster@gmail.com?subject=Solicitud%20de%20Creación%20de%20Nuevo%20Proyecto', '_blank');
     setIsCreateProjectDialogOpen(false);
   };
@@ -75,6 +37,52 @@ const Dashboard = () => {
     }).format(amount);
   };
 
+  const getProjectProgress = (project: any) => {
+    if (!project.EstadosPago || project.EstadosPago.length === 0) return 0;
+    
+    const totalPayments = project.EstadosPago.length;
+    const completedPayments = project.EstadosPago.filter((payment: any) => 
+      payment.Status === 'aprobado' || payment.Completion === true
+    ).length;
+    
+    return Math.round((completedPayments / totalPayments) * 100);
+  };
+
+  const getProjectPaidValue = (project: any) => {
+    if (!project.EstadosPago || project.EstadosPago.length === 0) return 0;
+    
+    return project.EstadosPago
+      .filter((payment: any) => payment.Status === 'aprobado' || payment.Completion === true)
+      .reduce((sum: number, payment: any) => sum + (payment.Total || 0), 0);
+  };
+
+  const getNextPaymentDate = (project: any) => {
+    if (!project.EstadosPago || project.EstadosPago.length === 0) return "Sin estados de pago";
+    
+    const pendingPayments = project.EstadosPago.filter((payment: any) => 
+      payment.Status === 'pendiente' || payment.Status === 'programado'
+    );
+    
+    if (pendingPayments.length === 0) return "Proyecto completado";
+    
+    const nextPayment = pendingPayments.sort((a: any, b: any) => 
+      new Date(a.ExpiryDate).getTime() - new Date(b.ExpiryDate).getTime()
+    )[0];
+    
+    return new Date(nextPayment.ExpiryDate).toLocaleDateString('es-CL');
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 font-rubik">
+        <PageHeader />
+        <div className="container mx-auto px-6 py-8">
+          <div className="text-center">Cargando proyectos...</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 font-rubik">
       <PageHeader />
@@ -83,7 +91,9 @@ const Dashboard = () => {
         {/* Page Title */}
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h2 className="text-3xl font-bold text-slate-800 mb-2 font-rubik">Mis Proyectos - Constructora San Miguel Ltda.</h2>
+            <h2 className="text-3xl font-bold text-slate-800 mb-2 font-rubik">
+              Mis Proyectos - {contractor?.CompanyName || 'Cargando...'}
+            </h2>
             <p className="text-gloster-gray font-rubik">Gestiona tus proyectos activos y estados de pago</p>
           </div>
           
@@ -159,7 +169,7 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-slate-800 font-rubik">
-                {formatCurrency(projects.reduce((sum, p) => sum + p.totalValue, 0))}
+                {formatCurrency(projects.reduce((sum, p) => sum + (p.Budget || 0), 0))}
               </div>
             </CardContent>
           </Card>
@@ -175,83 +185,103 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-slate-800 font-rubik">
-                {formatCurrency(projects.reduce((sum, p) => sum + p.paidValue, 0))}
+                {formatCurrency(projects.reduce((sum, p) => sum + getProjectPaidValue(p), 0))}
               </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Projects Mosaic Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {projects.map((project, index) => (
-            <Card 
-              key={project.id} 
-              className="hover:shadow-xl transition-all duration-300 cursor-pointer border-gloster-gray/20 hover:border-gloster-yellow/50"
-            >
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <CardTitle className="text-lg text-slate-800 leading-tight font-rubik">{project.name}</CardTitle>
-                    <CardDescription className="text-gloster-gray text-sm font-rubik">
-                      {project.description}
-                    </CardDescription>
-                    <div className="flex items-center space-x-2 text-xs text-gloster-gray/80">
-                      <span className="font-rubik">{project.client}</span>
-                      <span>•</span>
-                      <span className="font-rubik">{project.location}</span>
-                    </div>
-                  </div>
-                  <Badge variant="secondary" className="bg-gloster-yellow/20 text-gloster-gray border-gloster-yellow/30 font-rubik">
-                    {project.status}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <div className="flex justify-between text-sm mb-2">
-                    <span className="text-gloster-gray font-rubik">Progreso</span>
-                    <span className="font-medium text-slate-800 font-rubik">{project.progress}%</span>
-                  </div>
-                  <div className="w-full bg-gloster-gray/20 rounded-full h-2">
-                    <div 
-                      className="bg-gloster-yellow h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${project.progress}%` }}
-                    ></div>
-                  </div>
-                </div>
-
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gloster-gray font-rubik">Valor total:</span>
-                    <span className="font-semibold text-slate-800 font-rubik">
-                      {formatCurrency(project.totalValue)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gloster-gray font-rubik">Pagado:</span>
-                    <span className="font-semibold text-green-600 font-rubik">
-                      {formatCurrency(project.paidValue)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gloster-gray font-rubik">Pendiente:</span>
-                    <span className="font-semibold text-red-600 font-rubik">
-                      {formatCurrency(project.totalValue - project.paidValue)}
-                    </span>
-                  </div>
-                </div>
-
-                <Button 
-                  onClick={() => navigate(`/project/${project.id}`)}
-                  className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold font-rubik"
-                  size="sm"
+        {projects.length === 0 ? (
+          <Card className="p-8 text-center">
+            <CardContent>
+              <p className="text-gloster-gray font-rubik">No tienes proyectos asignados actualmente.</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {projects.map((project) => {
+              const progress = getProjectProgress(project);
+              const paidValue = getProjectPaidValue(project);
+              const nextPayment = getNextPaymentDate(project);
+              
+              return (
+                <Card 
+                  key={project.id} 
+                  className="hover:shadow-xl transition-all duration-300 cursor-pointer border-gloster-gray/20 hover:border-gloster-yellow/50"
                 >
-                  Ver Detalles
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <CardTitle className="text-lg text-slate-800 leading-tight font-rubik">{project.Name}</CardTitle>
+                        <CardDescription className="text-gloster-gray text-sm font-rubik">
+                          {project.Description}
+                        </CardDescription>
+                        <div className="flex items-center space-x-2 text-xs text-gloster-gray/80">
+                          <span className="font-rubik">{project.Owner?.CompanyName}</span>
+                          <span>•</span>
+                          <span className="font-rubik">{project.Location}</span>
+                        </div>
+                      </div>
+                      <Badge variant="secondary" className="bg-gloster-yellow/20 text-gloster-gray border-gloster-yellow/30 font-rubik">
+                        {project.Status ? 'activo' : 'inactivo'}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <div className="flex justify-between text-sm mb-2">
+                        <span className="text-gloster-gray font-rubik">Progreso</span>
+                        <span className="font-medium text-slate-800 font-rubik">{progress}%</span>
+                      </div>
+                      <div className="w-full bg-gloster-gray/20 rounded-full h-2">
+                        <div 
+                          className="bg-gloster-yellow h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${progress}%` }}
+                        ></div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gloster-gray font-rubik">Valor total:</span>
+                        <span className="font-semibold text-slate-800 font-rubik">
+                          {formatCurrency(project.Budget || 0)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gloster-gray font-rubik">Pagado:</span>
+                        <span className="font-semibold text-green-600 font-rubik">
+                          {formatCurrency(paidValue)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gloster-gray font-rubik">Pendiente:</span>
+                        <span className="font-semibold text-red-600 font-rubik">
+                          {formatCurrency((project.Budget || 0) - paidValue)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gloster-gray font-rubik">Próximo pago:</span>
+                        <span className="font-medium text-slate-800 font-rubik text-xs">
+                          {nextPayment}
+                        </span>
+                      </div>
+                    </div>
+
+                    <Button 
+                      onClick={() => navigate(`/project/${project.id}`)}
+                      className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold font-rubik"
+                      size="sm"
+                    >
+                      Ver Detalles
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

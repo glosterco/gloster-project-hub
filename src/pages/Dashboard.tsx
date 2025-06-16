@@ -29,12 +29,20 @@ const Dashboard = () => {
     setIsCreateProjectDialogOpen(false);
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-CL', {
-      style: 'currency',
-      currency: 'CLP',
-      minimumFractionDigits: 0,
-    }).format(amount);
+  const formatCurrency = (amount: number, currency: string = 'CLP') => {
+    const currencyMap: { [key: string]: Intl.NumberFormatOptions } = {
+      'CLP': { style: 'currency' as const, currency: 'CLP', minimumFractionDigits: 0 },
+      'USD': { style: 'currency' as const, currency: 'USD', minimumFractionDigits: 0 },
+      'UF': { style: 'decimal' as const, minimumFractionDigits: 2 }
+    };
+
+    const config = currencyMap[currency] || currencyMap.CLP;
+    
+    if (currency === 'UF') {
+      return `UF ${new Intl.NumberFormat('es-CL', config).format(amount)}`;
+    }
+    
+    return new Intl.NumberFormat('es-CL', config).format(amount);
   };
 
   const getProjectProgress = (project: any) => {

@@ -25,23 +25,22 @@ export const useContratistas = () => {
   const createContratista = async (data: ContratistaData, authUserId?: string) => {
     setLoading(true);
     try {
-      // Si no se proporciona authUserId, obtener el usuario actual
-      let userId = authUserId;
-      if (!userId) {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          console.error('No authenticated user found');
-          toast({
-            title: "Error de autenticación",
-            description: "No hay usuario autenticado",
-            variant: "destructive",
-          });
-          return { data: null, error: new Error('No authenticated user') };
-        }
-        userId = user.id;
+      // Obtener el usuario actual autenticado
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        console.error('No authenticated user found:', userError);
+        toast({
+          title: "Error de autenticación",
+          description: "No hay usuario autenticado. Por favor inicia sesión.",
+          variant: "destructive",
+        });
+        return { data: null, error: new Error('No authenticated user') };
       }
 
-      console.log('Creating contratista for user ID:', userId);
+      // Usar el ID del usuario autenticado actual o el proporcionado
+      const userId = authUserId || user.id;
+      console.log('Creating contratista for authenticated user ID:', userId);
 
       // Crear el registro del contratista con el ID del usuario autenticado
       const contratistaData = {
@@ -60,6 +59,8 @@ export const useContratistas = () => {
         auth_user_id: userId
       };
 
+      console.log('Inserting contratista data:', contratistaData);
+
       const { data: result, error } = await supabase
         .from('Contratistas')
         .insert([contratistaData])
@@ -69,7 +70,7 @@ export const useContratistas = () => {
         console.error('Error creating contratista:', error);
         toast({
           title: "Error al crear contratista",
-          description: error.message,
+          description: `Error: ${error.message}. Código: ${error.code}`,
           variant: "destructive",
         });
         return { data: null, error };

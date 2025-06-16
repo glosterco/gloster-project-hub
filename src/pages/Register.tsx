@@ -240,7 +240,7 @@ const Register = () => {
                   <>
                     Completa la información para crear tu cuenta
                     <br />
-                    <span className="text-sm text-gloster-gray">Tiempo estimado: 8-12 minutos</span>
+                    <span className="text-sm text-gloster-gray">Tiempo estimado: menos de 10 minutos</span>
                   </>
                 )}
               </CardDescription>

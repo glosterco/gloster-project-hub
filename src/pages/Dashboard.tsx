@@ -29,20 +29,12 @@ const Dashboard = () => {
     setIsCreateProjectDialogOpen(false);
   };
 
-  const formatCurrency = (amount: number, currency: string = 'CLP') => {
-    const currencyMap: { [key: string]: Intl.NumberFormatOptions } = {
-      'CLP': { style: 'currency' as const, currency: 'CLP', minimumFractionDigits: 0 },
-      'USD': { style: 'currency' as const, currency: 'USD', minimumFractionDigits: 0 },
-      'UF': { style: 'decimal' as const, minimumFractionDigits: 2 }
-    };
-
-    const config = currencyMap[currency] || currencyMap.CLP;
-    
-    if (currency === 'UF') {
-      return `UF ${new Intl.NumberFormat('es-CL', config).format(amount)}`;
-    }
-    
-    return new Intl.NumberFormat('es-CL', config).format(amount);
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('es-CL', {
+      style: 'currency',
+      currency: 'CLP',
+      minimumFractionDigits: 0,
+    }).format(amount);
   };
 
   const getProjectProgress = (project: any) => {
@@ -50,7 +42,7 @@ const Dashboard = () => {
     
     const totalPayments = project.EstadosPago.length;
     const completedPayments = project.EstadosPago.filter((payment: any) => 
-      payment.Completion === true
+      payment.Status === 'aprobado' || payment.Completion === true
     ).length;
     
     return Math.round((completedPayments / totalPayments) * 100);
@@ -60,23 +52,18 @@ const Dashboard = () => {
     if (!project.EstadosPago || project.EstadosPago.length === 0) return 0;
     
     return project.EstadosPago
-      .filter((payment: any) => payment.Completion === true)
+      .filter((payment: any) => payment.Status === 'aprobado' || payment.Completion === true)
       .reduce((sum: number, payment: any) => sum + (payment.Total || 0), 0);
   };
 
   const getNextPaymentDate = (project: any) => {
     if (!project.EstadosPago || project.EstadosPago.length === 0) return "Sin estados de pago";
     
-    const today = new Date();
-    const pendingPayments = project.EstadosPago.filter((payment: any) => {
-      const expiryDate = new Date(payment.ExpiryDate);
-      return !payment.Completion && expiryDate >= today;
-    });
+    const pendingPayments = project.EstadosPago.filter((payment: any) => 
+      payment.Status === 'pendiente' || payment.Status === 'programado'
+    );
     
-    if (pendingPayments.length === 0) {
-      const allCompleted = project.EstadosPago.every((payment: any) => payment.Completion);
-      return allCompleted ? "Proyecto completado" : "Revisar estados";
-    }
+    if (pendingPayments.length === 0) return "Proyecto completado";
     
     const nextPayment = pendingPayments.sort((a: any, b: any) => 
       new Date(a.ExpiryDate).getTime() - new Date(b.ExpiryDate).getTime()
@@ -182,10 +169,7 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-slate-800 font-rubik">
-                {projects.length > 0 ? formatCurrency(
-                  projects.reduce((sum, p) => sum + (p.Budget || 0), 0),
-                  projects[0]?.Currency || 'CLP'
-                ) : '$0'}
+                {formatCurrency(projects.reduce((sum, p) => sum + (p.Budget || 0), 0))}
               </div>
             </CardContent>
           </Card>
@@ -201,10 +185,7 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-slate-800 font-rubik">
-                {projects.length > 0 ? formatCurrency(
-                  projects.reduce((sum, p) => sum + getProjectPaidValue(p), 0),
-                  projects[0]?.Currency || 'CLP'
-                ) : '$0'}
+                {formatCurrency(projects.reduce((sum, p) => sum + getProjectPaidValue(p), 0))}
               </div>
             </CardContent>
           </Card>
@@ -265,29 +246,27 @@ const Dashboard = () => {
                       <div className="flex justify-between">
                         <span className="text-gloster-gray font-rubik">Valor total:</span>
                         <span className="font-semibold text-slate-800 font-rubik">
-                          {formatCurrency(project.Budget || 0, project.Currency || 'CLP')}
+                          {formatCurrency(project.Budget || 0)}
                         </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gloster-gray font-rubik">Pagado:</span>
                         <span className="font-semibold text-green-600 font-rubik">
-                          {formatCurrency(paidValue, project.Currency || 'CLP')}
+                          {formatCurrency(paidValue)}
                         </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gloster-gray font-rubik">Pendiente:</span>
                         <span className="font-semibold text-red-600 font-rubik">
-                          {formatCurrency((project.Budget || 0) - paidValue, project.Currency || 'CLP')}
+                          {formatCurrency((project.Budget || 0) - paidValue)}
                         </span>
                       </div>
-                      {nextPayment !== "Proyecto completado" && (
-                        <div className="flex justify-between">
-                          <span className="text-gloster-gray font-rubik">Próximo pago:</span>
-                          <span className="font-medium text-slate-800 font-rubik text-xs">
-                            {nextPayment}
-                          </span>
-                        </div>
-                      )}
+                      <div className="flex justify-between">
+                        <span className="text-gloster-gray font-rubik">Próximo pago:</span>
+                        <span className="font-medium text-slate-800 font-rubik text-xs">
+                          {nextPayment}
+                        </span>
+                      </div>
                     </div>
 
                     <Button 

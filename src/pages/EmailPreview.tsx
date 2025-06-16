@@ -1,37 +1,145 @@
 
 import React from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Mail, Calendar, DollarSign, Building2 } from 'lucide-react';
-import PageHeader from '@/components/PageHeader';
+import { ArrowLeft, Download, Send } from 'lucide-react';
+import EmailTemplate from '@/components/EmailTemplate';
+import { useToast } from '@/hooks/use-toast';
 import { usePaymentDetail } from '@/hooks/usePaymentDetail';
 
 const EmailPreview = () => {
-  const { id } = useParams();
   const navigate = useNavigate();
-  const { payment, loading } = usePaymentDetail(id || '');
+  const [searchParams] = useSearchParams();
+  const paymentId = searchParams.get('paymentId') || '5'; // Default fallback
+  const { payment, loading } = usePaymentDetail(paymentId);
+  const { toast } = useToast();
 
-  const formatCurrency = (amount: number, currency: string = 'CLP') => {
-    const currencyMap: { [key: string]: Intl.NumberFormatOptions } = {
-      'CLP': { style: 'currency' as const, currency: 'CLP', minimumFractionDigits: 0 },
-      'USD': { style: 'currency' as const, currency: 'USD', minimumFractionDigits: 0 },
-      'UF': { style: 'decimal' as const, minimumFractionDigits: 2 }
+  const sampleDocuments = [
+    {
+      id: 'eepp',
+      name: 'Carátula EEPP',
+      description: 'Presentación y resumen del estado de pago',
+      uploaded: true
+    },
+    {
+      id: 'planilla',
+      name: 'Avance Periódico',
+      description: 'Planilla detallada del avance de obras del período',
+      uploaded: true
+    },
+    {
+      id: 'cotizaciones',
+      name: 'Certificado de Pago de Cotizaciones',
+      description: 'Certificado de cumplimiento previsional',
+      uploaded: true
+    },
+    {
+      id: 'f30',
+      name: 'Certificado F30',
+      description: 'Certificado de antecedentes laborales',
+      uploaded: true
+    },
+    {
+      id: 'f30_1',
+      name: 'Certificado F30-1',
+      description: 'Certificado de obligaciones laborales',
+      uploaded: true
+    },
+    {
+      id: 'factura',
+      name: 'Factura',
+      description: 'Factura del período correspondiente',
+      uploaded: true
+    }
+  ];
+
+  const generateEmailHTML = () => {
+    if (!payment || !payment.projectData) return null;
+
+    return {
+      paymentState: {
+        month: `${payment.Mes} ${payment.Año}`,
+        amount: payment.Total || 0,
+        dueDate: payment.ExpiryDate,
+        projectName: payment.projectData.Name,
+        recipient: payment.projectData.Owner?.ContactEmail || ''
+      },
+      project: {
+        name: payment.projectData.Name,
+        client: payment.projectData.Owner?.CompanyName || '',
+        contractor: payment.projectData.Contratista?.CompanyName || '',
+        location: payment.projectData.Location || '',
+        projectManager: payment.projectData.Owner?.ContactName || '',
+        contactEmail: payment.projectData.Owner?.ContactEmail || ''
+      },
+      documents: sampleDocuments,
+      htmlContent: `Email template with ${sampleDocuments.length} documents for ${payment.projectData.Name} - ${payment.Mes} ${payment.Año}`,
+      timestamp: new Date().toISOString()
+    };
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleDownloadPDF = () => {
+    alert('Funcionalidad de descarga PDF estará disponible pronto');
+  };
+
+  const handleSendEmail = async () => {
+    if (!payment || !payment.projectData) {
+      toast({
+        title: "Error",
+        description: "No se pueden cargar los datos del estado de pago",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const emailTemplateData = generateEmailHTML();
+    
+    const emailData = {
+      paymentState: emailTemplateData?.paymentState,
+      project: emailTemplateData?.project,
+      documents: sampleDocuments,
+      emailTemplate: emailTemplateData,
+      recipient: payment.projectData.Owner?.ContactEmail,
+      timestamp: new Date().toISOString()
     };
 
-    const config = currencyMap[currency] || currencyMap.CLP;
-    
-    if (currency === 'UF') {
-      return `UF ${new Intl.NumberFormat('es-CL', config).format(amount)}`;
+    console.log('Sending email with template data to webhook:', emailData);
+
+    try {
+      const response = await fetch('https://hook.us2.make.com/aojj5wkdzhmre99szykaa1efxwnvn4e6', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(emailData),
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Email enviado",
+          description: `Email con vista previa enviado exitosamente a ${payment.projectData.Owner?.ContactEmail}`,
+        });
+      } else {
+        throw new Error('Network response was not ok');
+      }
+      
+    } catch (error) {
+      console.error('Error sending email:', error);
+      toast({
+        title: "Error al enviar",
+        description: "Hubo un problema al enviar el email. Intenta nuevamente.",
+        variant: "destructive"
+      });
     }
-    
-    return new Intl.NumberFormat('es-CL', config).format(amount);
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 font-rubik">
-        <PageHeader />
+      <div className="min-h-screen bg-slate-50">
         <div className="container mx-auto px-6 py-8">
           <div className="text-center">Cargando vista previa...</div>
         </div>
@@ -39,10 +147,9 @@ const EmailPreview = () => {
     );
   }
 
-  if (!payment) {
+  if (!payment || !payment.projectData) {
     return (
-      <div className="min-h-screen bg-slate-50 font-rubik">
-        <PageHeader />
+      <div className="min-h-screen bg-slate-50">
         <div className="container mx-auto px-6 py-8">
           <div className="text-center">
             <p className="text-gloster-gray">Estado de pago no encontrado.</p>
@@ -55,187 +162,77 @@ const EmailPreview = () => {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-slate-50 font-rubik">
-      <PageHeader />
+  const emailData = generateEmailHTML();
 
-      {/* Navigation */}
-      <div className="bg-slate-50 py-2">
+  return (
+    <div className="min-h-screen bg-slate-50">
+      {/* Header de navegación */}
+      <div className="bg-white border-b border-gloster-gray/20 shadow-sm print:hidden">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <img 
+                src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
+                alt="Gloster Logo" 
+                className="w-8 h-8"
+              />
+              <h1 className="text-xl font-bold text-slate-800 font-rubik">Vista previa del Email</h1>
+            </div>
+            
+            <div className="flex items-center space-x-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePrint}
+                className="font-rubik"
+              >
+                Imprimir
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDownloadPDF}
+                className="font-rubik"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Descargar PDF
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleSendEmail}
+                className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
+              >
+                <Send className="h-4 w-4 mr-2" />
+                Enviar Email con Vista Previa
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Volver */}
+      <div className="bg-slate-50 py-2 print:hidden">
         <div className="container mx-auto px-6">
           <button 
             onClick={() => navigate(`/payment/${payment.id}`)}
             className="text-gloster-gray hover:text-slate-800 text-sm font-rubik flex items-center"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Volver al Estado de Pago
+            Volver
           </button>
         </div>
       </div>
 
+      {/* Contenido de la plantilla */}
       <div className="container mx-auto px-6 py-8">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-slate-800 mb-2 font-rubik flex items-center gap-2">
-            <Mail className="h-8 w-8 text-gloster-yellow" />
-            Vista Previa del Email
-          </h1>
-          <p className="text-gloster-gray font-rubik">
-            Estado de pago: {payment.Name} - {payment.Mes} {payment.Año}
-          </p>
-        </div>
-
-        {/* Email Preview */}
-        <Card className="max-w-4xl mx-auto">
-          <CardHeader className="bg-gloster-yellow/10 border-b">
-            <CardTitle className="text-lg font-rubik">
-              Notificación de Estado de Pago - {payment.projectData?.Name}
-            </CardTitle>
-            <div className="text-sm text-gloster-gray space-y-1">
-              <p><strong>Para:</strong> {payment.projectData?.Owner?.ContactEmail}</p>
-              <p><strong>De:</strong> {payment.projectData?.Contratista?.ContactEmail}</p>
-              <p><strong>Asunto:</strong> Estado de Pago {payment.Name} - {payment.Mes} {payment.Año}</p>
-            </div>
-          </CardHeader>
-          
-          <CardContent className="p-8 bg-white">
-            <div className="space-y-6">
-              {/* Greeting */}
-              <div>
-                <p className="font-rubik">
-                  Estimado/a {payment.projectData?.Owner?.ContactName},
-                </p>
-              </div>
-
-              {/* Introduction */}
-              <div>
-                <p className="font-rubik">
-                  Nos complace informarle sobre el estado de pago correspondiente al período de{' '}
-                  <strong>{payment.Mes} {payment.Año}</strong> del proyecto{' '}
-                  <strong>{payment.projectData?.Name}</strong>.
-                </p>
-              </div>
-
-              {/* Payment Details */}
-              <Card className="bg-slate-50">
-                <CardHeader>
-                  <CardTitle className="text-lg font-rubik text-slate-800">
-                    Detalles del Estado de Pago
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="flex items-center gap-3">
-                      <Building2 className="h-5 w-5 text-gloster-gray" />
-                      <div>
-                        <p className="text-sm text-gloster-gray font-rubik">Proyecto</p>
-                        <p className="font-semibold font-rubik">{payment.projectData?.Name}</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-3">
-                      <Calendar className="h-5 w-5 text-gloster-gray" />
-                      <div>
-                        <p className="text-sm text-gloster-gray font-rubik">Período</p>
-                        <p className="font-semibold font-rubik">{payment.Mes} {payment.Año}</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-3">
-                      <DollarSign className="h-5 w-5 text-gloster-gray" />
-                      <div>
-                        <p className="text-sm text-gloster-gray font-rubik">Monto</p>
-                        <p className="font-semibold font-rubik">
-                          {payment.Total ? 
-                            formatCurrency(payment.Total, payment.projectData?.Currency || 'CLP') : 
-                            'Por definir'
-                          }
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-3">
-                      <Calendar className="h-5 w-5 text-gloster-gray" />
-                      <div>
-                        <p className="text-sm text-gloster-gray font-rubik">Fecha de Vencimiento</p>
-                        <p className="font-semibold font-rubik">
-                          {new Date(payment.ExpiryDate).toLocaleDateString('es-CL')}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Project Information */}
-              <div>
-                <h3 className="text-lg font-semibold mb-3 font-rubik">Información del Proyecto</h3>
-                <div className="bg-slate-50 p-4 rounded-lg space-y-2">
-                  <p className="font-rubik">
-                    <strong>Descripción:</strong> {payment.projectData?.Description}
-                  </p>
-                  <p className="font-rubik">
-                    <strong>Ubicación:</strong> {payment.projectData?.Location}
-                  </p>
-                  <p className="font-rubik">
-                    <strong>Contratista:</strong> {payment.projectData?.Contratista?.CompanyName}
-                  </p>
-                </div>
-              </div>
-
-              {/* Documents Section */}
-              <div>
-                <h3 className="text-lg font-semibold mb-3 font-rubik">Documentación</h3>
-                <p className="font-rubik">
-                  Se adjuntan los documentos correspondientes al estado de pago para su revisión y aprobación.
-                  Por favor, revise la documentación y confirme su aprobación a través de la plataforma.
-                </p>
-              </div>
-
-              {/* Contact Information */}
-              <div className="bg-gloster-yellow/10 p-4 rounded-lg">
-                <h3 className="text-lg font-semibold mb-3 font-rubik">Información de Contacto</h3>
-                <div className="space-y-2">
-                  <p className="font-rubik">
-                    <strong>Empresa:</strong> {payment.projectData?.Contratista?.CompanyName}
-                  </p>
-                  <p className="font-rubik">
-                    <strong>Contacto:</strong> {payment.projectData?.Contratista?.ContactName}
-                  </p>
-                  <p className="font-rubik">
-                    <strong>Email:</strong> {payment.projectData?.Contratista?.ContactEmail}
-                  </p>
-                </div>
-              </div>
-
-              {/* Closing */}
-              <div>
-                <p className="font-rubik">
-                  Agradecemos su atención y quedamos a la espera de su confirmación.
-                </p>
-                <p className="font-rubik mt-4">
-                  Atentamente,<br />
-                  <strong>{payment.projectData?.Contratista?.CompanyName}</strong>
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Actions */}
-        <div className="flex justify-center gap-4 mt-6">
-          <Button
-            onClick={() => navigate(`/payment/${payment.id}`)}
-            variant="outline"
-            className="font-rubik"
-          >
-            Volver al Estado de Pago
-          </Button>
-          <Button
-            onClick={() => window.print()}
-            className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
-          >
-            Imprimir Email
-          </Button>
+        <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
+          {emailData && (
+            <EmailTemplate 
+              paymentState={emailData.paymentState}
+              project={emailData.project}
+              documents={sampleDocuments}
+            />
+          )}
         </div>
       </div>
     </div>

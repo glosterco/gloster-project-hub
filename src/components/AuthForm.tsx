@@ -142,44 +142,67 @@ export const AuthForm = () => {
             </TabsContent>
             
             <TabsContent value="signup">
-              <form onSubmit={handleSignUp} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
-                  <Input
-                    id="signup-email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="tu@email.com"
-                    required
-                  />
+              <div className="space-y-4">
+                <div className="text-center p-6 bg-slate-100 rounded-lg">
+                  <p className="text-slate-600 font-rubik mb-4">
+                    Para crear una cuenta completa con información de tu empresa y proyectos, utiliza nuestro formulario de registro detallado.
+                  </p>
+                  <Button 
+                    onClick={() => navigate('/register')}
+                    className="w-full bg-slate-900 hover:bg-slate-800 text-white font-rubik font-semibold"
+                  >
+                    Ir al Registro Completo
+                  </Button>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password">Contraseña</Label>
-                  <Input
-                    id="signup-password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Al menos 8 caracteres"
-                    required
-                  />
+                
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-slate-300" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-slate-50 px-2 text-slate-500 font-rubik">O registrarse rápido</span>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-confirm">Confirmar Contraseña</Label>
-                  <Input
-                    id="signup-confirm"
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Confirma tu contraseña"
-                    required
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Creando cuenta..." : "Crear Cuenta"}
-                </Button>
-              </form>
+
+                <form onSubmit={handleSignUp} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-email">Email</Label>
+                    <Input
+                      id="signup-email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="tu@email.com"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-password">Contraseña</Label>
+                    <Input
+                      id="signup-password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Al menos 8 caracteres"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-confirm">Confirmar Contraseña</Label>
+                    <Input
+                      id="signup-confirm"
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Confirma tu contraseña"
+                      required
+                    />
+                  </div>
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? "Creando cuenta..." : "Crear Cuenta Básica"}
+                  </Button>
+                </form>
+              </div>
             </TabsContent>
           </Tabs>
           
@@ -187,7 +210,7 @@ export const AuthForm = () => {
             <Button 
               variant="link" 
               onClick={() => navigate('/')}
-              className="text-sm text-gloster-gray"
+              className="text-sm text-slate-600"
             >
               Volver al inicio
             </Button>

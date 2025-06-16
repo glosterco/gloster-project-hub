@@ -1,9 +1,9 @@
-
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useContratistas } from '@/hooks/useContratistas';
 import { useMandantes } from '@/hooks/useMandantes';
 import { useProyectos } from '@/hooks/useProyectos';
+import { useEstadosPago } from '@/hooks/useEstadosPago';
 import { format } from 'date-fns';
 
 interface UseRegistrationStepsProps {
@@ -15,11 +15,13 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
   const [currentStep, setCurrentStep] = useState(1);
   const [savedContratistaId, setSavedContratistaId] = useState<number | null>(null);
   const [savedMandanteId, setSavedMandanteId] = useState<number | null>(null);
+  const [savedProyectoId, setSavedProyectoId] = useState<number | null>(null);
   const totalSteps = 6;
   const { toast } = useToast();
   const { createContratista, loading: contratistaLoading } = useContratistas();
   const { createMandante, loading: mandanteLoading } = useMandantes();
   const { createProyecto, loading: proyectoLoading } = useProyectos();
+  const { createEstadosPago, loading: estadosPagoLoading } = useEstadosPago();
 
   const validateStep = (step: number): boolean => {
     switch (step) {
@@ -201,6 +203,57 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
     }
 
     console.log('Proyecto saved successfully:', data);
+    if (data && data[0]) {
+      setSavedProyectoId(data[0].id);
+    }
+    return true;
+  };
+
+  const saveEstadosPagoData = async () => {
+    if (!savedProyectoId) {
+      console.error('Missing proyecto ID');
+      toast({
+        title: "Error",
+        description: "Falta el ID del proyecto",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (!formData.firstPaymentDate) {
+      console.error('Missing first payment date');
+      return false;
+    }
+
+    // Convert payment period to numeric value
+    const finalPaymentPeriod = formData.paymentPeriod === 'otro' ? formData.customPeriod : formData.paymentPeriod;
+    let numericExpiryRate: number;
+    if (finalPaymentPeriod === 'mensual') {
+      numericExpiryRate = 30;
+    } else if (finalPaymentPeriod === 'quincenal') {
+      numericExpiryRate = 15;
+    } else {
+      numericExpiryRate = parseInt(finalPaymentPeriod) || 30;
+    }
+
+    const firstPaymentDate = format(formData.firstPaymentDate, 'yyyy-MM-dd');
+    const duration = parseInt(formData.duration);
+
+    console.log('Creating estados de pago for proyecto:', savedProyectoId);
+
+    const { data, error } = await createEstadosPago(
+      savedProyectoId,
+      firstPaymentDate,
+      numericExpiryRate,
+      duration
+    );
+    
+    if (error) {
+      console.error('Error saving estados de pago:', error);
+      return false;
+    }
+
+    console.log('Estados de pago saved successfully:', data);
     return true;
   };
 
@@ -245,6 +298,12 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
     // Guardar el proyecto en la base de datos
     const proyectoSuccess = await saveProyectoData();
     if (!proyectoSuccess) {
+      return false;
+    }
+
+    // Crear los estados de pago automáticamente
+    const estadosPagoSuccess = await saveEstadosPagoData();
+    if (!estadosPagoSuccess) {
       return false;
     }
 
@@ -308,7 +367,7 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
     handleNext,
     handlePrevious,
     handleSubmit,
-    contratistaLoading: contratistaLoading || mandanteLoading || proyectoLoading,
-    mandanteLoading: mandanteLoading || proyectoLoading
+    contratistaLoading: contratistaLoading || mandanteLoading || proyectoLoading || estadosPagoLoading,
+    mandanteLoading: mandanteLoading || proyectoLoading || estadosPagoLoading
   };
 };

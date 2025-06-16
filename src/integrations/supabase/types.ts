@@ -57,6 +57,53 @@ export type Database = {
         }
         Relationships: []
       }
+      "Estados de pago": {
+        Row: {
+          Año: number | null
+          Completion: boolean | null
+          ExpiryDate: string | null
+          id: number
+          Mes: string | null
+          Name: string
+          Project: number | null
+          Status: string | null
+          Total: number | null
+          URL: string | null
+        }
+        Insert: {
+          Año?: number | null
+          Completion?: boolean | null
+          ExpiryDate?: string | null
+          id?: number
+          Mes?: string | null
+          Name?: string
+          Project?: number | null
+          Status?: string | null
+          Total?: number | null
+          URL?: string | null
+        }
+        Update: {
+          Año?: number | null
+          Completion?: boolean | null
+          ExpiryDate?: string | null
+          id?: number
+          Mes?: string | null
+          Name?: string
+          Project?: number | null
+          Status?: string | null
+          Total?: number | null
+          URL?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "Estados de pago_Project_fkey"
+            columns: ["Project"]
+            isOneToOne: false
+            referencedRelation: "Proyectos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       Mandantes: {
         Row: {
           CompanyName: string

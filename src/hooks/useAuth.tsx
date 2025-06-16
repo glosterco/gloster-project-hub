@@ -22,23 +22,13 @@ export const useAuth = () => {
 
       if (error) {
         console.error('Auth error:', error);
-        toast({
-          title: "Error de registro",
-          description: error.message,
-          variant: "destructive",
-        });
         return { data: null, error };
       }
 
       console.log('User registered successfully:', data);
       return { data, error: null };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Unexpected auth error:', error);
-      toast({
-        title: "Error inesperado",
-        description: "Hubo un error al registrar el usuario",
-        variant: "destructive",
-      });
       return { data: null, error };
     } finally {
       setLoading(false);
@@ -55,27 +45,13 @@ export const useAuth = () => {
 
       if (error) {
         console.error('Login error:', error);
-        toast({
-          title: "Error de inicio de sesión",
-          description: error.message,
-          variant: "destructive",
-        });
         return { data: null, error };
       }
 
       console.log('User logged in successfully:', data);
-      toast({
-        title: "¡Bienvenido!",
-        description: "Sesión iniciada exitosamente",
-      });
       return { data, error: null };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Unexpected login error:', error);
-      toast({
-        title: "Error inesperado",
-        description: "Hubo un error al iniciar sesión",
-        variant: "destructive",
-      });
       return { data: null, error };
     } finally {
       setLoading(false);

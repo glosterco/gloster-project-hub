@@ -69,19 +69,19 @@ export const usePaymentDetail = (paymentId: string) => {
         .from('Estados de pago')
         .select(`
           *,
-          Proyectos!Estados de pago_Project_fkey (
+          Proyectos (
             id,
             Name,
             Description,
             Location,
             Budget,
-            Contratistas!Proyectos_Contratista_fkey (
+            Contratistas (
               id,
               CompanyName,
               ContactName,
               ContactEmail
             ),
-            Mandantes!Proyectos_Owner_fkey (
+            Mandantes (
               id,
               CompanyName,
               ContactName,
@@ -89,7 +89,7 @@ export const usePaymentDetail = (paymentId: string) => {
             )
           )
         `)
-        .eq('id', paymentId)
+        .eq('id', parseInt(paymentId))
         .single();
 
       if (paymentError) {

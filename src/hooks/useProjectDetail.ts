@@ -73,20 +73,20 @@ export const useProjectDetail = (projectId: string) => {
         .from('Proyectos')
         .select(`
           *,
-          Contratistas!Proyectos_Contratista_fkey (
+          Contratistas (
             id,
             CompanyName,
             ContactName,
             ContactEmail
           ),
-          Mandantes!Proyectos_Owner_fkey (
+          Mandantes (
             id,
             CompanyName,
             ContactName,
             ContactEmail
           )
         `)
-        .eq('id', projectId)
+        .eq('id', parseInt(projectId))
         .eq('Contratista', contractorData.id)
         .single();
 
@@ -104,7 +104,7 @@ export const useProjectDetail = (projectId: string) => {
       const { data: paymentsData, error: paymentsError } = await supabase
         .from('Estados de pago')
         .select('*')
-        .eq('Project', projectId)
+        .eq('Project', parseInt(projectId))
         .order('ExpiryDate', { ascending: true });
 
       if (paymentsError) {

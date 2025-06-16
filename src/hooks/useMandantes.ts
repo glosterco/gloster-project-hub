@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -40,12 +39,14 @@ export const useMandantes = () => {
         return { data: null, error };
       }
 
+      console.log('Mandante created successfully:', result);
       toast({
         title: "Mandante creado exitosamente",
         description: "La información del mandante se ha guardado en la base de datos",
       });
 
-      return { data: result, error: null };
+      // Retornar en formato de array para mantener consistencia
+      return { data: [result], error: null };
     } catch (error) {
       console.error('Unexpected error:', error);
       toast({

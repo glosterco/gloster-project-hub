@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -23,7 +22,8 @@ export const useProyectos = () => {
     setLoading(true);
     
     try {
-      console.log('Creating proyecto with data:', proyectoData);
+      console.log('=== CREANDO PROYECTO EN BASE DE DATOS ===');
+      console.log('Datos del proyecto:', proyectoData);
       
       // Convert payment period to numeric value
       let numericExpiryRate: number;
@@ -32,7 +32,6 @@ export const useProyectos = () => {
       } else if (proyectoData.ExpiryRate === 'quincenal') {
         numericExpiryRate = 15;
       } else {
-        // For custom periods, try to parse as number, default to 30 if not a number
         numericExpiryRate = parseInt(proyectoData.ExpiryRate) || 30;
       }
       
@@ -55,7 +54,7 @@ export const useProyectos = () => {
         .select();
 
       if (error) {
-        console.error('Error creating proyecto:', error);
+        console.error('Error al insertar proyecto en BD:', error);
         toast({
           title: "Error al crear proyecto",
           description: error.message,
@@ -64,7 +63,17 @@ export const useProyectos = () => {
         return { data: null, error };
       }
 
-      console.log('Proyecto created successfully:', data);
+      if (!data || data.length === 0) {
+        console.error('No se retornaron datos del proyecto creado');
+        toast({
+          title: "Error al crear proyecto",
+          description: "No se obtuvieron datos del proyecto creado",
+          variant: "destructive",
+        });
+        return { data: null, error: new Error('No data returned') };
+      }
+
+      console.log('✅ Proyecto insertado exitosamente en BD:', data);
       toast({
         title: "Proyecto creado",
         description: "El proyecto ha sido creado exitosamente",
@@ -72,7 +81,7 @@ export const useProyectos = () => {
 
       return { data, error: null };
     } catch (error) {
-      console.error('Unexpected error creating proyecto:', error);
+      console.error('Error inesperado al crear proyecto:', error);
       toast({
         title: "Error inesperado",
         description: "Hubo un error al crear el proyecto",

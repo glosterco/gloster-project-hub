@@ -17,7 +17,8 @@ export const useEstadosPago = () => {
     setLoading(true);
     
     try {
-      console.log('Creating estados de pago for project:', projectId);
+      console.log('=== CREANDO ESTADOS DE PAGO EN BASE DE DATOS ===');
+      console.log('Parámetros recibidos:', { projectId, firstPaymentDate, expiryRate, duration });
       
       // Calculate how many payment states to create
       let totalPayments: number;
@@ -26,6 +27,8 @@ export const useEstadosPago = () => {
       } else { // Mensual (30) or other
         totalPayments = duration;
       }
+
+      console.log('Total de pagos a crear:', totalPayments);
 
       const estadosPago = [];
       const baseDate = new Date(firstPaymentDate);
@@ -40,22 +43,19 @@ export const useEstadosPago = () => {
         }
 
         // Determine month and year based on expiry date
-        // If expiry date is in first 10 days, assign to previous month
         const dayOfMonth = expiryDate.getDate();
         let assignedMonth: number;
         let assignedYear: number;
 
         if (dayOfMonth <= 10 && i > 0) {
-          // Assign to previous month
           const prevMonth = addMonths(expiryDate, -1);
-          assignedMonth = getMonth(prevMonth) + 1; // getMonth returns 0-11, we need 1-12
+          assignedMonth = getMonth(prevMonth) + 1;
           assignedYear = getYear(prevMonth);
         } else {
           assignedMonth = getMonth(expiryDate) + 1;
           assignedYear = getYear(expiryDate);
         }
 
-        // Convert month number to Spanish month name
         const monthNames = [
           'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
           'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
@@ -69,12 +69,12 @@ export const useEstadosPago = () => {
           Completion: false,
           Mes: monthNames[assignedMonth - 1],
           Año: assignedYear,
-          Total: null, // To be filled later
+          Total: null,
           URL: null
         });
       }
 
-      console.log('Estados de pago to create:', estadosPago);
+      console.log('Estados de pago a insertar:', estadosPago);
 
       const { data, error } = await supabase
         .from('Estados de pago')
@@ -82,7 +82,7 @@ export const useEstadosPago = () => {
         .select();
 
       if (error) {
-        console.error('Error creating estados de pago:', error);
+        console.error('Error al insertar estados de pago en BD:', error);
         toast({
           title: "Error al crear estados de pago",
           description: error.message,
@@ -91,7 +91,17 @@ export const useEstadosPago = () => {
         return { data: null, error };
       }
 
-      console.log('Estados de pago created successfully:', data);
+      if (!data || data.length === 0) {
+        console.error('No se retornaron datos de los estados de pago creados');
+        toast({
+          title: "Error al crear estados de pago",
+          description: "No se obtuvieron datos de los estados de pago creados",
+          variant: "destructive",
+        });
+        return { data: null, error: new Error('No data returned') };
+      }
+
+      console.log('✅ Estados de pago insertados exitosamente en BD:', data);
       toast({
         title: "Estados de pago creados",
         description: `Se crearon ${totalPayments} estados de pago exitosamente`,
@@ -99,7 +109,7 @@ export const useEstadosPago = () => {
 
       return { data, error: null };
     } catch (error) {
-      console.error('Unexpected error creating estados de pago:', error);
+      console.error('Error inesperado al crear estados de pago:', error);
       toast({
         title: "Error inesperado",
         description: "Hubo un error al crear los estados de pago",

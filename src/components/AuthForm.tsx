@@ -88,135 +88,144 @@ export const AuthForm = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-6">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex items-center justify-center space-x-3 mb-4">
+    <div className="min-h-screen bg-slate-50">
+      {/* Header matching register page style */}
+      <header className="bg-white border-b border-slate-200 shadow-sm">
+        <div className="container mx-auto px-6 py-4">
+          <button 
+            onClick={() => navigate('/')}
+            className="flex items-center space-x-3 hover:opacity-80 transition-opacity"
+          >
             <img 
               src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
               alt="Gloster Logo" 
               className="w-8 h-8"
             />
             <h1 className="text-xl font-bold text-slate-800 font-rubik">Gloster</h1>
-          </div>
-          <CardTitle className="font-rubik">Acceso a tu cuenta</CardTitle>
-          <CardDescription className="font-rubik">
-            Inicia sesión o crea una cuenta nueva
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="signin" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Iniciar Sesión</TabsTrigger>
-              <TabsTrigger value="signup">Registrarse</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="signin">
-              <form onSubmit={handleSignIn} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signin-email">Email</Label>
-                  <Input
-                    id="signin-email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="tu@email.com"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signin-password">Contraseña</Label>
-                  <Input
-                    id="signin-password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Tu contraseña"
-                    required
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Iniciando sesión..." : "Iniciar Sesión"}
-                </Button>
-              </form>
-            </TabsContent>
-            
-            <TabsContent value="signup">
-              <div className="space-y-4">
-                <div className="text-center p-6 bg-slate-100 rounded-lg">
-                  <p className="text-slate-600 font-rubik mb-4">
-                    Para crear una cuenta completa con información de tu empresa y proyectos, utiliza nuestro formulario de registro detallado.
-                  </p>
-                  <Button 
-                    onClick={() => navigate('/register')}
-                    className="w-full bg-slate-900 hover:bg-slate-800 text-white font-rubik font-semibold"
-                  >
-                    Ir al Registro Completo
-                  </Button>
-                </div>
-                
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t border-slate-300" />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-slate-50 px-2 text-slate-500 font-rubik">O registrarse rápido</span>
-                  </div>
-                </div>
+          </button>
+        </div>
+      </header>
 
-                <form onSubmit={handleSignUp} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
-                    <Input
-                      id="signup-email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="tu@email.com"
-                      required
-                    />
+      <div className="container mx-auto px-6 py-8">
+        <div className="max-w-2xl mx-auto">
+          <Card className="bg-white shadow-lg">
+            <CardHeader>
+              <CardTitle className="text-2xl text-center font-rubik">Acceso a tu cuenta</CardTitle>
+              <CardDescription className="text-center font-rubik">
+                Inicia sesión o crea una cuenta nueva
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <Tabs defaultValue="signin" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="signin">Iniciar Sesión</TabsTrigger>
+                  <TabsTrigger value="signup">Registrarse</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="signin" className="space-y-6">
+                  <form onSubmit={handleSignIn} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="signin-email">Email</Label>
+                      <Input
+                        id="signin-email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="tu@email.com"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="signin-password">Contraseña</Label>
+                      <Input
+                        id="signin-password"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Tu contraseña"
+                        required
+                      />
+                    </div>
+                    <Button 
+                      type="submit" 
+                      className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik" 
+                      disabled={loading}
+                    >
+                      {loading ? "Iniciando sesión..." : "Iniciar Sesión"}
+                    </Button>
+                  </form>
+                </TabsContent>
+                
+                <TabsContent value="signup" className="space-y-6">
+                  <div className="text-center p-6 bg-slate-100 rounded-lg">
+                    <p className="text-slate-600 font-rubik mb-4">
+                      Para crear una cuenta completa con información de tu empresa y proyectos, utiliza nuestro formulario de registro detallado.
+                    </p>
+                    <Button 
+                      onClick={() => navigate('/register')}
+                      className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik font-semibold"
+                    >
+                      Ir al Registro Completo
+                    </Button>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password">Contraseña</Label>
-                    <Input
-                      id="signup-password"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Al menos 8 caracteres"
-                      required
-                    />
+                  
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t border-slate-300" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-white px-2 text-slate-500 font-rubik">O registrarse rápido</span>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-confirm">Confirmar Contraseña</Label>
-                    <Input
-                      id="signup-confirm"
-                      type="password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="Confirma tu contraseña"
-                      required
-                    />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Creando cuenta..." : "Crear Cuenta Básica"}
-                  </Button>
-                </form>
-              </div>
-            </TabsContent>
-          </Tabs>
-          
-          <div className="mt-4 text-center">
-            <Button 
-              variant="link" 
-              onClick={() => navigate('/')}
-              className="text-sm text-slate-600"
-            >
-              Volver al inicio
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+
+                  <form onSubmit={handleSignUp} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-email">Email</Label>
+                      <Input
+                        id="signup-email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="tu@email.com"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-password">Contraseña</Label>
+                      <Input
+                        id="signup-password"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Al menos 8 caracteres"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-confirm">Confirmar Contraseña</Label>
+                      <Input
+                        id="signup-confirm"
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="Confirma tu contraseña"
+                        required
+                      />
+                    </div>
+                    <Button 
+                      type="submit" 
+                      className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik" 
+                      disabled={loading}
+                    >
+                      {loading ? "Creando cuenta..." : "Crear Cuenta Básica"}
+                    </Button>
+                  </form>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 };

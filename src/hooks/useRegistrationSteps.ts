@@ -260,7 +260,10 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
     }
 
     try {
+      console.log('=== INICIANDO PROCESO DE REGISTRO ===');
+      
       // Paso 1: Crear usuario en autenticación
+      console.log('Paso 1: Creando usuario en Auth...');
       const { data: authData, error: authError } = await signUp(formData.email, formData.password);
       
       if (authError) {
@@ -286,9 +289,10 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
         return false;
       }
 
-      console.log('Auth user created successfully:', authData);
+      console.log('✅ Usuario creado en Auth:', authData?.user?.id);
       
-      // Paso 2: Iniciar sesión automáticamente para nuevos usuarios
+      // Paso 2: Iniciar sesión automáticamente
+      console.log('Paso 2: Iniciando sesión automática...');
       const { error: signInError } = await signIn(formData.email, formData.password);
       
       if (signInError) {
@@ -301,7 +305,13 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
         return false;
       }
 
+      console.log('✅ Sesión iniciada correctamente');
+
+      // Esperar un momento para asegurar que la sesión esté establecida
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
       // Paso 3: Crear contratista
+      console.log('Paso 3: Creando contratista...');
       const finalSpecialties = formData.specialties === 'otra' ? formData.customSpecialty : formData.specialties;
       
       const contratistaData = {
@@ -319,25 +329,28 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
         Status: true
       };
 
-      console.log('Saving contratista data:', contratistaData);
-
-      const { data: contratistaData_result, error: contratistaError } = await createContratista(contratistaData);
+      const { data: contratistaResult, error: contratistaError } = await createContratista(
+        contratistaData, 
+        authData?.user?.id
+      );
       
       if (contratistaError) {
         console.error('Error saving contratista:', contratistaError);
         toast({
-          title: "Error al crear cuenta",
-          description: "Hubo un error al crear tu cuenta. Por favor intenta de nuevo.",
+          title: "Error al crear contratista",
+          description: "Hubo un error al crear los datos del contratista. Por favor intenta de nuevo.",
           variant: "destructive",
         });
         return false;
       }
 
-      console.log('Contratista saved successfully:', contratistaData_result);
+      console.log('✅ Contratista creado:', contratistaResult);
       let contratistaId: number;
-      if (contratistaData_result && contratistaData_result[0]) {
-        contratistaId = contratistaData_result[0].id;
+      if (contratistaResult && contratistaResult[0]) {
+        contratistaId = contratistaResult[0].id;
+        setSavedContratistaId(contratistaId);
       } else {
+        console.error('No se pudo obtener el ID del contratista');
         toast({
           title: "Error",
           description: "No se pudo obtener el ID del contratista",
@@ -346,25 +359,35 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
         return false;
       }
 
-      // Paso 4: Crear mandante (ahora con usuario autenticado)
+      // Paso 4: Crear mandante
+      console.log('Paso 4: Creando mandante...');
       const mandanteSuccess = await saveMandanteData();
       if (!mandanteSuccess) {
+        console.error('Error al crear mandante');
         return false;
       }
+      console.log('✅ Mandante creado con ID:', savedMandanteId);
 
-      // Paso 5: Guardar el proyecto en la base de datos
+      // Paso 5: Crear proyecto
+      console.log('Paso 5: Creando proyecto...');
       const proyectoSuccess = await saveProyectoData(contratistaId);
       if (!proyectoSuccess) {
+        console.error('Error al crear proyecto');
         return false;
       }
+      console.log('✅ Proyecto creado con ID:', savedProyectoId);
 
-      // Paso 6: Crear los estados de pago automáticamente
+      // Paso 6: Crear estados de pago
+      console.log('Paso 6: Creando estados de pago...');
       const estadosPagoSuccess = await saveEstadosPagoData();
       if (!estadosPagoSuccess) {
+        console.error('Error al crear estados de pago');
         return false;
       }
+      console.log('✅ Estados de pago creados');
 
       // Paso 7: Enviar datos al webhook como respaldo
+      console.log('Paso 7: Enviando datos al webhook...');
       const finalPaymentPeriod = formData.paymentPeriod === 'otro' ? formData.customPeriod : formData.paymentPeriod;
       let finalDocuments: string[] = [];
       if (Array.isArray(formData.requiredDocuments)) {
@@ -391,8 +414,6 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
         contractorEmail: formData.email
       };
 
-      console.log('Sending project data to webhook:', projectFormData);
-
       try {
         const response = await fetch('https://hook.us2.make.com/242usgpf93xy3waeagqgsefvi2vhsiyc', {
           method: 'POST',
@@ -403,6 +424,7 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
         });
 
         if (response.ok) {
+          console.log('✅ Webhook enviado correctamente');
           toast({
             title: "¡Registro exitoso!",
             description: "Tu cuenta y proyecto han sido creados correctamente. Revisa tu email para confirmar tu cuenta.",

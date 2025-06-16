@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
 
 export interface ContratistaData {
   CompanyName: string;
@@ -22,23 +21,29 @@ export interface ContratistaData {
 export const useContratistas = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const { signUp } = useAuth();
 
-  const createContratista = async (data: ContratistaData) => {
+  const createContratista = async (data: ContratistaData, authUserId?: string) => {
     setLoading(true);
     try {
-      // First, create the user in Supabase Auth
-      console.log('Creating user with email:', data.ContactEmail);
-      const { data: authData, error: authError } = await signUp(data.ContactEmail, data.Password);
-      
-      if (authError || !authData.user) {
-        console.error('Error creating auth user:', authError);
-        return { data: null, error: authError };
+      // Si no se proporciona authUserId, obtener el usuario actual
+      let userId = authUserId;
+      if (!userId) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          console.error('No authenticated user found');
+          toast({
+            title: "Error de autenticación",
+            description: "No hay usuario autenticado",
+            variant: "destructive",
+          });
+          return { data: null, error: new Error('No authenticated user') };
+        }
+        userId = user.id;
       }
 
-      console.log('Auth user created successfully:', authData.user);
+      console.log('Creating contratista for user ID:', userId);
 
-      // Then create the contratista record with the auth user ID
+      // Crear el registro del contratista con el ID del usuario autenticado
       const contratistaData = {
         CompanyName: data.CompanyName,
         RUT: data.RUT,
@@ -50,9 +55,9 @@ export const useContratistas = () => {
         ContactEmail: data.ContactEmail,
         ContactPhone: data.ContactPhone,
         Username: data.Username,
-        Password: data.Password, // Note: In production, don't store passwords in plain text
+        Password: data.Password,
         Status: true,
-        auth_user_id: authData.user.id // Link to the auth user
+        auth_user_id: userId
       };
 
       const { data: result, error } = await supabase
@@ -63,16 +68,17 @@ export const useContratistas = () => {
       if (error) {
         console.error('Error creating contratista:', error);
         toast({
-          title: "Error al crear usuario",
+          title: "Error al crear contratista",
           description: error.message,
           variant: "destructive",
         });
         return { data: null, error };
       }
 
+      console.log('Contratista created successfully:', result);
       toast({
-        title: "Usuario creado exitosamente",
-        description: "La información se ha guardado en la base de datos",
+        title: "Contratista creado exitosamente",
+        description: "La información del contratista se ha guardado en la base de datos",
       });
 
       return { data: result, error: null };

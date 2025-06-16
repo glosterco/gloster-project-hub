@@ -30,6 +30,20 @@ const ContactInfoStep: React.FC<ContactInfoStepProps> = ({
   setConfirmPassword,
   errors,
 }) => {
+  const handlePhoneChange = (value: string) => {
+    // Remove any non-numeric characters and ensure it starts with 9
+    const cleanPhone = value.replace(/\D/g, '');
+    const formattedPhone = `+56${cleanPhone}`;
+    setPhone(formattedPhone);
+  };
+
+  const getDisplayPhone = () => {
+    if (phone.startsWith('+56')) {
+      return phone.substring(3);
+    }
+    return phone.replace(/\D/g, '');
+  };
+
   return (
     <div className="space-y-6">
       <p className="text-sm text-gray-600 italic">
@@ -65,16 +79,23 @@ const ContactInfoStep: React.FC<ContactInfoStepProps> = ({
 
       <div className="space-y-2">
         <Label htmlFor="phone">Teléfono</Label>
-        <Input
-          id="phone"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          placeholder="+569xxxxxxxx"
-          className={`font-rubik ${errors.phone ? 'border-red-500' : ''}`}
-        />
+        <div className="flex">
+          <div className="flex items-center px-3 border border-r-0 rounded-l-md bg-gray-50 text-gray-600 font-rubik">
+            +56
+          </div>
+          <Input
+            id="phone"
+            value={getDisplayPhone()}
+            onChange={(e) => handlePhoneChange(e.target.value)}
+            placeholder="9xxxxxxxx"
+            className={`font-rubik rounded-l-none ${errors.phone ? 'border-red-500' : ''}`}
+            maxLength={9}
+          />
+        </div>
         {errors.phone && (
           <p className="text-red-500 text-sm">{errors.phone}</p>
         )}
+        <p className="text-xs text-gray-500">Ingresa tu número sin el código de país</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

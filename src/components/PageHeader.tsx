@@ -1,15 +1,44 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { LogOut, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 const PageHeader = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { signOut, loading } = useAuth();
+  const [contractorInfo, setContractorInfo] = useState<{
+    ContactName: string;
+    CompanyName: string;
+  } | null>(null);
+
+  useEffect(() => {
+    const fetchContractorInfo = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) return;
+
+        const { data: contractorData, error } = await supabase
+          .from('Contratistas')
+          .select('ContactName, CompanyName')
+          .eq('auth_user_id', user.id)
+          .maybeSingle();
+
+        if (!error && contractorData) {
+          setContractorInfo(contractorData);
+        }
+      } catch (error) {
+        console.error('Error fetching contractor info:', error);
+      }
+    };
+
+    fetchContractorInfo();
+  }, []);
 
   const handleLogout = async () => {
     console.log('Attempting logout...');
@@ -22,6 +51,10 @@ const PageHeader = () => {
       navigate('/');
     }
   };
+
+  const displayName = contractorInfo 
+    ? `${contractorInfo.ContactName} - ${contractorInfo.CompanyName}`
+    : 'Usuario';
 
   return (
     <header className="bg-gloster-white border-b border-gloster-gray/20 shadow-sm">
@@ -39,7 +72,7 @@ const PageHeader = () => {
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2 text-gloster-gray">
               <User className="h-4 w-4" />
-              <span className="text-sm font-rubik">Juan Pérez - Subcontratista</span>
+              <span className="text-sm font-rubik">{displayName}</span>
             </div>
             <Button 
               variant="outline" 

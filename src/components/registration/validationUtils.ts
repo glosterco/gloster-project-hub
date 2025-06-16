@@ -41,6 +41,7 @@ export const validateEmail = (email: string): boolean => {
 };
 
 export const validatePhone = (phone: string): boolean => {
+  // Check if it's in the format +569xxxxxxxx (9 digits after +56)
   const phoneRegex = /^\+569\d{8}$/;
   return phoneRegex.test(phone);
 };

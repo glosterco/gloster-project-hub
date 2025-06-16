@@ -74,31 +74,10 @@ export const usePaymentDetail = (paymentId: string) => {
         return;
       }
 
-      // Fetch payment state with project details
+      // First fetch the payment state
       const { data: paymentData, error: paymentError } = await supabase
         .from('Estados de pago')
-        .select(`
-          *,
-          Proyectos!Estados_de_pago_Project_fkey (
-            id,
-            Name,
-            Description,
-            Location,
-            Budget,
-            Contratistas!Proyectos_Contratista_fkey (
-              id,
-              CompanyName,
-              ContactName,
-              ContactEmail
-            ),
-            Mandantes!Proyectos_Owner_fkey (
-              id,
-              CompanyName,
-              ContactName,
-              ContactEmail
-            )
-          )
-        `)
+        .select('*')
         .eq('id', parseInt(paymentId))
         .maybeSingle();
 
@@ -121,8 +100,48 @@ export const usePaymentDetail = (paymentId: string) => {
         return;
       }
 
+      // Now fetch the project details with relationships
+      const { data: projectData, error: projectError } = await supabase
+        .from('Proyectos')
+        .select(`
+          *,
+          Contratistas!Proyectos_Contratista_fkey (
+            id,
+            CompanyName,
+            ContactName,
+            ContactEmail
+          ),
+          Mandantes!Proyectos_Owner_fkey (
+            id,
+            CompanyName,
+            ContactName,
+            ContactEmail
+          )
+        `)
+        .eq('id', paymentData.Project)
+        .maybeSingle();
+
+      if (projectError) {
+        console.error('Error fetching project:', projectError);
+        toast({
+          title: "Error al cargar proyecto",
+          description: projectError.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!projectData) {
+        toast({
+          title: "Proyecto no encontrado",
+          description: "No se encontró el proyecto relacionado",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Verify that this payment belongs to a project of the current contractor
-      if (paymentData.Proyectos?.Contratistas?.id !== contractorData.id) {
+      if (projectData.Contratistas?.id !== contractorData.id) {
         toast({
           title: "Acceso denegado",
           description: "No tienes acceso a este estado de pago",
@@ -134,9 +153,9 @@ export const usePaymentDetail = (paymentId: string) => {
       const paymentWithDetails = {
         ...paymentData,
         projectData: {
-          ...paymentData.Proyectos,
-          Contratista: paymentData.Proyectos.Contratistas,
-          Owner: paymentData.Proyectos.Mandantes
+          ...projectData,
+          Contratista: projectData.Contratistas,
+          Owner: projectData.Mandantes
         }
       };
 

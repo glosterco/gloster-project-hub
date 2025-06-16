@@ -2,10 +2,12 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useGoogleDriveIntegration } from '@/hooks/useGoogleDriveIntegration';
 
 export const useProyectos = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { createProjectFolder } = useGoogleDriveIntegration();
 
   const createProyecto = async (proyectoData: {
     Name: string;
@@ -68,7 +70,24 @@ export const useProyectos = () => {
 
       console.log('Proyecto creado exitosamente en BD:', data);
 
-      // Retornar en formato de array para consistencia
+      // Create Google Drive folder for the project
+      try {
+        const driveResult = await createProjectFolder(data.id, data.Name);
+        if (driveResult.success) {
+          console.log('Google Drive folder created successfully');
+          
+          // Optionally update the project with the Google Drive folder ID
+          await supabase
+            .from('Proyectos')
+            .update({ URL: driveResult.folderId })
+            .eq('id', data.id);
+        }
+      } catch (driveError) {
+        console.warn('Failed to create Google Drive folder, but project was created:', driveError);
+        // Don't fail the entire operation if Google Drive fails
+      }
+
+      // Return in array format for consistency
       return { data: [data], error: null };
     } catch (error) {
       console.error('Error inesperado creando proyecto:', error);

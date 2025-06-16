@@ -3,10 +3,12 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { addDays, addMonths, format, getMonth, getYear } from 'date-fns';
+import { useGoogleDriveIntegration } from '@/hooks/useGoogleDriveIntegration';
 
 export const useEstadosPago = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { createPaymentStateFolder } = useGoogleDriveIntegration();
 
   const createEstadosPago = async (
     projectId: number,
@@ -18,6 +20,19 @@ export const useEstadosPago = () => {
     
     try {
       console.log('Creando estados de pago con parámetros:', { projectId, firstPaymentDate, expiryRate, duration });
+      
+      // Get project data to access Google Drive folder ID
+      const { data: projectData, error: projectError } = await supabase
+        .from('Proyectos')
+        .select('URL, Name')
+        .eq('id', projectId)
+        .single();
+
+      if (projectError) {
+        console.error('Error fetching project data:', projectError);
+      }
+
+      const projectGoogleDriveFolderId = projectData?.URL;
       
       // Calculate how many payment states to create
       let totalPayments: number;
@@ -116,6 +131,32 @@ export const useEstadosPago = () => {
       }
 
       console.log('Estados de pago creados exitosamente en BD:', data);
+
+      // Create Google Drive folders for each payment state if project has Google Drive integration
+      if (projectGoogleDriveFolderId) {
+        try {
+          for (const estado of data) {
+            const driveResult = await createPaymentStateFolder(
+              estado.Name,
+              estado.Mes,
+              estado.Año,
+              projectGoogleDriveFolderId
+            );
+            
+            if (driveResult.success) {
+              // Update the payment state with the Google Drive folder ID
+              await supabase
+                .from('Estados de pago')
+                .update({ URL: driveResult.folderId })
+                .eq('id', estado.id);
+            }
+          }
+          console.log('Google Drive folders created for payment states');
+        } catch (driveError) {
+          console.warn('Failed to create some Google Drive folders for payment states:', driveError);
+          // Don't fail the entire operation if Google Drive fails
+        }
+      }
 
       return { data, error: null };
     } catch (error) {

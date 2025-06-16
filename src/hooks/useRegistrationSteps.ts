@@ -23,7 +23,7 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
   const { createMandante, loading: mandanteLoading } = useMandantes();
   const { createProyecto, loading: proyectoLoading } = useProyectos();
   const { createEstadosPago, loading: estadosPagoLoading } = useEstadosPago();
-  const { signUp, signIn } = useAuth();
+  const { signUp } = useAuth();
 
   const validateStep = (step: number): boolean => {
     switch (step) {
@@ -127,15 +127,16 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
     }
 
     console.log('Mandante saved successfully:', data);
-    if (data && data.id) {
-      setSavedMandanteId(data.id);
+    if (data && data[0]?.id) {
+      setSavedMandanteId(data[0].id);
+      return true;
     }
-    return true;
+    return false;
   };
 
   const saveProyectoData = async (contratistaId: number) => {
     if (!contratistaId || !savedMandanteId) {
-      console.error('Missing contratista or mandante ID');
+      console.error('Missing contratista or mandante ID', { contratistaId, savedMandanteId });
       toast({
         title: "Error",
         description: "Faltan datos del contratista o mandante",
@@ -166,7 +167,7 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
       Owner: savedMandanteId,
       FirstPayment: formData.firstPaymentDate ? format(formData.firstPaymentDate, 'yyyy-MM-dd') : '',
       ExpiryRate: finalPaymentPeriod,
-      Requierment: finalDocuments // Asegurar que sea un array válido
+      Requierment: finalDocuments
     };
 
     console.log('Saving proyecto data:', proyectoData);
@@ -175,19 +176,27 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
     
     if (error) {
       console.error('Error saving proyecto:', error);
+      toast({
+        title: "Error al crear proyecto",
+        description: error.message || "No se pudo crear el proyecto",
+        variant: "destructive",
+      });
       return false;
     }
 
     console.log('Proyecto saved successfully:', data);
-    if (data && data[0]) {
+    if (data && data[0]?.id) {
       setSavedProyectoId(data[0].id);
+      return true;
     }
-    return true;
+    
+    console.error('No project ID returned from creation');
+    return false;
   };
 
   const saveEstadosPagoData = async () => {
     if (!savedProyectoId) {
-      console.error('Missing proyecto ID');
+      console.error('Missing proyecto ID', { savedProyectoId });
       toast({
         title: "Error",
         description: "Falta el ID del proyecto",
@@ -198,6 +207,11 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
 
     if (!formData.firstPaymentDate) {
       console.error('Missing first payment date');
+      toast({
+        title: "Error",
+        description: "Falta la fecha del primer pago",
+        variant: "destructive",
+      });
       return false;
     }
 
@@ -225,6 +239,11 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
     
     if (error) {
       console.error('Error saving estados de pago:', error);
+      toast({
+        title: "Error al crear estados de pago",
+        description: error.message || "No se pudieron crear los estados de pago",
+        variant: "destructive",
+      });
       return false;
     }
 
@@ -269,7 +288,6 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
       if (authError) {
         console.error('Error creating auth user:', authError);
         
-        // Mostrar mensaje específico para email ya registrado
         if (authError.message?.includes('ya está registrada') || 
             authError.message?.includes('already registered')) {
           toast({
@@ -280,7 +298,6 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
           return false;
         }
         
-        // Si es cualquier otro error de autenticación
         toast({
           title: "Error al crear usuario",
           description: authError.message || "No se pudo crear la cuenta de usuario",
@@ -290,28 +307,11 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
       }
 
       console.log('✅ Usuario creado en Auth:', authData?.user?.id);
-      
-      // Paso 2: Iniciar sesión automáticamente
-      console.log('Paso 2: Iniciando sesión automática...');
-      const { error: signInError } = await signIn(formData.email, formData.password);
-      
-      if (signInError) {
-        console.error('Error signing in new user:', signInError);
-        toast({
-          title: "Error al iniciar sesión",
-          description: "Usuario creado pero no se pudo iniciar sesión automáticamente",
-          variant: "destructive",
-        });
-        return false;
-      }
 
-      console.log('✅ Sesión iniciada correctamente');
+      // NO AUTO-LOGIN - Usuario debe confirmar email primero
 
-      // Esperar un momento para asegurar que la sesión esté establecida
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Paso 3: Crear contratista
-      console.log('Paso 3: Creando contratista...');
+      // Paso 2: Crear contratista
+      console.log('Paso 2: Creando contratista...');
       const finalSpecialties = formData.specialties === 'otra' ? formData.customSpecialty : formData.specialties;
       
       const contratistaData = {
@@ -338,7 +338,7 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
         console.error('Error saving contratista:', contratistaError);
         toast({
           title: "Error al crear contratista",
-          description: "Hubo un error al crear los datos del contratista. Por favor intenta de nuevo.",
+          description: "Hubo un error al crear los datos del contratista.",
           variant: "destructive",
         });
         return false;
@@ -346,7 +346,7 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
 
       console.log('✅ Contratista creado:', contratistaResult);
       let contratistaId: number;
-      if (contratistaResult && contratistaResult[0]) {
+      if (contratistaResult && contratistaResult[0]?.id) {
         contratistaId = contratistaResult[0].id;
         setSavedContratistaId(contratistaId);
       } else {
@@ -359,26 +359,31 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
         return false;
       }
 
-      // Paso 4: Crear mandante
-      console.log('Paso 4: Creando mandante...');
+      // Paso 3: Crear mandante
+      console.log('Paso 3: Creando mandante...');
       const mandanteSuccess = await saveMandanteData();
-      if (!mandanteSuccess) {
+      if (!mandanteSuccess || !savedMandanteId) {
         console.error('Error al crear mandante');
+        toast({
+          title: "Error al crear mandante",
+          description: "No se pudo crear el mandante",
+          variant: "destructive",
+        });
         return false;
       }
       console.log('✅ Mandante creado con ID:', savedMandanteId);
 
-      // Paso 5: Crear proyecto
-      console.log('Paso 5: Creando proyecto...');
+      // Paso 4: Crear proyecto
+      console.log('Paso 4: Creando proyecto...');
       const proyectoSuccess = await saveProyectoData(contratistaId);
-      if (!proyectoSuccess) {
+      if (!proyectoSuccess || !savedProyectoId) {
         console.error('Error al crear proyecto');
         return false;
       }
       console.log('✅ Proyecto creado con ID:', savedProyectoId);
 
-      // Paso 6: Crear estados de pago
-      console.log('Paso 6: Creando estados de pago...');
+      // Paso 5: Crear estados de pago
+      console.log('Paso 5: Creando estados de pago...');
       const estadosPagoSuccess = await saveEstadosPagoData();
       if (!estadosPagoSuccess) {
         console.error('Error al crear estados de pago');
@@ -386,8 +391,8 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
       }
       console.log('✅ Estados de pago creados');
 
-      // Paso 7: Enviar datos al webhook como respaldo
-      console.log('Paso 7: Enviando datos al webhook...');
+      // Paso 6: Enviar datos al webhook como respaldo
+      console.log('Paso 6: Enviando datos al webhook...');
       const finalPaymentPeriod = formData.paymentPeriod === 'otro' ? formData.customPeriod : formData.paymentPeriod;
       let finalDocuments: string[] = [];
       if (Array.isArray(formData.requiredDocuments)) {
@@ -427,7 +432,7 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
           console.log('✅ Webhook enviado correctamente');
           toast({
             title: "¡Registro exitoso!",
-            description: "Tu cuenta y proyecto han sido creados correctamente. Revisa tu email para confirmar tu cuenta.",
+            description: "Tu cuenta ha sido creada. Revisa tu email para confirmar tu cuenta antes de iniciar sesión.",
           });
           
           return true;

@@ -83,13 +83,13 @@ export const useProjectDetail = (projectId: string) => {
         .from('Proyectos')
         .select(`
           *,
-          Contratistas (
+          Contratistas!Proyectos_Contratista_fkey (
             id,
             CompanyName,
             ContactName,
             ContactEmail
           ),
-          Mandantes (
+          Mandantes!Proyectos_Owner_fkey (
             id,
             CompanyName,
             ContactName,

@@ -64,6 +64,48 @@ const Dashboard = () => {
       .reduce((sum: number, payment: any) => sum + (payment.Total || 0), 0);
   };
 
+  const getTotalContractValue = () => {
+    if (projects.length === 0) return { amount: 0, currency: 'CLP' };
+    
+    // Group by currency and sum
+    const currencyTotals = projects.reduce((acc, project) => {
+      const currency = project.Currency || 'CLP';
+      const budget = project.Budget || 0;
+      
+      if (!acc[currency]) {
+        acc[currency] = 0;
+      }
+      acc[currency] += budget;
+      
+      return acc;
+    }, {} as { [key: string]: number });
+
+    // For display, use the first project's currency or CLP as default
+    const primaryCurrency = projects[0]?.Currency || 'CLP';
+    return { amount: currencyTotals[primaryCurrency] || 0, currency: primaryCurrency };
+  };
+
+  const getTotalPaidValue = () => {
+    if (projects.length === 0) return { amount: 0, currency: 'CLP' };
+    
+    // Group by currency and sum
+    const currencyTotals = projects.reduce((acc, project) => {
+      const currency = project.Currency || 'CLP';
+      const paidValue = getProjectPaidValue(project);
+      
+      if (!acc[currency]) {
+        acc[currency] = 0;
+      }
+      acc[currency] += paidValue;
+      
+      return acc;
+    }, {} as { [key: string]: number });
+
+    // For display, use the first project's currency or CLP as default
+    const primaryCurrency = projects[0]?.Currency || 'CLP';
+    return { amount: currencyTotals[primaryCurrency] || 0, currency: primaryCurrency };
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 font-rubik">
@@ -74,6 +116,9 @@ const Dashboard = () => {
       </div>
     );
   }
+
+  const totalContractValue = getTotalContractValue();
+  const totalPaidValue = getTotalPaidValue();
 
   return (
     <div className="min-h-screen bg-slate-50 font-rubik">
@@ -161,8 +206,7 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-slate-800 font-rubik">
-                {formatCurrency(projects.)}
-                {formatCurrency(project.reduce((sum, p) => sum + (p.Budget || 0)), project.Currency || 'CLP')}
+                {formatCurrency(totalContractValue.amount, totalContractValue.currency)}
               </div>
             </CardContent>
           </Card>
@@ -178,7 +222,7 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-slate-800 font-rubik">
-                {formatCurrency(project.reduce((sum, p) => sum + getProjectPaidValue(p)), project.Currency || 'CLP')}
+                {formatCurrency(totalPaidValue.amount, totalPaidValue.currency)}
               </div>
             </CardContent>
           </Card>

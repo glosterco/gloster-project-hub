@@ -5,6 +5,7 @@ import { useContratistas } from '@/hooks/useContratistas';
 import { useMandantes } from '@/hooks/useMandantes';
 import { useProyectos } from '@/hooks/useProyectos';
 import { useEstadosPago } from '@/hooks/useEstadosPago';
+import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
 
 interface UseRegistrationStepsProps {
@@ -23,6 +24,7 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
   const { createMandante, loading: mandanteLoading } = useMandantes();
   const { createProyecto, loading: proyectoLoading } = useProyectos();
   const { createEstadosPago, loading: estadosPagoLoading } = useEstadosPago();
+  const { signUp, signIn } = useAuth();
 
   const validateStep = (step: number): boolean => {
     switch (step) {
@@ -126,8 +128,8 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
     }
 
     console.log('Mandante saved successfully:', data);
-    if (data && data[0]) {
-      setSavedMandanteId(data[0].id);
+    if (data && data.id) {
+      setSavedMandanteId(data.id);
     }
     return true;
   };
@@ -228,12 +230,7 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
       return;
     }
 
-    // Save mandante data after step 5
-    if (currentStep === 5) {
-      const success = await saveMandanteData();
-      if (!success) return;
-    }
-
+    // Ya no guardamos el mandante en el paso 5, solo validamos
     if (currentStep < totalSteps) {
       setCurrentStep(currentStep + 1);
     }
@@ -255,7 +252,35 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
       return;
     }
 
-    // Ahora guardamos el contratista con autenticación en el último paso
+    // Paso 1: Crear usuario en autenticación
+    const { data: authData, error: authError } = await signUp(formData.email, formData.password);
+    
+    if (authError) {
+      console.error('Error creating auth user:', authError);
+      toast({
+        title: "Error al crear usuario",
+        description: "No se pudo crear la cuenta de usuario",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    console.log('Auth user created successfully:', authData);
+
+    // Paso 2: Iniciar sesión automáticamente
+    const { error: signInError } = await signIn(formData.email, formData.password);
+    
+    if (signInError) {
+      console.error('Error signing in:', signInError);
+      toast({
+        title: "Error al iniciar sesión",
+        description: "Usuario creado pero no se pudo iniciar sesión automáticamente",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    // Paso 3: Crear contratista
     const finalSpecialties = formData.specialties === 'otra' ? formData.customSpecialty : formData.specialties;
     
     const contratistaData = {
@@ -273,7 +298,7 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
       Status: true
     };
 
-    console.log('Saving contratista data with auth:', contratistaData);
+    console.log('Saving contratista data:', contratistaData);
 
     const { data: contratistaData_result, error: contratistaError } = await createContratista(contratistaData);
     
@@ -300,19 +325,25 @@ export const useRegistrationSteps = ({ formData, errors }: UseRegistrationStepsP
       return false;
     }
 
-    // Guardar el proyecto en la base de datos
+    // Paso 4: Crear mandante (ahora con usuario autenticado)
+    const mandanteSuccess = await saveMandanteData();
+    if (!mandanteSuccess) {
+      return false;
+    }
+
+    // Paso 5: Guardar el proyecto en la base de datos
     const proyectoSuccess = await saveProyectoData(contratistaId);
     if (!proyectoSuccess) {
       return false;
     }
 
-    // Crear los estados de pago automáticamente
+    // Paso 6: Crear los estados de pago automáticamente
     const estadosPagoSuccess = await saveEstadosPagoData();
     if (!estadosPagoSuccess) {
       return false;
     }
 
-    // Enviar datos al webhook como respaldo
+    // Paso 7: Enviar datos al webhook como respaldo
     const finalPaymentPeriod = formData.paymentPeriod === 'otro' ? formData.customPeriod : formData.paymentPeriod;
     const finalDocuments = formData.otherDocuments ? [...formData.requiredDocuments, formData.otherDocuments] : formData.requiredDocuments;
 

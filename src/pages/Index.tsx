@@ -142,7 +142,7 @@ const Index = () => {
                 variant="outline"
                 className="border-gloster-grey text-gloster-grey hover:bg-gloster-yellow hover:text-black font-rubik"
               >
-                <Database className="h-4 w-4 mr-2" />
+                <Database className="h-5 w-4 mr-2" />
                 Ver Datos en Vivo
               </Button>
             </div>

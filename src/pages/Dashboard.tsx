@@ -261,12 +261,6 @@ const Dashboard = () => {
                           {formatCurrency((project.Budget || 0) - paidValue)}
                         </span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gloster-gray font-rubik">Próximo pago:</span>
-                        <span className="font-medium text-slate-800 font-rubik text-xs">
-                          {nextPayment}
-                        </span>
-                      </div>
                     </div>
 
                     <Button 

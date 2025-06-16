@@ -56,6 +56,22 @@ const Dashboard = () => {
       .reduce((sum: number, payment: any) => sum + (payment.Total || 0), 0);
   };
 
+  const getNextPaymentDate = (project: any) => {
+    if (!project.EstadosPago || project.EstadosPago.length === 0) return "Sin estados de pago";
+    
+    const pendingPayments = project.EstadosPago.filter((payment: any) => 
+      payment.Status === 'pendiente' || payment.Status === 'programado'
+    );
+    
+    if (pendingPayments.length === 0) return "Proyecto completado";
+    
+    const nextPayment = pendingPayments.sort((a: any, b: any) => 
+      new Date(a.ExpiryDate).getTime() - new Date(b.ExpiryDate).getTime()
+    )[0];
+    
+    return new Date(nextPayment.ExpiryDate).toLocaleDateString('es-CL');
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 font-rubik">

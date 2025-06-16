@@ -161,7 +161,7 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-slate-800 font-rubik">
-                {formatCurrency(projects.reduce((sum, p) => sum + (p.Budget || 0), 0))}
+                {formatCurrency(project.reduce((sum, p) => sum + (p.Budget || 0), 0), project.Currency || 'CLP')}
               </div>
             </CardContent>
           </Card>

@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 export interface ContratistaData {
   CompanyName: string;
@@ -21,28 +22,43 @@ export interface ContratistaData {
 export const useContratistas = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { signUp } = useAuth();
 
   const createContratista = async (data: ContratistaData) => {
     setLoading(true);
     try {
+      // First, create the user in Supabase Auth
+      console.log('Creating user with email:', data.ContactEmail);
+      const { data: authData, error: authError } = await signUp(data.ContactEmail, data.Password);
+      
+      if (authError || !authData.user) {
+        console.error('Error creating auth user:', authError);
+        return { data: null, error: authError };
+      }
+
+      console.log('Auth user created successfully:', authData.user);
+
+      // Then create the contratista record with the auth user ID
+      const contratistaData = {
+        CompanyName: data.CompanyName,
+        RUT: data.RUT,
+        Specialization: data.Specialization,
+        Experience: data.Experience,
+        Adress: data.Adress,
+        City: data.City,
+        ContactName: data.ContactName,
+        ContactEmail: data.ContactEmail,
+        ContactPhone: data.ContactPhone,
+        Username: data.Username,
+        Password: data.Password, // Note: In production, don't store passwords in plain text
+        Status: true,
+        auth_user_id: authData.user.id // Link to the auth user
+      };
+
       const { data: result, error } = await supabase
         .from('Contratistas')
-        .insert([{
-          CompanyName: data.CompanyName,
-          RUT: data.RUT,
-          Specialization: data.Specialization,
-          Experience: data.Experience,
-          Adress: data.Adress,
-          City: data.City,
-          ContactName: data.ContactName,
-          ContactEmail: data.ContactEmail,
-          ContactPhone: data.ContactPhone,
-          Username: data.Username,
-          Password: data.Password,
-          Status: true
-        }])
-        .select()
-        .single();
+        .insert([contratistaData])
+        .select();
 
       if (error) {
         console.error('Error creating contratista:', error);

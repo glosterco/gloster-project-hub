@@ -1,42 +1,62 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Shield, FileText, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 const Index = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signIn, loading } = useAuth();
+
+  // Check if user is already logged in
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        navigate('/dashboard');
+      }
+    };
+
+    checkSession();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session && event === 'SIGNED_IN') {
+        navigate('/dashboard');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     
-    console.log('Login attempt:', { email, password });
+    if (!email || !password) {
+      toast({
+        title: "Campos requeridos",
+        description: "Por favor ingresa tu email y contraseña",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    console.log('Login attempt:', { email });
     
-    // Simulamos autenticación
-    setTimeout(() => {
-      if (email && password) {
-        toast({
-          title: "¡Bienvenido a Gloster!",
-          description: "Sesión iniciada exitosamente",
-        });
-        navigate('/dashboard');
-      } else {
-        toast({
-          title: "Error de autenticación",
-          description: "Por favor verifica tus credenciales",
-          variant: "destructive",
-        });
-      }
-      setIsLoading(false);
-    }, 1000);
+    const { data, error } = await signIn(email, password);
+    
+    if (data && !error) {
+      // Navigation will be handled by the auth state change listener
+      console.log('Login successful');
+    }
   };
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -132,7 +152,7 @@ const Index = () => {
                       className="bg-gloster-white/10 border-gloster-white/20 text-gloster-white placeholder:text-gloster-white/60 font-rubik focus:bg-gloster-white/20 focus:border-gloster-white/40"
                       required
                       autoComplete="email"
-                      disabled={isLoading}
+                      disabled={loading}
                     />
                   </div>
                   <div className="space-y-2">
@@ -144,15 +164,15 @@ const Index = () => {
                       className="bg-gloster-white/10 border-gloster-white/20 text-gloster-white placeholder:text-gloster-white/60 font-rubik focus:bg-gloster-white/20 focus:border-gloster-white/40"
                       required
                       autoComplete="current-password"
-                      disabled={isLoading}
+                      disabled={loading}
                     />
                   </div>
                   <Button 
                     type="submit" 
                     className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold font-rubik transition-colors"
-                    disabled={isLoading}
+                    disabled={loading}
                   >
-                    {isLoading ? 'Iniciando sesión...' : 'Acceder'}
+                    {loading ? 'Iniciando sesión...' : 'Acceder'}
                   </Button>
                 </form>
                 
@@ -164,6 +184,7 @@ const Index = () => {
                     variant="outline"
                     onClick={() => navigate('/register')}
                     className="w-full border-gloster-white/20 text-gloster-white hover:bg-gloster-white/10 font-rubik"
+                    disabled={loading}
                   >
                     Registrarse como Contratista
                   </Button>

@@ -1,9 +1,10 @@
 
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Building2, MapPin, Calendar, DollarSign, User, Clock } from 'lucide-react';
+import { Calendar, MapPin, Building2, ChevronRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { ProjectWithDetails } from '@/hooks/useProjectsWithDetails';
 
 interface ProjectsGridProps {
@@ -11,139 +12,139 @@ interface ProjectsGridProps {
 }
 
 export const ProjectsGrid = ({ projects }: ProjectsGridProps) => {
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-CL', {
-      style: 'currency',
-      currency: 'CLP',
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
+  const navigate = useNavigate();
 
-  const calculateProgress = (estadosPago: any[]) => {
-    const total = estadosPago.length;
-    const completed = estadosPago.filter(ep => ep.Completion).length;
-    return total > 0 ? (completed / total) * 100 : 0;
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Aprobado':
-        return 'bg-green-500';
-      case 'Pendiente':
-        return 'bg-yellow-500';
-      case 'Programado':
-        return 'bg-blue-500';
-      default:
-        return 'bg-gray-500';
+  const formatCurrency = (amount: number, currency?: string) => {
+    const currencySymbol = currency === 'USD' ? 'USD' : currency === 'UF' ? 'UF' : '$';
+    
+    if (currency === 'USD') {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 0,
+      }).format(amount);
+    } else if (currency === 'UF') {
+      return `${amount.toLocaleString('es-CL')} UF`;
+    } else {
+      return new Intl.NumberFormat('es-CL', {
+        style: 'currency',
+        currency: 'CLP',
+        minimumFractionDigits: 0,
+      }).format(amount);
     }
   };
+
+  const getProjectProgress = (project: ProjectWithDetails) => {
+    if (!project.EstadosPago || project.EstadosPago.length === 0) return 0;
+    
+    const totalPayments = project.EstadosPago.length;
+    const completedPayments = project.EstadosPago.filter(payment => 
+      payment.Status === 'aprobado' || payment.Completion === true
+    ).length;
+    
+    return Math.round((completedPayments / totalPayments) * 100);
+  };
+
+  const getProjectStatus = (project: ProjectWithDetails) => {
+    if (!project.EstadosPago || project.EstadosPago.length === 0) return 'Sin estados de pago';
+    
+    const pendingPayments = project.EstadosPago.filter(payment => 
+      payment.Status === 'pendiente'
+    ).length;
+    
+    if (pendingPayments > 0) {
+      return `${pendingPayments} pendiente${pendingPayments > 1 ? 's' : ''}`;
+    }
+    
+    const progress = getProjectProgress(project);
+    if (progress === 100) {
+      return 'Completado';
+    }
+    
+    return 'En progreso';
+  };
+
+  if (projects.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <Building2 className="mx-auto h-12 w-12 text-gloster-gray/50 mb-4" />
+        <h3 className="text-lg font-medium text-gloster-gray mb-2 font-rubik">No hay proyectos disponibles</h3>
+        <p className="text-gloster-gray/70 font-rubik">Los proyectos aparecerán aquí una vez que sean creados.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {projects.map((project) => {
-        const progress = calculateProgress(project.EstadosPago);
-        const nextPayment = project.EstadosPago.find(ep => !ep.Completion);
+        const progress = getProjectProgress(project);
+        const status = getProjectStatus(project);
         
         return (
-          <Card key={project.id} className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Building2 className="h-5 w-5 text-blue-600" />
-                    {project.Name}
-                  </CardTitle>
-                  <CardDescription className="mt-2 line-clamp-2">
-                    {project.Description}
-                  </CardDescription>
-                </div>
-                <Badge variant={project.Status ? "default" : "secondary"}>
-                  {project.Status ? "Activo" : "Inactivo"}
+          <Card 
+            key={project.id} 
+            className="hover:shadow-xl transition-all duration-300 cursor-pointer border-gloster-gray/20 hover:border-gloster-gray/50 h-full"
+            onClick={() => navigate(`/project/${project.id}`)}
+          >
+            <CardHeader className="pb-4">
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <CardTitle className="text-lg font-semibold text-slate-800 font-rubik line-clamp-2">
+                  {project.Name}
+                </CardTitle>
+                <Badge variant="secondary" className="bg-gloster-gray/20 text-gloster-gray border-gloster-gray/30 shrink-0">
+                  {project.Status ? 'activo' : 'inactivo'}
                 </Badge>
               </div>
+              <p className="text-gloster-gray text-sm font-rubik line-clamp-2">
+                {project.Description}
+              </p>
             </CardHeader>
             
             <CardContent className="space-y-4">
-              {/* Location and Budget */}
-              <div className="grid grid-cols-1 gap-3">
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <MapPin className="h-4 w-4" />
-                  <span>{project.Location}</span>
+              <div className="space-y-3">
+                <div className="flex items-start space-x-2">
+                  <MapPin className="h-4 w-4 text-gloster-gray mt-0.5 shrink-0" />
+                  <span className="text-sm text-gloster-gray font-rubik line-clamp-1">
+                    {project.Location}
+                  </span>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <DollarSign className="h-4 w-4" />
-                  <span className="font-semibold">{formatCurrency(project.Budget)}</span>
-                </div>
-              </div>
-
-              {/* Project Details */}
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="flex items-center gap-2 text-gray-600">
-                  <Calendar className="h-4 w-4" />
-                  <span>{project.Duration} meses</span>
-                </div>
-                <div className="flex items-center gap-2 text-gray-600">
-                  <Clock className="h-4 w-4" />
-                  <span>Cada {project.ExpiryRate} días</span>
+                
+                <div className="flex items-center space-x-2">
+                  <Building2 className="h-4 w-4 text-gloster-gray shrink-0" />
+                  <span className="text-sm text-gloster-gray font-rubik line-clamp-1">
+                    {project.Owner?.CompanyName}
+                  </span>
                 </div>
               </div>
 
-              {/* Contractor and Owner */}
               <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm">
-                  <User className="h-4 w-4 text-blue-600" />
-                  <span className="font-medium">Contratista:</span>
-                  <span className="text-gray-600">{project.Contratista?.CompanyName}</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-gloster-gray font-rubik">Progreso:</span>
+                  <span className="text-xs font-semibold text-slate-800 font-rubik">{progress}%</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Building2 className="h-4 w-4 text-green-600" />
-                  <span className="font-medium">Mandante:</span>
-                  <span className="text-gray-600">{project.Owner?.CompanyName}</span>
+                <Progress value={progress} className="h-2 bg-gloster-gray/20 [&>div]:bg-gloster-yellow" />
+              </div>
+
+              <div className="space-y-2 pt-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-gloster-gray font-rubik">Valor:</span>
+                  <span className="text-sm font-semibold text-slate-800 font-rubik">
+                    {formatCurrency(project.Budget || 0, project.Currency)}
+                  </span>
+                </div>
+                
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-gloster-gray font-rubik">Estado:</span>
+                  <span className="text-xs font-medium text-slate-800 font-rubik">
+                    {status}
+                  </span>
                 </div>
               </div>
 
-              {/* Progress */}
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="font-medium">Progreso Estados de Pago</span>
-                  <span className="text-gray-600">{Math.round(progress)}%</span>
-                </div>
-                <Progress value={progress} className="h-2" />
-                <div className="text-xs text-gray-500">
-                  {project.EstadosPago.filter(ep => ep.Completion).length} de {project.EstadosPago.length} estados completados
-                </div>
-              </div>
-
-              {/* Next Payment */}
-              {nextPayment && (
-                <div className="bg-gray-50 p-3 rounded-lg">
-                  <div className="text-sm font-medium text-gray-700 mb-1">Próximo Estado de Pago</div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">{nextPayment.Name}</span>
-                    <Badge className={getStatusColor(nextPayment.Status)}>
-                      {nextPayment.Status}
-                    </Badge>
-                  </div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    Vence: {new Date(nextPayment.ExpiryDate).toLocaleDateString('es-CL')}
-                  </div>
-                </div>
-              )}
-
-              {/* Requirements */}
-              <div className="space-y-2">
-                <div className="text-sm font-medium">Requerimientos:</div>
-                <div className="flex flex-wrap gap-1">
-                  {project.Requierment?.slice(0, 3).map((req, index) => (
-                    <Badge key={index} variant="outline" className="text-xs">
-                      {req}
-                    </Badge>
-                  ))}
-                  {project.Requierment?.length > 3 && (
-                    <Badge variant="outline" className="text-xs">
-                      +{project.Requierment.length - 3} más
-                    </Badge>
-                  )}
+              <div className="pt-4 border-t border-gloster-gray/20">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-slate-800 font-rubik">Ver detalles</span>
+                  <ChevronRight className="h-4 w-4 text-gloster-gray" />
                 </div>
               </div>
             </CardContent>

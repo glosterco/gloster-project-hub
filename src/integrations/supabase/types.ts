@@ -138,6 +138,7 @@ export type Database = {
         Row: {
           Budget: number | null
           Contratista: number
+          Currency: string | null
           Description: string | null
           Duration: number | null
           ExpiryRate: number | null
@@ -154,6 +155,7 @@ export type Database = {
         Insert: {
           Budget?: number | null
           Contratista: number
+          Currency?: string | null
           Description?: string | null
           Duration?: number | null
           ExpiryRate?: number | null
@@ -170,6 +172,7 @@ export type Database = {
         Update: {
           Budget?: number | null
           Contratista?: number
+          Currency?: string | null
           Description?: string | null
           Duration?: number | null
           ExpiryRate?: number | null

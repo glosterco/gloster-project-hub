@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 
 export const useRegistrationForm = () => {
@@ -23,6 +22,7 @@ export const useRegistrationForm = () => {
   const [projectAddress, setProjectAddress] = useState('');
   const [projectDescription, setProjectDescription] = useState('');
   const [contractAmount, setContractAmount] = useState('');
+  const [currency, setCurrency] = useState('CLP');
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [duration, setDuration] = useState('');
 
@@ -61,6 +61,7 @@ export const useRegistrationForm = () => {
     projectAddress, setProjectAddress,
     projectDescription, setProjectDescription,
     contractAmount, setContractAmount,
+    currency, setCurrency,
     startDate, setStartDate,
     duration, setDuration,
     

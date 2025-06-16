@@ -22,12 +22,42 @@ const ProjectDetail = () => {
   
   const { project, loading } = useProjectDetail(id || '');
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-CL', {
-      style: 'currency',
-      currency: 'CLP',
-      minimumFractionDigits: 0,
-    }).format(amount);
+  const formatCurrency = (amount: number, currency?: string) => {
+    const currencySymbol = currency === 'USD' ? 'USD' : currency === 'UF' ? 'UF' : '$';
+    
+    if (currency === 'USD') {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 0,
+      }).format(amount);
+    } else if (currency === 'UF') {
+      return `${amount.toLocaleString('es-CL')} UF`;
+    } else {
+      return new Intl.NumberFormat('es-CL', {
+        style: 'currency',
+        currency: 'CLP',
+        minimumFractionDigits: 0,
+      }).format(amount);
+    }
+  };
+
+  const getPaymentStatus = (payment: any) => {
+    const today = new Date();
+    const expiryDate = new Date(payment.ExpiryDate);
+    
+    // Si ya está completado, mantener como aprobado
+    if (payment.Completion) {
+      return 'aprobado';
+    }
+    
+    // Si la fecha de vencimiento es en el futuro, es programado
+    if (expiryDate > today) {
+      return 'programado';
+    }
+    
+    // Si es el estado de pago más cercano a la fecha actual y no vencido, es pendiente
+    return 'pendiente';
   };
 
   const getStatusColor = (status: string) => {
@@ -48,7 +78,7 @@ const ProjectDetail = () => {
     
     const totalPayments = project.EstadosPago.length;
     const completedPayments = project.EstadosPago.filter(payment => 
-      payment.Status === 'aprobado' || payment.Completion === true
+      getPaymentStatus(payment) === 'aprobado'
     ).length;
     
     return Math.round((completedPayments / totalPayments) * 100);
@@ -58,7 +88,7 @@ const ProjectDetail = () => {
     if (!project?.EstadosPago || project.EstadosPago.length === 0) return 0;
     
     return project.EstadosPago
-      .filter(payment => payment.Status === 'aprobado' || payment.Completion === true)
+      .filter(payment => getPaymentStatus(payment) === 'aprobado')
       .reduce((sum, payment) => sum + (payment.Total || 0), 0);
   };
 
@@ -74,7 +104,8 @@ const ProjectDetail = () => {
         .filter(payment => {
           const matchesSearch = payment.Name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                                payment.Mes?.toLowerCase().includes(searchTerm.toLowerCase());
-          const matchesFilter = filterBy === 'all' || payment.Status === filterBy;
+          const dynamicStatus = getPaymentStatus(payment);
+          const matchesFilter = filterBy === 'all' || dynamicStatus === filterBy;
           return matchesSearch && matchesFilter;
         })
         .sort((a, b) => {
@@ -86,7 +117,7 @@ const ProjectDetail = () => {
               const amountB = b.Total || 0;
               return amountB - amountA;
             case 'status':
-              return a.Status.localeCompare(b.Status);
+              return getPaymentStatus(a).localeCompare(getPaymentStatus(b));
             default:
               return 0;
           }
@@ -127,7 +158,6 @@ const ProjectDetail = () => {
     <div className="min-h-screen bg-slate-50 font-rubik">
       <PageHeader />
 
-      {/* Volver al Dashboard */}
       <div className="bg-slate-50 py-2">
         <div className="container mx-auto px-6">
           <button 
@@ -141,7 +171,6 @@ const ProjectDetail = () => {
       </div>
 
       <div className="container mx-auto px-6 py-8">
-        {/* Project Banner Card */}
         <Card className="mb-6 border-l-4 border-l-gloster-gray hover:shadow-xl transition-all duration-300">
           <CardHeader className="pb-4">
             <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
@@ -176,7 +205,7 @@ const ProjectDetail = () => {
                 <div>
                   <p className="text-gloster-gray text-sm font-rubik">Valor Total</p>
                   <p className="font-semibold text-slate-800 font-rubik text-sm md:text-base">
-                    {formatCurrency(project.Budget || 0)}
+                    {formatCurrency(project.Budget || 0, project.Currency)}
                   </p>
                 </div>
                 <div>
@@ -188,18 +217,16 @@ const ProjectDetail = () => {
                 </div>
                 <div>
                   <p className="text-gloster-gray text-sm font-rubik">Total Pagado</p>
-                  <p className="font-semibold text-green-600 font-rubik">{formatCurrency(paidValue)}</p>
+                  <p className="font-semibold text-green-600 font-rubik">{formatCurrency(paidValue, project.Currency)}</p>
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Estados de Pago */}
         <div className="space-y-6">
           <h3 className="text-2xl font-bold text-slate-800 mb-6 font-rubik">Estados de Pago</h3>
           
-          {/* Search, Filter and Sort Controls */}
           <div className="mb-6 p-4 bg-white rounded-lg border border-gloster-gray/20">
             <div className="flex items-center gap-4 w-full">
               <div className="relative flex-1 min-w-0">
@@ -254,83 +281,89 @@ const ProjectDetail = () => {
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredAndSortedPayments.map((payment) => (
-                <Card 
-                  key={payment.id} 
-                  className="hover:shadow-xl transition-all duration-300 cursor-pointer border-gloster-gray/20 hover:border-gloster-gray/50 h-full"
-                >
-                  <CardContent className="p-4 md:p-6 h-full flex flex-col">
-                    <div className="space-y-4 flex-1">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-center space-x-3 min-w-0 flex-1">
-                          <div className="w-10 h-10 bg-gloster-yellow/20 rounded-lg flex items-center justify-center shrink-0">
-                            <Calendar className="h-5 w-5 text-gloster-gray" />
+              {filteredAndSortedPayments.map((payment) => {
+                const dynamicStatus = getPaymentStatus(payment);
+                const canInteract = dynamicStatus !== 'programado';
+                
+                return (
+                  <Card 
+                    key={payment.id} 
+                    className={`hover:shadow-xl transition-all duration-300 border-gloster-gray/20 hover:border-gloster-gray/50 h-full ${
+                      canInteract ? 'cursor-pointer' : 'cursor-not-allowed opacity-75'
+                    }`}
+                  >
+                    <CardContent className="p-4 md:p-6 h-full flex flex-col">
+                      <div className="space-y-4 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center space-x-3 min-w-0 flex-1">
+                            <div className="w-10 h-10 bg-gloster-yellow/20 rounded-lg flex items-center justify-center shrink-0">
+                              <Calendar className="h-5 w-5 text-gloster-gray" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <h4 className="font-semibold text-slate-800 font-rubik text-sm md:text-base">
+                                {payment.Name}
+                              </h4>
+                              <p className="text-gloster-gray text-xs md:text-sm font-rubik">
+                                {payment.Mes} {payment.Año}
+                              </p>
+                              <p className="text-gloster-gray text-xs md:text-sm font-rubik">
+                                Vencimiento: {new Date(payment.ExpiryDate).toLocaleDateString('es-CL')}
+                              </p>
+                            </div>
                           </div>
-                          <div className="min-w-0 flex-1">
-                            <h4 className="font-semibold text-slate-800 font-rubik text-sm md:text-base">
-                              {payment.Name}
-                            </h4>
-                            <p className="text-gloster-gray text-xs md:text-sm font-rubik">
-                              {payment.Mes} {payment.Año}
-                            </p>
-                            <p className="text-gloster-gray text-xs md:text-sm font-rubik">
-                              Vencimiento: {new Date(payment.ExpiryDate).toLocaleDateString('es-CL')}
-                            </p>
+                          <Badge variant="secondary" className={`${getStatusColor(dynamicStatus)} text-xs shrink-0`}>
+                            {dynamicStatus}
+                          </Badge>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-gloster-gray text-xs md:text-sm font-rubik">Monto:</span>
+                            <span className="font-semibold text-slate-800 font-rubik text-xs md:text-sm">
+                              {payment.Total ? formatCurrency(payment.Total, project.Currency) : 'Sin monto definido'}
+                            </span>
                           </div>
                         </div>
-                        <Badge variant="secondary" className={`${getStatusColor(payment.Status)} text-xs shrink-0`}>
-                          {payment.Status}
-                        </Badge>
                       </div>
-                      
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-gloster-gray text-xs md:text-sm font-rubik">Monto:</span>
-                          <span className="font-semibold text-slate-800 font-rubik text-xs md:text-sm">
-                            {payment.Total ? formatCurrency(payment.Total) : 'Sin monto definido'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
 
-                    <div className="pt-4 mt-auto">
-                      {payment.Status === 'pendiente' && (
-                        <Button
-                          onClick={() => navigate(`/payment/${payment.id}`)}
-                          className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold font-rubik"
-                          size="sm"
-                        >
-                          Gestionar Documentos
-                          <ChevronRight className="h-4 w-4 ml-2" />
-                        </Button>
-                      )}
-                      
-                      {payment.Status === 'aprobado' && (
-                        <Button
-                          variant="outline"
-                          onClick={() => navigate(`/payment/${payment.id}`)}
-                          className="w-full border-gloster-gray/30 hover:bg-gloster-gray/10 font-rubik"
-                          size="sm"
-                        >
-                          Ver Documentos
-                          <ChevronRight className="h-4 w-4 ml-2" />
-                        </Button>
-                      )}
-                      
-                      {payment.Status === 'programado' && (
-                        <Button variant="ghost" disabled className="w-full font-rubik" size="sm">
-                          Programado
-                        </Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                      <div className="pt-4 mt-auto">
+                        {dynamicStatus === 'pendiente' && (
+                          <Button
+                            onClick={() => navigate(`/payment/${payment.id}`)}
+                            className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold font-rubik"
+                            size="sm"
+                          >
+                            Gestionar Documentos
+                            <ChevronRight className="h-4 w-4 ml-2" />
+                          </Button>
+                        )}
+                        
+                        {dynamicStatus === 'aprobado' && (
+                          <Button
+                            variant="outline"
+                            onClick={() => navigate(`/payment/${payment.id}`)}
+                            className="w-full border-gloster-gray/30 hover:bg-gloster-gray/10 font-rubik"
+                            size="sm"
+                          >
+                            Ver Documentos
+                            <ChevronRight className="h-4 w-4 ml-2" />
+                          </Button>
+                        )}
+                        
+                        {dynamicStatus === 'programado' && (
+                          <Button variant="ghost" disabled className="w-full font-rubik" size="sm">
+                            Programado
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </div>
 
-        {/* Project Info */}
         <Card className="mt-8 border-gloster-gray/20">
           <CardHeader>
             <CardTitle className="font-rubik text-slate-800">Información del Proyecto</CardTitle>
@@ -356,8 +389,8 @@ const ProjectDetail = () => {
                   <p className="font-medium font-rubik break-words text-sm">{project.Owner?.ContactEmail}</p>
                 </div>
                 <div>
-                  <p className="text-gloster-gray text-sm font-rubik">Estados de Pago</p>
-                  <p className="font-medium font-rubik">{project.EstadosPago?.length || 0} estados</p>
+                  <p className="text-gloster-gray text-sm font-rubik">Moneda del Contrato</p>
+                  <p className="font-medium font-rubik">{project.Currency || 'CLP'}</p>
                 </div>
               </div>
             </div>

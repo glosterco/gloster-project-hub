@@ -42,7 +42,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
-      <header className="bg-white border-b border-gloster-gray/20 shadow-sm">
+      <header className="bg-white border-b border-slate-200 shadow-sm">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -57,13 +57,13 @@ const Index = () => {
               <Button 
                 variant="outline" 
                 onClick={() => navigate('/auth')}
-                className="font-rubik border-gloster-gray/30 hover:bg-gloster-gray/10"
+                className="font-rubik border-slate-300 hover:bg-slate-100"
               >
                 Iniciar Sesión
               </Button>
               <Button 
                 onClick={() => navigate('/register')}
-                className="bg-slate-900 hover:bg-slate-950 text-white font-rubik font-semibold px-6 shadow-lg border-2 border-slate-900"
+                className="bg-slate-900 hover:bg-slate-800 text-white font-rubik font-semibold px-6 shadow-lg"
               >
                 Registrarse
               </Button>
@@ -77,9 +77,9 @@ const Index = () => {
         <div className="container mx-auto text-center max-w-4xl">
           <h2 className="text-4xl md:text-6xl font-bold text-slate-800 mb-6 font-rubik">
             Gestión inteligente para
-            <span className="text-gloster-yellow"> proyectos de construcción</span>
+            <span className="text-yellow-500"> proyectos de construcción</span>
           </h2>
-          <p className="text-xl text-gloster-gray mb-8 font-rubik leading-relaxed">
+          <p className="text-xl text-slate-600 mb-8 font-rubik leading-relaxed">
             Simplifica la administración de tus proyectos de construcción con nuestra plataforma integral 
             que conecta contratistas y mandantes de forma eficiente y transparente.
           </p>
@@ -87,7 +87,7 @@ const Index = () => {
             <Button 
               size="lg" 
               onClick={() => navigate('/register')}
-              className="bg-slate-900 hover:bg-slate-950 text-white font-rubik font-bold px-8 py-4 text-lg shadow-xl border-2 border-slate-900"
+              className="bg-slate-900 hover:bg-slate-800 text-white font-rubik font-bold px-8 py-4 text-lg shadow-xl"
             >
               Comenzar Ahora
               <ArrowRight className="ml-2 h-5 w-5" />
@@ -96,7 +96,7 @@ const Index = () => {
               size="lg" 
               variant="outline" 
               onClick={() => navigate('/auth')}
-              className="font-rubik border-2 border-gloster-gray/30 hover:bg-gloster-gray/10 px-8 py-4 text-lg"
+              className="font-rubik border-2 border-slate-300 hover:bg-slate-100 px-8 py-4 text-lg"
             >
               Ver Demo
             </Button>
@@ -111,16 +111,16 @@ const Index = () => {
             <h3 className="text-3xl font-bold text-slate-800 mb-4 font-rubik">
               Todo lo que necesitas para gestionar tus proyectos
             </h3>
-            <p className="text-gloster-gray text-lg font-rubik">
+            <p className="text-slate-600 text-lg font-rubik">
               Herramientas diseñadas específicamente para la industria de la construcción
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((feature, index) => (
-              <Card key={index} className="text-center hover:shadow-lg transition-shadow border-gloster-gray/20">
+              <Card key={index} className="text-center hover:shadow-lg transition-shadow border-slate-200">
                 <CardHeader>
-                  <div className="w-12 h-12 bg-gloster-yellow/20 rounded-lg flex items-center justify-center mx-auto mb-4">
-                    <feature.icon className="h-6 w-6 text-gloster-gray" />
+                  <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+                    <feature.icon className="h-6 w-6 text-slate-600" />
                   </div>
                   <CardTitle className="font-rubik text-slate-800">{feature.title}</CardTitle>
                 </CardHeader>
@@ -145,21 +145,21 @@ const Index = () => {
                 {benefits.map((benefit, index) => (
                   <li key={index} className="flex items-start space-x-3">
                     <CheckCircle className="h-6 w-6 text-green-500 mt-0.5 flex-shrink-0" />
-                    <span className="text-gloster-gray font-rubik">{benefit}</span>
+                    <span className="text-slate-600 font-rubik">{benefit}</span>
                   </li>
                 ))}
               </ul>
             </div>
-            <div className="bg-white p-8 rounded-lg shadow-lg border border-gloster-gray/20">
+            <div className="bg-white p-8 rounded-lg shadow-lg border border-slate-200">
               <h4 className="text-xl font-bold text-slate-800 mb-4 font-rubik">
                 ¿Listo para comenzar?
               </h4>
-              <p className="text-gloster-gray mb-6 font-rubik">
+              <p className="text-slate-600 mb-6 font-rubik">
                 Únete a cientos de empresas que ya confían en Gloster para gestionar sus proyectos de construcción.
               </p>
               <Button 
                 onClick={() => navigate('/register')}
-                className="w-full bg-slate-900 hover:bg-slate-950 text-white font-rubik font-bold py-3 shadow-lg border-2 border-slate-900"
+                className="w-full bg-slate-900 hover:bg-slate-800 text-white font-rubik font-bold py-3 shadow-lg"
               >
                 Crear cuenta gratuita
               </Button>
@@ -169,7 +169,7 @@ const Index = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-gloster-gray/20 py-8 px-6">
+      <footer className="bg-white border-t border-slate-200 py-8 px-6">
         <div className="container mx-auto text-center">
           <div className="flex items-center justify-center space-x-3 mb-4">
             <img 
@@ -179,7 +179,7 @@ const Index = () => {
             />
             <span className="font-bold text-slate-800 font-rubik">Gloster</span>
           </div>
-          <p className="text-gloster-gray text-sm font-rubik">
+          <p className="text-slate-600 text-sm font-rubik">
             © 2024 Gloster. Transformando la gestión de proyectos de construcción.
           </p>
         </div>

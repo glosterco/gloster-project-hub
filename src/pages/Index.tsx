@@ -62,7 +62,7 @@ const Index = () => {
                 Iniciar Sesión
               </Button>
               <Button 
-                onClick={() => navigate('/register')}
+                onClick={() => navigate('/auth')}
                 className="bg-slate-900 hover:bg-slate-800 text-white font-rubik font-semibold px-6 shadow-lg"
               >
                 Registrarse
@@ -86,7 +86,7 @@ const Index = () => {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
               size="lg" 
-              onClick={() => navigate('/register')}
+              onClick={() => navigate('/auth')}
               className="bg-slate-900 hover:bg-slate-800 text-white font-rubik font-bold px-8 py-4 text-lg shadow-xl"
             >
               Comenzar Ahora
@@ -158,7 +158,7 @@ const Index = () => {
                 Únete a cientos de empresas que ya confían en Gloster para gestionar sus proyectos de construcción.
               </p>
               <Button 
-                onClick={() => navigate('/register')}
+                onClick={() => navigate('/auth')}
                 className="w-full bg-slate-900 hover:bg-slate-800 text-white font-rubik font-bold py-3 shadow-lg"
               >
                 Crear cuenta gratuita

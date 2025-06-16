@@ -20,7 +20,6 @@ export interface ProjectDetail {
   Description: string;
   Location: string;
   Budget: number;
-  Currency: string;
   StartDate: string;
   Duration: number;
   Status: boolean;

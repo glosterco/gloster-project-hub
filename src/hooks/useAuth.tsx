@@ -52,8 +52,6 @@ export const useAuth = () => {
   const signIn = async (email: string, password: string) => {
     setLoading(true);
     try {
-      console.log('Attempting to sign in with:', email);
-      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -61,46 +59,14 @@ export const useAuth = () => {
 
       if (error) {
         console.error('Login error:', error);
-        
-        // Manejar errores específicos de inicio de sesión
-        if (error.message?.includes('Invalid login credentials')) {
-          return { 
-            data: null, 
-            error: { 
-              ...error, 
-              message: 'Credenciales inválidas. Verifica tu email y contraseña.' 
-            } 
-          };
-        }
-        
-        if (error.message?.includes('Email not confirmed')) {
-          return { 
-            data: null, 
-            error: { 
-              ...error, 
-              message: 'Por favor confirma tu email antes de iniciar sesión.' 
-            } 
-          };
-        }
-        
         return { data: null, error };
       }
 
       console.log('User logged in successfully:', data);
-      
-      // Verificar que realmente tenemos una sesión
-      if (!data.session) {
-        console.error('No session returned after login');
-        return { 
-          data: null, 
-          error: { message: 'Error al crear la sesión. Intenta nuevamente.' } 
-        };
-      }
-
       return { data, error: null };
     } catch (error: any) {
       console.error('Unexpected login error:', error);
-      return { data: null, error: { message: 'Error inesperado al iniciar sesión.' } };
+      return { data: null, error };
     } finally {
       setLoading(false);
     }

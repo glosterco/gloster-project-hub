@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -155,8 +156,6 @@ const Register = () => {
             setProjectDescription={formData.setProjectDescription}
             contractAmount={formData.contractAmount}
             setContractAmount={setContractAmountWithValidation}
-            currency={formData.currency}
-            setCurrency={formData.setCurrency}
             startDate={formData.startDate}
             setStartDate={formData.setStartDate}
             duration={formData.duration}

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -8,7 +9,6 @@ export interface ProjectWithDetails {
   Description: string;
   Location: string;
   Budget: number;
-  Currency: string;
   StartDate: string;
   Duration: number;
   FirstPayment: string;

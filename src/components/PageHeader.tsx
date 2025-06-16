@@ -4,17 +4,23 @@ import { Button } from '@/components/ui/button';
 import { LogOut, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 const PageHeader = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signOut, loading } = useAuth();
 
-  const handleLogout = () => {
-    toast({
-      title: "Sesión cerrada",
-      description: "Has cerrado sesión exitosamente",
-    });
-    navigate('/');
+  const handleLogout = async () => {
+    console.log('Attempting logout...');
+    
+    const { error } = await signOut();
+    
+    if (!error) {
+      // Navigation will be handled by the auth state change listener in Index.tsx
+      console.log('Logout successful, redirecting to login');
+      navigate('/');
+    }
   };
 
   return (
@@ -39,10 +45,11 @@ const PageHeader = () => {
               variant="outline" 
               size="sm" 
               onClick={handleLogout}
+              disabled={loading}
               className="text-gloster-gray hover:text-slate-800 border-gloster-gray/30 font-rubik"
             >
               <LogOut className="h-4 w-4 mr-2" />
-              Cerrar Sesión
+              {loading ? 'Cerrando...' : 'Cerrar Sesión'}
             </Button>
           </div>
         </div>

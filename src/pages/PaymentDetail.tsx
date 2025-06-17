@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ArrowLeft, Download, Upload, FileText, ExternalLink, Send, Calendar, DollarSign, HelpCircle, CheckCircle, Clock, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { usePaymentDetail } from '@/hooks/usePaymentDetail';
 import PageHeader from '@/components/PageHeader';
 import EmailTemplate from '@/components/EmailTemplate';
 
@@ -16,6 +17,9 @@ const PaymentDetail = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const fileInputRefs = useRef<{[key: string]: HTMLInputElement | null}>({});
+
+  // Use real data from database
+  const { payment, loading } = usePaymentDetail(id || '');
 
   const [documentStatus, setDocumentStatus] = useState({
     eepp: false,
@@ -52,19 +56,30 @@ const PaymentDetail = () => {
 
   const [achs_selection, setAchsSelection] = useState('');
 
-  // Datos simulados del estado de pago
-  const paymentState = {
+  // Map database data to match the UI structure
+  const paymentState = payment ? {
+    id: payment.id,
+    month: `${payment.Mes} ${payment.Año}`,
+    status: payment.Status || "pendiente",
+    amount: payment.Total || 0,
+    dueDate: payment.ExpiryDate,
+    projectName: payment.projectData?.Name || "",
+    contractorName: payment.projectData?.Contratista?.CompanyName || "",
+    clientName: payment.projectData?.Owner?.CompanyName || "",
+    recipient: payment.projectData?.Owner?.ContactEmail || ""
+  } : {
     id: parseInt(id || '1'),
-    month: "Mayo 2024",
+    month: "Cargando...",
     status: "pendiente",
-    amount: 28000000,
-    dueDate: "2024-05-30",
-    projectName: "Centro Comercial Plaza Norte",
-    contractorName: "Constructora ABC Ltda",
-    clientName: "Inversiones Norte S.A.",
-    recipient: "aadelpino97@gmail.com"
+    amount: 0,
+    dueDate: "",
+    projectName: "Cargando...",
+    contractorName: "Cargando...",
+    clientName: "Cargando...",
+    recipient: ""
   };
 
+  // Datos simulados del estado de pago
   const documents = [
     {
       id: 'eepp',
@@ -243,7 +258,7 @@ const PaymentDetail = () => {
       name: paymentState.projectName,
       client: paymentState.clientName,
       contractor: paymentState.contractorName,
-      location: "Las Condes",
+      location: payment?.projectData?.Location || "Las Condes",
       projectManager: "Ana Rodríguez",
       contactEmail: paymentState.recipient
     };
@@ -293,7 +308,7 @@ const PaymentDetail = () => {
       contractorName: paymentState.contractorName,
       clientName: paymentState.clientName,
       month: paymentState.month,
-      year: "2024",
+      year: payment?.Año?.toString() || "2024",
       amount: paymentState.amount,
       recipient: paymentState.recipient,
       documents: documents.filter(doc => documentStatus[doc.id as keyof typeof documentStatus]).map(doc => ({
@@ -323,7 +338,7 @@ const PaymentDetail = () => {
         
         // Redirigir de vuelta al proyecto después de un delay
         setTimeout(() => {
-          navigate('/project/2');
+          navigate(`/project/${payment?.Project || 2}`);
         }, 2000);
       } else {
         throw new Error('Network response was not ok');
@@ -347,6 +362,19 @@ const PaymentDetail = () => {
     return documents.filter(doc => documentStatus[doc.id as keyof typeof documentStatus]).length;
   };
 
+  if (loading) {
+    return (
+      <TooltipProvider>
+        <div className="min-h-screen bg-slate-50 font-rubik">
+          <PageHeader />
+          <div className="container mx-auto px-6 py-8">
+            <div className="text-center">Cargando estado de pago...</div>
+          </div>
+        </div>
+      </TooltipProvider>
+    );
+  }
+
   return (
     <TooltipProvider>
       <div className="min-h-screen bg-slate-50 font-rubik">
@@ -369,7 +397,7 @@ const PaymentDetail = () => {
         <div className="bg-slate-50 py-2">
           <div className="container mx-auto px-6">
             <button 
-              onClick={() => navigate('/project/2')}
+              onClick={() => navigate(`/project/${payment?.Project || 2}`)}
               className="text-gloster-gray hover:text-slate-800 text-sm font-rubik flex items-center"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />

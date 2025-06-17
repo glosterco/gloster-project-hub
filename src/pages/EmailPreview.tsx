@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -6,6 +5,7 @@ import { ArrowLeft, Download, Send } from 'lucide-react';
 import EmailTemplate from '@/components/EmailTemplate';
 import { useToast } from '@/hooks/use-toast';
 import { usePaymentDetail } from '@/hooks/usePaymentDetail';
+import html2pdf from 'html2pdf.js';
 
 const EmailPreview = () => {
   const navigate = useNavigate();
@@ -62,8 +62,40 @@ const EmailPreview = () => {
     window.print();
   };
 
-  const handleDownloadPDF = () => {
-    alert('Funcionalidad de descarga PDF estará disponible pronto');
+  const handleDownloadPDF = async () => {
+    try {
+      const element = document.querySelector('.email-template-container');
+      if (!element) {
+        toast({
+          title: "Error",
+          description: "No se pudo encontrar el contenido a convertir",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const opt = {
+        margin: 1,
+        filename: `Estado_Pago_${payment?.Mes}_${payment?.Año}_${payment?.projectData?.Name || 'Proyecto'}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+      };
+
+      await html2pdf().set(opt).from(element).save();
+      
+      toast({
+        title: "PDF descargado",
+        description: "El estado de pago se ha descargado exitosamente",
+      });
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast({
+        title: "Error al descargar",
+        description: "Hubo un problema al generar el PDF. Intenta nuevamente.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleSendEmail = async () => {
@@ -239,7 +271,7 @@ const EmailPreview = () => {
 
       {/* Contenido de la plantilla */}
       <div className="container mx-auto px-6 py-8">
-        <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
+        <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden email-template-container">
           <EmailTemplate 
             paymentState={emailTemplateData.paymentState}
             project={emailTemplateData.project}

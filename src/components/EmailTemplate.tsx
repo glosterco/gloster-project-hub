@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar, DollarSign, FileText, CheckCircle, Building, User, Mail, Download, Eye, Printer, Linkedin } from 'lucide-react';
+import PaymentApprovalSection from './PaymentApprovalSection';
 
 interface EmailTemplateProps {
   paymentState: {
@@ -177,6 +178,17 @@ const EmailTemplate: React.FC<EmailTemplateProps> = ({ paymentState, project, do
             </div>
           </CardContent>
         </Card>
+
+        {/* Sección de Aprobación del Estado de Pago */}
+        <div className="mb-8">
+          <PaymentApprovalSection 
+            paymentState={{
+              month: paymentState.month,
+              amount: paymentState.amount,
+              projectName: paymentState.projectName
+            }}
+          />
+        </div>
 
         {/* Información de contacto del contratista */}
         <Card className="bg-slate-50">

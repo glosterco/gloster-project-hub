@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -188,8 +189,8 @@ const EmailPreview = () => {
         client: payment.projectData.Owner?.CompanyName || '',
         contractor: payment.projectData.Contratista?.CompanyName || '',
         location: payment.projectData.Location || '',
-        projectManager: payment.projectData.Owner?.ContactName || '',
-        contactEmail: payment.projectData.Owner?.ContactEmail || ''
+        projectManager: payment.projectData.Contratista?.ContactName || '',
+        contactEmail: payment.projectData.Contratista?.ContactEmail || ''
       },
       documents: sampleDocuments,
       timestamp: new Date().toISOString()
@@ -255,7 +256,7 @@ const EmailPreview = () => {
     );
   }
 
-  // Create email data structure for EmailTemplate with real data
+  // Create email data structure for EmailTemplate with corrected contractor information
   const emailTemplateData = {
     paymentState: {
       month: `${payment.Mes} ${payment.Año}`,
@@ -269,8 +270,8 @@ const EmailPreview = () => {
       client: payment.projectData.Owner?.CompanyName || '',
       contractor: payment.projectData.Contratista?.CompanyName || '',
       location: payment.projectData.Location || '',
-      projectManager: payment.projectData.Owner?.ContactName || '',
-      contactEmail: payment.projectData.Owner?.ContactEmail || ''
+      projectManager: payment.projectData.Contratista?.ContactName || '',
+      contactEmail: payment.projectData.Contratista?.ContactEmail || ''
     },
     documents: sampleDocuments
   };

@@ -10,13 +10,14 @@ import { usePaymentDetail } from '@/hooks/usePaymentDetail';
 const EmailPreview = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const paymentId = searchParams.get('paymentId') || '5'; // Default fallback
-  const { payment, loading } = usePaymentDetail(paymentId);
+  const paymentId = searchParams.get('paymentId') || '11'; // Default to known existing ID
+  const { payment, loading, error } = usePaymentDetail(paymentId);
   const { toast } = useToast();
 
   console.log('EmailPreview - paymentId:', paymentId);
   console.log('EmailPreview - payment data:', payment);
   console.log('EmailPreview - loading:', loading);
+  console.log('EmailPreview - error:', error);
 
   const sampleDocuments = [
     {
@@ -135,12 +136,17 @@ const EmailPreview = () => {
     );
   }
 
-  if (!payment || !payment.projectData) {
+  if (error || !payment || !payment.projectData) {
     return (
       <div className="min-h-screen bg-slate-50 font-rubik">
         <div className="container mx-auto px-6 py-8">
           <div className="text-center">
-            <p className="text-gloster-gray">Estado de pago no encontrado.</p>
+            <p className="text-gloster-gray mb-4">
+              {error || "Estado de pago no encontrado."}
+            </p>
+            <p className="text-sm text-gloster-gray mb-4">
+              ID solicitado: {paymentId}
+            </p>
             <Button onClick={() => navigate('/dashboard')} className="mt-4">
               Volver al Dashboard
             </Button>
@@ -150,7 +156,7 @@ const EmailPreview = () => {
     );
   }
 
-  // Create email data structure for EmailTemplate
+  // Create email data structure for EmailTemplate with real data
   const emailTemplateData = {
     paymentState: {
       month: `${payment.Mes} ${payment.Año}`,

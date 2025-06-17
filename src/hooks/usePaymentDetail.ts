@@ -40,18 +40,24 @@ export interface PaymentDetail {
 export const usePaymentDetail = (paymentId: string) => {
   const [payment, setPayment] = useState<PaymentDetail | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchPaymentDetail = async () => {
     if (!paymentId) return;
     
     setLoading(true);
+    setError(null);
+    
     try {
+      console.log('Fetching payment detail for ID:', paymentId);
+      
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
         console.log('No authenticated user found');
+        setError('Usuario no autenticado');
         return;
       }
 
@@ -64,16 +70,13 @@ export const usePaymentDetail = (paymentId: string) => {
 
       if (contractorError) {
         console.error('Error fetching contractor:', contractorError);
+        setError('Error al obtener datos del contratista');
         return;
       }
 
       if (!contractorData) {
         console.log('No contractor found for current user');
-        toast({
-          title: "Acceso denegado",
-          description: "No tienes un perfil de contratista válido",
-          variant: "destructive",
-        });
+        setError('No tienes un perfil de contratista válido');
         return;
       }
 
@@ -86,22 +89,17 @@ export const usePaymentDetail = (paymentId: string) => {
 
       if (paymentError) {
         console.error('Error fetching payment:', paymentError);
-        toast({
-          title: "Error al cargar estado de pago",
-          description: paymentError.message,
-          variant: "destructive",
-        });
+        setError('Error al cargar estado de pago');
         return;
       }
 
       if (!paymentData) {
-        toast({
-          title: "Estado de pago no encontrado",
-          description: "No se encontró el estado de pago solicitado",
-          variant: "destructive",
-        });
+        console.log('Payment not found for ID:', paymentId);
+        setError('Estado de pago no encontrado');
         return;
       }
+
+      console.log('Payment data found:', paymentData);
 
       // Now fetch the project details with relationships
       const { data: projectData, error: projectError } = await supabase
@@ -126,30 +124,18 @@ export const usePaymentDetail = (paymentId: string) => {
 
       if (projectError) {
         console.error('Error fetching project:', projectError);
-        toast({
-          title: "Error al cargar proyecto",
-          description: projectError.message,
-          variant: "destructive",
-        });
+        setError('Error al cargar proyecto');
         return;
       }
 
       if (!projectData) {
-        toast({
-          title: "Proyecto no encontrado",
-          description: "No se encontró el proyecto relacionado",
-          variant: "destructive",
-        });
+        setError('Proyecto no encontrado');
         return;
       }
 
       // Verify that this payment belongs to a project of the current contractor
       if (projectData.Contratistas?.id !== contractorData.id) {
-        toast({
-          title: "Acceso denegado",
-          description: "No tienes acceso a este estado de pago",
-          variant: "destructive",
-        });
+        setError('No tienes acceso a este estado de pago');
         return;
       }
 
@@ -163,14 +149,10 @@ export const usePaymentDetail = (paymentId: string) => {
       };
 
       setPayment(paymentWithDetails);
-      console.log('Payment detail loaded:', paymentWithDetails);
+      console.log('Payment detail loaded successfully:', paymentWithDetails);
     } catch (error) {
       console.error('Unexpected error:', error);
-      toast({
-        title: "Error inesperado",
-        description: "Hubo un error al cargar el estado de pago",
-        variant: "destructive",
-      });
+      setError('Error inesperado al cargar el estado de pago');
     } finally {
       setLoading(false);
     }
@@ -183,6 +165,7 @@ export const usePaymentDetail = (paymentId: string) => {
   return {
     payment,
     loading,
+    error,
     refetch: fetchPaymentDetail
   };
 };

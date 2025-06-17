@@ -69,11 +69,11 @@ const EmailPreview = () => {
             left: 0; 
             top: 0; 
             width: 100%; 
-            transform: scale(0.8);
+            transform: scale(0.65);
             transform-origin: top left;
           }
           .print\\:hidden { display: none !important; }
-          @page { margin: 0.5in; size: A4; }
+          @page { margin: 0.3in; size: A4; }
         }
       </style>
     `;
@@ -99,16 +99,27 @@ const EmailPreview = () => {
         return;
       }
 
+      // Calculate the scale needed to fit content in one page
+      const elementHeight = element.scrollHeight;
+      const a4Height = 842; // A4 height in pixels at 72 DPI
+      const availableHeight = a4Height - 60; // Account for margins
+      const scale = Math.min(0.6, availableHeight / elementHeight);
+
       const opt = {
-        margin: [0.3, 0.3, 0.3, 0.3],
+        margin: [0.2, 0.2, 0.2, 0.2],
         filename: `Estado_Pago_${payment?.Mes}_${payment?.Año}_${payment?.projectData?.Name || 'Proyecto'}.pdf`,
-        image: { type: 'jpeg', quality: 1.0 },
+        image: { 
+          type: 'jpeg', 
+          quality: 0.98 
+        },
         html2canvas: { 
-          scale: 1.5,
+          scale: 1.2,
           useCORS: true,
           allowTaint: true,
           height: element.scrollHeight,
-          width: element.scrollWidth
+          width: element.scrollWidth,
+          scrollX: 0,
+          scrollY: 0
         },
         jsPDF: { 
           unit: 'in', 
@@ -116,21 +127,33 @@ const EmailPreview = () => {
           orientation: 'portrait',
           compress: true
         },
-        pagebreak: { mode: 'avoid-all' }
+        pagebreak: { 
+          mode: ['avoid-all', 'css', 'legacy']
+        }
       };
 
-      // Temporarily modify styles for PDF generation
+      // Apply temporary scaling for PDF generation
       const originalStyle = element.style.cssText;
-      element.style.cssText += 'transform: scale(0.75); transform-origin: top left; width: 133.33%;';
+      const originalTransform = element.style.transform;
+      
+      // Scale down the content to fit on one page
+      element.style.transform = `scale(${scale})`;
+      element.style.transformOrigin = 'top left';
+      element.style.width = `${100 / scale}%`;
+      element.style.height = 'auto';
+
+      // Wait for the DOM to update
+      await new Promise(resolve => setTimeout(resolve, 300));
 
       await html2pdf().set(opt).from(element).save();
       
       // Restore original styles
       element.style.cssText = originalStyle;
+      element.style.transform = originalTransform;
       
       toast({
         title: "PDF descargado",
-        description: "El estado de pago se ha descargado exitosamente",
+        description: "El estado de pago se ha descargado exitosamente en una sola página",
       });
     } catch (error) {
       console.error('Error generating PDF:', error);

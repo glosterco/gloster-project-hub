@@ -23,10 +23,14 @@ export const useAuth = () => {
       if (error) {
         console.error('Auth error:', error);
         
-        // Detectar específicamente el error de usuario ya registrado
         if (error.message?.includes('User already registered') || 
             error.message?.includes('already registered') ||
             error.message?.includes('already been registered')) {
+          toast({
+            title: "Error de registro",
+            description: "Esta dirección de correo electrónico ya está registrada. Por favor usa otro email o inicia sesión.",
+            variant: "destructive"
+          });
           return { 
             data: null, 
             error: { 
@@ -36,13 +40,28 @@ export const useAuth = () => {
           };
         }
         
+        toast({
+          title: "Error de registro",
+          description: error.message || "Ocurrió un error durante el registro",
+          variant: "destructive"
+        });
+        
         return { data: null, error };
       }
 
       console.log('User registered successfully:', data);
+      toast({
+        title: "Registro exitoso",
+        description: "Por favor verifica tu email para activar tu cuenta",
+      });
       return { data, error: null };
     } catch (error: any) {
       console.error('Unexpected auth error:', error);
+      toast({
+        title: "Error inesperado",
+        description: "Ocurrió un error inesperado. Intenta nuevamente.",
+        variant: "destructive"
+      });
       return { data: null, error };
     } finally {
       setLoading(false);
@@ -60,10 +79,14 @@ export const useAuth = () => {
       if (error) {
         console.error('Login error:', error);
         
-        // Detectar errores de credenciales incorrectas
         if (error.message?.includes('Invalid login credentials') || 
             error.message?.includes('Invalid email or password') ||
             error.message?.includes('invalid_credentials')) {
+          toast({
+            title: "Credenciales incorrectas",
+            description: "Email o contraseña incorrectos. Por favor verifica tus credenciales e intenta nuevamente.",
+            variant: "destructive"
+          });
           return { 
             data: null, 
             error: { 
@@ -72,14 +95,47 @@ export const useAuth = () => {
             } 
           };
         }
+
+        if (error.message?.includes('Email not confirmed')) {
+          toast({
+            title: "Email no verificado",
+            description: "Por favor verifica tu email antes de iniciar sesión.",
+            variant: "destructive"
+          });
+          return { data: null, error };
+        }
+
+        if (error.message?.includes('Too many requests')) {
+          toast({
+            title: "Demasiados intentos",
+            description: "Has hecho demasiados intentos de inicio de sesión. Espera unos minutos antes de intentar nuevamente.",
+            variant: "destructive"
+          });
+          return { data: null, error };
+        }
+        
+        toast({
+          title: "Error de inicio de sesión",
+          description: error.message || "Ocurrió un error al iniciar sesión",
+          variant: "destructive"
+        });
         
         return { data: null, error };
       }
 
       console.log('User logged in successfully:', data);
+      toast({
+        title: "Inicio de sesión exitoso",
+        description: "Bienvenido de vuelta",
+      });
       return { data, error: null };
     } catch (error: any) {
       console.error('Unexpected login error:', error);
+      toast({
+        title: "Error inesperado",
+        description: "Ocurrió un error inesperado. Intenta nuevamente.",
+        variant: "destructive"
+      });
       return { data: null, error };
     } finally {
       setLoading(false);

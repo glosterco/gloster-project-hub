@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -10,7 +11,7 @@ import html2pdf from 'html2pdf.js';
 const EmailPreview = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const paymentId = searchParams.get('paymentId') || '11'; // Default to known existing ID
+  const paymentId = searchParams.get('paymentId') || '11';
   const { payment, loading, error } = usePaymentDetail(paymentId);
   const { toast } = useToast();
 
@@ -59,7 +60,32 @@ const EmailPreview = () => {
   ];
 
   const handlePrint = () => {
-    window.print();
+    const printStyles = `
+      <style>
+        @media print {
+          body * { visibility: hidden; }
+          .email-template-container, .email-template-container * { visibility: visible; }
+          .email-template-container { 
+            position: absolute; 
+            left: 0; 
+            top: 0; 
+            width: 100%; 
+            transform: scale(0.8);
+            transform-origin: top left;
+          }
+          .print\\:hidden { display: none !important; }
+          @page { margin: 0.5in; size: A4; }
+        }
+      </style>
+    `;
+    
+    const originalHead = document.head.innerHTML;
+    document.head.innerHTML += printStyles;
+    
+    setTimeout(() => {
+      window.print();
+      document.head.innerHTML = originalHead;
+    }, 100);
   };
 
   const handleDownloadPDF = async () => {
@@ -75,14 +101,33 @@ const EmailPreview = () => {
       }
 
       const opt = {
-        margin: 1,
+        margin: [0.3, 0.3, 0.3, 0.3],
         filename: `Estado_Pago_${payment?.Mes}_${payment?.Año}_${payment?.projectData?.Name || 'Proyecto'}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+        image: { type: 'jpeg', quality: 1.0 },
+        html2canvas: { 
+          scale: 1.5,
+          useCORS: true,
+          allowTaint: true,
+          height: element.scrollHeight,
+          width: element.scrollWidth
+        },
+        jsPDF: { 
+          unit: 'in', 
+          format: 'a4', 
+          orientation: 'portrait',
+          compress: true
+        },
+        pagebreak: { mode: 'avoid-all' }
       };
 
+      // Temporarily modify styles for PDF generation
+      const originalStyle = element.style.cssText;
+      element.style.cssText += 'transform: scale(0.75); transform-origin: top left; width: 133.33%;';
+
       await html2pdf().set(opt).from(element).save();
+      
+      // Restore original styles
+      element.style.cssText = originalStyle;
       
       toast({
         title: "PDF descargado",

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, FileText, Calendar, DollarSign, MapPin, Building, User, Send, Eye } from 'lucide-react';
@@ -23,6 +24,17 @@ const PaymentDetail = () => {
     return new Intl.NumberFormat('es-CL', {
       style: 'currency',
       currency: 'CLP',
+      minimumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  const formatProjectBudget = (amount: number, currency: string) => {
+    // Convert database currency symbols to proper ISO codes
+    const normalizedCurrency = currency === '$' ? 'CLP' : currency;
+    
+    return new Intl.NumberFormat('es-CL', {
+      style: 'currency',
+      currency: normalizedCurrency,
       minimumFractionDigits: 0,
     }).format(amount);
   };
@@ -231,11 +243,7 @@ const PaymentDetail = () => {
               <div>
                 <p className="text-gloster-gray text-sm font-rubik">Presupuesto</p>
                 <p className="font-semibold text-slate-800 font-rubik">
-                  {new Intl.NumberFormat('es-CL', {
-                    style: 'currency',
-                    currency: payment.projectData.Currency,
-                    minimumFractionDigits: 0,
-                  }).format(payment.projectData.Budget)}
+                  {formatProjectBudget(payment.projectData.Budget, payment.projectData.Currency)}
                 </p>
               </div>
               <div>

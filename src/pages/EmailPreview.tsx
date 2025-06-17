@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -90,7 +89,7 @@ const EmailPreview = () => {
 
   const handleDownloadPDF = async () => {
     try {
-      const element = document.querySelector('.email-template-container');
+      const element = document.querySelector('.email-template-container') as HTMLElement;
       if (!element) {
         toast({
           title: "Error",

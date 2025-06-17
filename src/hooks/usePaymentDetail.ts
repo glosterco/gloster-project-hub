@@ -13,7 +13,6 @@ export interface PaymentDetail {
   Mes: string;
   Año: number;
   Project: number;
-  URL: string | null;
   projectData?: {
     id: number;
     Name: string;
@@ -23,7 +22,6 @@ export interface PaymentDetail {
     Currency: string;
     StartDate: string;
     Duration: number;
-    Requierment: string[];
     Contratista: {
       id: number;
       CompanyName: string;

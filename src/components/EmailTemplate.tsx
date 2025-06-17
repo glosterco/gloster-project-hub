@@ -30,6 +30,8 @@ interface EmailTemplateProps {
 }
 
 const EmailTemplate: React.FC<EmailTemplateProps> = ({ paymentState, project, documents }) => {
+  console.log('EmailTemplate props:', { paymentState, project, documents });
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-CL', {
       style: 'currency',
@@ -61,7 +63,9 @@ const EmailTemplate: React.FC<EmailTemplateProps> = ({ paymentState, project, do
             <Building className="h-8 w-8 text-gloster-gray" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-slate-800 font-rubik">{project.contractor || "Constructora ABC Ltda."}</h1>
+            <h1 className="text-3xl font-bold text-slate-800 font-rubik">
+              {project.contractor || "Contractor No Disponible"}
+            </h1>
             <p className="text-gloster-gray font-rubik">Contratista General</p>
           </div>
         </div>
@@ -122,7 +126,7 @@ const EmailTemplate: React.FC<EmailTemplateProps> = ({ paymentState, project, do
               </div>
               <div>
                 <p className="text-gloster-gray text-sm font-rubik">Contratista</p>
-                <p className="font-semibold text-slate-800 font-rubik">{project.contractor || "Constructora ABC Ltda."}</p>
+                <p className="font-semibold text-slate-800 font-rubik">{project.contractor || "No disponible"}</p>
               </div>
               <div>
                 <p className="text-gloster-gray text-sm font-rubik">Ubicación</p>
@@ -185,17 +189,17 @@ const EmailTemplate: React.FC<EmailTemplateProps> = ({ paymentState, project, do
           <CardContent className="space-y-4">
             <div>
               <p className="text-gloster-gray text-sm font-rubik">Empresa</p>
-              <p className="font-semibold text-slate-800 font-rubik">Constructora ABC Ltda.</p>
+              <p className="font-semibold text-slate-800 font-rubik">{project.contractor || "No disponible"}</p>
             </div>
             <div>
               <p className="text-gloster-gray text-sm font-rubik">Project Manager</p>
-              <p className="font-semibold text-slate-800 font-rubik">Carlos Mendoza</p>
+              <p className="font-semibold text-slate-800 font-rubik">{project.projectManager || "No disponible"}</p>
             </div>
             <div>
               <p className="text-gloster-gray text-sm font-rubik">Email de Contacto</p>
               <p className="font-semibold text-slate-800 font-rubik flex items-center space-x-2">
                 <Mail className="h-4 w-4 text-gloster-gray" />
-                <span>carlos.mendoza@constructoraabc.cl</span>
+                <span>{project.contactEmail || "No disponible"}</span>
               </p>
             </div>
           </CardContent>

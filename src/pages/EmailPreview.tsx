@@ -14,6 +14,10 @@ const EmailPreview = () => {
   const { payment, loading } = usePaymentDetail(paymentId);
   const { toast } = useToast();
 
+  console.log('EmailPreview - paymentId:', paymentId);
+  console.log('EmailPreview - payment data:', payment);
+  console.log('EmailPreview - loading:', loading);
+
   const sampleDocuments = [
     {
       id: 'eepp',
@@ -53,31 +57,6 @@ const EmailPreview = () => {
     }
   ];
 
-  const generateEmailHTML = () => {
-    if (!payment || !payment.projectData) return null;
-
-    return {
-      paymentState: {
-        month: `${payment.Mes} ${payment.Año}`,
-        amount: payment.Total || 0,
-        dueDate: payment.ExpiryDate,
-        projectName: payment.projectData.Name,
-        recipient: payment.projectData.Owner?.ContactEmail || ''
-      },
-      project: {
-        name: payment.projectData.Name,
-        client: payment.projectData.Owner?.CompanyName || '',
-        contractor: payment.projectData.Contratista?.CompanyName || '',
-        location: payment.projectData.Location || '',
-        projectManager: payment.projectData.Owner?.ContactName || '',
-        contactEmail: payment.projectData.Owner?.ContactEmail || ''
-      },
-      documents: sampleDocuments,
-      htmlContent: `Email template with ${sampleDocuments.length} documents for ${payment.projectData.Name} - ${payment.Mes} ${payment.Año}`,
-      timestamp: new Date().toISOString()
-    };
-  };
-
   const handlePrint = () => {
     window.print();
   };
@@ -96,18 +75,27 @@ const EmailPreview = () => {
       return;
     }
 
-    const emailTemplateData = generateEmailHTML();
-    
     const emailData = {
-      paymentState: emailTemplateData?.paymentState,
-      project: emailTemplateData?.project,
+      paymentState: {
+        month: `${payment.Mes} ${payment.Año}`,
+        amount: payment.Total || 0,
+        dueDate: payment.ExpiryDate,
+        projectName: payment.projectData.Name,
+        recipient: payment.projectData.Owner?.ContactEmail || ''
+      },
+      project: {
+        name: payment.projectData.Name,
+        client: payment.projectData.Owner?.CompanyName || '',
+        contractor: payment.projectData.Contratista?.CompanyName || '',
+        location: payment.projectData.Location || '',
+        projectManager: payment.projectData.Owner?.ContactName || '',
+        contactEmail: payment.projectData.Owner?.ContactEmail || ''
+      },
       documents: sampleDocuments,
-      emailTemplate: emailTemplateData,
-      recipient: payment.projectData.Owner?.ContactEmail,
       timestamp: new Date().toISOString()
     };
 
-    console.log('Sending email with template data to webhook:', emailData);
+    console.log('Sending email with data:', emailData);
 
     try {
       const response = await fetch('https://hook.us2.make.com/aojj5wkdzhmre99szykaa1efxwnvn4e6', {
@@ -162,7 +150,27 @@ const EmailPreview = () => {
     );
   }
 
-  const emailData = generateEmailHTML();
+  // Create email data structure for EmailTemplate
+  const emailTemplateData = {
+    paymentState: {
+      month: `${payment.Mes} ${payment.Año}`,
+      amount: payment.Total || 0,
+      dueDate: payment.ExpiryDate,
+      projectName: payment.projectData.Name,
+      recipient: payment.projectData.Owner?.ContactEmail || ''
+    },
+    project: {
+      name: payment.projectData.Name,
+      client: payment.projectData.Owner?.CompanyName || '',
+      contractor: payment.projectData.Contratista?.CompanyName || '',
+      location: payment.projectData.Location || '',
+      projectManager: payment.projectData.Owner?.ContactName || '',
+      contactEmail: payment.projectData.Owner?.ContactEmail || ''
+    },
+    documents: sampleDocuments
+  };
+
+  console.log('EmailTemplate data:', emailTemplateData);
 
   return (
     <div className="min-h-screen bg-slate-50 font-rubik">
@@ -226,13 +234,11 @@ const EmailPreview = () => {
       {/* Contenido de la plantilla */}
       <div className="container mx-auto px-6 py-8">
         <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
-          {emailData && (
-            <EmailTemplate 
-              paymentState={emailData.paymentState}
-              project={emailData.project}
-              documents={sampleDocuments}
-            />
-          )}
+          <EmailTemplate 
+            paymentState={emailTemplateData.paymentState}
+            project={emailTemplateData.project}
+            documents={emailTemplateData.documents}
+          />
         </div>
       </div>
     </div>

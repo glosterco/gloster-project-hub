@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+
+import React from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Download, Send } from 'lucide-react';
@@ -18,43 +19,6 @@ const EmailPreview = () => {
   console.log('EmailPreview - payment data:', payment);
   console.log('EmailPreview - loading:', loading);
   console.log('EmailPreview - error:', error);
-
-  // Verificar acceso al cargar la página
-  useEffect(() => {
-    const checkAccess = async () => {
-      try {
-        // Verificar si el usuario está autenticado (usuario del proyecto)
-        const { data: { user } } = await import('@/integrations/supabase/client').then(({ supabase }) => 
-          supabase.auth.getUser()
-        );
-
-        // Si hay usuario autenticado, permitir acceso (usuario del proyecto)
-        if (user) {
-          console.log('Authenticated user has access');
-          return;
-        }
-
-        // Si no hay usuario autenticado, verificar acceso por email
-        const emailAccess = sessionStorage.getItem('emailAccess');
-        const paymentAccess = sessionStorage.getItem('paymentAccess');
-
-        console.log('Checking email access:', emailAccess, paymentAccess);
-
-        if (!emailAccess || paymentAccess !== paymentId) {
-          console.log('No valid access found, redirecting to email access page');
-          navigate(`/email-access?paymentId=${paymentId}`);
-          return;
-        }
-
-        console.log('Email access validated');
-      } catch (error) {
-        console.error('Error checking access:', error);
-        navigate(`/email-access?paymentId=${paymentId}`);
-      }
-    };
-
-    checkAccess();
-  }, [paymentId, navigate]);
 
   const sampleDocuments = [
     {
@@ -229,8 +193,7 @@ const EmailPreview = () => {
         contactEmail: payment.projectData.Contratista?.ContactEmail || ''
       },
       documents: sampleDocuments,
-      timestamp: new Date().toISOString(),
-      accessUrl: `${window.location.origin}/email-access?paymentId=${paymentId}`
+      timestamp: new Date().toISOString()
     };
 
     console.log('Sending email with data:', emailData);
@@ -247,7 +210,7 @@ const EmailPreview = () => {
       if (response.ok) {
         toast({
           title: "Email enviado",
-          description: `Email con notificación enviado exitosamente a ${payment.projectData.Contratista?.ContactEmail}`,
+          description: `Email con vista previa enviado exitosamente a ${payment.projectData.Owner?.ContactEmail}`,
         });
       } else {
         throw new Error('Network response was not ok');
@@ -334,7 +297,7 @@ const EmailPreview = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => window.print()}
+                onClick={handlePrint}
                 className="font-rubik"
               >
                 Imprimir
@@ -342,34 +305,7 @@ const EmailPreview = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => {
-                  const element = document.querySelector('.email-template-container') as HTMLElement;
-                  if (element) {
-                    const elementHeight = element.scrollHeight;
-                    const a4Height = 842;
-                    const availableHeight = a4Height - 60;
-                    const scale = Math.min(0.6, availableHeight / elementHeight);
-
-                    const opt = {
-                      margin: [0.2, 0.2, 0.2, 0.2],
-                      filename: `Estado_Pago_${payment?.Mes}_${payment?.Año}_${payment?.projectData?.Name || 'Proyecto'}.pdf`,
-                      image: { type: 'jpeg', quality: 0.98 },
-                      html2canvas: { scale: 1.2, useCORS: true, allowTaint: true },
-                      jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait', compress: true },
-                      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-                    };
-
-                    const originalStyle = element.style.cssText;
-                    element.style.transform = `scale(${scale})`;
-                    element.style.transformOrigin = 'top left';
-                    element.style.width = `${100 / scale}%`;
-
-                    setTimeout(async () => {
-                      await html2pdf().set(opt).from(element).save();
-                      element.style.cssText = originalStyle;
-                    }, 300);
-                  }
-                }}
+                onClick={handleDownloadPDF}
                 className="font-rubik"
               >
                 <Download className="h-4 w-4 mr-2" />
@@ -381,7 +317,7 @@ const EmailPreview = () => {
                 className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
               >
                 <Send className="h-4 w-4 mr-2" />
-                Enviar Notificación por Email
+                Enviar Email con Vista Previa
               </Button>
             </div>
           </div>

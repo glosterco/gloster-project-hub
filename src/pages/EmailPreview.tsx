@@ -1,11 +1,12 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Download, Send } from 'lucide-react';
 import EmailTemplate from '@/components/EmailTemplate';
 import { useToast } from '@/hooks/use-toast';
 import { usePaymentDetail } from '@/hooks/usePaymentDetail';
+import { supabase } from '@/integrations/supabase/client';
 import html2pdf from 'html2pdf.js';
 
 const EmailPreview = () => {
@@ -14,11 +15,57 @@ const EmailPreview = () => {
   const paymentId = searchParams.get('paymentId') || '11';
   const { payment, loading, error } = usePaymentDetail(paymentId);
   const { toast } = useToast();
+  const [hasAccess, setHasAccess] = useState(false);
+  const [isProjectUser, setIsProjectUser] = useState(false);
+  const [checkingAccess, setCheckingAccess] = useState(true);
 
-  console.log('EmailPreview - paymentId:', paymentId);
-  console.log('EmailPreview - payment data:', payment);
-  console.log('EmailPreview - loading:', loading);
-  console.log('EmailPreview - error:', error);
+  useEffect(() => {
+    const checkAccess = async () => {
+      try {
+        // Verificar si es usuario del proyecto (autenticado)
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user) {
+          // Verificar si el usuario autenticado es el contratista del proyecto
+          const { data: contractorData } = await supabase
+            .from('Contratistas')
+            .select('*')
+            .eq('auth_user_id', user.id)
+            .maybeSingle();
+
+          if (contractorData && payment?.projectData?.Contratista?.id === contractorData.id) {
+            setIsProjectUser(true);
+            setHasAccess(true);
+            setCheckingAccess(false);
+            return;
+          }
+        }
+
+        // Verificar acceso desde emailAccess (para mandantes)
+        const emailAccess = sessionStorage.getItem('emailAccess');
+        if (emailAccess) {
+          const accessData = JSON.parse(emailAccess);
+          if (accessData.paymentId === paymentId) {
+            setHasAccess(true);
+            setCheckingAccess(false);
+            return;
+          }
+        }
+
+        // Sin acceso, redirigir a página de acceso
+        setCheckingAccess(false);
+        navigate(`/email-access?paymentId=${paymentId}`);
+      } catch (error) {
+        console.error('Error checking access:', error);
+        setCheckingAccess(false);
+        navigate(`/email-access?paymentId=${paymentId}`);
+      }
+    };
+
+    if (payment) {
+      checkAccess();
+    }
+  }, [payment, paymentId, navigate]);
 
   const sampleDocuments = [
     {
@@ -193,7 +240,9 @@ const EmailPreview = () => {
         contactEmail: payment.projectData.Contratista?.ContactEmail || ''
       },
       documents: sampleDocuments,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      // Incluir enlace de acceso para el mandante
+      accessUrl: `${window.location.origin}/email-access?paymentId=${paymentId}`
     };
 
     console.log('Sending email with data:', emailData);
@@ -210,7 +259,7 @@ const EmailPreview = () => {
       if (response.ok) {
         toast({
           title: "Email enviado",
-          description: `Email con vista previa enviado exitosamente a ${payment.projectData.Owner?.ContactEmail}`,
+          description: `Notificación enviada exitosamente a ${payment.projectData.Owner?.ContactEmail}`,
         });
       } else {
         throw new Error('Network response was not ok');
@@ -225,6 +274,20 @@ const EmailPreview = () => {
       });
     }
   };
+
+  if (checkingAccess) {
+    return (
+      <div className="min-h-screen bg-slate-50 font-rubik">
+        <div className="container mx-auto px-6 py-8">
+          <div className="text-center">Verificando acceso...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!hasAccess) {
+    return null; // El useEffect ya redirige
+  }
 
   if (loading) {
     return (
@@ -247,8 +310,8 @@ const EmailPreview = () => {
             <p className="text-sm text-gloster-gray mb-4">
               ID solicitado: {paymentId}
             </p>
-            <Button onClick={() => navigate('/dashboard')} className="mt-4">
-              Volver al Dashboard
+            <Button onClick={() => navigate('/')} className="mt-4">
+              Volver al Inicio
             </Button>
           </div>
         </div>
@@ -311,14 +374,16 @@ const EmailPreview = () => {
                 <Download className="h-4 w-4 mr-2" />
                 Descargar PDF
               </Button>
-              <Button
-                size="sm"
-                onClick={handleSendEmail}
-                className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
-              >
-                <Send className="h-4 w-4 mr-2" />
-                Enviar Email con Vista Previa
-              </Button>
+              {isProjectUser && (
+                <Button
+                  size="sm"
+                  onClick={handleSendEmail}
+                  className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
+                >
+                  <Send className="h-4 w-4 mr-2" />
+                  Enviar Notificación
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -328,11 +393,11 @@ const EmailPreview = () => {
       <div className="bg-slate-50 py-2 print:hidden">
         <div className="container mx-auto px-6">
           <button 
-            onClick={() => navigate(`/payment/${payment.id}`)}
+            onClick={() => isProjectUser ? navigate(`/payment/${payment.id}`) : navigate('/')}
             className="text-gloster-gray hover:text-slate-800 text-sm font-rubik flex items-center"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Volver
+            {isProjectUser ? 'Volver' : 'Volver al Inicio'}
           </button>
         </div>
       </div>

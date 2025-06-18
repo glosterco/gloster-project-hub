@@ -42,12 +42,12 @@ const EmailAccess = () => {
         
         toast({
           title: "Acceso concedido",
-          description: "Serás redirigido a la vista previa del estado de pago",
+          description: "Serás redirigido a la vista del estado de pago",
         });
         
-        // Redirigir a email-preview
+        // Redirigir a submission-preview
         setTimeout(() => {
-          navigate(`/email-preview?paymentId=${paymentId}`);
+          navigate(`/submission-preview?paymentId=${paymentId}`);
         }, 1000);
       } else {
         toast({
@@ -118,7 +118,7 @@ const EmailAccess = () => {
                 Verificación de Acceso
               </CardTitle>
               <p className="text-gloster-gray font-rubik">
-                Para acceder a la vista previa del estado de pago, ingresa tu email de contacto
+                Para acceder al estado de pago, ingresa tu email de contacto
               </p>
             </CardHeader>
             
@@ -147,7 +147,7 @@ const EmailAccess = () => {
                   disabled={loading || !email.trim()}
                   className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik py-3"
                 >
-                  {loading ? 'Verificando...' : 'Acceder a Vista Previa'}
+                  {loading ? 'Verificando...' : 'Acceder al Estado de Pago'}
                 </Button>
               </form>
 

@@ -8,7 +8,8 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import ProjectDetail from "./pages/ProjectDetail";
 import PaymentDetail from "./pages/PaymentDetail";
-import EmailPreview from "./pages/EmailPreview";
+import SubmissionView from "./pages/SubmissionView";
+import SubmissionPreview from "./pages/SubmissionPreview";
 import EmailAccess from "./pages/EmailAccess";
 import Register from "./pages/Register";
 import DataViewer from "./pages/DataViewer";
@@ -29,7 +30,8 @@ const App = () => (
           <Route path="/data-viewer" element={<DataViewer />} />
           <Route path="/project/:id" element={<ProjectDetail />} />
           <Route path="/payment/:id" element={<PaymentDetail />} />
-          <Route path="/email-preview" element={<EmailPreview />} />
+          <Route path="/submission-view" element={<SubmissionView />} />
+          <Route path="/submission-preview" element={<SubmissionPreview />} />
           <Route path="/email-access" element={<EmailAccess />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

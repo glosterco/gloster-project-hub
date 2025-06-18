@@ -45,9 +45,9 @@ const EmailAccess = () => {
           description: "Serás redirigido a la vista del estado de pago",
         });
         
-        // Redirigir a submission-preview
+        // Redirigir a submission-view
         setTimeout(() => {
-          navigate(`/submission-preview?paymentId=${paymentId}`);
+          navigate(`/submission-view?paymentId=${paymentId}`);
         }, 1000);
       } else {
         toast({

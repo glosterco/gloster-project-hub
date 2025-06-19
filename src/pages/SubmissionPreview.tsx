@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { usePaymentDetail } from '@/hooks/usePaymentDetail';
 import html2pdf from 'html2pdf.js';
 
-const SubmissionPreview = () => {
+const SubmissionView = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const paymentId = searchParams.get('paymentId') || '11';

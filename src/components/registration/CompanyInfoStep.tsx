@@ -2,7 +2,7 @@
 import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface CompanyInfoStepProps {
   companyName: string;
@@ -50,6 +50,12 @@ const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
     'Otro'
   ];
 
+  const experienceOptions = [
+    { value: '0-5', label: '0-5 años' },
+    { value: '5-10', label: '5-10 años' },
+    { value: '+10', label: 'Más de 10 años' }
+  ];
+
   const formatRut = (value: string) => {
     // Remove any non-alphanumeric characters
     const cleanValue = value.replace(/[^0-9kK]/g, '');
@@ -73,14 +79,12 @@ const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
     setRut(formatted);
   };
 
-  const handleSpecialtyChange = (specialty: string, checked: boolean) => {
-    if (checked) {
-      setSpecialties([...specialties, specialty]);
+  const handleSpecialtyChange = (value: string) => {
+    if (value === 'Otro') {
+      setSpecialties([value]);
     } else {
-      setSpecialties(specialties.filter(s => s !== specialty));
-      if (specialty === 'Otro') {
-        setCustomSpecialty('');
-      }
+      setSpecialties([value]);
+      setCustomSpecialty(''); // Clear custom specialty if not "Otro"
     }
   };
 
@@ -114,24 +118,19 @@ const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
       </div>
 
       <div className="space-y-2">
-        <Label>Especialidades</Label>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {specialtyOptions.map((specialty) => (
-            <div key={specialty} className="flex items-center space-x-2">
-              <Checkbox
-                id={specialty}
-                checked={specialties.includes(specialty)}
-                onCheckedChange={(checked) => handleSpecialtyChange(specialty, checked as boolean)}
-              />
-              <Label
-                htmlFor={specialty}
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 font-rubik"
-              >
+        <Label htmlFor="specialties">Especialidad</Label>
+        <Select onValueChange={handleSpecialtyChange} value={specialties[0] || ''}>
+          <SelectTrigger className="font-rubik">
+            <SelectValue placeholder="Selecciona una especialidad" />
+          </SelectTrigger>
+          <SelectContent className="bg-white z-50">
+            {specialtyOptions.map((specialty) => (
+              <SelectItem key={specialty} value={specialty} className="font-rubik">
                 {specialty}
-              </Label>
-            </div>
-          ))}
-        </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         
         {specialties.includes('Otro') && (
           <div className="mt-3">
@@ -147,15 +146,18 @@ const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
 
       <div className="space-y-2">
         <Label htmlFor="experience">Años de Experiencia</Label>
-        <Input
-          id="experience"
-          value={experience}
-          onChange={(e) => setExperience(e.target.value)}
-          placeholder="Ej: 5"
-          className="font-rubik"
-          type="number"
-          min="0"
-        />
+        <Select onValueChange={setExperience} value={experience}>
+          <SelectTrigger className="font-rubik">
+            <SelectValue placeholder="Selecciona años de experiencia" />
+          </SelectTrigger>
+          <SelectContent className="bg-white z-50">
+            {experienceOptions.map((option) => (
+              <SelectItem key={option.value} value={option.value} className="font-rubik">
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

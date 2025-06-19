@@ -51,7 +51,7 @@ export const useRegistrationSteps = ({ formData, errors }: any) => {
     }
 
     if (currentStep === 2) {
-      // Create contractor after step 2
+      // Create contractor after step 2 WITHOUT authentication
       const contratistaData = {
         CompanyName: formData.companyName,
         RUT: formData.rut,
@@ -120,7 +120,7 @@ export const useRegistrationSteps = ({ formData, errors }: any) => {
 
   const handleSubmit = async () => {
     try {
-      // Sign up the user
+      // Sign up the user FIRST
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -135,12 +135,16 @@ export const useRegistrationSteps = ({ formData, errors }: any) => {
         return false;
       }
 
-      // Update contractor with auth user ID
+      // Only update contractor with auth user ID if we have both
       if (contratistaId && authData.user) {
-        await supabase
+        const { error: updateError } = await supabase
           .from('Contratistas')
           .update({ auth_user_id: authData.user.id })
           .eq('id', contratistaId);
+
+        if (updateError) {
+          console.error('Error updating contractor with auth user ID:', updateError);
+        }
       }
 
       // Create project

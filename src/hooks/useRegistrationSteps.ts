@@ -60,12 +60,14 @@ export const useRegistrationSteps = ({ formData, errors }: any) => {
         Status: true
       };
 
+      console.log('Creating mandante with data:', mandanteData);
       const { data: mandanteResult, error: mandanteError } = await createMandante(mandanteData);
       
       if (mandanteError) {
+        console.error('Error creating mandante:', mandanteError);
         toast({
           title: "Error al crear mandante",
-          description: mandanteError.message,
+          description: mandanteError.message || "Error desconocido",
           variant: "destructive",
         });
         return;
@@ -73,6 +75,7 @@ export const useRegistrationSteps = ({ formData, errors }: any) => {
 
       if (mandanteResult && mandanteResult.length > 0) {
         setMandanteId(mandanteResult[0].id);
+        console.log('Mandante created successfully with ID:', mandanteResult[0].id);
       }
     }
 
@@ -85,6 +88,8 @@ export const useRegistrationSteps = ({ formData, errors }: any) => {
 
   const handleSubmit = async () => {
     try {
+      console.log('Starting registration process...');
+      
       // Sign up the user FIRST
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
@@ -92,6 +97,7 @@ export const useRegistrationSteps = ({ formData, errors }: any) => {
       });
 
       if (authError) {
+        console.error('Authentication error:', authError);
         toast({
           title: "Error de autenticación",
           description: authError.message,
@@ -100,7 +106,18 @@ export const useRegistrationSteps = ({ formData, errors }: any) => {
         return false;
       }
 
-      // Create contractor AFTER authentication
+      if (!authData.user) {
+        toast({
+          title: "Error de autenticación",
+          description: "No se pudo crear el usuario",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      console.log('User authenticated successfully:', authData.user.id);
+
+      // Create contractor with the authenticated user ID
       const contratistaData = {
         CompanyName: formData.companyName,
         RUT: formData.rut,
@@ -116,15 +133,17 @@ export const useRegistrationSteps = ({ formData, errors }: any) => {
         Username: formData.email,
         Password: formData.password,
         Status: true,
-        auth_user_id: authData.user?.id
+        auth_user_id: authData.user.id
       };
 
-      const { data: contratistaResult, error: contratistaError } = await createContratista(contratistaData);
+      console.log('Creating contratista with data:', contratistaData);
+      const { data: contratistaResult, error: contratistaError } = await createContratista(contratistaData, authData.user.id);
       
       if (contratistaError) {
+        console.error('Error creating contratista:', contratistaError);
         toast({
           title: "Error al crear contratista",
-          description: contratistaError.message,
+          description: contratistaError.message || "Error desconocido",
           variant: "destructive",
         });
         return false;
@@ -132,6 +151,7 @@ export const useRegistrationSteps = ({ formData, errors }: any) => {
 
       if (contratistaResult && contratistaResult.length > 0) {
         setContratistaId(contratistaResult[0].id);
+        console.log('Contratista created successfully with ID:', contratistaResult[0].id);
         
         // Create project if we have both contractor and mandante
         if (mandanteId) {
@@ -150,12 +170,14 @@ export const useRegistrationSteps = ({ formData, errors }: any) => {
             Requierment: formData.requiredDocuments,
           };
 
+          console.log('Creating project with data:', proyectoData);
           const { data: projectResult, error: projectError } = await createProyecto(proyectoData);
           
           if (projectError) {
+            console.error('Error creating project:', projectError);
             toast({
               title: "Error al crear proyecto",
-              description: projectError.message,
+              description: projectError.message || "Error desconocido",
               variant: "destructive",
             });
             return false;
@@ -163,12 +185,14 @@ export const useRegistrationSteps = ({ formData, errors }: any) => {
 
           if (projectResult && projectResult.length > 0) {
             const projectId = projectResult[0].id;
+            console.log('Project created successfully with ID:', projectId);
             
             // Create payment states
             const expiryRateNumeric = formData.paymentPeriod === 'mensual' ? 30 : 
                                     formData.paymentPeriod === 'quincenal' ? 15 : 
                                     parseInt(formData.customPeriod) || 30;
 
+            console.log('Creating payment states...');
             await createEstadosPago(
               projectId,
               formData.firstPaymentDate,
@@ -179,7 +203,7 @@ export const useRegistrationSteps = ({ formData, errors }: any) => {
         }
       }
 
-      // Show single success toast
+      // Show success toast
       toast({
         title: "¡Registro exitoso!",
         description: "Tu cuenta ha sido creada exitosamente. Revisa tu email para confirmar tu cuenta.",

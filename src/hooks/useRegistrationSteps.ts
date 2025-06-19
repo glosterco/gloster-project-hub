@@ -9,8 +9,6 @@ import { useEstadosPago } from '@/hooks/useEstadosPago';
 
 export const useRegistrationSteps = ({ formData, errors }: any) => {
   const [currentStep, setCurrentStep] = useState(1);
-  const [contratistaId, setContratistaId] = useState<number | null>(null);
-  const [mandanteId, setMandanteId] = useState<number | null>(null);
   const totalSteps = 6;
   const { toast } = useToast();
 
@@ -50,35 +48,7 @@ export const useRegistrationSteps = ({ formData, errors }: any) => {
       return;
     }
 
-    if (currentStep === 5) {
-      // Create mandante after step 5
-      const mandanteData = {
-        CompanyName: formData.clientCompany,
-        ContactName: formData.clientContact,
-        ContactEmail: formData.clientEmail,
-        ContactPhone: parseInt(formData.clientPhone.replace('+56', '')),
-        Status: true
-      };
-
-      console.log('Creating mandante with data:', mandanteData);
-      const { data: mandanteResult, error: mandanteError } = await createMandante(mandanteData);
-      
-      if (mandanteError) {
-        console.error('Error creating mandante:', mandanteError);
-        toast({
-          title: "Error al crear mandante",
-          description: mandanteError.message || "Error desconocido",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (mandanteResult && mandanteResult.length > 0) {
-        setMandanteId(mandanteResult[0].id);
-        console.log('Mandante created successfully with ID:', mandanteResult[0].id);
-      }
-    }
-
+    // Solo avanzar al siguiente paso, NO crear nada aquí
     setCurrentStep(currentStep + 1);
   };
 
@@ -90,7 +60,7 @@ export const useRegistrationSteps = ({ formData, errors }: any) => {
     try {
       console.log('Starting registration process...');
       
-      // Sign up the user FIRST
+      // PASO 1: Autenticar al usuario PRIMERO
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -117,7 +87,7 @@ export const useRegistrationSteps = ({ formData, errors }: any) => {
 
       console.log('User authenticated successfully:', authData.user.id);
 
-      // Create contractor with the authenticated user ID
+      // PASO 2: Crear el contratista con el usuario autenticado
       const contratistaData = {
         CompanyName: formData.companyName,
         RUT: formData.rut,
@@ -149,61 +119,112 @@ export const useRegistrationSteps = ({ formData, errors }: any) => {
         return false;
       }
 
-      if (contratistaResult && contratistaResult.length > 0) {
-        setContratistaId(contratistaResult[0].id);
-        console.log('Contratista created successfully with ID:', contratistaResult[0].id);
-        
-        // Create project if we have both contractor and mandante
-        if (mandanteId) {
-          const proyectoData = {
-            Name: formData.projectName,
-            Description: formData.projectDescription,
-            Location: formData.projectAddress,
-            Budget: parseFloat(formData.contractAmount),
-            Currency: formData.contractCurrency,
-            StartDate: formData.startDate,
-            Duration: parseInt(formData.duration),
-            Contratista: contratistaResult[0].id,
-            Owner: mandanteId,
-            FirstPayment: formData.firstPaymentDate,
-            ExpiryRate: formData.paymentPeriod,
-            Requierment: formData.requiredDocuments,
-          };
-
-          console.log('Creating project with data:', proyectoData);
-          const { data: projectResult, error: projectError } = await createProyecto(proyectoData);
-          
-          if (projectError) {
-            console.error('Error creating project:', projectError);
-            toast({
-              title: "Error al crear proyecto",
-              description: projectError.message || "Error desconocido",
-              variant: "destructive",
-            });
-            return false;
-          }
-
-          if (projectResult && projectResult.length > 0) {
-            const projectId = projectResult[0].id;
-            console.log('Project created successfully with ID:', projectId);
-            
-            // Create payment states
-            const expiryRateNumeric = formData.paymentPeriod === 'mensual' ? 30 : 
-                                    formData.paymentPeriod === 'quincenal' ? 15 : 
-                                    parseInt(formData.customPeriod) || 30;
-
-            console.log('Creating payment states...');
-            await createEstadosPago(
-              projectId,
-              formData.firstPaymentDate,
-              expiryRateNumeric,
-              parseInt(formData.duration)
-            );
-          }
-        }
+      if (!contratistaResult || contratistaResult.length === 0) {
+        console.error('No contratista result returned');
+        toast({
+          title: "Error al crear contratista",
+          description: "No se pudo crear el contratista",
+          variant: "destructive",
+        });
+        return false;
       }
 
-      // Show success toast
+      const contratistaId = contratistaResult[0].id;
+      console.log('Contratista created successfully with ID:', contratistaId);
+
+      // PASO 3: Crear el mandante (ahora que el usuario está autenticado)
+      const mandanteData = {
+        CompanyName: formData.clientCompany,
+        ContactName: formData.clientContact,
+        ContactEmail: formData.clientEmail,
+        ContactPhone: parseInt(formData.clientPhone.replace('+56', '')),
+        Status: true
+      };
+
+      console.log('Creating mandante with data:', mandanteData);
+      const { data: mandanteResult, error: mandanteError } = await createMandante(mandanteData);
+      
+      if (mandanteError) {
+        console.error('Error creating mandante:', mandanteError);
+        toast({
+          title: "Error al crear mandante",
+          description: mandanteError.message || "Error desconocido",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      if (!mandanteResult || mandanteResult.length === 0) {
+        console.error('No mandante result returned');
+        toast({
+          title: "Error al crear mandante",
+          description: "No se pudo crear el mandante",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      const mandanteId = mandanteResult[0].id;
+      console.log('Mandante created successfully with ID:', mandanteId);
+
+      // PASO 4: Crear el proyecto
+      const proyectoData = {
+        Name: formData.projectName,
+        Description: formData.projectDescription,
+        Location: formData.projectAddress,
+        Budget: parseFloat(formData.contractAmount),
+        Currency: formData.contractCurrency,
+        StartDate: formData.startDate,
+        Duration: parseInt(formData.duration),
+        Contratista: contratistaId,
+        Owner: mandanteId,
+        FirstPayment: formData.firstPaymentDate,
+        ExpiryRate: formData.paymentPeriod === 'mensual' ? 30 : 
+                   formData.paymentPeriod === 'quincenal' ? 15 : 
+                   parseInt(formData.customPeriod) || 30,
+        Requierment: formData.requiredDocuments,
+      };
+
+      console.log('Creating project with data:', proyectoData);
+      const { data: projectResult, error: projectError } = await createProyecto(proyectoData);
+      
+      if (projectError) {
+        console.error('Error creating project:', projectError);
+        toast({
+          title: "Error al crear proyecto",
+          description: projectError.message || "Error desconocido",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      if (!projectResult || projectResult.length === 0) {
+        console.error('No project result returned');
+        toast({
+          title: "Error al crear proyecto",
+          description: "No se pudo crear el proyecto",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      const projectId = projectResult[0].id;
+      console.log('Project created successfully with ID:', projectId);
+      
+      // PASO 5: Crear estados de pago
+      const expiryRateNumeric = formData.paymentPeriod === 'mensual' ? 30 : 
+                              formData.paymentPeriod === 'quincenal' ? 15 : 
+                              parseInt(formData.customPeriod) || 30;
+
+      console.log('Creating payment states...');
+      await createEstadosPago(
+        projectId,
+        formData.firstPaymentDate,
+        expiryRateNumeric,
+        parseInt(formData.duration)
+      );
+
+      // Mostrar toast de éxito
       toast({
         title: "¡Registro exitoso!",
         description: "Tu cuenta ha sido creada exitosamente. Revisa tu email para confirmar tu cuenta.",

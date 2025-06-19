@@ -9,7 +9,7 @@ import { usePaymentDetail } from '@/hooks/usePaymentDetail';
 import { supabase } from '@/integrations/supabase/client';
 import html2pdf from 'html2pdf.js';
 
-const SubmissionView = () => {
+const SubmissionPreview = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const paymentId = searchParams.get('paymentId') || '11';

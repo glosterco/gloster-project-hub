@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -9,7 +8,7 @@ import { usePaymentDetail } from '@/hooks/usePaymentDetail';
 import { supabase } from '@/integrations/supabase/client';
 import html2pdf from 'html2pdf.js';
 
-const SubmissionPreview = () => {
+const SubmissionView = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const paymentId = searchParams.get('paymentId') || '11';

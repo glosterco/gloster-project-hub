@@ -2,10 +2,7 @@
 import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { formatRut } from './validationUtils';
 
 interface CompanyInfoStepProps {
   companyName: string;
@@ -42,31 +39,6 @@ const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
   setCity,
   errors,
 }) => {
-  const specialtyOptions = [
-    'Construcción General',
-    'Instalaciones Eléctricas',
-    'Instalaciones Sanitarias',
-    'Carpintería',
-    'Albañilería',
-    'Pintura',
-    'Techado',
-    'Pavimentación',
-    'Otro'
-  ];
-
-  const experienceOptions = [
-    'Menos de 1 año',
-    '1-3 años',
-    '3-5 años',
-    '5-10 años',
-    'Más de 10 años'
-  ];
-
-  const handleRutChange = (value: string) => {
-    const formattedRut = formatRut(value);
-    setRut(formattedRut);
-  };
-
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -85,56 +57,56 @@ const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
           <Input
             id="rut"
             value={rut}
-            onChange={(e) => handleRutChange(e.target.value)}
-            placeholder="12345678-9"
+            onChange={(e) => setRut(e.target.value)}
+            placeholder="12.345.678-9"
             className={`font-rubik ${errors.rut ? 'border-red-500' : ''}`}
-            maxLength={10}
           />
           {errors.rut && (
             <p className="text-red-500 text-sm">{errors.rut}</p>
           )}
-          <p className="text-xs text-gray-500">Formato: XXXXXXXX-X (sin puntos)</p>
         </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="specialties">Especialidad Principal</Label>
-        <Select value={specialties} onValueChange={setSpecialties}>
-          <SelectTrigger className="font-rubik">
-            <SelectValue placeholder="Selecciona tu especialidad principal" />
-          </SelectTrigger>
-          <SelectContent>
-            {specialtyOptions.map((specialty) => (
-              <SelectItem key={specialty} value={specialty} className="font-rubik">
-                {specialty}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {specialties === 'Otro' && (
-          <Input
-            value={customSpecialty}
-            onChange={(e) => setCustomSpecialty(e.target.value)}
-            placeholder="Especifica tu especialidad"
-            className="font-rubik mt-2"
-          />
-        )}
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="experience">Años de Experiencia</Label>
-        <Select value={experience} onValueChange={setExperience}>
-          <SelectTrigger className="font-rubik">
-            <SelectValue placeholder="Selecciona tus años de experiencia" />
-          </SelectTrigger>
-          <SelectContent>
-            {experienceOptions.map((exp) => (
-              <SelectItem key={exp} value={exp} className="font-rubik">
-                {exp}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="specialties">Especialidad Principal</Label>
+          <Select value={specialties} onValueChange={setSpecialties}>
+            <SelectTrigger className="font-rubik">
+              <SelectValue placeholder="Selecciona tu especialidad" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="construccion-general">Construcción General</SelectItem>
+              <SelectItem value="obras-viales">Obras Viales</SelectItem>
+              <SelectItem value="instalaciones-electricas">Instalaciones Eléctricas</SelectItem>
+              <SelectItem value="instalaciones-sanitarias">Instalaciones Sanitarias</SelectItem>
+              <SelectItem value="climatizacion">Climatización</SelectItem>
+              <SelectItem value="pinturas">Pinturas</SelectItem>
+              <SelectItem value="otra">Otra</SelectItem>
+            </SelectContent>
+          </Select>
+          {specialties === 'otra' && (
+            <Input
+              value={customSpecialty}
+              onChange={(e) => setCustomSpecialty(e.target.value)}
+              placeholder="Especifica tu especialidad"
+              className="font-rubik mt-2"
+            />
+          )}
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="experience">Años de Experiencia</Label>
+          <Select value={experience} onValueChange={setExperience}>
+            <SelectTrigger className="font-rubik">
+              <SelectValue placeholder="Selecciona años de experiencia" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="2-5">2-5 años</SelectItem>
+              <SelectItem value="5-10">5-10 años</SelectItem>
+              <SelectItem value="15+">+15 años</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -22,7 +22,6 @@ export interface PaymentDetail {
     Currency: string;
     StartDate: string;
     Duration: number;
-    Requierment?: string[];
     Contratista: {
       id: number;
       CompanyName: string;

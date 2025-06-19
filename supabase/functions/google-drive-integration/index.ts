@@ -12,18 +12,6 @@ interface GoogleDriveCredentials {
   refresh_token: string;
 }
 
-interface CreateProjectRequest {
-  type: 'create_project_with_payment_folders';
-  projectId: number;
-  projectName: string;
-  paymentStates: Array<{
-    id: number;
-    Name: string;
-    Mes: string;
-    Año: number;
-  }>;
-}
-
 interface CreateFolderRequest {
   type: 'project' | 'payment_state';
   projectId: number;
@@ -35,8 +23,6 @@ interface CreateFolderRequest {
 }
 
 async function getAccessToken(credentials: GoogleDriveCredentials): Promise<string> {
-  console.log('🔄 Obteniendo token de acceso...');
-  
   const response = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: {
@@ -51,13 +37,10 @@ async function getAccessToken(credentials: GoogleDriveCredentials): Promise<stri
   });
 
   const data = await response.json();
-  
   if (!response.ok) {
-    console.error('❌ Error obteniendo access token:', data);
     throw new Error(`Failed to get access token: ${data.error_description || data.error}`);
   }
 
-  console.log('✅ Access token obtenido exitosamente');
   return data.access_token;
 }
 
@@ -66,8 +49,6 @@ async function createGoogleDriveFolder(
   folderName: string,
   parentFolderId?: string
 ): Promise<string> {
-  console.log(`🔄 Creando carpeta en Google Drive: "${folderName}"${parentFolderId ? ` dentro de ${parentFolderId}` : ''}`);
-  
   const metadata = {
     name: folderName,
     mimeType: 'application/vnd.google-apps.folder',
@@ -84,13 +65,10 @@ async function createGoogleDriveFolder(
   });
 
   const data = await response.json();
-  
   if (!response.ok) {
-    console.error('❌ Error creando carpeta:', data);
     throw new Error(`Failed to create folder: ${data.error?.message || 'Unknown error'}`);
   }
 
-  console.log(`✅ Carpeta creada exitosamente: "${folderName}" con ID: ${data.id}`);
   return data.id;
 }
 
@@ -100,28 +78,15 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🚀 Iniciando función de Google Drive...');
+    const body: CreateFolderRequest = await req.json();
     
-    const body: CreateProjectRequest | CreateFolderRequest = await req.json();
-    console.log('📝 Datos recibidos:', JSON.stringify(body, null, 2));
-    
-    // Obtener credenciales de Google Drive desde secrets de Supabase
+    // Get Google Drive credentials from Supabase secrets
     const googleClientId = Deno.env.get('GOOGLE_DRIVE_CLIENT_ID');
     const googleClientSecret = Deno.env.get('GOOGLE_DRIVE_CLIENT_SECRET');
     const googleRefreshToken = Deno.env.get('GOOGLE_DRIVE_REFRESH_TOKEN');
 
-    console.log('🔍 Verificando credenciales...');
-    console.log('Client ID:', googleClientId ? '✅ Configurado' : '❌ Faltante');
-    console.log('Client Secret:', googleClientSecret ? '✅ Configurado' : '❌ Faltante');
-    console.log('Refresh Token:', googleRefreshToken ? '✅ Configurado' : '❌ Faltante');
-
     if (!googleClientId || !googleClientSecret || !googleRefreshToken) {
-      throw new Error('Google Drive credentials not configured. Missing: ' + 
-        [
-          !googleClientId && 'GOOGLE_DRIVE_CLIENT_ID',
-          !googleClientSecret && 'GOOGLE_DRIVE_CLIENT_SECRET', 
-          !googleRefreshToken && 'GOOGLE_DRIVE_REFRESH_TOKEN'
-        ].filter(Boolean).join(', '));
+      throw new Error('Google Drive credentials not configured');
     }
 
     const credentials: GoogleDriveCredentials = {
@@ -132,77 +97,38 @@ serve(async (req) => {
 
     const accessToken = await getAccessToken(credentials);
 
-    if (body.type === 'create_project_with_payment_folders') {
-      console.log('📁 Creando proyecto completo con carpetas de estados de pago...');
+    let folderId: string;
+    let folderName: string;
+
+    if (body.type === 'project') {
+      // Create project folder: "ID proyecto - nombre proyecto"
+      folderName = `${body.projectId} - ${body.projectName}`;
+      folderId = await createGoogleDriveFolder(accessToken, folderName);
       
-      // Crear carpeta principal del proyecto
-      const projectFolderName = `${body.projectId} - ${body.projectName}`;
-      const projectFolderId = await createGoogleDriveFolder(accessToken, projectFolderName);
+      console.log(`Created project folder: ${folderName} with ID: ${folderId}`);
+    } else if (body.type === 'payment_state') {
+      // Create payment state folder: "EP# - Mes Año"
+      folderName = `${body.paymentStateName} - ${body.month} ${body.year}`;
+      folderId = await createGoogleDriveFolder(accessToken, folderName, body.parentFolderId);
       
-      console.log(`✅ Carpeta del proyecto creada: ${projectFolderName}`);
-
-      // Crear carpetas para cada estado de pago
-      const paymentFolders = [];
-      for (const paymentState of body.paymentStates) {
-        const paymentFolderName = `${paymentState.Name} - ${paymentState.Mes} ${paymentState.Año}`;
-        const paymentFolderId = await createGoogleDriveFolder(
-          accessToken, 
-          paymentFolderName, 
-          projectFolderId
-        );
-        
-        paymentFolders.push({
-          paymentStateId: paymentState.id,
-          folderId: paymentFolderId,
-          folderName: paymentFolderName
-        });
-        
-        console.log(`✅ Carpeta de estado de pago creada: ${paymentFolderName}`);
-      }
-
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          projectFolderId,
-          projectFolderName,
-          paymentFolders
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200,
-        }
-      );
-
+      console.log(`Created payment state folder: ${folderName} with ID: ${folderId}`);
     } else {
-      // Comportamiento original para tipos individuales
-      let folderId: string;
-      let folderName: string;
-
-      if (body.type === 'project') {
-        folderName = `${body.projectId} - ${body.projectName}`;
-        folderId = await createGoogleDriveFolder(accessToken, folderName);
-      } else if (body.type === 'payment_state') {
-        folderName = `${body.paymentStateName} - ${body.month} ${body.year}`;
-        folderId = await createGoogleDriveFolder(accessToken, folderName, body.parentFolderId);
-      } else {
-        throw new Error('Invalid folder type');
-      }
-
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          folderId,
-          folderName 
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200,
-        }
-      );
+      throw new Error('Invalid folder type');
     }
 
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        folderId,
+        folderName 
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      }
+    )
   } catch (error) {
-    console.error('💥 Error en función de Google Drive:', error);
+    console.error('Error creating Google Drive folder:', error);
     return new Response(
       JSON.stringify({ 
         error: error.message,

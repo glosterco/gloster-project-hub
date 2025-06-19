@@ -21,26 +21,18 @@ const SubmissionPreview = () => {
   useEffect(() => {
     const checkAccess = async () => {
       try {
-        // Verificar si es usuario del proyecto (autenticado)
+        // Verificar si es usuario autenticado
         const { data: { user } } = await supabase.auth.getUser();
         
-        if (user && payment?.projectData) {
-          // Verificar si el usuario autenticado es el contratista del proyecto
-          const { data: contractorData } = await supabase
-            .from('Contratistas')
-            .select('*')
-            .eq('auth_user_id', user.id)
-            .maybeSingle();
-
-          if (contractorData && payment.projectData.Contratista?.id === contractorData.id) {
-            setIsProjectUser(true);
-            setHasAccess(true);
-            setCheckingAccess(false);
-            return;
-          }
+        if (user) {
+          // Si hay usuario autenticado, dar acceso inmediato
+          setIsProjectUser(true);
+          setHasAccess(true);
+          setCheckingAccess(false);
+          return;
         }
 
-        // Verificar acceso desde emailAccess (para mandantes)
+        // Solo verificar emailAccess si NO hay usuario autenticado
         const emailAccess = sessionStorage.getItem('emailAccess');
         if (emailAccess) {
           const accessData = JSON.parse(emailAccess);
@@ -61,10 +53,8 @@ const SubmissionPreview = () => {
       }
     };
 
-    if (payment) {
-      checkAccess();
-    }
-  }, [payment, paymentId, navigate]);
+    checkAccess();
+  }, [paymentId, navigate]);
 
   const sampleDocuments = [
     {

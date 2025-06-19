@@ -72,6 +72,7 @@ export type Database = {
           Status: string | null
           Total: number | null
           URL: string | null
+          URLMandante: string | null
         }
         Insert: {
           Año?: number | null
@@ -84,6 +85,7 @@ export type Database = {
           Status?: string | null
           Total?: number | null
           URL?: string | null
+          URLMandante?: string | null
         }
         Update: {
           Año?: number | null
@@ -96,6 +98,7 @@ export type Database = {
           Status?: string | null
           Total?: number | null
           URL?: string | null
+          URLMandante?: string | null
         }
         Relationships: [
           {

@@ -5,6 +5,7 @@ import { ArrowLeft, Download, Send } from 'lucide-react';
 import EmailTemplate from '@/components/EmailTemplate';
 import { useToast } from '@/hooks/use-toast';
 import { usePaymentDetail } from '@/hooks/usePaymentDetail';
+import { useMandanteNotification } from '@/hooks/useMandanteNotification';
 import { supabase } from '@/integrations/supabase/client';
 import html2pdf from 'html2pdf.js';
 
@@ -12,7 +13,8 @@ const SubmissionPreview = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const paymentId = searchParams.get('paymentId') || '11';
-  const { payment, loading, error } = usePaymentDetail(paymentId, false); // No require auth
+  const { payment, loading, error } = usePaymentDetail(paymentId, false);
+  const { sendNotificationToMandante, loading: notificationLoading } = useMandanteNotification();
   const { toast } = useToast();
   const [isProjectUser, setIsProjectUser] = useState(false);
 
@@ -177,55 +179,20 @@ const SubmissionPreview = () => {
       return;
     }
 
-    const emailData = {
-      paymentState: {
-        month: `${payment.Mes} ${payment.Año}`,
-        amount: payment.Total || 0,
-        dueDate: payment.ExpiryDate,
-        projectName: payment.projectData.Name,
-        recipient: payment.projectData.Owner?.ContactEmail || ''
-      },
-      project: {
-        name: payment.projectData.Name,
-        client: payment.projectData.Owner?.CompanyName || '',
-        contractor: payment.projectData.Contratista?.CompanyName || '',
-        location: payment.projectData.Location || '',
-        projectManager: payment.projectData.Contratista?.ContactName || '',
-        contactEmail: payment.projectData.Contratista?.ContactEmail || ''
-      },
-      documents: sampleDocuments,
-      timestamp: new Date().toISOString(),
-      accessUrl: `${window.location.origin}/email-access?paymentId=${paymentId}`
+    const notificationData = {
+      paymentId: paymentId,
+      contratista: payment.projectData.Contratista?.ContactName || '',
+      mes: payment.Mes || '',
+      año: payment.Año || 0,
+      proyecto: payment.projectData.Name || '',
+      mandanteEmail: payment.projectData.Owner?.ContactEmail || '',
+      mandanteCompany: payment.projectData.Owner?.CompanyName || '',
+      contractorCompany: payment.projectData.Contratista?.CompanyName || '',
+      amount: payment.Total || 0,
+      dueDate: payment.ExpiryDate || ''
     };
 
-    console.log('Sending email with data:', emailData);
-
-    try {
-      const response = await fetch('https://hook.us2.make.com/vomlhkl0es487ui7dfphtyv5hdoymbek', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(emailData),
-      });
-
-      if (response.ok) {
-        toast({
-          title: "Email enviado",
-          description: `Notificación enviada exitosamente a ${payment.projectData.Owner?.ContactEmail}`,
-        });
-      } else {
-        throw new Error('Network response was not ok');
-      }
-      
-    } catch (error) {
-      console.error('Error sending email:', error);
-      toast({
-        title: "Error al enviar",
-        description: "Hubo un problema al enviar el email. Intenta nuevamente.",
-        variant: "destructive"
-      });
-    }
+    await sendNotificationToMandante(notificationData);
   };
 
   if (loading) {
@@ -316,10 +283,11 @@ const SubmissionPreview = () => {
                 <Button
                   size="sm"
                   onClick={handleSendEmail}
+                  disabled={notificationLoading}
                   className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
                 >
                   <Send className="h-4 w-4 mr-2" />
-                  Enviar Notificación
+                  {notificationLoading ? 'Enviando...' : 'Enviar Notificación'}
                 </Button>
               )}
             </div>

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,10 +12,23 @@ const EmailAccess = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const paymentId = searchParams.get('paymentId') || '11';
+  const token = searchParams.get('token');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const { payment, loading: paymentLoading } = usePaymentDetail(paymentId, false); // No require auth
+  const { payment, loading: paymentLoading } = usePaymentDetail(paymentId, false);
+
+  useEffect(() => {
+    // Si no hay token en la URL, es acceso inválido
+    if (!token) {
+      toast({
+        title: "Acceso inválido",
+        description: "Esta página requiere un enlace válido enviado por email",
+        variant: "destructive"
+      });
+      navigate('/');
+    }
+  }, [token, navigate, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,15 +41,25 @@ const EmailAccess = () => {
       return;
     }
 
+    if (!token) {
+      toast({
+        title: "Acceso inválido",
+        description: "Token de acceso no válido",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
       // Verificar si el email coincide con el email del mandante (Owner) en la base de datos
       if (payment?.projectData?.Owner?.ContactEmail === email.trim()) {
-        // Guardar acceso en sessionStorage
-        sessionStorage.setItem('emailAccess', JSON.stringify({
+        // Guardar acceso en sessionStorage con el token para mayor seguridad
+        sessionStorage.setItem('mandanteAccess', JSON.stringify({
           email: email.trim(),
           paymentId: paymentId,
+          token: token,
           timestamp: new Date().toISOString()
         }));
         
@@ -75,6 +98,14 @@ const EmailAccess = () => {
     return (
       <div className="min-h-screen bg-slate-50 font-rubik flex items-center justify-center">
         <div className="text-center">Verificando información...</div>
+      </div>
+    );
+  }
+
+  if (!token) {
+    return (
+      <div className="min-h-screen bg-slate-50 font-rubik flex items-center justify-center">
+        <div className="text-center">Acceso inválido</div>
       </div>
     );
   }

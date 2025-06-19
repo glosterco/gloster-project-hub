@@ -12,7 +12,7 @@ const SubmissionView = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const paymentId = searchParams.get('paymentId') || '11';
-  const { payment, loading, error } = usePaymentDetail(paymentId);
+  const { payment, loading, error } = usePaymentDetail(paymentId, false);
   const { toast } = useToast();
   const [hasAccess, setHasAccess] = useState(false);
   const [checkingAccess, setCheckingAccess] = useState(true);
@@ -38,11 +38,11 @@ const SubmissionView = () => {
           }
         }
 
-        // Verificar acceso desde emailAccess (para mandantes)
-        const emailAccess = sessionStorage.getItem('emailAccess');
-        if (emailAccess) {
-          const accessData = JSON.parse(emailAccess);
-          if (accessData.paymentId === paymentId) {
+        // Verificar acceso desde mandanteAccess (para mandantes con token)
+        const mandanteAccess = sessionStorage.getItem('mandanteAccess');
+        if (mandanteAccess) {
+          const accessData = JSON.parse(mandanteAccess);
+          if (accessData.paymentId === paymentId && accessData.token) {
             setHasAccess(true);
             setCheckingAccess(false);
             return;

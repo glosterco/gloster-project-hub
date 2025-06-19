@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -6,6 +5,7 @@ import { Download } from 'lucide-react';
 import EmailTemplate from '@/components/EmailTemplate';
 import { useToast } from '@/hooks/use-toast';
 import { usePaymentDetail } from '@/hooks/usePaymentDetail';
+import { supabase } from '@/integrations/supabase/client';
 import html2pdf from 'html2pdf.js';
 
 const SubmissionView = () => {
@@ -20,7 +20,25 @@ const SubmissionView = () => {
   useEffect(() => {
     const checkAccess = async () => {
       try {
-        // Solo verificar acceso desde emailAccess (para mandantes)
+        // Verificar si es usuario autenticado del proyecto
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user && payment?.projectData) {
+          // Verificar si el usuario autenticado es el contratista del proyecto
+          const { data: contractorData } = await supabase
+            .from('Contratistas')
+            .select('*')
+            .eq('auth_user_id', user.id)
+            .maybeSingle();
+
+          if (contractorData && payment.projectData.Contratista?.id === contractorData.id) {
+            setHasAccess(true);
+            setCheckingAccess(false);
+            return;
+          }
+        }
+
+        // Verificar acceso desde emailAccess (para mandantes)
         const emailAccess = sessionStorage.getItem('emailAccess');
         if (emailAccess) {
           const accessData = JSON.parse(emailAccess);

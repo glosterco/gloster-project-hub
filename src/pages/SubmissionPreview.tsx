@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -25,7 +24,7 @@ const SubmissionPreview = () => {
         // Verificar si es usuario del proyecto (autenticado)
         const { data: { user } } = await supabase.auth.getUser();
         
-        if (user) {
+        if (user && payment?.projectData) {
           // Verificar si el usuario autenticado es el contratista del proyecto
           const { data: contractorData } = await supabase
             .from('Contratistas')
@@ -33,7 +32,7 @@ const SubmissionPreview = () => {
             .eq('auth_user_id', user.id)
             .maybeSingle();
 
-          if (contractorData && payment?.projectData?.Contratista?.id === contractorData.id) {
+          if (contractorData && payment.projectData.Contratista?.id === contractorData.id) {
             setIsProjectUser(true);
             setHasAccess(true);
             setCheckingAccess(false);
@@ -231,7 +230,7 @@ const SubmissionPreview = () => {
         client: payment.projectData.Owner?.CompanyName || '',
         contractor: payment.projectData.Contratista?.CompanyName || '',
         location: payment.projectData.Location || '',
-        projectManager: payment.projectData.Contratista?.ContactName || '',
+        projectManager: payment.projectData.Conatista?.ContactName || '',
         contactEmail: payment.projectData.Contratista?.ContactEmail || ''
       },
       documents: sampleDocuments,

@@ -1,32 +1,24 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Clock, AlertCircle, Plus, User, LogOut, FileText, Calendar, DollarSign, Shield } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useProjectsWithDetails } from '@/hooks/useProjectsWithDetails';
 import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/use-toast';
 import LoginForm from '@/components/auth/LoginForm';
 
 const Index = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const { signOut } = useAuth();
-  const { toast } = useToast();
-  
-  // Solo cargar proyectos si hay usuario autenticado
-  const { projects, loading: projectsLoading } = useProjectsWithDetails();
 
   useEffect(() => {
     // Verificar sesión actual
     const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        setUser(session.user);
-        // Redirigir automáticamente al dashboard si ya está autenticado
+        // Redirigir inmediatamente al dashboard si ya está autenticado
         navigate('/dashboard');
         return;
       }
@@ -39,11 +31,9 @@ const Index = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (session?.user) {
-          setUser(session.user);
           // Redirigir al dashboard inmediatamente después del login exitoso
           navigate('/dashboard');
         } else {
-          setUser(null);
           setLoading(false);
         }
       }
@@ -52,57 +42,8 @@ const Index = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const handleLogout = async () => {
-    const { error } = await signOut();
-    if (!error) {
-      navigate('/');
-    }
-  };
-
   const handleLoginSuccess = () => {
-    // No necesitamos toast aquí porque la redirección es automática
-    // El useEffect se encargará de redirigir al dashboard
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Aprobado':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'Pendiente':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'Rechazado':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case 'Programado':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'Aprobado':
-        return <CheckCircle className="h-4 w-4" />;
-      case 'Pendiente':
-        return <Clock className="h-4 w-4" />;
-      case 'Rechazado':
-        return <AlertCircle className="h-4 w-4" />;
-      case 'Programado':
-        return <Clock className="h-4 w-4" />;
-      default:
-        return <Clock className="h-4 w-4" />;
-    }
-  };
-
-  const getNextPayment = (project: any) => {
-    if (!project.EstadosPago || project.EstadosPago.length === 0) return null;
-    
-    // Find the first payment that is not completed and is either pending or scheduled
-    const nextPayment = project.EstadosPago.find((payment: any) => 
-      !payment.Completion && (payment.Status === 'Pendiente' || payment.Status === 'Programado')
-    );
-    
-    return nextPayment;
+    // La redirección es automática a través del useEffect
   };
 
   if (loading) {
@@ -115,11 +56,7 @@ const Index = () => {
     );
   }
 
-  // Si hay usuario autenticado, no mostrar nada (la redirección ya ocurrió)
-  if (user) {
-    return null;
-  }
-
+  // Solo mostrar la landing page si NO hay usuario autenticado
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 font-rubik">
       <header className="bg-white border-b border-gloster-gray/20 shadow-sm">
@@ -162,7 +99,7 @@ const Index = () => {
           <Card className="text-center p-6 bg-white shadow-md hover:shadow-lg transition-shadow">
             <CardHeader>
               <div className="w-12 h-12 bg-gloster-yellow/20 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <FileText className="h-6 w-6 text-gloster-yellow" />
+                <CheckCircle className="h-6 w-6 text-gloster-yellow" />
               </div>
               <CardTitle className="text-lg font-rubik">Estados de Pago Digitales</CardTitle>
             </CardHeader>
@@ -176,7 +113,7 @@ const Index = () => {
           <Card className="text-center p-6 bg-white shadow-md hover:shadow-lg transition-shadow">
             <CardHeader>
               <div className="w-12 h-12 bg-gloster-yellow/20 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <Calendar className="h-6 w-6 text-gloster-yellow" />
+                <CheckCircle className="h-6 w-6 text-gloster-yellow" />
               </div>
               <CardTitle className="text-lg font-rubik">Seguimiento Automático</CardTitle>
             </CardHeader>
@@ -190,7 +127,7 @@ const Index = () => {
           <Card className="text-center p-6 bg-white shadow-md hover:shadow-lg transition-shadow">
             <CardHeader>
               <div className="w-12 h-12 bg-gloster-yellow/20 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <Shield className="h-6 w-6 text-gloster-yellow" />
+                <CheckCircle className="h-6 w-6 text-gloster-yellow" />
               </div>
               <CardTitle className="text-lg font-rubik">Transparencia Total</CardTitle>
             </CardHeader>

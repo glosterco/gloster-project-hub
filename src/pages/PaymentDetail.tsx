@@ -59,13 +59,33 @@ const PaymentDetail = () => {
 
   const formatCurrency = (amount: number | null, currency: string = 'CLP') => {
     if (amount === null) return 'Pendiente';
-    return new Intl.NumberFormat('es-CL', {
-      style: 'currency',
-      currency: currency,
-    }).format(amount);
+    
+    // Handle common currency symbols and convert them to proper ISO codes
+    let currencyCode = currency;
+    if (currency === '$' || currency === 'USD') {
+      currencyCode = 'USD';
+    } else if (currency === 'CLP' || currency === '₱') {
+      currencyCode = 'CLP';
+    } else if (currency === '€' || currency === 'EUR') {
+      currencyCode = 'EUR';
+    }
+    
+    try {
+      return new Intl.NumberFormat('es-CL', {
+        style: 'currency',
+        currency: currencyCode,
+      }).format(amount);
+    } catch (error) {
+      // Fallback if currency code is still invalid
+      console.warn('Invalid currency code:', currency, 'falling back to CLP');
+      return new Intl.NumberFormat('es-CL', {
+        style: 'currency',
+        currency: 'CLP',
+      }).format(amount);
+    }
   };
 
-  // Filter documents based on project requirements
+  // Get project requirements safely, with fallback to empty array
   const availableDocuments = payment.projectData?.Requierment || [];
 
   return (

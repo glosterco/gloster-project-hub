@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -44,42 +45,6 @@ const SubmissionPreview = () => {
       checkAccess();
     }
   }, [payment, paymentId, navigate]);
-
-  // Send webhook notification when component mounts
-  useEffect(() => {
-    const sendWebhookNotification = async () => {
-      if (!payment || !payment.projectData) return;
-
-      const webhookData = {
-        type: 'submission_preview_viewed',
-        paymentId: paymentId,
-        projectName: payment.projectData.Name,
-        contractor: payment.projectData.Contratista?.CompanyName || '',
-        client: payment.projectData.Owner?.CompanyName || '',
-        month: `${payment.Mes} ${payment.Año}`,
-        amount: payment.Total || 0,
-        timestamp: new Date().toISOString(),
-        viewedBy: 'client'
-      };
-
-      try {
-        await fetch('https://hook.us2.make.com/242usgpf93xy3waeagqgsefvi2vhsiyc', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(webhookData),
-        });
-        console.log('Preview view webhook sent successfully');
-      } catch (error) {
-        console.error('Error sending preview view webhook:', error);
-      }
-    };
-
-    if (hasAccess && payment) {
-      sendWebhookNotification();
-    }
-  }, [hasAccess, payment, paymentId]);
 
   const sampleDocuments = [
     {

@@ -4,7 +4,7 @@ export const validateRut = (rut: string): boolean => {
   const cleanRut = rut.replace(/[.-]/g, '');
   
   // Check format: should be 8-9 digits + 1 verification digit (number or K)
-  if (!/^\d{8,9}[0-9Kk]$/.test(cleanRut)) {
+  if (!/^\d{7,8}[0-9Kk]$/.test(cleanRut)) {
     return false;
   }
 

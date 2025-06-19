@@ -19,7 +19,7 @@ const Index = () => {
   const { toast } = useToast();
   
   // Solo cargar proyectos si hay usuario autenticado
-  const { projects, loading: projectsLoading, error } = useProjectsWithDetails(user?.id);
+  const { projects, loading: projectsLoading } = useProjectsWithDetails();
 
   useEffect(() => {
     // Verificar sesión actual
@@ -84,6 +84,17 @@ const Index = () => {
       default:
         return <Clock className="h-4 w-4" />;
     }
+  };
+
+  const getNextPayment = (project: any) => {
+    if (!project.EstadosPago || project.EstadosPago.length === 0) return null;
+    
+    // Find the first payment that is not completed and is either pending or scheduled
+    const nextPayment = project.EstadosPago.find((payment: any) => 
+      !payment.Completion && (payment.Status === 'Pendiente' || payment.Status === 'Programado')
+    );
+    
+    return nextPayment;
   };
 
   if (loading) {
@@ -191,54 +202,54 @@ const Index = () => {
             <div className="text-center py-8">
               <p className="text-gloster-gray font-rubik">Cargando proyectos...</p>
             </div>
-          ) : error ? (
-            <div className="text-center py-8">
-              <p className="text-red-600 font-rubik">Error al cargar proyectos: {error}</p>
-            </div>
           ) : projects && projects.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {projects.map((project) => (
-                <Card 
-                  key={project.id} 
-                  className="cursor-pointer hover:shadow-lg transition-shadow bg-white"
-                  onClick={() => navigate(`/project/${project.id}`)}
-                >
-                  <CardHeader>
-                    <CardTitle className="text-lg font-rubik">{project.Name}</CardTitle>
-                    <CardDescription className="font-rubik">
-                      {project.Owner?.CompanyName}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      <div className="text-sm text-gloster-gray font-rubik">
-                        <p><span className="font-medium">Ubicación:</span> {project.Location}</p>
-                        <p><span className="font-medium">Presupuesto:</span> ${project.Budget?.toLocaleString()}</p>
-                      </div>
-                      
-                      {project.nextPayment && (
-                        <div className="pt-3 border-t border-gloster-gray/20">
-                          <p className="text-sm font-medium text-slate-700 mb-2 font-rubik">Próximo Estado de Pago:</p>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-gloster-gray font-rubik">
-                              {project.nextPayment.Mes} {project.nextPayment.Año}
-                            </span>
-                            <Badge 
-                              variant="outline" 
-                              className={`${getStatusColor(project.nextPayment.Status)} font-rubik`}
-                            >
-                              <div className="flex items-center space-x-1">
-                                {getStatusIcon(project.nextPayment.Status)}
-                                <span>{project.nextPayment.Status}</span>
-                              </div>
-                            </Badge>
-                          </div>
+              {projects.map((project) => {
+                const nextPayment = getNextPayment(project);
+                
+                return (
+                  <Card 
+                    key={project.id} 
+                    className="cursor-pointer hover:shadow-lg transition-shadow bg-white"
+                    onClick={() => navigate(`/project/${project.id}`)}
+                  >
+                    <CardHeader>
+                      <CardTitle className="text-lg font-rubik">{project.Name}</CardTitle>
+                      <CardDescription className="font-rubik">
+                        {project.Owner?.CompanyName}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div className="text-sm text-gloster-gray font-rubik">
+                          <p><span className="font-medium">Ubicación:</span> {project.Location}</p>
+                          <p><span className="font-medium">Presupuesto:</span> ${project.Budget?.toLocaleString()}</p>
                         </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                        
+                        {nextPayment && (
+                          <div className="pt-3 border-t border-gloster-gray/20">
+                            <p className="text-sm font-medium text-slate-700 mb-2 font-rubik">Próximo Estado de Pago:</p>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-gloster-gray font-rubik">
+                                {nextPayment.Mes} {nextPayment.Año}
+                              </span>
+                              <Badge 
+                                variant="outline" 
+                                className={`${getStatusColor(nextPayment.Status)} font-rubik`}
+                              >
+                                <div className="flex items-center space-x-1">
+                                  {getStatusIcon(nextPayment.Status)}
+                                  <span>{nextPayment.Status}</span>
+                                </div>
+                              </Badge>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-12">

@@ -5,7 +5,7 @@ export const useRegistrationForm = () => {
   // Company Information
   const [companyName, setCompanyName] = useState('');
   const [rut, setRut] = useState('');
-  const [specialties, setSpecialties] = useState('');
+  const [specialties, setSpecialties] = useState<string[]>([]);
   const [customSpecialty, setCustomSpecialty] = useState('');
   const [experience, setExperience] = useState('');
   const [address, setAddress] = useState('');

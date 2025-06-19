@@ -9,8 +9,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { ArrowLeft, Download, Upload, FileText, ExternalLink, Send, Calendar, DollarSign, HelpCircle, CheckCircle, Clock, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { usePaymentDetail } from '@/hooks/usePaymentDetail';
+import { useMandanteNotification } from '@/hooks/useMandanteNotification';
 import PageHeader from '@/components/PageHeader';
-import EmailTemplate from '@/components/EmailTemplate';
+import { supabase } from '@/integrations/supabase/client';
 
 const PaymentDetail = () => {
   const { id } = useParams();
@@ -20,6 +21,7 @@ const PaymentDetail = () => {
 
   // Use real data from database
   const { payment, loading } = usePaymentDetail(id || '');
+  const { sendNotificationToMandante, loading: notificationLoading } = useMandanteNotification();
 
   const [documentStatus, setDocumentStatus] = useState({
     eepp: false,
@@ -286,6 +288,44 @@ const PaymentDetail = () => {
     };
   };
 
+  const generateUniqueURLAndUpdate = async () => {
+    if (!payment || !payment.projectData) {
+      toast({
+        title: "Error",
+        description: "No se pueden cargar los datos del estado de pago",
+        variant: "destructive"
+      });
+      return null;
+    }
+
+    try {
+      // Generar URL única para el mandante
+      const uniqueId = crypto.randomUUID();
+      const mandanteUrl = `${window.location.origin}/email-access?paymentId=${payment.id}&token=${uniqueId}`;
+
+      // Actualizar la base de datos con la URL del mandante
+      const { error: updateError } = await supabase
+        .from('Estados de pago')
+        .update({ URLMandante: mandanteUrl })
+        .eq('id', payment.id);
+
+      if (updateError) {
+        console.error('Error updating URLMandante:', updateError);
+        throw new Error('Error al actualizar la URL del mandante');
+      }
+
+      return mandanteUrl;
+    } catch (error) {
+      console.error('Error generating unique URL:', error);
+      toast({
+        title: "Error",
+        description: "Error al generar URL única",
+        variant: "destructive"
+      });
+      return null;
+    }
+  };
+
   const handleSendDocuments = async () => {
     const requiredDocuments = documents.filter(doc => doc.required);
     const allRequiredUploaded = requiredDocuments.every(doc => documentStatus[doc.id as keyof typeof documentStatus]);
@@ -299,63 +339,56 @@ const PaymentDetail = () => {
       return;
     }
 
-    // Generate email template data
-    const emailData = generateEmailHTML();
-
-    // Preparar datos para enviar al webhook
-    const webhookData = {
-      projectName: paymentState.projectName,
-      contractorName: paymentState.contractorName,
-      clientName: paymentState.clientName,
-      month: paymentState.month,
-      year: payment?.Año?.toString() || "2024",
-      amount: paymentState.amount,
-      recipient: paymentState.recipient,
-      documents: documents.filter(doc => documentStatus[doc.id as keyof typeof documentStatus]).map(doc => ({
-        name: doc.name,
-        files: uploadedFiles[doc.id] || []
-      })),
-      emailTemplate: emailData,
-      timestamp: new Date().toISOString()
-    };
-
-    console.log('Sending payment data with email template to webhook:', webhookData);
-
-    try {
-      const response = await fetch('https://hook.us2.make.com/aojj5wkdzhmre99szykaa1efxwnvn4e6', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(webhookData),
-      });
-
-      if (response.ok) {
-        toast({
-          title: "Email y documentos enviados",
-          description: `Email con documentos enviado exitosamente a ${paymentState.recipient}`,
-        });
-        
-        // Redirigir de vuelta al proyecto después de un delay
-        setTimeout(() => {
-          navigate(`/project/${payment?.Project || 2}`);
-        }, 2000);
-      } else {
-        throw new Error('Network response was not ok');
-      }
-      
-    } catch (error) {
-      console.error('Error sending documents:', error);
+    if (!payment || !payment.projectData) {
       toast({
-        title: "Error al enviar",
-        description: "Hubo un problema al enviar el email. Intenta nuevamente.",
+        title: "Error",
+        description: "No se pueden cargar los datos del estado de pago",
         variant: "destructive"
       });
+      return;
+    }
+
+    // Generar URL única primero
+    const mandanteUrl = await generateUniqueURLAndUpdate();
+    if (!mandanteUrl) return;
+
+    // Preparar datos para el webhook con URL única
+    const notificationData = {
+      paymentId: payment.id.toString(),
+      contratista: payment.projectData.Contratista?.ContactName || '',
+      mes: payment.Mes || '',
+      año: payment.Año || 0,
+      proyecto: payment.projectData.Name || '',
+      mandanteEmail: payment.projectData.Owner?.ContactEmail || '',
+      mandanteCompany: payment.projectData.Owner?.CompanyName || '',
+      contractorCompany: payment.projectData.Contratista?.CompanyName || '',
+      amount: payment.Total || 0,
+      dueDate: payment.ExpiryDate || ''
+    };
+
+    const result = await sendNotificationToMandante(notificationData);
+    
+    if (result.success) {
+      // Redirigir de vuelta al proyecto después de un delay
+      setTimeout(() => {
+        navigate(`/project/${payment?.Project || 2}`);
+      }, 2000);
     }
   };
 
-  const handlePreviewEmail = () => {
-    navigate('/submission-preview');
+  const handlePreviewEmail = async () => {
+    if (!payment) {
+      toast({
+        title: "Error",
+        description: "No se pueden cargar los datos del estado de pago",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Generar URL única antes de la vista previa
+    await generateUniqueURLAndUpdate();
+    navigate(`/submission-preview?paymentId=${payment.id}`);
   };
 
   const getCompletedDocumentsCount = () => {
@@ -496,12 +529,12 @@ const PaymentDetail = () => {
                     </Button>
                     <Button
                       onClick={handleSendDocuments}
-                      disabled={!documents.filter(d => d.required).every(d => documentStatus[d.id as keyof typeof documentStatus])}
+                      disabled={!documents.filter(d => d.required).every(d => documentStatus[d.id as keyof typeof documentStatus]) || notificationLoading}
                       className="bg-green-600 hover:bg-green-700 text-white disabled:bg-slate-300 font-rubik"
                       size="sm"
                     >
                       <Send className="h-4 w-4 mr-1" />
-                      Enviar
+                      {notificationLoading ? 'Enviando...' : 'Enviar'}
                     </Button>
                   </div>
                 </CardContent>
@@ -664,12 +697,12 @@ const PaymentDetail = () => {
                   </Button>
                   <Button
                     onClick={handleSendDocuments}
-                    disabled={!documents.filter(d => d.required).every(d => documentStatus[d.id as keyof typeof documentStatus])}
+                    disabled={!documents.filter(d => d.required).every(d => documentStatus[d.id as keyof typeof documentStatus]) || notificationLoading}
                     className="bg-green-600 hover:bg-green-700 text-white disabled:bg-slate-300 font-rubik px-6 md:px-8 py-3 w-full sm:w-auto"
                     size="lg"
                   >
                     <Send className="h-5 w-5 mr-2" />
-                    Enviar Email y Documentos
+                    {notificationLoading ? 'Enviando...' : 'Enviar Email y Documentos'}
                   </Button>
                 </div>
               </div>

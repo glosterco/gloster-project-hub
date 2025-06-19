@@ -53,8 +53,13 @@ const EmailAccess = () => {
     setLoading(true);
 
     try {
+      console.log('Verificando email:', email.trim());
+      console.log('Email del mandante en BD:', payment?.projectData?.Owner?.ContactEmail);
+      
       // Verificar si el email coincide con el email del mandante (Owner) en la base de datos
-      if (payment?.projectData?.Owner?.ContactEmail === email.trim()) {
+      if (payment?.projectData?.Owner?.ContactEmail && 
+          payment.projectData.Owner.ContactEmail.toLowerCase().trim() === email.toLowerCase().trim()) {
+        
         // Guardar acceso en sessionStorage con el token para mayor seguridad
         sessionStorage.setItem('mandanteAccess', JSON.stringify({
           email: email.trim(),
@@ -73,6 +78,7 @@ const EmailAccess = () => {
           navigate(`/submission-view?paymentId=${paymentId}`);
         }, 1000);
       } else {
+        console.log('Email no coincide. Esperado:', payment?.projectData?.Owner?.ContactEmail, 'Recibido:', email.trim());
         toast({
           title: "Email de contacto incorrecto",
           description: "Debes ingresar el email de contacto del mandante asociado al proyecto. Verifica tu bandeja de entrada.",
@@ -80,6 +86,7 @@ const EmailAccess = () => {
         });
       }
     } catch (error) {
+      console.error('Error al verificar el acceso:', error);
       toast({
         title: "Error",
         description: "Hubo un problema al verificar el acceso",
@@ -193,6 +200,9 @@ const EmailAccess = () => {
                   </p>
                   <p className="text-sm text-gloster-gray font-rubik">
                     Mandante: {payment.projectData?.Owner?.CompanyName}
+                  </p>
+                  <p className="text-sm text-gloster-gray font-rubik">
+                    Email esperado: {payment.projectData?.Owner?.ContactEmail}
                   </p>
                 </div>
               )}

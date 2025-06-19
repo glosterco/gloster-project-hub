@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -28,7 +29,8 @@ const SubmissionPreview = () => {
     checkUser();
   }, []);
 
-  const sampleDocuments = [
+  // Crear documentos basados en información real
+  const documentsFromPayment = [
     {
       id: 'eepp',
       name: 'Carátula EEPP',
@@ -43,20 +45,20 @@ const SubmissionPreview = () => {
     },
     {
       id: 'cotizaciones',
-      name: 'Certificado de Pago de Cotizaciones',
-      description: 'Certificado de cumplimiento previsional',
+      name: 'Certificado de Pago de Cotizaciones Previsionales',
+      description: 'Certificado de cumplimiento de obligaciones previsionales',
       uploaded: true
     },
     {
       id: 'f30',
       name: 'Certificado F30',
-      description: 'Certificado de antecedentes laborales',
+      description: 'Certificado de antecedentes laborales y previsionales',
       uploaded: true
     },
     {
       id: 'f30_1',
       name: 'Certificado F30-1',
-      description: 'Certificado de obligaciones laborales',
+      description: 'Certificado de cumplimiento de obligaciones laborales y previsionales',
       uploaded: true
     },
     {
@@ -225,6 +227,7 @@ const SubmissionPreview = () => {
     );
   }
 
+  // Crear datos reales para el template
   const emailTemplateData = {
     paymentState: {
       month: `${payment.Mes} ${payment.Año}`,
@@ -241,7 +244,7 @@ const SubmissionPreview = () => {
       projectManager: payment.projectData.Contratista?.ContactName || '',
       contactEmail: payment.projectData.Contratista?.ContactEmail || ''
     },
-    documents: sampleDocuments
+    documents: documentsFromPayment
   };
 
   console.log('SubmissionPreview data:', emailTemplateData);

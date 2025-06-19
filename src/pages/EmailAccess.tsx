@@ -31,7 +31,7 @@ const EmailAccess = () => {
     setLoading(true);
 
     try {
-      // Verificar si el email coincide con el email del contratista en la base de datos
+      // Verificar si el email coincide con el email del mandante (Owner) en la base de datos
       if (payment?.projectData?.Owner?.ContactEmail === email.trim()) {
         // Guardar acceso en sessionStorage
         sessionStorage.setItem('emailAccess', JSON.stringify({
@@ -45,14 +45,14 @@ const EmailAccess = () => {
           description: "Serás redirigido a la vista del estado de pago",
         });
         
-        // Redirigir a submission-preview
+        // Redirigir a submission-view (no submission-preview)
         setTimeout(() => {
-          navigate(`/submission-preview?paymentId=${paymentId}`);
+          navigate(`/submission-view?paymentId=${paymentId}`);
         }, 1000);
       } else {
         toast({
           title: "Email de contacto incorrecto",
-          description: "Debes ingresar el email al cual fue recibida la notificación. Verifica tu bandeja de entrada.",
+          description: "Debes ingresar el email de contacto del mandante asociado al proyecto. Verifica tu bandeja de entrada.",
           variant: "destructive"
         });
       }
@@ -118,7 +118,7 @@ const EmailAccess = () => {
                 Verificación de Acceso
               </CardTitle>
               <p className="text-gloster-gray font-rubik">
-                Para acceder al estado de pago, ingresa tu email de contacto
+                Para acceder al estado de pago, ingresa tu email de contacto como mandante
               </p>
             </CardHeader>
             
@@ -126,7 +126,7 @@ const EmailAccess = () => {
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-2 font-rubik">
-                    Email de Contacto
+                    Email de Contacto del Mandante
                   </label>
                   <Input
                     id="email"
@@ -138,7 +138,7 @@ const EmailAccess = () => {
                     disabled={loading}
                   />
                   <p className="text-xs text-gloster-gray mt-2 font-rubik">
-                    Ingresa el email al cual recibiste la notificación del estado de pago
+                    Ingresa el email de contacto del mandante asociado al proyecto
                   </p>
                 </div>
 
@@ -160,6 +160,9 @@ const EmailAccess = () => {
                   <p className="text-sm text-gloster-gray font-rubik">
                     Período: {payment.Mes} {payment.Año}
                   </p>
+                  <p className="text-sm text-gloster-gray font-rubik">
+                    Mandante: {payment.projectData?.Owner?.CompanyName}
+                  </p>
                 </div>
               )}
             </CardContent>
@@ -171,3 +174,4 @@ const EmailAccess = () => {
 };
 
 export default EmailAccess;
+

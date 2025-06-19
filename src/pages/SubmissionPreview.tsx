@@ -14,47 +14,17 @@ const SubmissionPreview = () => {
   const paymentId = searchParams.get('paymentId') || '11';
   const { payment, loading, error } = usePaymentDetail(paymentId);
   const { toast } = useToast();
-  const [hasAccess, setHasAccess] = useState(false);
-  const [isProjectUser, setIsProjectUser] = useState(false);
-  const [checkingAccess, setCheckingAccess] = useState(true);
+  const [isProjectUser, setIsProjectUser] = useState(true); // Siempre true para usuarios autenticados
 
   useEffect(() => {
-    const checkAccess = async () => {
-      try {
-        // Verificar si es usuario autenticado
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (user) {
-          // Si hay usuario autenticado, dar acceso inmediato
-          setIsProjectUser(true);
-          setHasAccess(true);
-          setCheckingAccess(false);
-          return;
-        }
-
-        // Solo verificar emailAccess si NO hay usuario autenticado
-        const emailAccess = sessionStorage.getItem('emailAccess');
-        if (emailAccess) {
-          const accessData = JSON.parse(emailAccess);
-          if (accessData.paymentId === paymentId) {
-            setHasAccess(true);
-            setCheckingAccess(false);
-            return;
-          }
-        }
-
-        // Sin acceso, redirigir a página de acceso
-        setCheckingAccess(false);
-        navigate(`/email-access?paymentId=${paymentId}`);
-      } catch (error) {
-        console.error('Error checking access:', error);
-        setCheckingAccess(false);
-        navigate(`/email-access?paymentId=${paymentId}`);
-      }
+    // Verificar si el usuario está autenticado para mostrar botón de envío
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsProjectUser(!!user);
     };
-
-    checkAccess();
-  }, [paymentId, navigate]);
+    
+    checkUser();
+  }, []);
 
   const sampleDocuments = [
     {
@@ -257,20 +227,6 @@ const SubmissionPreview = () => {
       });
     }
   };
-
-  if (checkingAccess) {
-    return (
-      <div className="min-h-screen bg-slate-50 font-rubik">
-        <div className="container mx-auto px-6 py-8">
-          <div className="text-center">Verificando acceso...</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!hasAccess) {
-    return null;
-  }
 
   if (loading) {
     return (

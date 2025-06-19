@@ -168,6 +168,10 @@ export const useRegistrationSteps = ({ formData, errors }: any) => {
       console.log('Mandante created successfully with ID:', mandanteId);
 
       // PASO 4: Crear el proyecto
+      const expiryRateString = formData.paymentPeriod === 'mensual' ? '30' : 
+                              formData.paymentPeriod === 'quincenal' ? '15' : 
+                              formData.customPeriod || '30';
+
       const proyectoData = {
         Name: formData.projectName,
         Description: formData.projectDescription,
@@ -179,9 +183,7 @@ export const useRegistrationSteps = ({ formData, errors }: any) => {
         Contratista: contratistaId,
         Owner: mandanteId,
         FirstPayment: formData.firstPaymentDate,
-        ExpiryRate: formData.paymentPeriod === 'mensual' ? 30 : 
-                   formData.paymentPeriod === 'quincenal' ? 15 : 
-                   parseInt(formData.customPeriod) || 30,
+        ExpiryRate: expiryRateString,
         Requierment: formData.requiredDocuments,
       };
 

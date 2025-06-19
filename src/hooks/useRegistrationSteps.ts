@@ -50,41 +50,6 @@ export const useRegistrationSteps = ({ formData, errors }: any) => {
       return;
     }
 
-    if (currentStep === 2) {
-      // Create contractor after step 2 WITHOUT authentication
-      const contratistaData = {
-        CompanyName: formData.companyName,
-        RUT: formData.rut,
-        Specialization: formData.specialties.includes('Otro') 
-          ? formData.customSpecialty 
-          : formData.specialties.join(', '),
-        Experience: formData.experience,
-        Adress: formData.address,
-        City: formData.city,
-        ContactName: formData.contactName,
-        ContactEmail: formData.email,
-        ContactPhone: parseInt(formData.phone.replace('+56', '')),
-        Username: formData.email,
-        Password: formData.password,
-        Status: true
-      };
-
-      const { data: contratistaResult, error: contratistaError } = await createContratista(contratistaData);
-      
-      if (contratistaError) {
-        toast({
-          title: "Error al crear contratista",
-          description: contratistaError.message,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (contratistaResult && contratistaResult.length > 0) {
-        setContratistaId(contratistaResult[0].id);
-      }
-    }
-
     if (currentStep === 5) {
       // Create mandante after step 5
       const mandanteData = {
@@ -135,60 +100,82 @@ export const useRegistrationSteps = ({ formData, errors }: any) => {
         return false;
       }
 
-      // Only update contractor with auth user ID if we have both
-      if (contratistaId && authData.user) {
-        const { error: updateError } = await supabase
-          .from('Contratistas')
-          .update({ auth_user_id: authData.user.id })
-          .eq('id', contratistaId);
+      // Create contractor AFTER authentication
+      const contratistaData = {
+        CompanyName: formData.companyName,
+        RUT: formData.rut,
+        Specialization: formData.specialties.includes('Otro') 
+          ? formData.customSpecialty 
+          : formData.specialties.join(', '),
+        Experience: formData.experience,
+        Adress: formData.address,
+        City: formData.city,
+        ContactName: formData.contactName,
+        ContactEmail: formData.email,
+        ContactPhone: parseInt(formData.phone.replace('+56', '')),
+        Username: formData.email,
+        Password: formData.password,
+        Status: true,
+        auth_user_id: authData.user?.id
+      };
 
-        if (updateError) {
-          console.error('Error updating contractor with auth user ID:', updateError);
-        }
+      const { data: contratistaResult, error: contratistaError } = await createContratista(contratistaData);
+      
+      if (contratistaError) {
+        toast({
+          title: "Error al crear contratista",
+          description: contratistaError.message,
+          variant: "destructive",
+        });
+        return false;
       }
 
-      // Create project
-      if (contratistaId && mandanteId) {
-        const proyectoData = {
-          Name: formData.projectName,
-          Description: formData.projectDescription,
-          Location: formData.projectAddress,
-          Budget: parseFloat(formData.contractAmount),
-          Currency: formData.contractCurrency,
-          StartDate: formData.startDate,
-          Duration: parseInt(formData.duration),
-          Contratista: contratistaId,
-          Owner: mandanteId,
-          FirstPayment: formData.firstPaymentDate,
-          ExpiryRate: formData.paymentPeriod,
-          Requierment: formData.requiredDocuments,
-        };
-
-        const { data: projectResult, error: projectError } = await createProyecto(proyectoData);
+      if (contratistaResult && contratistaResult.length > 0) {
+        setContratistaId(contratistaResult[0].id);
         
-        if (projectError) {
-          toast({
-            title: "Error al crear proyecto",
-            description: projectError.message,
-            variant: "destructive",
-          });
-          return false;
-        }
+        // Create project if we have both contractor and mandante
+        if (mandanteId) {
+          const proyectoData = {
+            Name: formData.projectName,
+            Description: formData.projectDescription,
+            Location: formData.projectAddress,
+            Budget: parseFloat(formData.contractAmount),
+            Currency: formData.contractCurrency,
+            StartDate: formData.startDate,
+            Duration: parseInt(formData.duration),
+            Contratista: contratistaResult[0].id,
+            Owner: mandanteId,
+            FirstPayment: formData.firstPaymentDate,
+            ExpiryRate: formData.paymentPeriod,
+            Requierment: formData.requiredDocuments,
+          };
 
-        if (projectResult && projectResult.length > 0) {
-          const projectId = projectResult[0].id;
+          const { data: projectResult, error: projectError } = await createProyecto(proyectoData);
           
-          // Create payment states
-          const expiryRateNumeric = formData.paymentPeriod === 'mensual' ? 30 : 
-                                  formData.paymentPeriod === 'quincenal' ? 15 : 
-                                  parseInt(formData.customPeriod) || 30;
+          if (projectError) {
+            toast({
+              title: "Error al crear proyecto",
+              description: projectError.message,
+              variant: "destructive",
+            });
+            return false;
+          }
 
-          await createEstadosPago(
-            projectId,
-            formData.firstPaymentDate,
-            expiryRateNumeric,
-            parseInt(formData.duration)
-          );
+          if (projectResult && projectResult.length > 0) {
+            const projectId = projectResult[0].id;
+            
+            // Create payment states
+            const expiryRateNumeric = formData.paymentPeriod === 'mensual' ? 30 : 
+                                    formData.paymentPeriod === 'quincenal' ? 15 : 
+                                    parseInt(formData.customPeriod) || 30;
+
+            await createEstadosPago(
+              projectId,
+              formData.firstPaymentDate,
+              expiryRateNumeric,
+              parseInt(formData.duration)
+            );
+          }
         }
       }
 

@@ -15,7 +15,7 @@ const EmailAccess = () => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const { payment, loading: paymentLoading } = usePaymentDetail(paymentId);
+  const { payment, loading: paymentLoading } = usePaymentDetail(paymentId, false); // No require auth
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,7 +45,7 @@ const EmailAccess = () => {
           description: "Serás redirigido a la vista del estado de pago",
         });
         
-        // Redirigir a submission-view (no submission-preview)
+        // Redirigir a submission-view
         setTimeout(() => {
           navigate(`/submission-view?paymentId=${paymentId}`);
         }, 1000);
@@ -174,4 +174,3 @@ const EmailAccess = () => {
 };
 
 export default EmailAccess;
-

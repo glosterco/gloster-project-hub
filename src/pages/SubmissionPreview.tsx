@@ -12,9 +12,9 @@ const SubmissionPreview = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const paymentId = searchParams.get('paymentId') || '11';
-  const { payment, loading, error } = usePaymentDetail(paymentId);
+  const { payment, loading, error } = usePaymentDetail(paymentId, false); // No require auth
   const { toast } = useToast();
-  const [isProjectUser, setIsProjectUser] = useState(true); // Siempre true para usuarios autenticados
+  const [isProjectUser, setIsProjectUser] = useState(false);
 
   useEffect(() => {
     // Verificar si el usuario está autenticado para mostrar botón de envío

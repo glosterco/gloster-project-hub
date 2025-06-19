@@ -230,7 +230,7 @@ const SubmissionPreview = () => {
         client: payment.projectData.Owner?.CompanyName || '',
         contractor: payment.projectData.Contratista?.CompanyName || '',
         location: payment.projectData.Location || '',
-        projectManager: payment.projectData.Conatista?.ContactName || '',
+        projectManager: payment.projectData.Contratista?.ContactName || '',
         contactEmail: payment.projectData.Contratista?.ContactEmail || ''
       },
       documents: sampleDocuments,

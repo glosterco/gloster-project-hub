@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,35 +37,23 @@ const ProjectDetail = () => {
     return new Intl.NumberFormat('es-CL', config).format(amount);
   };
 
-  const getPaymentStatus = (payment: any, allPayments: any[]) => {
-    const today = new Date();
-    const expiryDate = new Date(payment.ExpiryDate);
+  // Usar directamente el estado de la base de datos sin lógica adicional
+  const getPaymentStatus = (payment: any) => {
+    // Usar directamente el Status de la base de datos
+    const dbStatus = payment.Status?.toLowerCase();
     
-    // Si ya está marcado como completado, es aprobado
-    if (payment.Completion) {
-      return 'aprobado';
+    switch (dbStatus) {
+      case 'aprobado':
+        return 'aprobado';
+      case 'pendiente':
+        return 'pendiente'; 
+      case 'programado':
+        return 'programado';
+      case 'en progreso':
+        return 'pendiente'; // Tratar "en progreso" como pendiente para permitir acceso
+      default:
+        return dbStatus || 'programado';
     }
-    
-    // Si la fecha de vencimiento es en el futuro, es programado
-    if (expiryDate > today) {
-      return 'programado';
-    }
-    
-    // Encontrar el estado de pago más cercano a la fecha actual (que no esté completado)
-    const pendingPayments = allPayments.filter(p => !p.Completion && new Date(p.ExpiryDate) <= today);
-    const closestPayment = pendingPayments.reduce((closest, current) => {
-      const closestDate = new Date(closest.ExpiryDate);
-      const currentDate = new Date(current.ExpiryDate);
-      return Math.abs(currentDate.getTime() - today.getTime()) < Math.abs(closestDate.getTime() - today.getTime()) ? current : closest;
-    }, pendingPayments[0]);
-    
-    // Si es el más cercano, es pendiente
-    if (closestPayment && closestPayment.id === payment.id) {
-      return 'pendiente';
-    }
-    
-    // Si no está completado y ya venció pero no es el más cercano, sigue siendo programado
-    return 'programado';
   };
 
   const getStatusColor = (status: string) => {
@@ -109,7 +96,7 @@ const ProjectDetail = () => {
   };
 
   const handlePaymentClick = (payment: any) => {
-    const status = getPaymentStatus(payment, project?.EstadosPago || []);
+    const status = getPaymentStatus(payment);
     
     if (status === 'programado') {
       toast({
@@ -128,7 +115,7 @@ const ProjectDetail = () => {
         .filter(payment => {
           const matchesSearch = payment.Name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                                payment.Mes?.toLowerCase().includes(searchTerm.toLowerCase());
-          const status = getPaymentStatus(payment, project.EstadosPago);
+          const status = getPaymentStatus(payment);
           const matchesFilter = filterBy === 'all' || status === filterBy;
           return matchesSearch && matchesFilter;
         })
@@ -141,8 +128,8 @@ const ProjectDetail = () => {
               const amountB = b.Total || 0;
               return amountB - amountA;
             case 'status':
-              const statusA = getPaymentStatus(a, project.EstadosPago);
-              const statusB = getPaymentStatus(b, project.EstadosPago);
+              const statusA = getPaymentStatus(a);
+              const statusB = getPaymentStatus(b);
               return statusA.localeCompare(statusB);
             default:
               return 0;
@@ -312,7 +299,7 @@ const ProjectDetail = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredAndSortedPayments.map((payment) => {
-                const status = getPaymentStatus(payment, project.EstadosPago);
+                const status = getPaymentStatus(payment);
                 
                 return (
                   <Card 

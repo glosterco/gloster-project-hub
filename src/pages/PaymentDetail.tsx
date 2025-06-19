@@ -355,7 +355,7 @@ const PaymentDetail = () => {
   };
 
   const handlePreviewEmail = () => {
-    navigate('/email-preview');
+    navigate('/submission-preview');
   };
 
   const getCompletedDocumentsCount = () => {

@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import PageHeader from '@/components/PageHeader';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useProjectsWithDetails } from '@/hooks/useProjectsWithDetails';
+import TotalContractsValue from '@/components/TotalContractsValue';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -43,6 +44,10 @@ const Dashboard = () => {
       return `UF ${new Intl.NumberFormat('es-CL', config).format(amount)}`;
     }
     
+    if (currency === 'USD') {
+      return `US$${new Intl.NumberFormat('es-CL', { minimumFractionDigits: 0 }).format(amount)}`;
+    }
+    
     return new Intl.NumberFormat('es-CL', config).format(amount);
   };
 
@@ -65,18 +70,7 @@ const Dashboard = () => {
       .reduce((sum: number, payment: any) => sum + (payment.Total || 0), 0);
   };
 
-  // Calculate totals for summary cards
-  const totalContractValue = projects.reduce((sum, project) => {
-    // Convert all to CLP for aggregation (simplified approach)
-    let value = project.Budget || 0;
-    if (project.Currency === 'USD') {
-      value = value * 900; // Approximate conversion
-    } else if (project.Currency === 'UF') {
-      value = value * 36000; // Approximate conversion
-    }
-    return sum + value;
-  }, 0);
-
+  // Calculate total paid value for summary
   const totalPaidValue = projects.reduce((sum, project) => {
     let value = getProjectPaidValue(project);
     if (project.Currency === 'USD') {
@@ -173,21 +167,7 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="border-gloster-gray/20">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gloster-gray font-rubik">
-                Valor Total Contratos
-              </CardTitle>
-              <div className="w-8 h-8 bg-gloster-yellow/20 rounded-lg flex items-center justify-center">
-                <DollarSign className="h-4 w-4 text-gloster-gray" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-slate-800 font-rubik">
-                {formatCurrency(totalContractValue, 'CLP')}
-              </div>
-            </CardContent>
-          </Card>
+          <TotalContractsValue projects={projects} />
 
           <Card className="border-gloster-gray/20">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

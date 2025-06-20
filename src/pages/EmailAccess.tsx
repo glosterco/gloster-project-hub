@@ -54,15 +54,36 @@ const EmailAccess = () => {
 
     try {
       console.log('Verificando email:', email.trim());
+      console.log('Payment data:', payment);
+      console.log('Owner data:', payment?.projectData?.Owner);
       console.log('Email del mandante en BD:', payment?.projectData?.Owner?.ContactEmail);
       
+      // Verificar si el payment y los datos están disponibles
+      if (!payment || !payment.projectData || !payment.projectData.Owner) {
+        console.log('Datos del payment o mandante no disponibles');
+        toast({
+          title: "Error de datos",
+          description: "No se pudieron cargar los datos del proyecto. Intenta nuevamente.",
+          variant: "destructive"
+        });
+        setLoading(false);
+        return;
+      }
+      
+      const mandanteEmail = payment.projectData.Owner.ContactEmail;
+      const inputEmail = email.toLowerCase().trim();
+      
+      console.log('Comparando emails:');
+      console.log('- Email del mandante (BD):', mandanteEmail);
+      console.log('- Email ingresado:', inputEmail);
+      console.log('- Son iguales?', mandanteEmail && mandanteEmail.toLowerCase().trim() === inputEmail);
+      
       // Verificar si el email coincide con el email del mandante (Owner) en la base de datos
-      if (payment?.projectData?.Owner?.ContactEmail && 
-          payment.projectData.Owner.ContactEmail.toLowerCase().trim() === email.toLowerCase().trim()) {
+      if (mandanteEmail && mandanteEmail.toLowerCase().trim() === inputEmail) {
         
         // Guardar acceso en sessionStorage con el token para mayor seguridad
         sessionStorage.setItem('mandanteAccess', JSON.stringify({
-          email: email.trim(),
+          email: inputEmail,
           paymentId: paymentId,
           token: token,
           timestamp: new Date().toISOString()
@@ -78,10 +99,12 @@ const EmailAccess = () => {
           navigate(`/submission-view?paymentId=${paymentId}`);
         }, 1000);
       } else {
-        console.log('Email no coincide. Esperado:', payment?.projectData?.Owner?.ContactEmail, 'Recibido:', email.trim());
+        console.log('Email no coincide.');
+        console.log('Esperado:', mandanteEmail);
+        console.log('Recibido:', inputEmail);
         toast({
           title: "Email de contacto incorrecto",
-          description: "Debes ingresar el email de contacto del mandante asociado al proyecto. Verifica tu bandeja de entrada.",
+          description: "El email ingresado no coincide con el email de contacto del mandante asociado al proyecto. Verifica tu bandeja de entrada.",
           variant: "destructive"
         });
       }
@@ -189,7 +212,7 @@ const EmailAccess = () => {
                 </Button>
               </form>
 
-              {payment && (
+              {payment && payment.projectData && (
                 <div className="mt-6 p-4 bg-slate-50 rounded-lg">
                   <h4 className="font-semibold text-slate-800 font-rubik mb-2">Información del Estado de Pago</h4>
                   <p className="text-sm text-gloster-gray font-rubik">

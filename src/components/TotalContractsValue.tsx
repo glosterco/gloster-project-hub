@@ -57,6 +57,7 @@ const TotalContractsValue: React.FC<TotalContractsValueProps> = ({ projects }) =
   const getConversionText = () => {
     if (ufLoading) return 'Obteniendo valor UF...';
     if (ufError) return ufError;
+    if (!ufValue || ufValue === 0) return 'Valor UF no disponible';
     return `Conversión SII UF: $${ufValue.toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${ufDate})`;
   };
 
@@ -77,7 +78,7 @@ const TotalContractsValue: React.FC<TotalContractsValueProps> = ({ projects }) =
                 {formatCurrency(amount, currency)}
               </div>
               
-              {currency === 'UF' && !ufLoading && !ufError && (
+              {currency === 'UF' && !ufLoading && !ufError && ufValue && ufValue > 0 && (
                 <div className="text-sm text-slate-600 font-rubik">
                   <div className="text-xs text-gloster-gray">
                     ≈ {formatCurrency(convertToCLP(amount, currency))}

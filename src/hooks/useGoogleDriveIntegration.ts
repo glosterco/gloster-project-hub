@@ -93,10 +93,10 @@ export const useGoogleDriveIntegration = () => {
     }
   };
 
-  const uploadDocumentsToDrive = async (paymentId: number, uploadedFiles: any, documentStatus: any) => {
+  const uploadDocumentsToDrive = async (paymentId: number, uploadedFiles: any, documentStatus: any, fileObjects: {[key: string]: File[]}) => {
     setLoading(true);
     try {
-      console.log('Uploading documents to Google Drive:', { paymentId, uploadedFiles, documentStatus });
+      console.log('Uploading documents to Google Drive:', { paymentId, uploadedFiles, documentStatus, fileObjects });
 
       // Document name mapping
       const documentNames = {
@@ -110,19 +110,40 @@ export const useGoogleDriveIntegration = () => {
         factura: 'Factura'
       };
 
-      // Prepare documents data
+      // Prepare documents data with real file content
       const documents = {};
       
-      // Convert file objects to the format expected by the edge function
+      // Process each document type
       for (const [docType, files] of Object.entries(uploadedFiles)) {
         if (documentStatus[docType] && files && Array.isArray(files) && files.length > 0) {
-          // For this implementation, we'll simulate the file content
-          // In a real implementation, you would need to store the actual file content
-          const fileData = files.map((fileName: string, index: number) => ({
-            name: fileName,
-            content: '', // This would need to be the actual base64 encoded file content
-            mimeType: 'application/pdf' // This would need to be determined from the actual file
-          }));
+          console.log(`Processing ${docType} with ${files.length} files`);
+          
+          // Get the actual file objects for this document type
+          const realFiles = fileObjects[docType] || [];
+          
+          if (realFiles.length === 0) {
+            console.warn(`No file objects found for ${docType}, skipping`);
+            continue;
+          }
+
+          const fileData = [];
+          
+          // Convert each file to base64
+          for (let i = 0; i < realFiles.length; i++) {
+            const file = realFiles[i];
+            try {
+              const base64Content = await convertFileToBase64(file);
+              fileData.push({
+                name: file.name,
+                content: base64Content,
+                mimeType: file.type
+              });
+              console.log(`✅ File ${file.name} converted to base64 successfully`);
+            } catch (error) {
+              console.error(`❌ Error converting file ${file.name} to base64:`, error);
+              throw new Error(`Error procesando archivo ${file.name}`);
+            }
+          }
 
           documents[docType] = {
             files: fileData,
@@ -132,8 +153,10 @@ export const useGoogleDriveIntegration = () => {
       }
 
       if (Object.keys(documents).length === 0) {
-        throw new Error('No documents to upload');
+        throw new Error('No documents to upload - no valid files found');
       }
+
+      console.log('📤 Sending documents to upload function:', Object.keys(documents));
 
       const { data, error } = await supabase.functions.invoke('upload-documents-to-drive', {
         body: {
@@ -143,7 +166,7 @@ export const useGoogleDriveIntegration = () => {
       });
 
       if (error) {
-        console.error('Error calling upload documents function:', error);
+        console.error('❌ Error calling upload documents function:', error);
         throw error;
       }
 
@@ -151,7 +174,7 @@ export const useGoogleDriveIntegration = () => {
         throw new Error(data.error || 'Failed to upload documents to Google Drive');
       }
 
-      console.log('✅ Documents uploaded to Google Drive:', data);
+      console.log('✅ Documents uploaded to Google Drive successfully:', data);
       
       toast({
         title: "Documentos subidos exitosamente",
@@ -160,10 +183,10 @@ export const useGoogleDriveIntegration = () => {
 
       return { success: true, uploadResults: data.uploadResults };
     } catch (error) {
-      console.error('Error uploading documents to Google Drive:', error);
+      console.error('❌ Error uploading documents to Google Drive:', error);
       toast({
         title: "Error al subir documentos",
-        description: "No se pudieron subir los documentos a Google Drive",
+        description: `No se pudieron subir los documentos: ${error.message}`,
         variant: "destructive",
       });
       return { success: false, error: error.message };
@@ -178,4 +201,23 @@ export const useGoogleDriveIntegration = () => {
     uploadDocumentsToDrive,
     loading,
   };
+};
+
+// Helper function to convert File to base64
+const convertFileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      try {
+        const result = reader.result as string;
+        // Remove the data URL prefix (e.g., "data:application/pdf;base64,")
+        const base64Content = result.split(',')[1];
+        resolve(base64Content);
+      } catch (error) {
+        reject(error);
+      }
+    };
+    reader.onerror = (error) => reject(error);
+  });
 };

@@ -28,6 +28,7 @@ interface UploadDocumentsRequest {
 }
 
 async function getAccessToken(credentials: GoogleDriveCredentials): Promise<string> {
+  console.log('🔑 Getting access token...');
   const response = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: {
@@ -43,9 +44,11 @@ async function getAccessToken(credentials: GoogleDriveCredentials): Promise<stri
 
   const data = await response.json();
   if (!response.ok) {
+    console.error('❌ Failed to get access token:', data);
     throw new Error(`Failed to get access token: ${data.error_description || data.error}`);
   }
 
+  console.log('✅ Access token obtained successfully');
   return data.access_token;
 }
 
@@ -54,6 +57,8 @@ async function createGoogleDriveFolder(
   folderName: string,
   parentFolderId: string
 ): Promise<string> {
+  console.log(`📁 Creating folder "${folderName}" in parent ${parentFolderId}`);
+  
   const metadata = {
     name: folderName,
     mimeType: 'application/vnd.google-apps.folder',
@@ -71,9 +76,11 @@ async function createGoogleDriveFolder(
 
   const data = await response.json();
   if (!response.ok) {
+    console.error('❌ Failed to create folder:', data);
     throw new Error(`Failed to create folder: ${data.error?.message || 'Unknown error'}`);
   }
 
+  console.log(`✅ Folder created with ID: ${data.id}`);
   return data.id;
 }
 
@@ -84,41 +91,61 @@ async function uploadFileToDrive(
   mimeType: string,
   parentFolderId: string
 ): Promise<string> {
-  // Convert base64 to binary
-  const binaryContent = Uint8Array.from(atob(fileContent), c => c.charCodeAt(0));
+  console.log(`📤 Uploading file "${fileName}" to folder ${parentFolderId}`);
   
-  const metadata = {
-    name: fileName,
-    parents: [parentFolderId],
-  };
-
-  const form = new FormData();
-  form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-  form.append('file', new Blob([binaryContent], { type: mimeType }));
-
-  const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-    },
-    body: form,
-  });
-
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(`Failed to upload file: ${data.error?.message || 'Unknown error'}`);
+  if (!fileContent || fileContent.trim() === '') {
+    throw new Error(`File content is empty for ${fileName}`);
   }
+  
+  try {
+    // Convert base64 to binary
+    const binaryContent = Uint8Array.from(atob(fileContent), c => c.charCodeAt(0));
+    console.log(`📊 File "${fileName}" size: ${binaryContent.length} bytes`);
+    
+    const metadata = {
+      name: fileName,
+      parents: [parentFolderId],
+    };
 
-  return data.id;
+    const form = new FormData();
+    form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+    form.append('file', new Blob([binaryContent], { type: mimeType }));
+
+    const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+      },
+      body: form,
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      console.error('❌ Failed to upload file:', data);
+      throw new Error(`Failed to upload file ${fileName}: ${data.error?.message || 'Unknown error'}`);
+    }
+
+    console.log(`✅ File "${fileName}" uploaded with ID: ${data.id}`);
+    return data.id;
+  } catch (error) {
+    console.error(`❌ Error uploading file "${fileName}":`, error);
+    throw error;
+  }
 }
 
 function extractFolderIdFromUrl(url: string): string {
+  console.log(`🔍 Extracting folder ID from URL: ${url}`);
+  
   // Extract folder ID from Google Drive URL
   const match = url.match(/\/folders\/([a-zA-Z0-9-_]+)/);
   if (!match) {
-    throw new Error('Invalid Google Drive URL format');
+    console.error('❌ Invalid Google Drive URL format:', url);
+    throw new Error(`Invalid Google Drive URL format: ${url}`);
   }
-  return match[1];
+  
+  const folderId = match[1];
+  console.log(`✅ Extracted folder ID: ${folderId}`);
+  return folderId;
 }
 
 serve(async (req) => {
@@ -127,7 +154,13 @@ serve(async (req) => {
   }
 
   try {
+    console.log('🚀 Starting document upload process...');
     const body: UploadDocumentsRequest = await req.json();
+    console.log('📋 Request data:', {
+      paymentId: body.paymentId,
+      documentTypes: Object.keys(body.documents),
+      totalFiles: Object.values(body.documents).reduce((acc, doc) => acc + doc.files.length, 0)
+    });
     
     // Get Google Drive credentials from Supabase secrets
     const googleClientId = Deno.env.get('GOOGLE_DRIVE_CLIENT_ID');
@@ -135,6 +168,7 @@ serve(async (req) => {
     const googleRefreshToken = Deno.env.get('GOOGLE_DRIVE_REFRESH_TOKEN');
 
     if (!googleClientId || !googleClientSecret || !googleRefreshToken) {
+      console.error('❌ Google Drive credentials not configured');
       throw new Error('Google Drive credentials not configured');
     }
 
@@ -151,6 +185,8 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    console.log(`🔍 Looking for payment state with ID: ${body.paymentId}`);
+
     // Get payment state URL from database
     const { data: paymentState, error: paymentError } = await supabase
       .from('Estados de pago')
@@ -158,50 +194,67 @@ serve(async (req) => {
       .eq('id', body.paymentId)
       .single();
 
-    if (paymentError || !paymentState?.URL) {
-      throw new Error('Payment state not found or no URL configured');
+    if (paymentError) {
+      console.error('❌ Error fetching payment state:', paymentError);
+      throw new Error(`Payment state not found: ${paymentError.message}`);
     }
+
+    if (!paymentState?.URL) {
+      console.error('❌ No URL found for payment state');
+      throw new Error('Payment state URL not configured');
+    }
+
+    console.log(`✅ Found payment state URL: ${paymentState.URL}`);
 
     // Extract folder ID from URL
     const parentFolderId = extractFolderIdFromUrl(paymentState.URL);
-    console.log(`Parent folder ID: ${parentFolderId}`);
 
     const uploadResults = [];
 
     // Process each document type
     for (const [docType, docData] of Object.entries(body.documents)) {
-      console.log(`Processing document type: ${docType}`);
+      console.log(`📂 Processing document type: ${docType} (${docData.files.length} files)`);
       
       if (docData.files.length === 0) {
+        console.log(`⏭️ Skipping ${docType} - no files`);
         continue;
+      }
+
+      // Validate that files have content
+      const validFiles = docData.files.filter(file => file.content && file.content.trim() !== '');
+      if (validFiles.length === 0) {
+        console.error(`❌ No valid files with content for ${docType}`);
+        throw new Error(`No valid files with content found for ${docType}`);
+      }
+
+      if (validFiles.length !== docData.files.length) {
+        console.warn(`⚠️ Some files for ${docType} have empty content`);
       }
 
       let targetFolderId = parentFolderId;
 
       // For multiple files (examenes, finiquitos), create a subfolder
-      if (docData.files.length > 1 && (docType === 'examenes' || docType === 'finiquito')) {
-        console.log(`Creating subfolder for ${docType}`);
+      if (validFiles.length > 1 && (docType === 'examenes' || docType === 'finiquito')) {
+        console.log(`📁 Creating subfolder for ${docType}`);
         targetFolderId = await createGoogleDriveFolder(
           accessToken,
           docData.documentName,
           parentFolderId
         );
-        console.log(`Created subfolder with ID: ${targetFolderId}`);
       }
 
-      // Upload each file
-      for (let i = 0; i < docData.files.length; i++) {
-        const file = docData.files[i];
+      // Upload each valid file
+      for (let i = 0; i < validFiles.length; i++) {
+        const file = validFiles[i];
         let fileName = file.name;
 
-        // For single files, rename to document name
-        if (docData.files.length === 1 && docType !== 'examenes' && docType !== 'finiquito') {
+        // For single files, rename to document name (except examenes and finiquitos)
+        if (validFiles.length === 1 && docType !== 'examenes' && docType !== 'finiquito') {
           const extension = fileName.split('.').pop();
           fileName = `${docData.documentName}.${extension}`;
+          console.log(`📝 Renaming file to: ${fileName}`);
         }
 
-        console.log(`Uploading file: ${fileName}`);
-        
         const fileId = await uploadFileToDrive(
           accessToken,
           fileName,
@@ -216,12 +269,10 @@ serve(async (req) => {
           fileId,
           success: true
         });
-
-        console.log(`Successfully uploaded: ${fileName} with ID: ${fileId}`);
       }
     }
 
-    console.log(`Upload complete. ${uploadResults.length} files uploaded.`);
+    console.log(`🎉 Upload complete! ${uploadResults.length} files uploaded successfully.`);
 
     return new Response(
       JSON.stringify({ 
@@ -235,7 +286,7 @@ serve(async (req) => {
       }
     )
   } catch (error) {
-    console.error('Error uploading documents to Google Drive:', error);
+    console.error('💥 Error uploading documents to Google Drive:', error);
     return new Response(
       JSON.stringify({ 
         error: error.message,

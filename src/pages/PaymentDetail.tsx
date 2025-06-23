@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +11,7 @@ import { ArrowLeft, Download, Upload, FileText, ExternalLink, Send, Calendar, Do
 import { useToast } from '@/hooks/use-toast';
 import { usePaymentDetail } from '@/hooks/usePaymentDetail';
 import { useMandanteNotification } from '@/hooks/useMandanteNotification';
+import { useGoogleDriveIntegration } from '@/hooks/useGoogleDriveIntegration';
 import PageHeader from '@/components/PageHeader';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -22,6 +24,7 @@ const PaymentDetail = () => {
   // Use real data from database
   const { payment, loading } = usePaymentDetail(id || '');
   const { sendNotificationToMandante, loading: notificationLoading } = useMandanteNotification();
+  const { uploadDocumentsToDrive, loading: driveLoading } = useGoogleDriveIntegration();
 
   const [documentStatus, setDocumentStatus] = useState({
     eepp: false,
@@ -35,6 +38,18 @@ const PaymentDetail = () => {
   });
 
   const [uploadedFiles, setUploadedFiles] = useState({
+    eepp: [],
+    planilla: [],
+    cotizaciones: [],
+    f30: [],
+    f30_1: [],
+    examenes: [],
+    finiquito: [],
+    factura: []
+  });
+
+  // New state to store actual File objects
+  const [fileObjects, setFileObjects] = useState<{[key: string]: File[]}>({
     eepp: [],
     planilla: [],
     cotizaciones: [],
@@ -197,6 +212,8 @@ const PaymentDetail = () => {
 
     if (validFiles.length === 0) return;
 
+    console.log(`📁 Uploading ${validFiles.length} files for ${documentId}:`, validFiles.map(f => f.name));
+
     setDocumentStatus(prev => ({
       ...prev,
       [documentId]: true
@@ -208,6 +225,14 @@ const PaymentDetail = () => {
       [documentId]: doc?.allowMultiple 
         ? [...prev[documentId], ...fileNames]
         : fileNames
+    }));
+
+    // Store the actual File objects
+    setFileObjects(prev => ({
+      ...prev,
+      [documentId]: doc?.allowMultiple 
+        ? [...prev[documentId], ...validFiles]
+        : validFiles
     }));
 
     toast({
@@ -348,7 +373,38 @@ const PaymentDetail = () => {
       return;
     }
 
-    // Generar URL única primero
+    console.log('🚀 Starting document upload process...');
+
+    // First, upload documents to Google Drive
+    try {
+      const uploadResult = await uploadDocumentsToDrive(
+        payment.id, 
+        uploadedFiles, 
+        documentStatus, 
+        fileObjects
+      );
+
+      if (!uploadResult.success) {
+        toast({
+          title: "Error al subir documentos",
+          description: "No se pudieron subir los documentos a Google Drive",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      console.log('✅ Documents uploaded successfully to Google Drive');
+    } catch (error) {
+      console.error('❌ Error uploading documents:', error);
+      toast({
+        title: "Error al subir documentos",
+        description: "Error al subir documentos a Google Drive",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Then, generate unique URL and send notification
     const mandanteUrl = await generateUniqueURLAndUpdate();
     if (!mandanteUrl) return;
 
@@ -363,7 +419,9 @@ const PaymentDetail = () => {
       mandanteCompany: payment.projectData.Owner?.CompanyName || '',
       contractorCompany: payment.projectData.Contratista?.CompanyName || '',
       amount: payment.Total || 0,
-      dueDate: payment.ExpiryDate || ''
+      dueDate: payment.ExpiryDate || '',
+      driveUrl: payment.URL || '',
+      uploadedDocuments: uploadedFiles
     };
 
     const result = await sendNotificationToMandante(notificationData);

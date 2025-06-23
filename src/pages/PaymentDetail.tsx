@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -408,6 +407,23 @@ const PaymentDetail = () => {
     const mandanteUrl = await generateUniqueURLAndUpdate();
     if (!mandanteUrl) return;
 
+    // Get the payment state data to fetch the URL
+    const { data: paymentStateData, error: paymentStateError } = await supabase
+      .from('Estados de pago')
+      .select('URL')
+      .eq('id', payment.id)
+      .single();
+
+    if (paymentStateError) {
+      console.error('Error fetching payment state URL:', paymentStateError);
+      toast({
+        title: "Error",
+        description: "No se pudo obtener la URL del estado de pago",
+        variant: "destructive"
+      });
+      return;
+    }
+
     // Preparar datos para el webhook con URL única
     const notificationData = {
       paymentId: payment.id.toString(),
@@ -420,7 +436,7 @@ const PaymentDetail = () => {
       contractorCompany: payment.projectData.Contratista?.CompanyName || '',
       amount: payment.Total || 0,
       dueDate: payment.ExpiryDate || '',
-      driveUrl: payment.URL || '',
+      driveUrl: paymentStateData.URL || '',
       uploadedDocuments: uploadedFiles
     };
 

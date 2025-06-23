@@ -1,5 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -97,30 +98,91 @@ serve(async (req) => {
 
     const accessToken = await getAccessToken(credentials);
 
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
     let folderId: string;
     let folderName: string;
+    let fullUrl: string;
 
     if (body.type === 'project') {
       // Create project folder: "ID proyecto - nombre proyecto"
       folderName = `${body.projectId} - ${body.projectName}`;
       folderId = await createGoogleDriveFolder(accessToken, folderName);
+      fullUrl = `https://drive.google.com/drive/u/2/folders/${folderId}`;
       
       console.log(`Created project folder: ${folderName} with ID: ${folderId}`);
+      console.log(`Full URL: ${fullUrl}`);
     } else if (body.type === 'payment_state') {
       // Create payment state folder: "EP# - Mes Año"
       folderName = `${body.paymentStateName} - ${body.month} ${body.year}`;
       folderId = await createGoogleDriveFolder(accessToken, folderName, body.parentFolderId);
+      fullUrl = `https://drive.google.com/drive/u/2/folders/${folderId}`;
+      
+      // Update the payment state record with the complete URL
+      const { error: updateError } = await supabase
+        .from('Estados de pago')
+        .update({ URL: fullUrl })
+        .eq('Mes', body.month)
+        .eq('Año', body.year)
+        .eq('Project', body.projectId);
+
+      if (updateError) {
+        console.error('Error updating payment state URL:', updateError);
+        // Don't throw error here, just log it as the folder was created successfully
+      } else {
+        console.log(`Updated payment state URL in database: ${fullUrl}`);
+      }
       
       console.log(`Created payment state folder: ${folderName} with ID: ${folderId}`);
+      console.log(`Full URL: ${fullUrl}`);
     } else {
       throw new Error('Invalid folder type');
+    }
+
+    // Fix existing URLs in database that only have folder IDs
+    if (body.type === 'payment_state') {
+      console.log('Fixing existing incomplete URLs in database...');
+      
+      // Get all payment states with URLs that don't start with https://
+      const { data: paymentStates, error: fetchError } = await supabase
+        .from('Estados de pago')
+        .select('id, URL')
+        .not('URL', 'is', null)
+        .not('URL', 'like', 'https://%');
+
+      if (fetchError) {
+        console.error('Error fetching payment states:', fetchError);
+      } else if (paymentStates && paymentStates.length > 0) {
+        console.log(`Found ${paymentStates.length} payment states with incomplete URLs`);
+        
+        // Update each one
+        for (const state of paymentStates) {
+          if (state.URL && !state.URL.startsWith('https://')) {
+            const completeUrl = `https://drive.google.com/drive/u/2/folders/${state.URL}`;
+            const { error: updateError } = await supabase
+              .from('Estados de pago')
+              .update({ URL: completeUrl })
+              .eq('id', state.id);
+            
+            if (updateError) {
+              console.error(`Error updating URL for payment state ${state.id}:`, updateError);
+            } else {
+              console.log(`Fixed URL for payment state ${state.id}: ${completeUrl}`);
+            }
+          }
+        }
+      }
     }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         folderId,
-        folderName 
+        folderName,
+        fullUrl
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

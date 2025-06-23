@@ -115,10 +115,10 @@ export const useGoogleDriveIntegration = () => {
       
       // Convert file objects to the format expected by the edge function
       for (const [docType, files] of Object.entries(uploadedFiles)) {
-        if (documentStatus[docType] && files && files.length > 0) {
+        if (documentStatus[docType] && files && Array.isArray(files) && files.length > 0) {
           // For this implementation, we'll simulate the file content
           // In a real implementation, you would need to store the actual file content
-          const fileData = files.map((fileName, index) => ({
+          const fileData = files.map((fileName: string, index: number) => ({
             name: fileName,
             content: '', // This would need to be the actual base64 encoded file content
             mimeType: 'application/pdf' // This would need to be determined from the actual file

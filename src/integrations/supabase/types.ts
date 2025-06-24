@@ -68,6 +68,7 @@ export type Database = {
           id: number
           Mes: string | null
           Name: string
+          Notes: string | null
           Project: number | null
           Status: string | null
           Total: number | null
@@ -81,6 +82,7 @@ export type Database = {
           id?: number
           Mes?: string | null
           Name: string
+          Notes?: string | null
           Project?: number | null
           Status?: string | null
           Total?: number | null
@@ -94,6 +96,7 @@ export type Database = {
           id?: number
           Mes?: string | null
           Name?: string
+          Notes?: string | null
           Project?: number | null
           Status?: string | null
           Total?: number | null

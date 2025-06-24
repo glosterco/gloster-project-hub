@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -8,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { usePaymentDetail } from '@/hooks/usePaymentDetail';
 import { supabase } from '@/integrations/supabase/client';
 import html2pdf from 'html2pdf.js';
+import PaymentActionButtons from '@/components/PaymentActionButtons';
 
 const SubmissionView = () => {
   const navigate = useNavigate();
@@ -64,6 +64,12 @@ const SubmissionView = () => {
       checkAccess();
     }
   }, [payment, paymentId, navigate]);
+
+  // Verificar si es mandante (acceso vía token)
+  const isMandante = () => {
+    const mandanteAccess = sessionStorage.getItem('mandanteAccess');
+    return !!mandanteAccess;
+  };
 
   // Crear documentos basados en información real
   const documentsFromPayment = [
@@ -316,6 +322,18 @@ const SubmissionView = () => {
             paymentState={emailTemplateData.paymentState}
             project={emailTemplateData.project}
             documents={emailTemplateData.documents}
+          />
+        </div>
+
+        {/* Botones de acción para mandantes */}
+        <div className="max-w-4xl mx-auto mt-6">
+          <PaymentActionButtons 
+            paymentId={paymentId}
+            isMandante={isMandante()}
+            onActionComplete={() => {
+              // Recargar la página o actualizar el estado
+              window.location.reload();
+            }}
           />
         </div>
       </div>

@@ -382,7 +382,6 @@ const PaymentDetail = () => {
                     </div>
                     <Badge variant="secondary" className="bg-gloster-gray/20 text-gloster-gray border-gloster-gray/30 self-start shrink-0">
                       {paymentState.status}
-                      {payment?.projectData?.Requierment}
                     </Badge>
                   </div>
                 </CardHeader>

@@ -467,7 +467,7 @@ const PaymentDetail = () => {
             
             <div className="space-y-4">
               {documents.map((doc) => (
-      {doc.required ? <DocumentUploadCard
+                {doc.required ? <DocumentUploadCard
                   key={doc.id}
                   doc={doc}
                   documentStatus={documentStatus[doc.id as keyof typeof documentStatus]}

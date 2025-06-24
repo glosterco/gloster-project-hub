@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +13,7 @@ import { useGoogleDriveIntegration } from '@/hooks/useGoogleDriveIntegration';
 import { useDocumentUpload } from '@/hooks/useDocumentUpload';
 import PageHeader from '@/components/PageHeader';
 import DocumentUploadCard from '@/components/DocumentUploadCard';
+import LoadingModal from '@/components/LoadingModal';
 import { supabase } from '@/integrations/supabase/client';
 
 const PaymentDetail = () => {
@@ -40,6 +42,7 @@ const PaymentDetail = () => {
   } = useDocumentUpload();
 
   const [achsSelection, setAchsSelection] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
 
   // Map database data to match the UI structure
   const paymentState = payment ? {
@@ -224,6 +227,7 @@ const PaymentDetail = () => {
       return;
     }
 
+    setIsUploading(true);
     console.log('🚀 Starting document upload process...');
 
     try {
@@ -235,66 +239,67 @@ const PaymentDetail = () => {
       );
 
       if (!uploadResult.success) {
+        throw new Error("Error al subir documentos a Google Drive");
+      }
+
+      console.log('✅ Documents uploaded successfully to Google Drive');
+
+      const mandanteUrl = await generateUniqueURLAndUpdate();
+      if (!mandanteUrl) return;
+
+      // Get the payment state data to fetch the URL
+      const { data: paymentStateData, error: paymentStateError } = await supabase
+        .from('Estados de pago')
+        .select('URL')
+        .eq('id', payment.id)
+        .single();
+
+      if (paymentStateError) {
+        console.error('Error fetching payment state URL:', paymentStateError);
         toast({
-          title: "Error al subir documentos",
-          description: "No se pudieron subir los documentos a Google Drive",
+          title: "Error",
+          description: "No se pudo obtener la URL del estado de pago",
           variant: "destructive"
         });
         return;
       }
 
-      console.log('✅ Documents uploaded successfully to Google Drive');
+      const notificationData = {
+        paymentId: payment.id.toString(),
+        contratista: payment.projectData.Contratista?.ContactName || '',
+        mes: payment.Mes || '',
+        año: payment.Año || 0,
+        proyecto: payment.projectData.Name || '',
+        mandanteEmail: payment.projectData.Owner?.ContactEmail || '',
+        mandanteCompany: payment.projectData.Owner?.CompanyName || '',
+        contractorCompany: payment.projectData.Contratista?.CompanyName || '',
+        amount: payment.Total || 0,
+        dueDate: payment.ExpiryDate || '',
+        driveUrl: paymentStateData.URL || '',
+        uploadedDocuments: uploadedFiles
+      };
+
+      const result = await sendNotificationToMandante(notificationData);
+      
+      if (result.success) {
+        toast({
+          title: "Documentos enviados exitosamente",
+          description: "Los documentos se han subido a Google Drive y se ha enviado la notificación al mandante",
+        });
+        
+        setTimeout(() => {
+          navigate(`/project/${payment?.Project || 2}`);
+        }, 2000);
+      }
     } catch (error) {
-      console.error('❌ Error uploading documents:', error);
+      console.error('❌ Error in upload process:', error);
       toast({
-        title: "Error al subir documentos",
-        description: "Error al subir documentos a Google Drive",
+        title: "Error al enviar documentos",
+        description: error.message || "Error al subir documentos a Google Drive",
         variant: "destructive"
       });
-      return;
-    }
-
-    const mandanteUrl = await generateUniqueURLAndUpdate();
-    if (!mandanteUrl) return;
-
-    // Get the payment state data to fetch the URL
-    const { data: paymentStateData, error: paymentStateError } = await supabase
-      .from('Estados de pago')
-      .select('URL')
-      .eq('id', payment.id)
-      .single();
-
-    if (paymentStateError) {
-      console.error('Error fetching payment state URL:', paymentStateError);
-      toast({
-        title: "Error",
-        description: "No se pudo obtener la URL del estado de pago",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const notificationData = {
-      paymentId: payment.id.toString(),
-      contratista: payment.projectData.Contratista?.ContactName || '',
-      mes: payment.Mes || '',
-      año: payment.Año || 0,
-      proyecto: payment.projectData.Name || '',
-      mandanteEmail: payment.projectData.Owner?.ContactEmail || '',
-      mandanteCompany: payment.projectData.Owner?.CompanyName || '',
-      contractorCompany: payment.projectData.Contratista?.CompanyName || '',
-      amount: payment.Total || 0,
-      dueDate: payment.ExpiryDate || '',
-      driveUrl: paymentStateData.URL || '',
-      uploadedDocuments: uploadedFiles
-    };
-
-    const result = await sendNotificationToMandante(notificationData);
-    
-    if (result.success) {
-      setTimeout(() => {
-        navigate(`/project/${payment?.Project || 2}`);
-      }, 2000);
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -333,6 +338,13 @@ const PaymentDetail = () => {
     <TooltipProvider>
       <div className="min-h-screen bg-slate-50 font-rubik">
         <PageHeader />
+        
+        {/* Loading Modal */}
+        <LoadingModal 
+          isOpen={isUploading}
+          title="Subiendo documentos..."
+          description="Por favor espera mientras se procesan y suben los documentos a Google Drive"
+        />
 
         {/* Hidden file inputs */}
         {documents.map(doc => (
@@ -441,18 +453,19 @@ const PaymentDetail = () => {
                       variant="outline"
                       className="border-gloster-gray/30 hover:bg-gloster-gray/10 font-rubik"
                       size="sm"
+                      disabled={isUploading}
                     >
                       <Eye className="h-4 w-4 mr-1" />
                       Vista Previa
                     </Button>
                     <Button
                       onClick={handleSendDocuments}
-                      disabled={!documents.filter(d => d.required).every(d => documentStatus[d.id as keyof typeof documentStatus]) || notificationLoading}
+                      disabled={!documents.filter(d => d.required).every(d => documentStatus[d.id as keyof typeof documentStatus]) || isUploading}
                       className="bg-green-600 hover:bg-green-700 text-white disabled:bg-slate-300 font-rubik"
                       size="sm"
                     >
                       <Send className="h-4 w-4 mr-1" />
-                      {notificationLoading ? 'Enviando...' : 'Enviar'}
+                      {isUploading ? 'Enviando...' : 'Enviar'}
                     </Button>
                   </div>
                 </CardContent>
@@ -506,18 +519,19 @@ const PaymentDetail = () => {
                     variant="outline"
                     className="border-gloster-gray/30 hover:bg-gloster-gray/10 font-rubik px-6 md:px-8 py-3 w-full sm:w-auto"
                     size="lg"
+                    disabled={isUploading}
                   >
                     <Eye className="h-5 w-5 mr-2" />
                     Vista Previa
                   </Button>
                   <Button
                     onClick={handleSendDocuments}
-                    disabled={!documents.filter(d => d.required).every(d => documentStatus[d.id as keyof typeof documentStatus]) || notificationLoading || driveLoading}
+                    disabled={!documents.filter(d => d.required).every(d => documentStatus[d.id as keyof typeof documentStatus]) || isUploading}
                     className="bg-green-600 hover:bg-green-700 text-white disabled:bg-slate-300 font-rubik px-6 md:px-8 py-3 w-full sm:w-auto"
                     size="lg"
                   >
                     <Send className="h-5 w-5 mr-2" />
-                    {notificationLoading || driveLoading ? 'Enviando...' : 'Enviar Email y Documentos'}
+                    {isUploading ? 'Subiendo...' : 'Enviar Email y Documentos'}
                   </Button>
                 </div>
               </div>

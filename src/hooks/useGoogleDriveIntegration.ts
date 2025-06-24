@@ -189,20 +189,10 @@ export const useGoogleDriveIntegration = () => {
 
       console.log('✅ Documents uploaded to Google Drive successfully:', data);
       
-      toast({
-        title: "Documentos subidos exitosamente",
-        description: `Se subieron ${data.uploadResults?.length || 0} archivos a Google Drive`,
-      });
-
       return { success: true, uploadResults: data.uploadResults };
     } catch (error) {
       console.error('❌ Error uploading documents to Google Drive:', error);
-      toast({
-        title: "Error al subir documentos",
-        description: `No se pudieron subir los documentos: ${error.message}`,
-        variant: "destructive",
-      });
-      return { success: false, error: error.message };
+      throw error; // Re-throw para que sea manejado por el componente padre
     } finally {
       setLoading(false);
     }

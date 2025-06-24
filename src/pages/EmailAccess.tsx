@@ -4,91 +4,38 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Mail, Lock, ArrowRight } from 'lucide-react';
+import { Mail, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import PageHeader from '@/components/PageHeader';
 
 const EmailAccess = () => {
-  const [email, setEmail] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const [searchParams] = useSearchParams();
   const paymentId = searchParams.get('paymentId');
   const token = searchParams.get('token');
+  const { toast } = useToast();
+  
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showEmailInput, setShowEmailInput] = useState(true);
 
   useEffect(() => {
-    // Si ya hay un token en la URL, verificarlo automáticamente
-    if (paymentId && token) {
-      verifyTokenAccess();
-    }
-  }, [paymentId, token]);
-
-  const verifyTokenAccess = async () => {
-    try {
-      console.log('Verifying token access for payment:', paymentId, 'with token:', token);
-      
-      // Verificar que el token coincida con el almacenado en la base de datos
-      const { data: paymentData, error } = await supabase
-        .from('Estados de pago')
-        .select('URLMandante')
-        .eq('id', parseInt(paymentId || '0'))
-        .single();
-
-      if (error || !paymentData) {
-        console.error('Error fetching payment data:', error);
-        toast({
-          title: "Error de acceso",
-          description: "No se pudo verificar el enlace de acceso",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Verificar que el token en la URL coincida con el almacenado
-      const storedUrl = paymentData.URLMandante;
-      if (storedUrl && storedUrl.includes(token || '')) {
-        // Token válido - almacenar acceso y redirigir
-        sessionStorage.setItem('mandanteAccess', JSON.stringify({
-          paymentId,
-          token,
-          timestamp: new Date().toISOString()
-        }));
-        
-        console.log('Token verified successfully, redirecting to submission view');
-        navigate(`/submission-view?paymentId=${paymentId}`);
-      } else {
-        toast({
-          title: "Enlace inválido",
-          description: "El enlace de acceso no es válido o ha expirado",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      console.error('Error verifying token:', error);
-      toast({
-        title: "Error de verificación",
-        description: "Hubo un problema al verificar el acceso",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleEmailVerification = async () => {
-    if (!email.trim()) {
-      toast({
-        title: "Email requerido",
-        description: "Por favor ingresa tu email",
-        variant: "destructive"
-      });
+    if (!paymentId) {
+      navigate('/');
       return;
     }
 
-    if (!paymentId) {
+    // Si hay token, mostrar el campo de email para verificación
+    if (token) {
+      setShowEmailInput(true);
+    }
+  }, [paymentId, token, navigate]);
+
+  const verifyEmailAccess = async () => {
+    if (!email.trim()) {
       toast({
-        title: "Error",
-        description: "ID de estado de pago no encontrado",
+        title: "Email requerido",
+        description: "Por favor ingresa tu email para verificar el acceso",
         variant: "destructive"
       });
       return;
@@ -97,9 +44,9 @@ const EmailAccess = () => {
     setLoading(true);
     
     try {
-      console.log('Verifying email access for payment:', paymentId, 'with email:', email);
-      
-      // Buscar el estado de pago y verificar que el email coincida con el mandante
+      console.log('Verifying email access for:', { paymentId, email, token });
+
+      // Obtener datos del estado de pago y proyecto
       const { data: paymentData, error: paymentError } = await supabase
         .from('Estados de pago')
         .select(`
@@ -107,63 +54,96 @@ const EmailAccess = () => {
           Proyectos!inner (
             *,
             Mandantes!inner (
-              ContactEmail,
-              CompanyName
+              id,
+              CompanyName,
+              ContactName,
+              ContactEmail
             )
           )
         `)
-        .eq('id', parseInt(paymentId))
-        .single();
+        .eq('id', parseInt(paymentId || '0'))
+        .maybeSingle();
 
       if (paymentError) {
-        console.error('Error fetching payment:', paymentError);
+        console.error('Error fetching payment data:', paymentError);
+        throw new Error('Error al obtener datos del estado de pago');
+      }
+
+      if (!paymentData) {
         toast({
-          title: "Error",
-          description: "No se pudo encontrar el estado de pago",
+          title: "Estado de pago no encontrado",
+          description: "El estado de pago solicitado no existe",
           variant: "destructive"
         });
         return;
       }
 
-      if (!paymentData || !paymentData.Proyectos) {
+      console.log('Payment data found:', paymentData);
+
+      // Verificar que el email coincida con el email del mandante
+      const mandanteEmail = paymentData.Proyectos?.Mandantes?.ContactEmail;
+      
+      if (!mandanteEmail) {
         toast({
-          title: "Error",
-          description: "Estado de pago no encontrado",
+          title: "Error de configuración",
+          description: "No se encontró el email del mandante para este proyecto",
           variant: "destructive"
         });
         return;
       }
 
-      const mandanteEmail = paymentData.Proyectos.Mandantes?.ContactEmail;
-      console.log('Comparing emails:', { inputEmail: email, mandanteEmail });
+      console.log('Comparing emails:', { provided: email.toLowerCase(), mandante: mandanteEmail.toLowerCase() });
 
-      if (mandanteEmail && email.toLowerCase().trim() === mandanteEmail.toLowerCase().trim()) {
-        // Email válido - almacenar acceso y redirigir
-        sessionStorage.setItem('mandanteAccess', JSON.stringify({
-          paymentId,
-          email,
-          timestamp: new Date().toISOString()
-        }));
-        
-        console.log('Email verified successfully, redirecting to submission view');
+      if (email.toLowerCase() !== mandanteEmail.toLowerCase()) {
         toast({
-          title: "Acceso verificado",
-          description: "Email verificado correctamente",
+          title: "Acceso denegado",
+          description: "El email ingresado no coincide con el mandante autorizado para este proyecto",
+          variant: "destructive"
         });
+        return;
+      }
+
+      // Si hay token, verificar que coincida con URLMandante
+      if (token) {
+        const expectedUrl = `${window.location.origin}/email-access?paymentId=${paymentId}&token=${token}`;
+        console.log('Checking URL match:', { expected: expectedUrl, stored: paymentData.URLMandante });
         
+        if (paymentData.URLMandante !== expectedUrl) {
+          toast({
+            title: "Token inválido",
+            description: "El enlace de acceso no es válido o ha expirado",
+            variant: "destructive"
+          });
+          return;
+        }
+      }
+
+      // Guardar acceso en sessionStorage
+      const accessData = {
+        paymentId: paymentId,
+        email: email,
+        token: token || 'verified',
+        mandanteCompany: paymentData.Proyectos?.Mandantes?.CompanyName || '',
+        timestamp: new Date().toISOString()
+      };
+
+      sessionStorage.setItem('mandanteAccess', JSON.stringify(accessData));
+
+      toast({
+        title: "Acceso verificado",
+        description: "Email verificado correctamente. Redirigiendo...",
+      });
+
+      // Redirigir a submission view
+      setTimeout(() => {
         navigate(`/submission-view?paymentId=${paymentId}`);
-      } else {
-        toast({
-          title: "Email no autorizado",
-          description: "El email ingresado no coincide con el mandante de este proyecto",
-          variant: "destructive"
-        });
-      }
+      }, 1000);
+
     } catch (error) {
-      console.error('Error verifying email:', error);
+      console.error('Error verifying email access:', error);
       toast({
         title: "Error de verificación",
-        description: "Hubo un problema al verificar el email",
+        description: "No se pudo verificar el acceso. Intenta nuevamente.",
         variant: "destructive"
       });
     } finally {
@@ -173,78 +153,67 @@ const EmailAccess = () => {
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      handleEmailVerification();
+      verifyEmailAccess();
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 font-rubik">
-      <PageHeader />
-      
-      <div className="container mx-auto px-6 py-16">
-        <div className="max-w-md mx-auto">
-          <Card className="border-gloster-gray/20 shadow-lg">
-            <CardHeader className="text-center space-y-4">
-              <div className="w-16 h-16 bg-gloster-yellow/20 rounded-full flex items-center justify-center mx-auto">
-                <Lock className="h-8 w-8 text-gloster-gray" />
+    <div className="min-h-screen bg-slate-50 font-rubik flex items-center justify-center p-4">
+      <Card className="w-full max-w-md border-gloster-gray/20">
+        <CardHeader className="text-center">
+          <div className="w-16 h-16 bg-gloster-yellow/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Lock className="h-8 w-8 text-gloster-gray" />
+          </div>
+          <CardTitle className="text-2xl font-bold text-slate-800 font-rubik">
+            Verificación de Acceso
+          </CardTitle>
+          <CardDescription className="font-rubik">
+            Ingresa tu email para acceder al estado de pago
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {showEmailInput && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label htmlFor="email" className="text-sm font-medium text-slate-700 font-rubik">
+                  Email del Mandante
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gloster-gray" />
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="mandante@empresa.com"
+                    className="pl-10 font-rubik"
+                    disabled={loading}
+                  />
+                </div>
               </div>
-              <CardTitle className="text-2xl font-bold text-slate-800 font-rubik">
-                Acceso al Estado de Pago
-              </CardTitle>
-              <CardDescription className="text-gloster-gray font-rubik">
-                {token ? 
-                  'Verificando tu acceso automáticamente...' : 
-                  'Ingresa tu email para acceder al estado de pago'
-                }
-              </CardDescription>
-            </CardHeader>
-            
-            {!token && (
-              <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700 font-rubik">
-                    Email del Mandante
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gloster-gray" />
-                    <Input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      onKeyPress={handleKeyPress}
-                      placeholder="mandante@empresa.com"
-                      className="pl-10 font-rubik"
-                      disabled={loading}
-                    />
-                  </div>
-                </div>
-                
-                <Button 
-                  onClick={handleEmailVerification}
-                  disabled={loading || !email.trim()}
-                  className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
-                  size="lg"
+              
+              <Button
+                onClick={verifyEmailAccess}
+                disabled={loading || !email.trim()}
+                className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
+              >
+                {loading ? 'Verificando...' : 'Verificar Acceso'}
+              </Button>
+              
+              <div className="text-center">
+                <Button
+                  onClick={() => navigate('/')}
+                  variant="ghost"
+                  className="text-gloster-gray hover:text-slate-800 font-rubik"
                 >
-                  {loading ? (
-                    'Verificando...'
-                  ) : (
-                    <>
-                      Acceder al Estado de Pago
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </>
-                  )}
+                  Volver al Inicio
                 </Button>
-                
-                <div className="text-center">
-                  <p className="text-xs text-gloster-gray font-rubik">
-                    Solo el mandante registrado en el proyecto puede acceder a esta información
-                  </p>
-                </div>
-              </CardContent>
-            )}
-          </Card>
-        </div>
-      </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

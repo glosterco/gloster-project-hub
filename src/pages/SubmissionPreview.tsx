@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -181,6 +180,9 @@ const SubmissionPreview = () => {
       return;
     }
 
+    const mandanteUrl = await generateUniqueURLAndUpdate();
+    if (!mandanteUrl) return;
+
     const notificationData = {
       paymentId: paymentId,
       contratista: payment.projectData.Contratista?.ContactName || '',
@@ -195,6 +197,42 @@ const SubmissionPreview = () => {
     };
 
     await sendNotificationToMandante(notificationData);
+  };
+
+  const generateUniqueURLAndUpdate = async () => {
+    if (!payment || !payment.projectData) {
+      toast({
+        title: "Error",
+        description: "No se pueden cargar los datos del estado de pago",
+        variant: "destructive"
+      });
+      return null;
+    }
+
+    try {
+      const uniqueId = crypto.randomUUID();
+      const mandanteUrl = `${window.location.origin}/email-access?paymentId=${payment.id}&token=${uniqueId}`;
+
+      const { error: updateError } = await supabase
+        .from('Estados de pago')
+        .update({ URLMandante: mandanteUrl })
+        .eq('id', payment.id);
+
+      if (updateError) {
+        console.error('Error updating URLMandante:', updateError);
+        throw new Error('Error al actualizar la URL del mandante');
+      }
+
+      return mandanteUrl;
+    } catch (error) {
+      console.error('Error generating unique URL:', error);
+      toast({
+        title: "Error",
+        description: "Error al generar URL única",
+        variant: "destructive"
+      });
+      return null;
+    }
   };
 
   if (loading) {

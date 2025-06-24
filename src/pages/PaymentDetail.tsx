@@ -73,7 +73,7 @@ const PaymentDetail = () => {
       description: 'Presentación y resumen del estado de pago',
       downloadUrl: null,
       uploaded: false,
-      required: payment.projectData?.Requirement.include?('Carátula EEPP'),
+      required: payment.projectData?.Requirement.includes('Carátula EEPP'),
       isUploadOnly: true,
       helpText: 'Este documento debe ser preparado internamente por el contratista y debe incluir un resumen completo del estado de pago, incluyendo avances, montos y documentación adjunta.'
     },

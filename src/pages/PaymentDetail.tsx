@@ -65,6 +65,10 @@ const PaymentDetail = () => {
     recipient: ""
   };
 
+  // Required documents
+  const required_docs = [payment.projectData?.Requirement]
+  console.log(required_docs)
+
   // Document definitions
   const documents = [
     {

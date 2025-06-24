@@ -124,23 +124,21 @@ const DocumentUploadCard: React.FC<DocumentUploadCardProps> = ({
                   </Button>
                 )}
                 
-                {documentStatus ? (
+                {documentStatus && (
                   <Badge variant="secondary" className="bg-green-100 text-green-700">
                     ✓ Cargado{doc.allowMultiple ? ` (${uploadedFiles.length})` : ''}
                   </Badge>
-                ) : null}
+                )}
 
                 {/* Always show upload button for multiple files, or if no files uploaded */}
-                {(!documentStatus || doc.allowMultiple) && (
-                  <Button
-                    size="sm"
-                    onClick={onDocumentUpload}
-                    className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik w-full sm:w-auto"
-                  >
-                    <Upload className="h-4 w-4 mr-2" />
-                    {doc.allowMultiple && uploadedFiles.length > 0 ? 'Agregar Más' : `Cargar Documento${doc.allowMultiple ? 's' : ''}`}
-                  </Button>
-                )}
+                <Button
+                  size="sm"
+                  onClick={onDocumentUpload}
+                  className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik w-full sm:w-auto"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  {doc.allowMultiple && uploadedFiles.length > 0 ? 'Agregar Más' : `Cargar Documento${doc.allowMultiple ? 's' : ''}`}
+                </Button>
               </div>
               
               {!dragState && !documentStatus && (
@@ -157,7 +155,7 @@ const DocumentUploadCard: React.FC<DocumentUploadCardProps> = ({
               <p className="text-gloster-gray text-xs font-rubik mb-2">Archivos cargados:</p>
               <div className="space-y-1">
                 {uploadedFiles.map((fileName, index) => (
-                  <div key={index} className="bg-green-50 border border-green-200 rounded px-2 py-1 flex items-center justify-between">
+                  <div key={`${fileName}-${index}`} className="bg-green-50 border border-green-200 rounded px-2 py-1 flex items-center justify-between">
                     <p className="text-green-700 text-xs font-rubik truncate flex-1 mr-2" title={fileName}>
                       {fileName}
                     </p>

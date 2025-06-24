@@ -96,7 +96,7 @@ export const useGoogleDriveIntegration = () => {
   const uploadDocumentsToDrive = async (paymentId: number, uploadedFiles: any, documentStatus: any, fileObjects: {[key: string]: File[]}) => {
     setLoading(true);
     try {
-      console.log('Uploading documents to Google Drive:', { paymentId, uploadedFiles, documentStatus, fileObjects });
+      console.log('🚀 Starting document upload to Google Drive:', { paymentId });
 
       // Document name mapping
       const documentNames = {
@@ -116,47 +116,60 @@ export const useGoogleDriveIntegration = () => {
       // Process each document type
       for (const [docType, files] of Object.entries(uploadedFiles)) {
         if (documentStatus[docType] && files && Array.isArray(files) && files.length > 0) {
-          console.log(`Processing ${docType} with ${files.length} files`);
+          console.log(`📋 Processing ${docType} with ${files.length} files`);
           
           // Get the actual file objects for this document type
           const realFiles = fileObjects[docType] || [];
           
           if (realFiles.length === 0) {
-            console.warn(`No file objects found for ${docType}, skipping`);
+            console.warn(`⚠️ No file objects found for ${docType}, skipping`);
             continue;
           }
 
           const fileData = [];
           
-          // Convert each file to base64
-          for (let i = 0; i < realFiles.length; i++) {
+          // Convert each file to base64 with error handling
+          for (let i = 0; i < Math.min(realFiles.length, files.length); i++) {
             const file = realFiles[i];
-            try {
-              const base64Content = await convertFileToBase64(file);
-              fileData.push({
-                name: file.name,
-                content: base64Content,
-                mimeType: file.type
-              });
-              console.log(`✅ File ${file.name} converted to base64 successfully`);
-            } catch (error) {
-              console.error(`❌ Error converting file ${file.name} to base64:`, error);
-              throw new Error(`Error procesando archivo ${file.name}`);
+            if (file && file instanceof File) {
+              try {
+                console.log(`🔄 Converting file ${file.name} to base64...`);
+                const base64Content = await convertFileToBase64(file);
+                
+                if (base64Content && base64Content.trim() !== '') {
+                  fileData.push({
+                    name: file.name,
+                    content: base64Content,
+                    mimeType: file.type
+                  });
+                  console.log(`✅ File ${file.name} converted successfully`);
+                } else {
+                  console.error(`❌ Empty base64 content for file ${file.name}`);
+                  throw new Error(`Error procesando archivo ${file.name}: contenido vacío`);
+                }
+              } catch (error) {
+                console.error(`❌ Error converting file ${file.name}:`, error);
+                throw new Error(`Error procesando archivo ${file.name}: ${error.message}`);
+              }
+            } else {
+              console.error(`❌ Invalid file object at index ${i} for ${docType}`);
             }
           }
 
-          documents[docType] = {
-            files: fileData,
-            documentName: documentNames[docType] || docType
-          };
+          if (fileData.length > 0) {
+            documents[docType] = {
+              files: fileData,
+              documentName: documentNames[docType] || docType
+            };
+          }
         }
       }
 
       if (Object.keys(documents).length === 0) {
-        throw new Error('No documents to upload - no valid files found');
+        throw new Error('No se encontraron documentos válidos para subir');
       }
 
-      console.log('📤 Sending documents to upload function:', Object.keys(documents));
+      console.log(`📤 Sending ${Object.keys(documents).length} document types to upload function`);
 
       const { data, error } = await supabase.functions.invoke('upload-documents-to-drive', {
         body: {
@@ -167,18 +180,18 @@ export const useGoogleDriveIntegration = () => {
 
       if (error) {
         console.error('❌ Error calling upload documents function:', error);
-        throw error;
+        throw new Error(`Error en la función de subida: ${error.message}`);
       }
 
       if (!data.success) {
-        throw new Error(data.error || 'Failed to upload documents to Google Drive');
+        throw new Error(data.error || 'Falló la subida de documentos a Google Drive');
       }
 
       console.log('✅ Documents uploaded to Google Drive successfully:', data);
       
       toast({
         title: "Documentos subidos exitosamente",
-        description: `Se subieron ${data.uploadResults.length} archivos a Google Drive`,
+        description: `Se subieron ${data.uploadResults?.length || 0} archivos a Google Drive`,
       });
 
       return { success: true, uploadResults: data.uploadResults };
@@ -203,21 +216,47 @@ export const useGoogleDriveIntegration = () => {
   };
 };
 
-// Helper function to convert File to base64
+// Helper function to convert File to base64 with better error handling
 const convertFileToBase64 = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
+    if (!file || !(file instanceof File)) {
+      reject(new Error('Archivo inválido'));
+      return;
+    }
+
+    if (file.size === 0) {
+      reject(new Error('El archivo está vacío'));
+      return;
+    }
+
     const reader = new FileReader();
-    reader.readAsDataURL(file);
+    
     reader.onload = () => {
       try {
         const result = reader.result as string;
+        if (!result) {
+          reject(new Error('No se pudo leer el archivo'));
+          return;
+        }
+        
         // Remove the data URL prefix (e.g., "data:application/pdf;base64,")
         const base64Content = result.split(',')[1];
+        
+        if (!base64Content || base64Content.trim() === '') {
+          reject(new Error('Contenido base64 vacío'));
+          return;
+        }
+        
         resolve(base64Content);
       } catch (error) {
-        reject(error);
+        reject(new Error(`Error procesando el archivo: ${error.message}`));
       }
     };
-    reader.onerror = (error) => reject(error);
+    
+    reader.onerror = () => {
+      reject(new Error('Error leyendo el archivo'));
+    };
+    
+    reader.readAsDataURL(file);
   });
 };

@@ -71,7 +71,7 @@ export const useDocumentUpload = () => {
     cotizaciones: [],
     f30: [],
     f30_1: [],
-    examenes: [],
+    examines: [],
     finiquito: [],
     factura: []
   });
@@ -134,6 +134,12 @@ export const useDocumentUpload = () => {
         : validFiles
     }));
 
+    // Clear the file input to allow re-upload of same file
+    const input = fileInputRefs.current[documentId];
+    if (input) {
+      input.value = '';
+    }
+
     toast({
       title: "Documento(s) cargado(s)",
       description: `${validFiles.length} archivo(s) se han cargado exitosamente`,
@@ -141,24 +147,37 @@ export const useDocumentUpload = () => {
   };
 
   const handleFileRemove = (documentId: string, fileIndex: number) => {
-    setUploadedFiles(prev => ({
-      ...prev,
-      [documentId]: prev[documentId as keyof UploadedFiles].filter((_, index) => index !== fileIndex)
-    }));
+    console.log(`🗑️ Removing file at index ${fileIndex} from ${documentId}`);
 
-    setFileObjects(prev => ({
-      ...prev,
-      [documentId]: prev[documentId].filter((_, index) => index !== fileIndex)
-    }));
-
-    // If no files left, mark document as not uploaded
-    const remainingFiles = uploadedFiles[documentId as keyof UploadedFiles].filter((_, index) => index !== fileIndex);
-    if (remainingFiles.length === 0) {
-      setDocumentStatus(prev => ({
+    // Update uploaded files
+    setUploadedFiles(prev => {
+      const newFiles = [...prev[documentId as keyof UploadedFiles]];
+      newFiles.splice(fileIndex, 1);
+      return {
         ...prev,
-        [documentId]: false
-      }));
-    }
+        [documentId]: newFiles
+      };
+    });
+
+    // Update file objects
+    setFileObjects(prev => {
+      const newFiles = [...prev[documentId]];
+      newFiles.splice(fileIndex, 1);
+      return {
+        ...prev,
+        [documentId]: newFiles
+      };
+    });
+
+    // Update document status - set to false only if no files left
+    setDocumentStatus(prev => {
+      const currentFiles = uploadedFiles[documentId as keyof UploadedFiles];
+      const willHaveFiles = currentFiles.length > 1; // Will have files after removal
+      return {
+        ...prev,
+        [documentId]: willHaveFiles
+      };
+    });
 
     toast({
       title: "Archivo eliminado",

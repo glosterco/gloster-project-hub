@@ -1,4 +1,3 @@
-
 import { useState, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -71,7 +70,7 @@ export const useDocumentUpload = () => {
     cotizaciones: [],
     f30: [],
     f30_1: [],
-    examines: [],
+    examenes: [],
     finiquito: [],
     factura: []
   });
@@ -120,19 +119,27 @@ export const useDocumentUpload = () => {
     }));
 
     const fileNames = validFiles.map(file => file.name);
-    setUploadedFiles(prev => ({
-      ...prev,
-      [documentId]: allowMultiple 
-        ? [...prev[documentId as keyof UploadedFiles], ...fileNames]
-        : fileNames
-    }));
+    setUploadedFiles(prev => {
+      // Ensure the array exists before spreading
+      const currentFiles = prev[documentId as keyof UploadedFiles] || [];
+      return {
+        ...prev,
+        [documentId]: allowMultiple 
+          ? [...currentFiles, ...fileNames]
+          : fileNames
+      };
+    });
 
-    setFileObjects(prev => ({
-      ...prev,
-      [documentId]: allowMultiple 
-        ? [...prev[documentId], ...validFiles]
-        : validFiles
-    }));
+    setFileObjects(prev => {
+      // Ensure the array exists before spreading
+      const currentFiles = prev[documentId] || [];
+      return {
+        ...prev,
+        [documentId]: allowMultiple 
+          ? [...currentFiles, ...validFiles]
+          : validFiles
+      };
+    });
 
     // Clear the file input to allow re-upload of same file
     const input = fileInputRefs.current[documentId];
@@ -151,7 +158,8 @@ export const useDocumentUpload = () => {
 
     // Update uploaded files
     setUploadedFiles(prev => {
-      const newFiles = [...prev[documentId as keyof UploadedFiles]];
+      const currentFiles = prev[documentId as keyof UploadedFiles] || [];
+      const newFiles = [...currentFiles];
       newFiles.splice(fileIndex, 1);
       return {
         ...prev,
@@ -161,7 +169,8 @@ export const useDocumentUpload = () => {
 
     // Update file objects
     setFileObjects(prev => {
-      const newFiles = [...prev[documentId]];
+      const currentFiles = prev[documentId] || [];
+      const newFiles = [...currentFiles];
       newFiles.splice(fileIndex, 1);
       return {
         ...prev,
@@ -171,7 +180,7 @@ export const useDocumentUpload = () => {
 
     // Update document status - set to false only if no files left
     setDocumentStatus(prev => {
-      const currentFiles = uploadedFiles[documentId as keyof UploadedFiles];
+      const currentFiles = uploadedFiles[documentId as keyof UploadedFiles] || [];
       const willHaveFiles = currentFiles.length > 1; // Will have files after removal
       return {
         ...prev,

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -383,7 +382,7 @@ const PaymentDetail = () => {
                     </div>
                     <Badge variant="secondary" className="bg-gloster-gray/20 text-gloster-gray border-gloster-gray/30 self-start shrink-0">
                       {paymentState.status}
-                      {payment.projectData?.Requirement}
+                      {payment?.projectData?.Requierment}
                     </Badge>
                   </div>
                 </CardHeader>

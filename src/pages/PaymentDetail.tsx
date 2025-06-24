@@ -481,6 +481,7 @@ const PaymentDetail = () => {
                   onDocumentUpload={() => handleDocumentUpload(doc.id)}
                   onFileRemove={(fileIndex) => handleFileRemove(doc.id, fileIndex)}
                   getExamenesUrl={getExamenesUrl}
+                  style={doc.required ? { display: 'none' } : undefined}
                 />
               ))}
             </div>

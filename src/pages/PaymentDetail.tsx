@@ -425,7 +425,7 @@ const PaymentDetail = () => {
                     </p>
                   </div>
                   <div className="space-y-1 mb-4 max-h-32 md:max-h-40 overflow-y-auto">
-                    {documents.map((doc) => (
+                    {documents.map((doc) => doc.required ? (
                       <div key={doc.id} className="flex items-center justify-between text-xs">
                         <span className="font-rubik text-slate-700 truncate flex-1 pr-2">{doc.name}</span>
                         {documentStatus[doc.id as keyof typeof documentStatus] ? (
@@ -434,7 +434,7 @@ const PaymentDetail = () => {
                           <Clock className="h-3 w-3 text-gloster-gray shrink-0" />
                         )}
                       </div>
-                    ))}
+                    ): null)}
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <Button

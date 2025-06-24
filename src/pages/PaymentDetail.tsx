@@ -343,7 +343,7 @@ const PaymentDetail = () => {
         <LoadingModal 
           isOpen={isUploading}
           title="Subiendo documentos..."
-          description="Por favor espera mientras se procesan y suben los documentos a Google Drive"
+          description="Por favor espera mientras se procesa la información y se envía la notificación al mandante"
         />
 
         {/* Hidden file inputs */}

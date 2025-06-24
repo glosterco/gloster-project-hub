@@ -466,8 +466,8 @@ const PaymentDetail = () => {
             <h3 className="text-lg md:text-xl font-bold text-slate-800 font-rubik">Documentación Requerida</h3>
             
             <div className="space-y-4">
-              {documents.map((doc) => (
-                {doc.required ? <DocumentUploadCard
+              {documents.map((doc) => {doc.required ? 
+                <DocumentUploadCard
                   key={doc.id}
                   doc={doc}
                   documentStatus={documentStatus[doc.id as keyof typeof documentStatus]}
@@ -481,6 +481,7 @@ const PaymentDetail = () => {
                   onDocumentUpload={() => handleDocumentUpload(doc.id)}
                   onFileRemove={(fileIndex) => handleFileRemove(doc.id, fileIndex)}
                   getExamenesUrl={getExamenesUrl}
+                  style={{ display: 'none' if doc.required }}
                 /> : null}
               ))}
             </div>

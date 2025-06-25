@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -113,7 +114,7 @@ const EmailAccess = () => {
       const { data: proyectoData, error: proyectoError } = await supabase
         .from('Proyectos')
         .select('Mandantes(ContactEmail)')
-        .eq('id', paymentDataSingle.proyecto_id)
+        .eq('id', paymentDataSingle.Project)
         .single();
 
       if (proyectoError) {
@@ -166,7 +167,7 @@ const EmailAccess = () => {
         paymentId: paymentId,
         email: email,
         token: token || 'verified',
-        mandanteCompany: proyectoData.Mandantes?.CompanyName || '',
+        mandanteCompany: '', // We don't have CompanyName in the current query
         timestamp: new Date().toISOString()
       };
 

@@ -85,7 +85,7 @@ const EmailAccess = () => {
       const { data: relatedPayments, error: relatedPaymentsError } = await supabase
         .from('Estados de pago')
         .select('id')
-        .eq('proyecto_id', paymentData.Proyectos.id);
+        .eq('proyecto_id', paymentData.Proyectos.id);  // Usar el ID del proyecto para obtener los estados de pago relacionados
 
       if (relatedPaymentsError) {
         console.error('Error al obtener otros estados de pago relacionados:', relatedPaymentsError);
@@ -95,9 +95,20 @@ const EmailAccess = () => {
 
       // Si existen estados de pago relacionados, guardamos los IDs en el estado
       if (relatedPayments && relatedPayments.length > 0) {
-        setStateIds(relatedPayments.map(payment => payment.id));
+        setStateIds(relatedPayments.map(payment => payment.id));  // Establecer los IDs de los estados de pago relacionados
       } else {
         setPopupError('No se encontraron estados de pago relacionados con el proyecto.');
+      }
+
+      // Ahora, comprobar si el ID del estado de pago proporcionado se encuentra en los estados relacionados
+      if (stateIds.includes(parsedPaymentId)) {
+        toast({
+          title: "Acceso verificado",
+          description: "Estado de pago verificado correctamente.",
+          variant: "success",
+        });
+      } else {
+        setPopupError('El estado de pago no coincide con los estados de pago encontrados.');
       }
 
     } catch (error) {
@@ -185,12 +196,3 @@ const EmailAccess = () => {
             <p className="text-red-500 mt-4">{popupError}</p> {/* Mostrar el error en el popup */}
             <div className="mt-4">
               <Button onClick={closePopup} variant="ghost" className="w-full">Cerrar</Button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-export default EmailAccess;

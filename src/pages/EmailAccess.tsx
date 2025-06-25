@@ -18,6 +18,7 @@ const EmailAccess = () => {
   const [loading, setLoading] = useState(false);
   const [stateIds, setStateIds] = useState<number[]>([]);  // Lista de IDs de estados de pago encontrados
   const [showPopup, setShowPopup] = useState(false);  // Control de visibilidad del popup
+  const [popupError, setPopupError] = useState<string>('');  // Mensaje de error para el popup
 
   useEffect(() => {
     if (!paymentId) {
@@ -37,6 +38,7 @@ const EmailAccess = () => {
     }
 
     setLoading(true);
+    setPopupError('');  // Resetear el error en el popup
 
     try {
       const parsedPaymentId = Number(paymentId?.trim());
@@ -49,7 +51,7 @@ const EmailAccess = () => {
         return;
       }
 
-      // Realizando consulta para obtener los estados de pago relacionados con el proyecto
+      // Realizando consulta para obtener el estado de pago con el ID proporcionado
       const { data: paymentData, error: paymentError } = await supabase
         .from('Estados de pago')
         .select(`
@@ -81,7 +83,7 @@ const EmailAccess = () => {
         return;
       }
 
-      // Mostrar el estado de pago encontrado y abrir popup con los IDs de los estados de pago relacionados
+      // Mostrar el estado de pago encontrado
       console.log('Estado de pago encontrado:', paymentData);
 
       // Realizar una nueva consulta para obtener los ID de los estados de pago asociados al proyecto
@@ -107,9 +109,6 @@ const EmailAccess = () => {
 
       // Abrir el popup
       setShowPopup(true);
-
-      // Verificación de correo y redirección (continuar con la lógica original)
-      // Lógica de verificación del correo, comparación con mandante, y redirección a la vista de submission
 
     } catch (error) {
       console.error('Error de verificación:', error);
@@ -186,12 +185,16 @@ const EmailAccess = () => {
       {showPopup && (
         <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-white p-8 rounded-lg max-w-lg w-full">
-            <h2 className="text-xl font-bold mb-4">Estado de pago encontrado: {paymentId}</h2>
-            <p>Se han encontrado los siguientes estados de pago relacionados:</p>
+            <h2 className="text-xl font-bold mb-4">Estado de pago a buscar: {paymentId}</h2>
+            <p>Se están comparando los siguientes estados de pago:</p>
             <ul className="list-disc pl-5">
-              {stateIds.map(id => (
-                <li key={id}>ID Estado de Pago: {id}</li>
-              ))}
+              {stateIds.length > 0 ? (
+                stateIds.map(id => (
+                  <li key={id}>ID Estado de Pago: {id}</li>
+                ))
+              ) : (
+                <li>No se encontraron estados de pago relacionados</li>
+              )}
             </ul>
             <div className="mt-4">
               <Button onClick={closePopup} variant="ghost" className="w-full">Cerrar</Button>

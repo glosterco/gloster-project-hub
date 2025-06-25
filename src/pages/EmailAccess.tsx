@@ -16,6 +16,7 @@ const EmailAccess = () => {
 
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  const [modalData, setModalData] = useState<string | null>(null); // Modal state to display data
 
   useEffect(() => {
     if (!paymentId) navigate('/');
@@ -46,6 +47,9 @@ const EmailAccess = () => {
 
     setLoading(true);
 
+    const logData = []; // Collecting data for modal
+    logData.push(`Buscando estado de pago con ID: ${parsedPaymentId}`);  // Debugging log
+
     try {
       // Obtener estado de pago
       const { data: paymentData, error: paymentError } = await supabase
@@ -54,31 +58,47 @@ const EmailAccess = () => {
         .eq('id', parsedPaymentId)
         .single();
 
+      logData.push(`Estado de pago obtenido: ${JSON.stringify(paymentData)}`);
+      logData.push(`Error al obtener el estado de pago: ${JSON.stringify(paymentError)}`);
+
       if (paymentError || !paymentData) {
         toast({ title: "Estado de pago no encontrado", description: "El estado de pago no existe.", variant: "destructive" });
+        setModalData(logData.join('\n'));  // Set modal data to show it
         return;
       }
+
+      const projectId = paymentData.Project;
+      logData.push(`ID del proyecto asociado: ${projectId}`);
 
       const { data: projectData, error: projectError } = await supabase
         .from('Proyectos')
         .select('Mandantes(ContactEmail, CompanyName)')
-        .eq('id', paymentData.Project)
+        .eq('id', projectId)
         .single();
+
+      logData.push(`Datos del proyecto: ${JSON.stringify(projectData)}`);
+      logData.push(`Error al obtener proyecto: ${JSON.stringify(projectError)}`);
 
       if (projectError || !projectData?.Mandantes?.ContactEmail) {
         toast({ title: "Mandante no encontrado", description: "No se encontró el mandante.", variant: "destructive" });
+        setModalData(logData.join('\n'));  // Set modal data to show it
         return;
       }
 
-      if (email.toLowerCase() !== projectData.Mandantes.ContactEmail.toLowerCase()) {
+      const mandanteEmail = projectData.Mandantes.ContactEmail;
+      logData.push(`Email del mandante: ${mandanteEmail}`);
+
+      if (email.toLowerCase() !== mandanteEmail.toLowerCase()) {
         toast({
           title: "Acceso denegado",
           description: "El email ingresado no coincide con el mandante autorizado.",
           variant: "destructive",
         });
+        setModalData(logData.join('\n'));  // Set modal data to show it
         return;
       }
 
+      // Si todo es válido, guardar en sessionStorage
       sessionStorage.setItem('mandanteAccess', JSON.stringify({
         paymentId: parsedPaymentId, email, token: token || 'verified',
         mandanteCompany: projectData.Mandantes.CompanyName, timestamp: new Date().toISOString()
@@ -89,7 +109,8 @@ const EmailAccess = () => {
       setTimeout(() => navigate(`/submission-view?paymentId=${parsedPaymentId}`), 1000);
     } catch (error) {
       toast({ title: "Error de verificación", description: "No se pudo verificar el acceso.", variant: "destructive" });
-      console.error("Error:", error);
+      logData.push(`Error general: ${error.message}`);
+      setModalData(logData.join('\n'));  // Set modal data to show it
     } finally {
       setLoading(false);
     }
@@ -132,6 +153,19 @@ const EmailAccess = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Modal to display the log data */}
+      {modalData && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg w-96">
+            <h3 className="font-bold text-lg mb-4">Detalles de Verificación</h3>
+            <pre className="text-sm overflow-auto max-h-60">{modalData}</pre>
+            <Button onClick={() => setModalData(null)} className="mt-4 w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik">
+              Cerrar
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

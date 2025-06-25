@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -17,7 +18,7 @@ const EmailAccess = () => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [popupError, setPopupError] = useState<string | null>(null);
-  const [paymentDataLog, setPaymentDataLog] = useState<any>(null); // Used for logging
+  const [paymentDataLog, setPaymentDataLog] = useState<any>(null);
 
   useEffect(() => {
     if (!paymentId) {
@@ -38,10 +39,8 @@ const EmailAccess = () => {
 
     setLoading(true);
 
-    // Paso 1: Asegurarnos de que el paymentId es un número
     const parsedPaymentId = parseInt(paymentId?.trim() || "", 10);
 
-    // Verificamos que el paymentId se ha convertido correctamente a número
     console.log("paymentId (parsed):", parsedPaymentId);
 
     if (isNaN(parsedPaymentId)) {
@@ -50,6 +49,7 @@ const EmailAccess = () => {
         description: "El ID de pago proporcionado no es válido.",
         variant: "destructive",
       });
+      setLoading(false);
       return;
     }
 
@@ -59,14 +59,14 @@ const EmailAccess = () => {
         .from('Estados de pago')
         .select(`
           id,
+          URLMandante,
           Proyectos!inner (
             id,
             Mandantes!inner (*)
           )
         `)
-        .eq('id', parsedPaymentId); // Buscamos por el id correctamente convertido
+        .eq('id', parsedPaymentId);
 
-      // Mostrar los datos que devuelve la consulta
       console.log("paymentData:", paymentData);
       console.log("paymentError:", paymentError);
 
@@ -77,7 +77,6 @@ const EmailAccess = () => {
         return;
       }
 
-      // Paso 3: Verificación de la existencia de datos
       if (!paymentData || paymentData.length === 0) {
         console.log("Estado de pago no encontrado en la base de datos.");
         setPopupError('No se encontró el estado de pago con el ID proporcionado.');
@@ -85,7 +84,6 @@ const EmailAccess = () => {
         return;
       }
 
-      // Paso 4: Datos encontrados, procesamos la información
       console.log("Estado de pago encontrado:", paymentData[0]);
 
       // Verificar el email del mandante
@@ -119,7 +117,7 @@ const EmailAccess = () => {
       const { data: relatedPayments, error: relatedPaymentsError } = await supabase
         .from('Estados de pago')
         .select('id')
-        .eq('proyecto_id', paymentData[0]?.Proyectos.id); // Buscamos todos los estados de pago asociados al proyecto
+        .eq('Project', paymentData[0]?.Proyectos.id);
 
       console.log("Estados de pago relacionados (relatedPayments):", relatedPayments);
       console.log("Error al obtener estados de pago relacionados (relatedPaymentsError):", relatedPaymentsError);
@@ -130,17 +128,14 @@ const EmailAccess = () => {
         return;
       }
 
-      // Verificamos si el estado de pago con el ID solicitado está entre los relacionados
       const isPaymentValid = relatedPayments && relatedPayments.some(payment => payment.id === parsedPaymentId);
 
       if (isPaymentValid) {
         toast({
           title: "Acceso verificado",
           description: "Estado de pago verificado correctamente.",
-          variant: "success",
         });
 
-        // Guardamos en sessionStorage si el acceso es válido
         const accessData = {
           paymentId: paymentId,
           email: email,
@@ -151,7 +146,6 @@ const EmailAccess = () => {
 
         sessionStorage.setItem('mandanteAccess', JSON.stringify(accessData));
 
-        // Redirigir a la vista de submission
         setTimeout(() => {
           navigate(`/submission-view?paymentId=${paymentId}`);
         }, 1000);
@@ -230,9 +224,25 @@ const EmailAccess = () => {
 
       {/* Pop-up de error o log */}
       {popupError && (
-        <div className="popup-error">
-          <p>{popupError}</p>
-          <pre>{JSON.stringify(paymentDataLog, null, 2)}</pre>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-lg font-semibold text-red-600 mb-4">Error de Verificación</h3>
+            <p className="text-gray-700 mb-4">{popupError}</p>
+            {paymentDataLog && (
+              <details className="mb-4">
+                <summary className="cursor-pointer text-sm text-gray-500">Ver detalles técnicos</summary>
+                <pre className="text-xs bg-gray-100 p-2 mt-2 rounded overflow-auto">
+                  {JSON.stringify(paymentDataLog, null, 2)}
+                </pre>
+              </details>
+            )}
+            <Button 
+              onClick={() => setPopupError(null)}
+              className="w-full"
+            >
+              Cerrar
+            </Button>
+          </div>
         </div>
       )}
     </div>

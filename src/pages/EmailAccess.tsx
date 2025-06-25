@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -16,9 +17,9 @@ const EmailAccess = () => {
   
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
-  const [stateIds, setStateIds] = useState<number[]>([]);  // Lista de IDs de estados de pago encontrados
-  const [showPopup, setShowPopup] = useState(false);  // Control de visibilidad del popup
-  const [popupError, setPopupError] = useState<string>('');  // Mensaje de error para el popup
+  const [stateIds, setStateIds] = useState<number[]>([]);
+  const [showPopup, setShowPopup] = useState(false);
+  const [popupError, setPopupError] = useState<string>('');
 
   useEffect(() => {
     if (!paymentId) {
@@ -38,10 +39,10 @@ const EmailAccess = () => {
     }
 
     setLoading(true);
-    setPopupError('');  // Resetear el error en el popup
+    setPopupError('');
 
     try {
-      const parsedPaymentId = Number(paymentId?.trim());
+      const parsedPaymentId = parseInt(paymentId?.trim() || '0');
       if (isNaN(parsedPaymentId)) {
         toast({
           title: "ID de pago inválido",
@@ -51,19 +52,12 @@ const EmailAccess = () => {
         return;
       }
 
-      // Mostrar la ventana emergente con la información de los IDs de los estados de pago relacionados
       setShowPopup(true);
 
-      // Realizando consulta para obtener el estado de pago con el ID proporcionado
+      // First query: Get payment state with project info
       const { data: paymentData, error: paymentError } = await supabase
         .from('Estados de pago')
-        .select(`
-          id,
-          Proyectos!inner (
-            id,
-            Mandantes!inner (*)
-          )
-        `)
+        .select('id, Project')
         .eq('id', parsedPaymentId)
         .single();
 
@@ -78,14 +72,39 @@ const EmailAccess = () => {
         return;
       }
 
-      // Mostrar el estado de pago encontrado
       console.log('Estado de pago encontrado:', paymentData);
 
-      // Realizar una nueva consulta para obtener los ID de los estados de pago asociados al proyecto
+      // Second query: Get project with mandante info
+      const { data: projectData, error: projectError } = await supabase
+        .from('Proyectos')
+        .select('id, Owner')
+        .eq('id', paymentData.Project)
+        .single();
+
+      if (projectError) {
+        console.error('Error al obtener datos del proyecto:', projectError);
+        setPopupError('No se pudo obtener la información del proyecto.');
+        return;
+      }
+
+      // Third query: Get mandante info
+      const { data: mandanteData, error: mandanteError } = await supabase
+        .from('Mandantes')
+        .select('ContactEmail, CompanyName')
+        .eq('id', projectData.Owner)
+        .single();
+
+      if (mandanteError) {
+        console.error('Error al obtener datos del mandante:', mandanteError);
+        setPopupError('No se pudo obtener la información del mandante.');
+        return;
+      }
+
+      // Fourth query: Get related payment states
       const { data: relatedPayments, error: relatedPaymentsError } = await supabase
         .from('Estados de pago')
         .select('id')
-        .eq('proyecto_id', paymentData.Proyectos.id);  // Usar el ID del proyecto para obtener los estados de pago relacionados
+        .eq('Project', paymentData.Project);
 
       if (relatedPaymentsError) {
         console.error('Error al obtener otros estados de pago relacionados:', relatedPaymentsError);
@@ -93,22 +112,21 @@ const EmailAccess = () => {
         return;
       }
 
-      // Si existen estados de pago relacionados, guardamos los IDs en el estado
       if (relatedPayments && relatedPayments.length > 0) {
-        setStateIds(relatedPayments.map(payment => payment.id));  // Establecer los IDs de los estados de pago relacionados
+        const relatedIds = relatedPayments.map(payment => payment.id);
+        setStateIds(relatedIds);
+        
+        if (relatedIds.includes(parsedPaymentId)) {
+          toast({
+            title: "Acceso verificado",
+            description: "Estado de pago verificado correctamente.",
+            variant: "default",
+          });
+        } else {
+          setPopupError('El estado de pago no coincide con los estados de pago encontrados.');
+        }
       } else {
         setPopupError('No se encontraron estados de pago relacionados con el proyecto.');
-      }
-
-      // Ahora, comprobar si el ID del estado de pago proporcionado se encuentra en los estados relacionados
-      if (stateIds.includes(parsedPaymentId)) {
-        toast({
-          title: "Acceso verificado",
-          description: "Estado de pago verificado correctamente.",
-          variant: "success",
-        });
-      } else {
-        setPopupError('El estado de pago no coincide con los estados de pago encontrados.');
       }
 
     } catch (error) {
@@ -178,7 +196,6 @@ const EmailAccess = () => {
         </CardContent>
       </Card>
 
-      {/* Ventana emergente con la lista de IDs */}
       {showPopup && (
         <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-white p-8 rounded-lg max-w-lg w-full">
@@ -193,7 +210,7 @@ const EmailAccess = () => {
                 <li>No se encontraron estados de pago relacionados</li>
               )}
             </ul>
-            <p className="text-red-500 mt-4">{popupError}</p> {/* Mostrar el error en el popup */}
+            <p className="text-red-500 mt-4">{popupError}</p>
             <div className="mt-4">
               <Button onClick={closePopup} variant="ghost" className="w-full">Cerrar</Button>
             </div>

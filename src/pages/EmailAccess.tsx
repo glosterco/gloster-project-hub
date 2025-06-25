@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -62,8 +63,8 @@ const EmailAccess = () => {
       return;
     }
 
-    const parsedPaymentId = BigInt(extractedPaymentId); // Usamos BigInt para comparar correctamente
-    console.log("Payment ID convertido a BigInt:", parsedPaymentId); // Verificar que sea BigInt
+    const parsedPaymentId = parseInt(extractedPaymentId); // Use parseInt instead of BigInt
+    console.log("Payment ID convertido a number:", parsedPaymentId); // Verificar que sea number
 
     setLoading(true);
 
@@ -72,7 +73,7 @@ const EmailAccess = () => {
       const { data: paymentData, error: paymentError } = await supabase
         .from('Estados de pago')
         .select('*')
-        .eq('id', parsedPaymentId.toString()) // Convertimos BigInt a string para la comparación
+        .eq('id', parsedPaymentId) // Now using number directly
         .single();
 
       if (paymentError) {
@@ -100,8 +101,13 @@ const EmailAccess = () => {
       // Obtener la relación del proyecto asociado al estado de pago
       const { data: proyectoData, error: proyectoError } = await supabase
         .from('Proyectos')
-        .select('Mandantes(ContactEmail, CompanyName)') // Modify query to include both ContactEmail and CompanyName
-        .eq('id', paymentDataSingle.Project) // Changed from 'proyecto_id' to 'Project'
+        .select(`
+          Mandantes!Owner(
+            ContactEmail, 
+            CompanyName
+          )
+        `)
+        .eq('id', paymentDataSingle.Project)
         .single();
 
       if (proyectoError) {
@@ -124,7 +130,7 @@ const EmailAccess = () => {
       }
 
       const mandanteEmail = proyectoData.Mandantes.ContactEmail;
-      const mandanteCompany = proyectoData.Mandantes.CompanyName; // Now we have the CompanyName
+      const mandanteCompany = proyectoData.Mandantes.CompanyName;
       console.log('Comparing emails:', { provided: email.toLowerCase(), mandante: mandanteEmail.toLowerCase() });
 
       // Comparar el email ingresado con el del mandante

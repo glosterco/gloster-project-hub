@@ -37,13 +37,7 @@ serve(async (req) => {
     // Fetch payment details with existing URL
     const { data: paymentData, error: paymentError } = await supabaseAdmin
       .from('Estados de pago')
-      .select(`
-        *,
-        Proyectos!inner (
-          *,
-          Contratistas!inner (*)
-        )
-      `)
+      .select('*')
       .eq('id', paymentId)
       .single();
 
@@ -56,7 +50,7 @@ serve(async (req) => {
     }
 
     console.log('✅ Payment data fetched successfully');
-    console.log('📁 Existing URL from database:', paymentData.URL);
+    console.log('📁 URL from database:', paymentData.URL);
 
     // Extract folder ID from the URL field in the database
     let targetFolderId = null;
@@ -64,14 +58,14 @@ serve(async (req) => {
       const urlMatch = paymentData.URL.match(/\/folders\/([a-zA-Z0-9-_]+)/);
       if (urlMatch) {
         targetFolderId = urlMatch[1];
-        console.log(`📁 Using existing folder ID from database: ${targetFolderId}`);
+        console.log(`📁 Using folder ID from database URL: ${targetFolderId}`);
       }
     }
 
     if (!targetFolderId) {
-      console.error('❌ No valid Google Drive folder ID found in database URL');
+      console.error('❌ No valid Google Drive folder ID found in database URL:', paymentData.URL);
       return Response.json(
-        { success: false, error: 'No Google Drive folder configured for this payment state' },
+        { success: false, error: 'No Google Drive folder configured for this payment state. URL field: ' + paymentData.URL },
         { status: 400, headers: corsHeaders }
       );
     }
@@ -298,7 +292,7 @@ async function uploadFileToFolder(file: any, fileName: string, folderId: string,
 
     if (uploadResponse.ok) {
       const uploadedFile = await uploadResponse.json();
-      console.log(`✅ Uploaded ${fileName} successfully`);
+      console.log(`✅ Uploaded ${fileName} successfully to folder ${folderId}`);
       return {
         success: true,
         fileId: uploadedFile.id

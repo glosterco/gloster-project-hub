@@ -44,27 +44,23 @@ const EmailAccess = () => {
       const { data: paymentData, error: paymentError } = await supabase
         .from('Estados de pago')
         .select(`
-          id,
-          URLMandante,
-          Project,
+          *,
           Proyectos!inner (
-            id,
-            Name,
-            Owner,
-            Mandantes!inner (
-              id,
-              CompanyName,
-              ContactName,
-              ContactEmail
-            )
+            *,
+            Mandantes!inner (*)
           )
         `)
         .eq('id', parseInt(paymentId || '0'))
-        .maybeSingle();
+        .single();
 
       if (paymentError) {
         console.error('Error fetching payment data:', paymentError);
-        throw new Error('Error al obtener datos del estado de pago');
+        toast({
+          title: "Error al obtener datos",
+          description: "No se pudo verificar la información del estado de pago",
+          variant: "destructive"
+        });
+        return;
       }
 
       if (!paymentData) {

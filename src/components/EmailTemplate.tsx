@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -28,10 +27,11 @@ interface EmailTemplateProps {
     description: string;
     uploaded: boolean;
   }>;
+  hideActionButtons?: boolean;
 }
 
-const EmailTemplate: React.FC<EmailTemplateProps> = ({ paymentState, project, documents }) => {
-  console.log('EmailTemplate props:', { paymentState, project, documents });
+const EmailTemplate: React.FC<EmailTemplateProps> = ({ paymentState, project, documents, hideActionButtons = false }) => {
+  console.log('EmailTemplate props:', { paymentState, project, documents, hideActionButtons });
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-CL', {
@@ -179,16 +179,18 @@ const EmailTemplate: React.FC<EmailTemplateProps> = ({ paymentState, project, do
           </CardContent>
         </Card>
 
-        {/* Sección de Aprobación del Estado de Pago */}
-        <div className="mb-8">
-          <PaymentApprovalSection 
-            paymentState={{
-              month: paymentState.month,
-              amount: paymentState.amount,
-              projectName: paymentState.projectName
-            }}
-          />
-        </div>
+        {/* Sección de Aprobación del Estado de Pago - Solo mostrar si hideActionButtons es false */}
+        {!hideActionButtons && (
+          <div className="mb-8">
+            <PaymentApprovalSection 
+              paymentState={{
+                month: paymentState.month,
+                amount: paymentState.amount,
+                projectName: paymentState.projectName
+              }}
+            />
+          </div>
+        )}
 
         {/* Información de contacto del contratista */}
         <Card className="bg-slate-50">

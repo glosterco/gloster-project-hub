@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -50,9 +49,9 @@ const EmailAccess = () => {
       return;
     }
 
-    // Extraer y validar el paymentId
+    // Extract and validate paymentId
     const extractedPaymentId = paymentId;
-    console.log("Payment ID extraído:", extractedPaymentId); // Verificar que el paymentId sea '40'
+    console.log("Payment ID extraído:", extractedPaymentId); // Verify that the paymentId is '40'
 
     if (!extractedPaymentId || isNaN(Number(extractedPaymentId))) {
       toast({
@@ -63,17 +62,17 @@ const EmailAccess = () => {
       return;
     }
 
-    const parsedPaymentId = parseInt(extractedPaymentId); // Use parseInt instead of BigInt
-    console.log("Payment ID convertido a number:", parsedPaymentId); // Verificar que sea number
+    const parsedPaymentId = BigInt(extractedPaymentId); // Using BigInt for safety
+    console.log("Payment ID convertido a BigInt:", parsedPaymentId); // Verify it's BigInt
 
     setLoading(true);
 
     try {
-      // Obtener los datos del estado de pago
+      // Get the payment status data from Supabase
       const { data: paymentData, error: paymentError } = await supabase
         .from('Estados de pago')
         .select('*')
-        .eq('id', parsedPaymentId) // Now using number directly
+        .eq('id', Number(parsedPaymentId)) // Convert BigInt to Number for the query
         .single();
 
       if (paymentError) {
@@ -98,16 +97,11 @@ const EmailAccess = () => {
       const paymentDataSingle = paymentData;
       console.log('Payment data found:', paymentDataSingle);
 
-      // Obtener la relación del proyecto asociado al estado de pago
+      // Get the project data related to the payment status
       const { data: proyectoData, error: proyectoError } = await supabase
         .from('Proyectos')
-        .select(`
-          Mandantes!Owner(
-            ContactEmail, 
-            CompanyName
-          )
-        `)
-        .eq('id', paymentDataSingle.Project)
+        .select('Mandantes(ContactEmail, CompanyName)') // Modify query to include both ContactEmail and CompanyName
+        .eq('id', paymentDataSingle.Project) // Changed from 'proyecto_id' to 'Project'
         .single();
 
       if (proyectoError) {
@@ -130,10 +124,10 @@ const EmailAccess = () => {
       }
 
       const mandanteEmail = proyectoData.Mandantes.ContactEmail;
-      const mandanteCompany = proyectoData.Mandantes.CompanyName;
+      const mandanteCompany = proyectoData.Mandantes.CompanyName; // Now we have the CompanyName
       console.log('Comparing emails:', { provided: email.toLowerCase(), mandante: mandanteEmail.toLowerCase() });
 
-      // Comparar el email ingresado con el del mandante
+      // Compare the entered email with the mandante email
       if (email.toLowerCase() !== mandanteEmail.toLowerCase()) {
         toast({
           title: "Acceso denegado",
@@ -143,9 +137,9 @@ const EmailAccess = () => {
         return;
       }
 
-      // Si se pasa la verificación, almacenar los datos de acceso
+      // If the verification is successful, store the access data
       const accessData = {
-        paymentId: parsedPaymentId.toString(), // Store as string
+        paymentId: Number(parsedPaymentId), // Store as number now
         email: email,
         token: token || 'verified',
         mandanteCompany: mandanteCompany || '', // Store the CompanyName
@@ -160,7 +154,7 @@ const EmailAccess = () => {
       });
 
       setTimeout(() => {
-        navigate(`/submission-view?paymentId=${parsedPaymentId}`);
+        navigate(`/submission-view?paymentId=${Number(parsedPaymentId)}`);
       }, 1000);
 
     } catch (error) {

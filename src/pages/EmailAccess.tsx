@@ -25,7 +25,6 @@ const EmailAccess = () => {
   }, [paymentId, navigate]);
 
   const validateEmailFormat = (email: string) => {
-    // Simple regex to validate email format
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zAZ0-9.-]+\.[a-zA-Z]{2,}$/;
     return emailRegex.test(email);
   };
@@ -49,34 +48,35 @@ const EmailAccess = () => {
       return;
     }
 
-    // Extract and validate paymentId
-    const extractedPaymentId = paymentId;
-    console.log("Payment ID extraído:", extractedPaymentId); // Verify that the paymentId is '40'
+    // Log para verificar el paymentId
+    console.log("paymentId recibido:", paymentId);
 
-    if (!extractedPaymentId || isNaN(Number(extractedPaymentId))) {
+    // Convertir paymentId a número
+    const parsedPaymentId = Number(paymentId);
+    if (isNaN(parsedPaymentId)) {
       toast({
         title: "ID de pago inválido",
-        description: "El ID de pago proporcionado no es válido o no está presente en la URL.",
+        description: "El ID de pago proporcionado no es válido.",
         variant: "destructive"
       });
       return;
     }
 
-    const parsedPaymentId = BigInt(extractedPaymentId); // Using BigInt for safety
-    console.log("Payment ID convertido a BigInt:", parsedPaymentId); // Verify it's BigInt
+    console.log("paymentId convertido:", parsedPaymentId);
 
     setLoading(true);
 
     try {
-      // 1. Get the payment status data from Supabase
+      // 1. Obtener datos del estado de pago
       const { data: paymentData, error: paymentError } = await supabase
         .from('Estados de pago')
-        .select('Project') // Select only the Project ID from the 'Estados de pago' table
-        .eq('id', Number(parsedPaymentId)) // Filter by the specific paymentId
-        .single(); // Expect a single row, since paymentId should be unique
+        .select('Project') // Solo seleccionamos el Project relacionado con el estado de pago
+        .eq('id', parsedPaymentId) // Usamos el ID de pago como filtro
+        .single(); // Esperamos un único resultado
 
+      // Verificación de errores al obtener el estado de pago
       if (paymentError) {
-        console.error('Error fetching payment data:', paymentError);
+        console.error('Error al obtener el estado de pago:', paymentError);
         toast({
           title: "Error al obtener datos del estado de pago",
           description: `Detalles del error: ${paymentError.message}`,
@@ -95,17 +95,18 @@ const EmailAccess = () => {
       }
 
       const projectId = paymentData.Project;
-      console.log('Project ID extraído:', projectId);
+      console.log('Project ID extraído del estado de pago:', projectId);
 
-      // 2. Get the project data related to the payment status
+      // 2. Obtener datos del proyecto relacionado con el estado de pago
       const { data: proyectoData, error: proyectoError } = await supabase
         .from('Proyectos')
-        .select('Mandantes(ContactEmail, CompanyName)') // Now we select both ContactEmail and CompanyName
-        .eq('id', projectId) // Use the projectId obtained from the estado de pago
-        .single(); // Expect a single project
+        .select('Mandantes(ContactEmail, CompanyName)') // Obtenemos ContactEmail y CompanyName
+        .eq('id', projectId) // Usamos el projectId extraído
+        .single(); // Esperamos un único proyecto
 
+      // Verificación de errores al obtener el proyecto
       if (proyectoError) {
-        console.error('Error fetching project data:', proyectoError);
+        console.error('Error al obtener datos del proyecto:', proyectoError);
         toast({
           title: "Error al obtener datos del proyecto",
           description: `Detalles del error: ${proyectoError.message}`,
@@ -124,10 +125,10 @@ const EmailAccess = () => {
       }
 
       const mandanteEmail = proyectoData.Mandantes.ContactEmail;
-      const mandanteCompany = proyectoData.Mandantes.CompanyName; // Now we have the CompanyName
-      console.log('Comparing emails:', { provided: email.toLowerCase(), mandante: mandanteEmail.toLowerCase() });
+      const mandanteCompany = proyectoData.Mandantes.CompanyName; // También obtenemos el nombre de la empresa
+      console.log('Comparando emails:', { provided: email.toLowerCase(), mandante: mandanteEmail.toLowerCase() });
 
-      // 3. Compare the entered email with the mandante email
+      // 3. Comparar el email ingresado con el email del mandante
       if (email.toLowerCase() !== mandanteEmail.toLowerCase()) {
         toast({
           title: "Acceso denegado",
@@ -137,12 +138,12 @@ const EmailAccess = () => {
         return;
       }
 
-      // 4. If the verification is successful, store the access data
+      // 4. Guardar los datos de acceso
       const accessData = {
-        paymentId: Number(parsedPaymentId), // Store as number now
+        paymentId: parsedPaymentId, // Usamos el paymentId como número
         email: email,
         token: token || 'verified',
-        mandanteCompany: mandanteCompany || '', // Store the CompanyName
+        mandanteCompany: mandanteCompany || '', // Guardamos el nombre de la empresa
         timestamp: new Date().toISOString()
       };
 
@@ -154,11 +155,11 @@ const EmailAccess = () => {
       });
 
       setTimeout(() => {
-        navigate(`/submission-view?paymentId=${Number(parsedPaymentId)}`);
+        navigate(`/submission-view?paymentId=${parsedPaymentId}`);
       }, 1000);
 
     } catch (error) {
-      console.error('Error verifying email access:', error);
+      console.error('Error de verificación:', error);
       toast({
         title: "Error de verificación",
         description: `No se pudo verificar el acceso. Intenta nuevamente. Detalles: ${error.message}`,

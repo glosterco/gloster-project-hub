@@ -51,6 +51,9 @@ const EmailAccess = () => {
         return;
       }
 
+      // Mostrar la ventana emergente con la información de los IDs de los estados de pago relacionados
+      setShowPopup(true);
+
       // Realizando consulta para obtener el estado de pago con el ID proporcionado
       const { data: paymentData, error: paymentError } = await supabase
         .from('Estados de pago')
@@ -66,20 +69,12 @@ const EmailAccess = () => {
 
       if (paymentError) {
         console.error('Error al obtener datos del estado de pago:', paymentError);
-        toast({
-          title: "Error al obtener datos",
-          description: "No se pudo verificar la información del estado de pago",
-          variant: "destructive"
-        });
+        setPopupError('No se pudo verificar la información del estado de pago.');
         return;
       }
 
       if (!paymentData) {
-        toast({
-          title: "Estado de pago no encontrado",
-          description: "El estado de pago solicitado no existe",
-          variant: "destructive"
-        });
+        setPopupError('No se encontró el estado de pago con el ID proporcionado.');
         return;
       }
 
@@ -94,29 +89,20 @@ const EmailAccess = () => {
 
       if (relatedPaymentsError) {
         console.error('Error al obtener otros estados de pago relacionados:', relatedPaymentsError);
-        toast({
-          title: "Error al obtener otros estados de pago",
-          description: "Hubo un error al obtener los otros estados de pago asociados.",
-          variant: "destructive"
-        });
+        setPopupError('Hubo un error al obtener los estados de pago relacionados.');
         return;
       }
 
       // Si existen estados de pago relacionados, guardamos los IDs en el estado
       if (relatedPayments && relatedPayments.length > 0) {
         setStateIds(relatedPayments.map(payment => payment.id));
+      } else {
+        setPopupError('No se encontraron estados de pago relacionados con el proyecto.');
       }
-
-      // Abrir el popup
-      setShowPopup(true);
 
     } catch (error) {
       console.error('Error de verificación:', error);
-      toast({
-        title: "Error de verificación",
-        description: "No se pudo verificar el acceso. Intenta nuevamente.",
-        variant: "destructive"
-      });
+      setPopupError('Ocurrió un error durante la verificación.');
     } finally {
       setLoading(false);
     }
@@ -196,6 +182,7 @@ const EmailAccess = () => {
                 <li>No se encontraron estados de pago relacionados</li>
               )}
             </ul>
+            <p className="text-red-500 mt-4">{popupError}</p> {/* Mostrar el error en el popup */}
             <div className="mt-4">
               <Button onClick={closePopup} variant="ghost" className="w-full">Cerrar</Button>
             </div>

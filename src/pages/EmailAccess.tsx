@@ -17,19 +17,13 @@ const EmailAccess = () => {
   
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showEmailInput, setShowEmailInput] = useState(true);
 
   useEffect(() => {
     if (!paymentId) {
       navigate('/');
       return;
     }
-
-    // Si hay token, mostrar el campo de email para verificación
-    if (token) {
-      setShowEmailInput(true);
-    }
-  }, [paymentId, token, navigate]);
+  }, [paymentId, navigate]);
 
   const verifyEmailAccess = async () => {
     if (!email.trim()) {
@@ -46,13 +40,17 @@ const EmailAccess = () => {
     try {
       console.log('Verifying email access for:', { paymentId, email, token });
 
-      // Obtener datos del estado de pago y proyecto
+      // Obtener datos del estado de pago con información del proyecto y mandante
       const { data: paymentData, error: paymentError } = await supabase
         .from('Estados de pago')
         .select(`
-          *,
+          id,
+          URLMandante,
+          Project,
           Proyectos!inner (
-            *,
+            id,
+            Name,
+            Owner,
             Mandantes!inner (
               id,
               CompanyName,
@@ -172,46 +170,44 @@ const EmailAccess = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {showEmailInput && (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium text-slate-700 font-rubik">
-                  Email del Mandante
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gloster-gray" />
-                  <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="mandante@empresa.com"
-                    className="pl-10 font-rubik"
-                    disabled={loading}
-                  />
-                </div>
-              </div>
-              
-              <Button
-                onClick={verifyEmailAccess}
-                disabled={loading || !email.trim()}
-                className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
-              >
-                {loading ? 'Verificando...' : 'Verificar Acceso'}
-              </Button>
-              
-              <div className="text-center">
-                <Button
-                  onClick={() => navigate('/')}
-                  variant="ghost"
-                  className="text-gloster-gray hover:text-slate-800 font-rubik"
-                >
-                  Volver al Inicio
-                </Button>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="email" className="text-sm font-medium text-slate-700 font-rubik">
+                Email del Mandante
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gloster-gray" />
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="mandante@empresa.com"
+                  className="pl-10 font-rubik"
+                  disabled={loading}
+                />
               </div>
             </div>
-          )}
+            
+            <Button
+              onClick={verifyEmailAccess}
+              disabled={loading || !email.trim()}
+              className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
+            >
+              {loading ? 'Verificando...' : 'Verificar Acceso'}
+            </Button>
+            
+            <div className="text-center">
+              <Button
+                onClick={() => navigate('/')}
+                variant="ghost"
+                className="text-gloster-gray hover:text-slate-800 font-rubik"
+              >
+                Volver al Inicio
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

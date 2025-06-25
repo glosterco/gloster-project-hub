@@ -64,17 +64,12 @@ const DocumentUploadCard: React.FC<DocumentUploadCardProps> = ({
           <div className="flex items-start space-x-4 flex-1 min-w-0">
             <Checkbox 
               checked={documentStatus}
-              readOnly
+              disabled
               className="mt-1 shrink-0"
             />
             <div className="flex-1 min-w-0">
               <div className="flex items-center space-x-2 mb-2">
                 <h3 className="font-semibold text-slate-800 font-rubik text-sm md:text-base">{doc.name}</h3>
-                {doc.required && (
-                  <Badge variant="secondary" className="bg-red-100 text-red-700 border-red-200 text-xs">
-                    Requerido
-                  </Badge>
-                )}
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <HelpCircle className="h-4 w-4 text-gloster-gray cursor-help shrink-0" />

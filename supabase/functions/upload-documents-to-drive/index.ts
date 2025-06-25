@@ -56,6 +56,25 @@ serve(async (req) => {
     }
 
     console.log('✅ Payment data fetched successfully');
+    console.log('📁 Existing URL from database:', paymentData.URL);
+
+    // Extract folder ID from the URL field in the database
+    let targetFolderId = null;
+    if (paymentData.URL) {
+      const urlMatch = paymentData.URL.match(/\/folders\/([a-zA-Z0-9-_]+)/);
+      if (urlMatch) {
+        targetFolderId = urlMatch[1];
+        console.log(`📁 Using existing folder ID from database: ${targetFolderId}`);
+      }
+    }
+
+    if (!targetFolderId) {
+      console.error('❌ No valid Google Drive folder ID found in database URL');
+      return Response.json(
+        { success: false, error: 'No Google Drive folder configured for this payment state' },
+        { status: 400, headers: corsHeaders }
+      );
+    }
 
     // Get Google Drive credentials
     const clientId = Deno.env.get('GOOGLE_DRIVE_CLIENT_ID');
@@ -96,106 +115,7 @@ serve(async (req) => {
     const { access_token } = await tokenResponse.json();
     console.log('✅ Access token obtained');
 
-    // Extract folder ID from existing URL if available
-    let targetFolderId = null;
-    if (paymentData.URL) {
-      const urlMatch = paymentData.URL.match(/\/folders\/([a-zA-Z0-9-_]+)/);
-      if (urlMatch) {
-        targetFolderId = urlMatch[1];
-        console.log(`📁 Using existing folder ID: ${targetFolderId}`);
-      }
-    }
-
-    // If no existing folder, create the structure
-    if (!targetFolderId) {
-      const projectName = paymentData.Proyectos.Name;
-      const folderName = `EP_${paymentData.Mes}_${paymentData.Año}`;
-      
-      console.log(`📁 Creating new folder structure for ${projectName}/${folderName}`);
-
-      // Find or create project folder
-      const projectSearchResponse = await fetch(
-        `https://www.googleapis.com/drive/v3/files?q=name='${encodeURIComponent(projectName)}' and mimeType='application/vnd.google-apps.folder'&fields=files(id,name)`,
-        {
-          headers: {
-            'Authorization': `Bearer ${access_token}`,
-          },
-        }
-      );
-
-      let projectFolderId;
-      const projectSearchData = await projectSearchResponse.json();
-      
-      if (projectSearchData.files && projectSearchData.files.length > 0) {
-        projectFolderId = projectSearchData.files[0].id;
-        console.log(`✅ Found existing project folder: ${projectFolderId}`);
-      } else {
-        const createProjectResponse = await fetch('https://www.googleapis.com/drive/v3/files', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            name: projectName,
-            mimeType: 'application/vnd.google-apps.folder',
-          }),
-        });
-
-        if (!createProjectResponse.ok) {
-          console.error('❌ Failed to create project folder');
-          return Response.json(
-            { success: false, error: 'Failed to create project folder' },
-            { status: 500, headers: corsHeaders }
-          );
-        }
-
-        const projectFolder = await createProjectResponse.json();
-        projectFolderId = projectFolder.id;
-        console.log(`✅ Created project folder: ${projectFolderId}`);
-      }
-
-      // Create payment state folder
-      const createStateResponse = await fetch('https://www.googleapis.com/drive/v3/files', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: folderName,
-          mimeType: 'application/vnd.google-apps.folder',
-          parents: [projectFolderId],
-        }),
-      });
-
-      if (!createStateResponse.ok) {
-        console.error('❌ Failed to create state folder');
-        return Response.json(
-          { success: false, error: 'Failed to create state folder' },
-          { status: 500, headers: corsHeaders }
-        );
-      }
-
-      const stateFolder = await createStateResponse.json();
-      targetFolderId = stateFolder.id;
-      console.log(`✅ Created state folder: ${targetFolderId}`);
-
-      // Update payment state with new Drive URL
-      const driveUrl = `https://drive.google.com/drive/folders/${targetFolderId}`;
-      const { error: updateError } = await supabaseAdmin
-        .from('Estados de pago')
-        .update({ URL: driveUrl })
-        .eq('id', paymentId);
-
-      if (updateError) {
-        console.error('❌ Error updating payment state URL:', updateError);
-      } else {
-        console.log('✅ Updated payment state with new Drive URL');
-      }
-    }
-
-    // Check for existing files and warn if needed
+    // Check for existing files in the target folder
     const existingFilesResponse = await fetch(
       `https://www.googleapis.com/drive/v3/files?q='${targetFolderId}' in parents and trashed=false&fields=files(id,name)`,
       {
@@ -209,7 +129,7 @@ serve(async (req) => {
     const hasExistingFiles = existingFilesData.files && existingFilesData.files.length > 0;
 
     if (hasExistingFiles) {
-      console.log(`⚠️ Found ${existingFilesData.files.length} existing files in folder. They will be replaced.`);
+      console.log(`⚠️ Found ${existingFilesData.files.length} existing files in folder. They will be replaced if necessary.`);
     }
 
     // Upload documents
@@ -218,28 +138,47 @@ serve(async (req) => {
     for (const [docType, docData] of Object.entries(documents)) {
       console.log(`📤 Processing ${docType} with ${docData.files.length} files`);
       
-      // Handle multiple files for examenes and finiquitos
+      // Handle multiple files for examenes and finiquitos (create subfolder)
       if ((docType === 'examenes' || docType === 'finiquito') && docData.files.length > 1) {
         // Create subfolder
         const subfolderName = docType === 'examenes' ? 'Exámenes Preocupacionales' : 'Finiquitos';
-        const createSubfolderResponse = await fetch('https://www.googleapis.com/drive/v3/files', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            name: subfolderName,
-            mimeType: 'application/vnd.google-apps.folder',
-            parents: [targetFolderId],
-          }),
-        });
+        
+        // Check if subfolder already exists
+        const subfolderSearchResponse = await fetch(
+          `https://www.googleapis.com/drive/v3/files?q=name='${encodeURIComponent(subfolderName)}' and '${targetFolderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false&fields=files(id,name)`,
+          {
+            headers: {
+              'Authorization': `Bearer ${access_token}`,
+            },
+          }
+        );
 
         let subFolderId = targetFolderId;
-        if (createSubfolderResponse.ok) {
-          const subFolder = await createSubfolderResponse.json();
-          subFolderId = subFolder.id;
-          console.log(`✅ Created subfolder: ${subfolderName}`);
+        const subfolderSearchData = await subfolderSearchResponse.json();
+        
+        if (subfolderSearchData.files && subfolderSearchData.files.length > 0) {
+          subFolderId = subfolderSearchData.files[0].id;
+          console.log(`✅ Using existing subfolder: ${subfolderName} (${subFolderId})`);
+        } else {
+          // Create new subfolder
+          const createSubfolderResponse = await fetch('https://www.googleapis.com/drive/v3/files', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${access_token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              name: subfolderName,
+              mimeType: 'application/vnd.google-apps.folder',
+              parents: [targetFolderId],
+            }),
+          });
+
+          if (createSubfolderResponse.ok) {
+            const subFolder = await createSubfolderResponse.json();
+            subFolderId = subFolder.id;
+            console.log(`✅ Created subfolder: ${subfolderName} (${subFolderId})`);
+          }
         }
 
         // Upload files to subfolder
@@ -251,11 +190,12 @@ serve(async (req) => {
           uploadResults.push({
             documentType: docType,
             fileName: fileName,
+            subfolder: subfolderName,
             ...uploadResult
           });
         }
       } else {
-        // Single file or first file
+        // Single file or first file (upload directly to main folder)
         const file = docData.files[0];
         const fileName = `${docData.documentName}.${file.name.split('.').pop()}`;
         
@@ -274,7 +214,7 @@ serve(async (req) => {
       {
         success: true,
         uploadResults,
-        driveUrl: `https://drive.google.com/drive/folders/${targetFolderId}`,
+        driveUrl: paymentData.URL,
         folderId: targetFolderId,
         existingFilesReplaced: hasExistingFiles
       },
@@ -310,13 +250,15 @@ async function uploadFileToFolder(file: any, fileName: string, folderId: string,
     const searchData = await searchResponse.json();
     if (searchData.files && searchData.files.length > 0) {
       // Delete existing file
-      const deleteResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${searchData.files[0].id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-        },
-      });
-      console.log(`🗑️ Deleted existing file: ${fileName}`);
+      for (const existingFile of searchData.files) {
+        await fetch(`https://www.googleapis.com/drive/v3/files/${existingFile.id}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+          },
+        });
+        console.log(`🗑️ Deleted existing file: ${fileName}`);
+      }
     }
 
     // Convert base64 to binary

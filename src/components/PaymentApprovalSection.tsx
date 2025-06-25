@@ -11,25 +11,50 @@ interface PaymentApprovalSectionProps {
     amount: number;
     projectName: string;
   };
+  disabled?: boolean;
 }
 
-const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({ paymentState }) => {
+const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({ 
+  paymentState, 
+  disabled = false 
+}) => {
   const [approvalStatus, setApprovalStatus] = useState<'pending' | 'approved' | 'rejected'>('pending');
   const [rejectionComments, setRejectionComments] = useState('');
 
   const handleApprove = () => {
+    if (disabled) return;
     setApprovalStatus('approved');
     console.log(`Estado de pago ${paymentState.month} aprobado`);
   };
 
   const handleReject = () => {
+    if (disabled) return;
     setApprovalStatus('rejected');
   };
 
   const handleSubmitRejection = () => {
+    if (disabled) return;
     console.log(`Estado de pago ${paymentState.month} rechazado con comentarios:`, rejectionComments);
     // Aquí se enviarían los comentarios al sistema
   };
+
+  if (disabled) {
+    return (
+      <Card className="border-l-4 border-l-gray-300 bg-gray-50">
+        <CardContent className="pt-6">
+          <div className="flex items-center space-x-3">
+            <MessageSquare className="h-6 w-6 text-gray-400" />
+            <div>
+              <p className="font-semibold text-gray-600 font-rubik">Acciones Deshabilitadas</p>
+              <p className="text-gray-500 text-sm font-rubik">
+                Las acciones de aprobación están deshabilitadas en esta vista
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (approvalStatus === 'approved') {
     return (

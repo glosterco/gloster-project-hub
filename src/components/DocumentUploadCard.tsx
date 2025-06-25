@@ -24,7 +24,7 @@ interface Document {
 interface DocumentUploadCardProps {
   doc: Document;
   documentStatus: boolean;
-  uploadedFiles: string[];
+  uploadedFiles: string[] | undefined;
   dragState: boolean;
   achsSelection: string;
   setAchsSelection: (value: string) => void;

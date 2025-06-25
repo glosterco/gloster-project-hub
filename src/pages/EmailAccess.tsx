@@ -51,7 +51,7 @@ const EmailAccess = () => {
           )
         `)
         .eq('id', parseInt(paymentId || '0'))
-        .maybeSingle();
+        .single();
 
       if (paymentError) {
         console.error('Error fetching payment data:', paymentError);

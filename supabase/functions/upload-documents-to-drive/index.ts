@@ -1,6 +1,5 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,40 +7,41 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    console.log('🚀 Upload documents to drive function started');
+    console.log('🚀 Upload documents function started');
     
     const { paymentId, documents } = await req.json();
     
-    if (!paymentId || !documents || !Array.isArray(documents)) {
-      console.error('❌ Missing required data:', { paymentId, documents });
+    if (!paymentId || !documents) {
+      console.error('❌ Missing required parameters');
       return Response.json(
         { success: false, error: 'Missing paymentId or documents' },
         { status: 400, headers: corsHeaders }
       );
     }
 
-    console.log('📋 Processing upload for payment ID:', paymentId);
-    console.log('📁 Number of documents to upload:', documents.length);
+    console.log(`📋 Processing documents for payment ${paymentId}:`, Object.keys(documents));
 
-    // Initialize Supabase client
+    // Get payment and project information
+    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.50.0');
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Fetch payment details to get the existing Google Drive folder URL
+    // Fetch payment details with existing URL
     const { data: paymentData, error: paymentError } = await supabaseAdmin
       .from('Estados de pago')
-      .select('URL, Name, Mes, Año')
+      .select('*')
       .eq('id', paymentId)
       .single();
 
-    if (paymentError) {
+    if (paymentError || !paymentData) {
       console.error('❌ Error fetching payment data:', paymentError);
       return Response.json(
         { success: false, error: 'Payment not found' },
@@ -50,33 +50,22 @@ serve(async (req) => {
     }
 
     console.log('✅ Payment data fetched successfully');
-    console.log('📁 Drive URL from database:', paymentData.URL);
+    console.log('📁 URL from database:', paymentData.URL);
 
     // Extract folder ID from the URL field in the database
     let targetFolderId = null;
     if (paymentData.URL) {
-      // Try different URL patterns for Google Drive folders
-      const patterns = [
-        /\/folders\/([a-zA-Z0-9-_]+)/,
-        /\/drive\/folders\/([a-zA-Z0-9-_]+)/,
-        /id=([a-zA-Z0-9-_]+)/,
-        /^([a-zA-Z0-9-_]+)$/  // Direct folder ID
-      ];
-      
-      for (const pattern of patterns) {
-        const match = paymentData.URL.match(pattern);
-        if (match) {
-          targetFolderId = match[1];
-          console.log(`📁 Extracted folder ID: ${targetFolderId} using pattern: ${pattern}`);
-          break;
-        }
+      const urlMatch = paymentData.URL.match(/\/folders\/([a-zA-Z0-9-_]+)/);
+      if (urlMatch) {
+        targetFolderId = urlMatch[1];
+        console.log(`📁 Using folder ID from database URL: ${targetFolderId}`);
       }
     }
 
     if (!targetFolderId) {
       console.error('❌ No valid Google Drive folder ID found in database URL:', paymentData.URL);
       return Response.json(
-        { success: false, error: 'No valid Google Drive folder configured for this payment state. URL: ' + paymentData.URL },
+        { success: false, error: 'No Google Drive folder configured for this payment state. URL field: ' + paymentData.URL },
         { status: 400, headers: corsHeaders }
       );
     }
@@ -89,16 +78,18 @@ serve(async (req) => {
     if (!clientId || !clientSecret || !refreshToken) {
       console.error('❌ Missing Google Drive credentials');
       return Response.json(
-        { success: false, error: 'Google Drive credentials not configured' },
+        { success: false, error: 'Missing Google Drive credentials' },
         { status: 500, headers: corsHeaders }
       );
     }
 
     // Get access token
-    console.log('🔑 Getting access token...');
+    console.log('🔑 Getting Google Drive access token...');
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
       body: new URLSearchParams({
         client_id: clientId,
         client_secret: clientSecret,
@@ -115,149 +106,210 @@ serve(async (req) => {
       );
     }
 
-    const tokenData = await tokenResponse.json();
-    const accessToken = tokenData.access_token;
+    const { access_token } = await tokenResponse.json();
     console.log('✅ Access token obtained');
 
-    // Check if target folder exists and get existing files
-    console.log('📂 Checking target folder and existing files...');
-    const folderCheckResponse = await fetch(
-      `https://www.googleapis.com/drive/v3/files?q='${targetFolderId}'+in+parents&fields=files(id,name)`,
+    // Check for existing files in the target folder
+    const existingFilesResponse = await fetch(
+      `https://www.googleapis.com/drive/v3/files?q='${targetFolderId}' in parents and trashed=false&fields=files(id,name)`,
       {
-        headers: { Authorization: `Bearer ${accessToken}` }
+        headers: {
+          'Authorization': `Bearer ${access_token}`,
+        },
       }
     );
 
-    if (!folderCheckResponse.ok) {
-      console.error('❌ Failed to check target folder:', await folderCheckResponse.text());
-      return Response.json(
-        { success: false, error: 'Target folder not accessible' },
-        { status: 400, headers: corsHeaders }
-      );
+    const existingFilesData = await existingFilesResponse.json();
+    const hasExistingFiles = existingFilesData.files && existingFilesData.files.length > 0;
+
+    if (hasExistingFiles) {
+      console.log(`⚠️ Found ${existingFilesData.files.length} existing files in folder. They will be replaced if necessary.`);
     }
 
-    const existingFiles = await folderCheckResponse.json();
-    console.log('📋 Existing files in target folder:', existingFiles.files?.length || 0);
-
-    // Upload each document
+    // Upload documents
     const uploadResults = [];
+    
+    for (const [docType, docData] of Object.entries(documents)) {
+      console.log(`📤 Processing ${docType} with ${docData.files.length} files`);
+      
+      // Handle multiple files for examenes and finiquitos (create subfolder)
+      if ((docType === 'examenes' || docType === 'finiquito') && docData.files.length > 1) {
+        // Create subfolder
+        const subfolderName = docType === 'examenes' ? 'Exámenes Preocupacionales' : 'Finiquitos';
+        
+        // Check if subfolder already exists
+        const subfolderSearchResponse = await fetch(
+          `https://www.googleapis.com/drive/v3/files?q=name='${encodeURIComponent(subfolderName)}' and '${targetFolderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false&fields=files(id,name)`,
+          {
+            headers: {
+              'Authorization': `Bearer ${access_token}`,
+            },
+          }
+        );
 
-    for (const doc of documents) {
-      if (!doc.file || !doc.name) {
-        console.warn('⚠️ Skipping invalid document:', doc);
-        continue;
-      }
-
-      console.log(`📤 Uploading document: ${doc.name}`);
-
-      try {
-        // Check if file already exists and delete it
-        const existingFile = existingFiles.files?.find(f => f.name === doc.name);
-        if (existingFile) {
-          console.log(`🗑️ Deleting existing file: ${doc.name} (${existingFile.id})`);
-          await fetch(`https://www.googleapis.com/drive/v3/files/${existingFile.id}`, {
-            method: 'DELETE',
-            headers: { Authorization: `Bearer ${accessToken}` }
-          });
-        }
-
-        // Handle multiple files for certain document types
-        let finalFolderId = targetFolderId;
-        if ((doc.name === 'Exámenes Preocupacionales' || doc.name === 'Finiquitos') && doc.files && doc.files.length > 1) {
-          // Create subfolder for multiple files
-          const subfolderName = doc.name;
-          const createFolderResponse = await fetch('https://www.googleapis.com/drive/v3/files', {
+        let subFolderId = targetFolderId;
+        const subfolderSearchData = await subfolderSearchResponse.json();
+        
+        if (subfolderSearchData.files && subfolderSearchData.files.length > 0) {
+          subFolderId = subfolderSearchData.files[0].id;
+          console.log(`✅ Using existing subfolder: ${subfolderName} (${subFolderId})`);
+        } else {
+          // Create new subfolder
+          const createSubfolderResponse = await fetch('https://www.googleapis.com/drive/v3/files', {
             method: 'POST',
             headers: {
-              Authorization: `Bearer ${accessToken}`,
+              'Authorization': `Bearer ${access_token}`,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
               name: subfolderName,
               mimeType: 'application/vnd.google-apps.folder',
-              parents: [targetFolderId]
+              parents: [targetFolderId],
             }),
           });
 
-          if (createFolderResponse.ok) {
-            const folderData = await createFolderResponse.json();
-            finalFolderId = folderData.id;
-            console.log(`📁 Created subfolder: ${subfolderName} (${finalFolderId})`);
+          if (createSubfolderResponse.ok) {
+            const subFolder = await createSubfolderResponse.json();
+            subFolderId = subFolder.id;
+            console.log(`✅ Created subfolder: ${subfolderName} (${subFolderId})`);
           }
         }
 
-        // Upload file using multipart upload
-        const boundary = `----formdata-${Date.now()}`;
-        const metadata = {
-          name: doc.name,
-          parents: [finalFolderId]
-        };
-
-        const multipartBody = [
-          `--${boundary}`,
-          'Content-Type: application/json; charset=UTF-8',
-          '',
-          JSON.stringify(metadata),
-          `--${boundary}`,
-          `Content-Type: ${doc.file.type || 'application/octet-stream'}`,
-          '',
-          doc.file.content,
-          `--${boundary}--`
-        ].join('\r\n');
-
-        const uploadResponse = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': `multipart/related; boundary=${boundary}`,
-          },
-          body: multipartBody,
-        });
-
-        if (uploadResponse.ok) {
-          const uploadedFile = await uploadResponse.json();
-          console.log(`✅ Uploaded ${doc.name} successfully to folder ${finalFolderId}`);
+        // Upload files to subfolder
+        for (let i = 0; i < docData.files.length; i++) {
+          const file = docData.files[i];
+          const fileName = `${docData.documentName}_${i + 1}.${file.name.split('.').pop()}`;
+          
+          const uploadResult = await uploadFileToFolder(file, fileName, subFolderId, access_token);
           uploadResults.push({
-            success: true,
-            fileId: uploadedFile.id,
-            fileName: doc.name
-          });
-        } else {
-          console.error(`❌ Failed to upload ${doc.name}:`, await uploadResponse.text());
-          uploadResults.push({
-            success: false,
-            error: `Failed to upload ${doc.name}`,
-            fileName: doc.name
+            documentType: docType,
+            fileName: fileName,
+            subfolder: subfolderName,
+            ...uploadResult
           });
         }
-      } catch (error) {
-        console.error(`❌ Error uploading ${doc.name}:`, error);
+      } else {
+        // Single file or first file (upload directly to main folder)
+        const file = docData.files[0];
+        const fileName = `${docData.documentName}.${file.name.split('.').pop()}`;
+        
+        const uploadResult = await uploadFileToFolder(file, fileName, targetFolderId, access_token);
         uploadResults.push({
-          success: false,
-          error: error.message,
-          fileName: doc.name
+          documentType: docType,
+          fileName: fileName,
+          ...uploadResult
         });
       }
     }
 
-    const successfulUploads = uploadResults.filter(r => r.success);
-    const failedUploads = uploadResults.filter(r => !r.success);
+    console.log('🎉 Upload process completed successfully');
 
-    console.log(`✅ Upload completed. Success: ${successfulUploads.length}, Failed: ${failedUploads.length}`);
-
-    return Response.json({
-      success: failedUploads.length === 0,
-      uploadResults,
-      successCount: successfulUploads.length,
-      failureCount: failedUploads.length,
-      targetFolderId
-    }, { headers: corsHeaders });
+    return Response.json(
+      {
+        success: true,
+        uploadResults,
+        driveUrl: paymentData.URL,
+        folderId: targetFolderId,
+        existingFilesReplaced: hasExistingFiles
+      },
+      { headers: corsHeaders }
+    );
 
   } catch (error) {
-    console.error('❌ Unexpected error:', error);
+    console.error('❌ Unexpected error in upload function:', error);
     return Response.json(
-      { success: false, error: error.message },
+      { 
+        success: false, 
+        error: 'Internal server error',
+        details: error.message 
+      },
       { status: 500, headers: corsHeaders }
     );
   }
-})
+});
+
+// Helper function to upload a file to a specific folder
+async function uploadFileToFolder(file: any, fileName: string, folderId: string, accessToken: string) {
+  try {
+    // Delete existing file with same name if it exists
+    const searchResponse = await fetch(
+      `https://www.googleapis.com/drive/v3/files?q=name='${encodeURIComponent(fileName)}' and '${folderId}' in parents and trashed=false&fields=files(id,name)`,
+      {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    const searchData = await searchResponse.json();
+    if (searchData.files && searchData.files.length > 0) {
+      // Delete existing file
+      for (const existingFile of searchData.files) {
+        await fetch(`https://www.googleapis.com/drive/v3/files/${existingFile.id}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+          },
+        });
+        console.log(`🗑️ Deleted existing file: ${fileName}`);
+      }
+    }
+
+    // Convert base64 to binary
+    const binaryString = atob(file.content);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let j = 0; j < binaryString.length; j++) {
+      bytes[j] = binaryString.charCodeAt(j);
+    }
+
+    // Create metadata
+    const metadata = {
+      name: fileName,
+      parents: [folderId],
+    };
+
+    // Upload file using multipart upload
+    const boundary = '-------314159265358979323846';
+    const delimiter = `\r\n--${boundary}\r\n`;
+    const close_delim = `\r\n--${boundary}--`;
+
+    let body = delimiter +
+      'Content-Type: application/json\r\n\r\n' +
+      JSON.stringify(metadata) + delimiter +
+      `Content-Type: ${file.mimeType || 'application/octet-stream'}\r\n` +
+      'Content-Transfer-Encoding: base64\r\n\r\n' +
+      file.content +
+      close_delim;
+
+    const uploadResponse = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': `multipart/related; boundary="${boundary}"`,
+      },
+      body: body,
+    });
+
+    if (uploadResponse.ok) {
+      const uploadedFile = await uploadResponse.json();
+      console.log(`✅ Uploaded ${fileName} successfully to folder ${folderId}`);
+      return {
+        success: true,
+        fileId: uploadedFile.id
+      };
+    } else {
+      const errorText = await uploadResponse.text();
+      console.error(`❌ Failed to upload ${fileName}:`, errorText);
+      return {
+        success: false,
+        error: errorText
+      };
+    }
+  } catch (fileError) {
+    console.error(`❌ Error processing file ${fileName}:`, fileError);
+    return {
+      success: false,
+      error: fileError.message
+    };
+  }
+}

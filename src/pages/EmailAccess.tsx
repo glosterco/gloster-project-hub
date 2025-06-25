@@ -1,26 +1,33 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Lock, Mail } from 'lucide-react';
+import { Mail, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-
-const validateEmailFormat = (email: string): boolean => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-};
 
 const EmailAccess = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const paymentId = searchParams.get('paymentId');
   const token = searchParams.get('token');
+  const { toast } = useToast();
+
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
+
+  useEffect(() => {
+    if (!paymentId) {
+      navigate('/');
+      return;
+    }
+  }, [paymentId, navigate]);
+
+  const validateEmailFormat = (email: string) => {
+    const re = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+    return re.test(email);
+  };
 
   const verifyEmailAccess = async () => {
     if (!email.trim()) {
@@ -55,7 +62,6 @@ const EmailAccess = () => {
     try {
       console.log('Verifying email access for:', { paymentId, email, token });
 
-      // Validar si paymentId es un número válido
       const parsedPaymentId = parseInt(paymentId);
       if (isNaN(parsedPaymentId)) {
         toast({
@@ -66,26 +72,28 @@ const EmailAccess = () => {
         return;
       }
 
-      // Obtener datos del estado de pago con información del proyecto y mandante
+      // Obtener solo el estado de pago (sin las relaciones anidadas por ahora)
       const { data: paymentData, error: paymentError } = await supabase
         .from('Estados de pago')
-        .select(`
-          *,
-          Proyectos!inner (
-            *,
-            Mandantes!inner (*)
-          )
-        `)
+        .select('*')
         .eq('id', parsedPaymentId)
         .single();
 
       if (paymentError) {
         console.error('Error fetching payment data:', paymentError);
-        toast({
-          title: "Error al obtener datos del estado de pago",
-          description: `Detalles del error: ${paymentError.message}`,
-          variant: "destructive"
-        });
+        if (paymentError.code === 'PGRST102') {
+          toast({
+            title: "Error de consulta",
+            description: "La consulta devolvió múltiples resultados o ninguno.",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Error al obtener datos del estado de pago",
+            description: `Detalles del error: ${paymentError.message}`,
+            variant: "destructive"
+          });
+        }
         return;
       }
 
@@ -100,17 +108,33 @@ const EmailAccess = () => {
 
       console.log('Payment data found:', paymentData);
 
-      // Verificar que el email coincida con el email del mandante
-      const mandanteEmail = paymentData.Proyectos?.Mandantes?.ContactEmail;
+      // Obtener la relación del mandante con el proyecto
+      const { data: proyectoData, error: proyectoError } = await supabase
+        .from('Proyectos')
+        .select('Mandantes(ContactEmail)')
+        .eq('id', paymentData.proyecto_id)
+        .single();
 
-      if (!mandanteEmail) {
+      if (proyectoError) {
+        console.error('Error fetching project data:', proyectoError);
         toast({
-          title: "Error de configuración",
-          description: "No se encontró el email del mandante para este proyecto.",
+          title: "Error al obtener datos del proyecto",
+          description: `Detalles del error: ${proyectoError.message}`,
           variant: "destructive"
         });
         return;
       }
+
+      if (!proyectoData || !proyectoData.Mandantes?.ContactEmail) {
+        toast({
+          title: "Mandante no encontrado",
+          description: "No se pudo obtener el email del mandante para este proyecto.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const mandanteEmail = proyectoData.Mandantes.ContactEmail;
 
       console.log('Comparing emails:', { provided: email.toLowerCase(), mandante: mandanteEmail.toLowerCase() });
 
@@ -123,7 +147,6 @@ const EmailAccess = () => {
         return;
       }
 
-      // Si hay token, verificar que coincida con URLMandante
       if (token) {
         const expectedUrl = `${window.location.origin}/email-access?paymentId=${paymentId}&token=${token}`;
         console.log('Checking URL match:', { expected: expectedUrl, stored: paymentData.URLMandante });
@@ -138,12 +161,11 @@ const EmailAccess = () => {
         }
       }
 
-      // Guardar acceso en sessionStorage
       const accessData = {
         paymentId: paymentId,
         email: email,
         token: token || 'verified',
-        mandanteCompany: paymentData.Proyectos?.Mandantes?.CompanyName || '',
+        mandanteCompany: proyectoData.Mandantes?.CompanyName || '',
         timestamp: new Date().toISOString()
       };
 
@@ -154,7 +176,6 @@ const EmailAccess = () => {
         description: "Email verificado correctamente. Redirigiendo...",
       });
 
-      // Redirigir a submission view
       setTimeout(() => {
         navigate(`/submission-view?paymentId=${paymentId}`);
       }, 1000);
@@ -211,7 +232,7 @@ const EmailAccess = () => {
                 />
               </div>
             </div>
-
+            
             <Button
               onClick={verifyEmailAccess}
               disabled={loading || !email.trim()}
@@ -219,7 +240,7 @@ const EmailAccess = () => {
             >
               {loading ? 'Verificando...' : 'Verificar Acceso'}
             </Button>
-
+            
             <div className="text-center">
               <Button
                 onClick={() => navigate('/')}

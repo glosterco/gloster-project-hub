@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -18,6 +17,7 @@ const EmailAccess = () => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [popupError, setPopupError] = useState('');
+  const [paymentDataLog, setPaymentDataLog] = useState<any>(null);  // Para ver la consulta y resultados de Supabase
 
   useEffect(() => {
     if (!paymentId) {
@@ -38,7 +38,7 @@ const EmailAccess = () => {
 
     setLoading(true);
 
-    const parsedPaymentId = parseInt(paymentId?.trim() || '0');
+    const parsedPaymentId = Number(paymentId?.trim());
     console.log("paymentId:", parsedPaymentId);
 
     if (isNaN(parsedPaymentId)) {
@@ -47,30 +47,25 @@ const EmailAccess = () => {
         description: "El ID de pago proporcionado no es válido.",
         variant: "destructive",
       });
-      setLoading(false);
       return;
     }
 
     try {
-      // First query to get payment state with project and mandante info
+      // Paso 1: Consulta a Supabase para obtener el estado de pago
       const { data: paymentData, error: paymentError } = await supabase
         .from('Estados de pago')
         .select(`
           id,
-          URLMandante,
           Proyectos!inner (
             id,
-            Mandantes!inner (
-              ContactEmail,
-              CompanyName
-            )
+            Mandantes!inner (*)
           )
         `)
         .eq('id', parsedPaymentId)
-        .single();
+        .single(); // Obtenemos solo un estado de pago
 
-      console.log("paymentData:", paymentData);
-      console.log("paymentError:", paymentError);
+      console.log("paymentData (Estado de pago encontrado):", paymentData);
+      console.log("paymentError (Error al obtener estado de pago):", paymentError);
 
       if (paymentError) {
         console.error('Error al obtener datos del estado de pago:', paymentError);
@@ -83,6 +78,10 @@ const EmailAccess = () => {
         return;
       }
 
+      // Guardamos el resultado de la consulta para mostrar en la ventana emergente
+      setPaymentDataLog(paymentData);
+
+      // Paso 2: Verificación del email
       const mandanteEmail = paymentData.Proyectos?.Mandantes?.ContactEmail;
       if (!mandanteEmail) {
         setPopupError('No se encontró el email del mandante para este proyecto.');
@@ -97,7 +96,7 @@ const EmailAccess = () => {
         return;
       }
 
-      // Verificar si hay token y si coincide con la URL
+      // Paso 3: Verificación del token si está presente
       if (token) {
         const expectedUrl = `${window.location.origin}/email-access?paymentId=${paymentId}&token=${token}`;
         console.log('Comprobando URL:', { esperado: expectedUrl, almacenado: paymentData.URLMandante });
@@ -108,14 +107,14 @@ const EmailAccess = () => {
         }
       }
 
-      // Second query to get all related payments for the project
+      // Paso 4: Verificación de otros estados de pago relacionados con el proyecto
       const { data: relatedPayments, error: relatedPaymentsError } = await supabase
         .from('Estados de pago')
         .select('id')
-        .eq('Project', paymentData.Proyectos.id);
+        .eq('proyecto_id', paymentData.Proyectos.id); // Buscamos todos los estados de pago asociados al proyecto
 
-      console.log("relatedPayments:", relatedPayments);
-      console.log("relatedPaymentsError:", relatedPaymentsError);
+      console.log("relatedPayments (Estados de pago relacionados):", relatedPayments);
+      console.log("relatedPaymentsError (Error al obtener estados de pago relacionados):", relatedPaymentsError);
 
       if (relatedPaymentsError) {
         console.error("Error al obtener los estados de pago relacionados:", relatedPaymentsError);
@@ -123,16 +122,17 @@ const EmailAccess = () => {
         return;
       }
 
-      // Comparar si el ID del estado de pago proporcionado existe en los estados relacionados
+      // Verificamos si el estado de pago con el ID solicitado está entre los relacionados
       const isPaymentValid = relatedPayments && relatedPayments.some(payment => payment.id === parsedPaymentId);
 
       if (isPaymentValid) {
         toast({
           title: "Acceso verificado",
           description: "Estado de pago verificado correctamente.",
+          variant: "success",
         });
 
-        // Guardar en sessionStorage si el acceso es válido
+        // Guardamos en sessionStorage si el acceso es válido
         const accessData = {
           paymentId: paymentId,
           email: email,
@@ -171,6 +171,8 @@ const EmailAccess = () => {
         <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-md shadow-lg">
             <h3 className="text-lg font-bold text-red-600">{popupError}</h3>
+            <h4 className="mt-2 font-medium">Información adicional:</h4>
+            <pre className="bg-gray-100 p-2 rounded-lg text-xs">{JSON.stringify(paymentDataLog, null, 2)}</pre>
             <Button
               onClick={() => setPopupError('')}
               className="mt-4 w-full bg-red-600 text-white hover:bg-red-700"

@@ -68,11 +68,10 @@ const EmailAccess = () => {
 
     try {
       // 1. Obtener datos del estado de pago
-      const { data: paymentData, error: paymentError } = await supabase
+      const { data: paymentData, error: paymentError, count } = await supabase
         .from('Estados de pago')
-        .select('Project') // Solo seleccionamos el Project relacionado con el estado de pago
-        .eq('id', parsedPaymentId) // Usamos el ID de pago como filtro
-        .single(); // Esperamos un único resultado
+        .select('Project', { count: 'exact' }) // Solicitamos el conteo exacto
+        .eq('id', parsedPaymentId); // Usamos el ID de pago como filtro
 
       // Verificación de errores al obtener el estado de pago
       if (paymentError) {
@@ -85,7 +84,7 @@ const EmailAccess = () => {
         return;
       }
 
-      if (!paymentData) {
+      if (count === 0) {
         toast({
           title: "Estado de pago no encontrado",
           description: "No se encontró el estado de pago con el ID proporcionado.",
@@ -94,7 +93,21 @@ const EmailAccess = () => {
         return;
       }
 
-      const projectId = paymentData.Project;
+      if (count > 1) {
+        alert(`¡Advertencia! Se han encontrado ${count} estados de pago con el mismo ID: ${paymentId}`);
+        console.log(`Se han encontrado ${count} estados de pago con el mismo ID:`, paymentData);
+      }
+
+      if (!paymentData || paymentData.length === 0) {
+        toast({
+          title: "Estado de pago no encontrado",
+          description: "No se encontró el estado de pago con el ID proporcionado.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const projectId = paymentData[0]?.Project; // Obtenemos el ID del proyecto relacionado con el estado de pago
       console.log('Project ID extraído del estado de pago:', projectId);
 
       // 2. Obtener datos del proyecto relacionado con el estado de pago

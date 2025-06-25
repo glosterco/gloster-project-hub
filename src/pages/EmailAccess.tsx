@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -14,7 +13,7 @@ const EmailAccess = () => {
   const paymentId = searchParams.get('paymentId');
   const token = searchParams.get('token');
   const { toast } = useToast();
-
+  
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -25,9 +24,10 @@ const EmailAccess = () => {
     }
   }, [paymentId, navigate]);
 
+  // Verificar formato de email
   const validateEmailFormat = (email: string) => {
-    const re = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
-    return re.test(email);
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return regex.test(email);
   };
 
   const verifyEmailAccess = async () => {
@@ -49,30 +49,20 @@ const EmailAccess = () => {
       return;
     }
 
-    if (!paymentId) {
+    // Validar paymentId de la URL
+    if (!paymentId || isNaN(parseInt(paymentId))) {
       toast({
-        title: "ID de pago no proporcionado",
-        description: "No se proporcionó un ID de pago en la URL.",
+        title: "ID de pago inválido",
+        description: "El ID de pago proporcionado no es válido o no está presente en la URL.",
         variant: "destructive"
       });
       return;
     }
 
+    const parsedPaymentId = parseInt(paymentId); // Convertimos el paymentId a número
     setLoading(true);
 
     try {
-      console.log('Verifying email access for:', { paymentId, email, token });
-
-      const parsedPaymentId = parseInt(paymentId);
-      if (isNaN(parsedPaymentId)) {
-        toast({
-          title: "ID de pago inválido",
-          description: "El ID de pago proporcionado no es válido.",
-          variant: "destructive"
-        });
-        return;
-      }
-
       // Obtener los datos del estado de pago
       const { data: paymentData, error: paymentError } = await supabase
         .from('Estados de pago')
@@ -98,23 +88,14 @@ const EmailAccess = () => {
         return;
       }
 
-      if (paymentData.length > 1) {
-        toast({
-          title: "Error de datos",
-          description: "Se encontraron múltiples estados de pago con el mismo ID.",
-          variant: "destructive"
-        });
-        return;
-      }
-
       const paymentDataSingle = paymentData[0];
       console.log('Payment data found:', paymentDataSingle);
 
-      // Obtener la relación del mandante con el proyecto
+      // Obtener la relación del proyecto asociado al estado de pago
       const { data: proyectoData, error: proyectoError } = await supabase
         .from('Proyectos')
         .select('Mandantes(ContactEmail)')
-        .eq('id', paymentDataSingle.Project)
+        .eq('id', paymentDataSingle.proyecto_id)
         .single();
 
       if (proyectoError) {
@@ -140,6 +121,7 @@ const EmailAccess = () => {
 
       console.log('Comparing emails:', { provided: email.toLowerCase(), mandante: mandanteEmail.toLowerCase() });
 
+      // Comparar el email ingresado con el del mandante
       if (email.toLowerCase() !== mandanteEmail.toLowerCase()) {
         toast({
           title: "Acceso denegado",
@@ -149,25 +131,12 @@ const EmailAccess = () => {
         return;
       }
 
-      if (token) {
-        const expectedUrl = `${window.location.origin}/email-access?paymentId=${paymentId}&token=${token}`;
-        console.log('Checking URL match:', { expected: expectedUrl, stored: paymentDataSingle.URLMandante });
-
-        if (paymentDataSingle.URLMandante !== expectedUrl) {
-          toast({
-            title: "Token inválido",
-            description: "El enlace de acceso no es válido o ha expirado.",
-            variant: "destructive"
-          });
-          return;
-        }
-      }
-
+      // Si se pasa la verificación, almacenar los datos de acceso
       const accessData = {
         paymentId: paymentId,
         email: email,
         token: token || 'verified',
-        mandanteCompany: '', // We don't have CompanyName in the current query
+        mandanteCompany: proyectoData.Mandantes?.CompanyName || '',
         timestamp: new Date().toISOString()
       };
 

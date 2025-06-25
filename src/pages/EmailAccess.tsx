@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -25,10 +24,10 @@ const EmailAccess = () => {
     }
   }, [paymentId, navigate]);
 
-  // Verificar formato de email
   const validateEmailFormat = (email: string) => {
-    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return regex.test(email);
+    // Simple regex to validate email format
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return emailRegex.test(email);
   };
 
   const verifyEmailAccess = async () => {
@@ -50,8 +49,11 @@ const EmailAccess = () => {
       return;
     }
 
-    // Validar paymentId de la URL
-    if (!paymentId || isNaN(parseInt(paymentId))) {
+    // Extraer y validar el paymentId
+    const extractedPaymentId = paymentId;
+    console.log("Payment ID extraído:", extractedPaymentId); // Verificar que el paymentId sea '40'
+
+    if (!extractedPaymentId || isNaN(parseInt(extractedPaymentId))) {
       toast({
         title: "ID de pago inválido",
         description: "El ID de pago proporcionado no es válido o no está presente en la URL.",
@@ -60,7 +62,9 @@ const EmailAccess = () => {
       return;
     }
 
-    const parsedPaymentId = parseInt(paymentId); // Convertimos el paymentId a número
+    const parsedPaymentId = parseInt(extractedPaymentId); // Convertimos el paymentId a número
+    console.log("Payment ID convertido a número:", parsedPaymentId); // Verificar que sea 40
+
     setLoading(true);
 
     try {
@@ -80,7 +84,7 @@ const EmailAccess = () => {
         return;
       }
 
-      if (paymentData.length === 0) {
+      if (!paymentData || paymentData.length === 0) {
         toast({
           title: "Estado de pago no encontrado",
           description: "No se encontró el estado de pago con el ID proporcionado.",
@@ -92,17 +96,11 @@ const EmailAccess = () => {
       const paymentDataSingle = paymentData[0];
       console.log('Payment data found:', paymentDataSingle);
 
-      // Obtener la relación del proyecto asociado al estado de pago usando la columna correcta 'Project'
+      // Obtener la relación del proyecto asociado al estado de pago
       const { data: proyectoData, error: proyectoError } = await supabase
         .from('Proyectos')
-        .select(`
-          *,
-          Mandantes!Proyectos_Owner_fkey (
-            ContactEmail,
-            CompanyName
-          )
-        `)
-        .eq('id', paymentDataSingle.Project)
+        .select('Mandantes(ContactEmail)')
+        .eq('id', paymentDataSingle.proyecto_id)
         .single();
 
       if (proyectoError) {
@@ -125,7 +123,6 @@ const EmailAccess = () => {
       }
 
       const mandanteEmail = proyectoData.Mandantes.ContactEmail;
-
       console.log('Comparing emails:', { provided: email.toLowerCase(), mandante: mandanteEmail.toLowerCase() });
 
       // Comparar el email ingresado con el del mandante
@@ -140,7 +137,7 @@ const EmailAccess = () => {
 
       // Si se pasa la verificación, almacenar los datos de acceso
       const accessData = {
-        paymentId: paymentId,
+        paymentId: extractedPaymentId,
         email: email,
         token: token || 'verified',
         mandanteCompany: proyectoData.Mandantes?.CompanyName || '',
@@ -155,7 +152,7 @@ const EmailAccess = () => {
       });
 
       setTimeout(() => {
-        navigate(`/submission-view?paymentId=${paymentId}`);
+        navigate(`/submission-view?paymentId=${extractedPaymentId}`);
       }, 1000);
 
     } catch (error) {

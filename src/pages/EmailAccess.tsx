@@ -99,8 +99,8 @@ const EmailAccess = () => {
       // Obtener la relación del proyecto asociado al estado de pago
       const { data: proyectoData, error: proyectoError } = await supabase
         .from('Proyectos')
-        .select('Mandantes(ContactEmail, CompanyName)')
-        .eq('id', paymentDataSingle.Project)
+        .select('Mandantes(ContactEmail, CompanyName)') // Modify query to include both ContactEmail and CompanyName
+        .eq('id', paymentDataSingle.Project) // Changed from 'proyecto_id' to 'Project'
         .single();
 
       if (proyectoError) {
@@ -123,6 +123,7 @@ const EmailAccess = () => {
       }
 
       const mandanteEmail = proyectoData.Mandantes.ContactEmail;
+      const mandanteCompany = proyectoData.Mandantes.CompanyName; // Now we have the CompanyName
       console.log('Comparing emails:', { provided: email.toLowerCase(), mandante: mandanteEmail.toLowerCase() });
 
       // Comparar el email ingresado con el del mandante
@@ -137,10 +138,10 @@ const EmailAccess = () => {
 
       // Si se pasa la verificación, almacenar los datos de acceso
       const accessData = {
-        paymentId: extractedPaymentId,
+        paymentId: parsedPaymentId,
         email: email,
         token: token || 'verified',
-        mandanteCompany: proyectoData.Mandantes?.CompanyName || '',
+        mandanteCompany: mandanteCompany || '', // Store the CompanyName
         timestamp: new Date().toISOString()
       };
 
@@ -152,7 +153,7 @@ const EmailAccess = () => {
       });
 
       setTimeout(() => {
-        navigate(`/submission-view?paymentId=${extractedPaymentId}`);
+        navigate(`/submission-view?paymentId=${parsedPaymentId}`);
       }, 1000);
 
     } catch (error) {

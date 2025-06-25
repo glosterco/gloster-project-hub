@@ -14,7 +14,7 @@ const EmailAccess = () => {
   const paymentId = searchParams.get('paymentId');
   const token = searchParams.get('token');
   const { toast } = useToast();
-  
+
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -24,6 +24,11 @@ const EmailAccess = () => {
       return;
     }
   }, [paymentId, navigate]);
+
+  const validateEmailFormat = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
 
   const verifyEmailAccess = async () => {
     if (!email.trim()) {
@@ -35,8 +40,17 @@ const EmailAccess = () => {
       return;
     }
 
+    if (!validateEmailFormat(email)) {
+      toast({
+        title: "Formato de email inválido",
+        description: "Por favor ingresa un email válido",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
-    
+
     try {
       console.log('Verifying email access for:', { paymentId, email, token });
 
@@ -76,7 +90,7 @@ const EmailAccess = () => {
 
       // Verificar que el email coincida con el email del mandante
       const mandanteEmail = paymentData.Proyectos?.Mandantes?.ContactEmail;
-      
+
       if (!mandanteEmail) {
         toast({
           title: "Error de configuración",
@@ -101,7 +115,7 @@ const EmailAccess = () => {
       if (token) {
         const expectedUrl = `${window.location.origin}/email-access?paymentId=${paymentId}&token=${token}`;
         console.log('Checking URL match:', { expected: expectedUrl, stored: paymentData.URLMandante });
-        
+
         if (paymentData.URLMandante !== expectedUrl) {
           toast({
             title: "Token inválido",
@@ -185,7 +199,7 @@ const EmailAccess = () => {
                 />
               </div>
             </div>
-            
+
             <Button
               onClick={verifyEmailAccess}
               disabled={loading || !email.trim()}
@@ -193,7 +207,7 @@ const EmailAccess = () => {
             >
               {loading ? 'Verificando...' : 'Verificar Acceso'}
             </Button>
-            
+
             <div className="text-center">
               <Button
                 onClick={() => navigate('/')}

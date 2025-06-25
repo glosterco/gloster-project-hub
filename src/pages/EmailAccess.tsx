@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -18,7 +17,7 @@ const EmailAccess = () => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [popupError, setPopupError] = useState('');
-  const [paymentDataLog, setPaymentDataLog] = useState<any>(null);
+  const [paymentDataLog, setPaymentDataLog] = useState<any>(null);  // Para almacenar y mostrar los datos
 
   useEffect(() => {
     if (!paymentId) {
@@ -39,93 +38,67 @@ const EmailAccess = () => {
 
     setLoading(true);
 
-    const parsedPaymentId = parseInt(paymentId?.trim() || '0');
+    const parsedPaymentId = Number(paymentId?.trim());
     console.log("paymentId:", parsedPaymentId);
 
-    if (isNaN(parsedPaymentId) || parsedPaymentId === 0) {
+    if (isNaN(parsedPaymentId)) {
       toast({
         title: "ID de pago inválido",
         description: "El ID de pago proporcionado no es válido.",
         variant: "destructive",
       });
-      setLoading(false);
       return;
     }
 
     try {
-      // Paso 1: Consulta a Supabase para obtener el estado de pago con URLMandante
+      // Paso 1: Consulta a Supabase para obtener el estado de pago
       const { data: paymentData, error: paymentError } = await supabase
         .from('Estados de pago')
-        .select('id, URLMandante, Project')
+        .select(`
+          id,
+          Proyectos!inner (
+            id,
+            Mandantes!inner (*)
+          )
+        `)
         .eq('id', parsedPaymentId)
-        .single();
+        .single(); // Obtenemos solo un estado de pago
 
-      console.log("paymentData (Estado de pago encontrado):", paymentData);
-      console.log("paymentError (Error al obtener estado de pago):", paymentError);
+      console.log("Estado de pago encontrado (paymentData):", paymentData);
+      console.log("Error al obtener estado de pago (paymentError):", paymentError);
 
+      // Paso 2: Comprobación de la respuesta de la consulta
       if (paymentError) {
         console.error('Error al obtener datos del estado de pago:', paymentError);
         setPopupError('No se pudo verificar la información del estado de pago.');
-        setLoading(false);
+        setPaymentDataLog({ paymentId: parsedPaymentId, error: paymentError });
         return;
       }
 
       if (!paymentData) {
         setPopupError('No se encontró el estado de pago con el ID proporcionado.');
-        setLoading(false);
+        setPaymentDataLog({ paymentId: parsedPaymentId, error: 'Estado de pago no encontrado' });
         return;
       }
 
-      // Paso 2: Obtener información del proyecto y mandante
-      const { data: projectData, error: projectError } = await supabase
-        .from('Proyectos')
-        .select(`
-          id,
-          Owner
-        `)
-        .eq('id', paymentData.Project)
-        .single();
-
-      if (projectError || !projectData) {
-        setPopupError('No se pudo obtener la información del proyecto.');
-        setLoading(false);
-        return;
-      }
-
-      // Paso 3: Obtener información del mandante
-      const { data: mandanteData, error: mandanteError } = await supabase
-        .from('Mandantes')
-        .select('ContactEmail, CompanyName')
-        .eq('id', projectData.Owner)
-        .single();
-
-      if (mandanteError || !mandanteData) {
-        setPopupError('No se pudo obtener la información del mandante.');
-        setLoading(false);
-        return;
-      }
-
-      // Guardamos el resultado de la consulta para mostrar en la ventana emergente
+      // Paso 3: Guardamos el resultado de la consulta
       setPaymentDataLog({
-        paymentData,
-        projectData,
-        mandanteData
+        paymentId: parsedPaymentId,
+        paymentData: paymentData,
+        mandanteEmail: paymentData.Proyectos?.Mandantes?.ContactEmail
       });
 
       // Paso 4: Verificación del email
-      const mandanteEmail = mandanteData.ContactEmail;
+      const mandanteEmail = paymentData.Proyectos?.Mandantes?.ContactEmail;
       if (!mandanteEmail) {
         setPopupError('No se encontró el email del mandante para este proyecto.');
-        setLoading(false);
         return;
       }
 
-      // Comparar el email ingresado con el email del mandante
       console.log('Comparando emails:', { proporcionado: email.toLowerCase(), mandante: mandanteEmail.toLowerCase() });
 
       if (email.toLowerCase() !== mandanteEmail.toLowerCase()) {
         setPopupError('El email ingresado no coincide con el mandante autorizado para este proyecto.');
-        setLoading(false);
         return;
       }
 
@@ -136,24 +109,22 @@ const EmailAccess = () => {
 
         if (paymentData.URLMandante !== expectedUrl) {
           setPopupError('El enlace de acceso no es válido o ha expirado.');
-          setLoading(false);
           return;
         }
       }
 
-      // Paso 6: Verificación de otros estados de pago relacionados con el proyecto
+      // Paso 6: Verificación de los estados de pago relacionados con el proyecto
       const { data: relatedPayments, error: relatedPaymentsError } = await supabase
         .from('Estados de pago')
         .select('id')
-        .eq('Project', projectData.id);
+        .eq('proyecto_id', paymentData.Proyectos.id); // Buscamos todos los estados de pago asociados al proyecto
 
-      console.log("relatedPayments (Estados de pago relacionados):", relatedPayments);
-      console.log("relatedPaymentsError (Error al obtener estados de pago relacionados):", relatedPaymentsError);
+      console.log("Estados de pago relacionados (relatedPayments):", relatedPayments);
+      console.log("Error al obtener estados de pago relacionados (relatedPaymentsError):", relatedPaymentsError);
 
       if (relatedPaymentsError) {
         console.error("Error al obtener los estados de pago relacionados:", relatedPaymentsError);
         setPopupError('Hubo un error al obtener los estados de pago relacionados.');
-        setLoading(false);
         return;
       }
 
@@ -164,6 +135,7 @@ const EmailAccess = () => {
         toast({
           title: "Acceso verificado",
           description: "Estado de pago verificado correctamente.",
+          variant: "success",
         });
 
         // Guardamos en sessionStorage si el acceso es válido
@@ -171,7 +143,7 @@ const EmailAccess = () => {
           paymentId: paymentId,
           email: email,
           token: token || 'verified',
-          mandanteCompany: mandanteData.CompanyName || '',
+          mandanteCompany: paymentData.Proyectos?.Mandantes?.CompanyName || '',
           timestamp: new Date().toISOString()
         };
 
@@ -183,11 +155,11 @@ const EmailAccess = () => {
         }, 1000);
       } else {
         setPopupError('El estado de pago no coincide con los estados de pago encontrados para el proyecto.');
-        setLoading(false);
       }
     } catch (error) {
       console.error('Error al verificar el acceso:', error);
       setPopupError('No se pudo verificar el acceso. Intenta nuevamente.');
+    } finally {
       setLoading(false);
     }
   };
@@ -244,29 +216,13 @@ const EmailAccess = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="mandante@empresa.com"
-                  className="pl-10 font-rubik"
-                  disabled={loading}
+                  className="pl-10"
                 />
               </div>
             </div>
-
-            <Button
-              onClick={verifyEmailAccess}
-              disabled={loading || !email.trim()}
-              className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
-            >
-              {loading ? 'Verificando...' : 'Verificar Acceso'}
+            <Button onClick={verifyEmailAccess} disabled={loading} className="w-full">
+              {loading ? 'Verificando...' : 'Verificar acceso'}
             </Button>
-
-            <div className="text-center">
-              <Button
-                onClick={() => navigate('/')}
-                variant="ghost"
-                className="text-gloster-gray hover:text-slate-800 font-rubik"
-              >
-                Volver al Inicio
-              </Button>
-            </div>
           </div>
         </CardContent>
       </Card>

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -108,11 +109,11 @@ const EmailAccess = () => {
 
       console.log('Payment data found:', paymentData);
 
-      // Obtener la relación del mandante con el proyecto
+      // Obtener la relación del mandante con el proyecto usando el campo correcto 'Project'
       const { data: proyectoData, error: proyectoError } = await supabase
         .from('Proyectos')
         .select('Mandantes(ContactEmail)')
-        .eq('id', paymentData.proyecto_id)
+        .eq('id', paymentData.Project)
         .single();
 
       if (proyectoError) {
@@ -165,7 +166,7 @@ const EmailAccess = () => {
         paymentId: paymentId,
         email: email,
         token: token || 'verified',
-        mandanteCompany: proyectoData.Mandantes?.CompanyName || '',
+        mandanteCompany: proyectoData.Mandantes?.ContactEmail || '',
         timestamp: new Date().toISOString()
       };
 

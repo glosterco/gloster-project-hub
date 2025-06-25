@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -73,47 +72,48 @@ const EmailAccess = () => {
         return;
       }
 
-      // Obtener solo el estado de pago (sin las relaciones anidadas por ahora)
+      // Obtener los datos del estado de pago
       const { data: paymentData, error: paymentError } = await supabase
         .from('Estados de pago')
         .select('*')
-        .eq('id', parsedPaymentId)
-        .single();
+        .eq('id', parsedPaymentId);
 
       if (paymentError) {
         console.error('Error fetching payment data:', paymentError);
-        if (paymentError.code === 'PGRST102') {
-          toast({
-            title: "Error de consulta",
-            description: "La consulta devolvió múltiples resultados o ninguno.",
-            variant: "destructive"
-          });
-        } else {
-          toast({
-            title: "Error al obtener datos del estado de pago",
-            description: `Detalles del error: ${paymentError.message}`,
-            variant: "destructive"
-          });
-        }
-        return;
-      }
-
-      if (!paymentData) {
         toast({
-          title: "Estado de pago no encontrado",
-          description: "El estado de pago solicitado no existe.",
+          title: "Error al obtener datos del estado de pago",
+          description: `Detalles del error: ${paymentError.message}`,
           variant: "destructive"
         });
         return;
       }
 
-      console.log('Payment data found:', paymentData);
+      if (paymentData.length === 0) {
+        toast({
+          title: "Estado de pago no encontrado",
+          description: "No se encontró el estado de pago con el ID proporcionado.",
+          variant: "destructive"
+        });
+        return;
+      }
 
-      // Obtener la relación del mandante con el proyecto usando el campo correcto 'Project'
+      if (paymentData.length > 1) {
+        toast({
+          title: "Error de datos",
+          description: "Se encontraron múltiples estados de pago con el mismo ID.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const paymentDataSingle = paymentData[0];
+      console.log('Payment data found:', paymentDataSingle);
+
+      // Obtener la relación del mandante con el proyecto
       const { data: proyectoData, error: proyectoError } = await supabase
         .from('Proyectos')
         .select('Mandantes(ContactEmail)')
-        .eq('id', paymentData.Project)
+        .eq('id', paymentDataSingle.proyecto_id)
         .single();
 
       if (proyectoError) {
@@ -150,9 +150,9 @@ const EmailAccess = () => {
 
       if (token) {
         const expectedUrl = `${window.location.origin}/email-access?paymentId=${paymentId}&token=${token}`;
-        console.log('Checking URL match:', { expected: expectedUrl, stored: paymentData.URLMandante });
+        console.log('Checking URL match:', { expected: expectedUrl, stored: paymentDataSingle.URLMandante });
 
-        if (paymentData.URLMandante !== expectedUrl) {
+        if (paymentDataSingle.URLMandante !== expectedUrl) {
           toast({
             title: "Token inválido",
             description: "El enlace de acceso no es válido o ha expirado.",
@@ -166,7 +166,7 @@ const EmailAccess = () => {
         paymentId: paymentId,
         email: email,
         token: token || 'verified',
-        mandanteCompany: proyectoData.Mandantes?.ContactEmail || '',
+        mandanteCompany: proyectoData.Mandantes?.CompanyName || '',
         timestamp: new Date().toISOString()
       };
 

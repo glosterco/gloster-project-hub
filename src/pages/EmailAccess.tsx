@@ -26,7 +26,7 @@ const EmailAccess = () => {
 
   const validateEmailFormat = (email: string) => {
     // Simple regex to validate email format
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zAZ0-9.-]+\.[a-zA-Z]{2,}$/;
     return emailRegex.test(email);
   };
 
@@ -68,12 +68,12 @@ const EmailAccess = () => {
     setLoading(true);
 
     try {
-      // Get the payment status data from Supabase
+      // 1. Get the payment status data from Supabase
       const { data: paymentData, error: paymentError } = await supabase
         .from('Estados de pago')
-        .select('*')
-        .eq('id', Number(parsedPaymentId)) // Convert BigInt to Number for the query
-        .single();
+        .select('Project') // Select only the Project ID from the 'Estados de pago' table
+        .eq('id', Number(parsedPaymentId)) // Filter by the specific paymentId
+        .single(); // Expect a single row, since paymentId should be unique
 
       if (paymentError) {
         console.error('Error fetching payment data:', paymentError);
@@ -94,15 +94,15 @@ const EmailAccess = () => {
         return;
       }
 
-      const paymentDataSingle = paymentData;
-      console.log('Payment data found:', paymentDataSingle);
+      const projectId = paymentData.Project;
+      console.log('Project ID extraído:', projectId);
 
-      // Get the project data related to the payment status
+      // 2. Get the project data related to the payment status
       const { data: proyectoData, error: proyectoError } = await supabase
         .from('Proyectos')
-        .select('Mandantes(ContactEmail, CompanyName)') // Modify query to include both ContactEmail and CompanyName
-        .eq('id', paymentDataSingle.Project) // Changed from 'proyecto_id' to 'Project'
-        .single();
+        .select('Mandantes(ContactEmail, CompanyName)') // Now we select both ContactEmail and CompanyName
+        .eq('id', projectId) // Use the projectId obtained from the estado de pago
+        .single(); // Expect a single project
 
       if (proyectoError) {
         console.error('Error fetching project data:', proyectoError);
@@ -127,7 +127,7 @@ const EmailAccess = () => {
       const mandanteCompany = proyectoData.Mandantes.CompanyName; // Now we have the CompanyName
       console.log('Comparing emails:', { provided: email.toLowerCase(), mandante: mandanteEmail.toLowerCase() });
 
-      // Compare the entered email with the mandante email
+      // 3. Compare the entered email with the mandante email
       if (email.toLowerCase() !== mandanteEmail.toLowerCase()) {
         toast({
           title: "Acceso denegado",
@@ -137,7 +137,7 @@ const EmailAccess = () => {
         return;
       }
 
-      // If the verification is successful, store the access data
+      // 4. If the verification is successful, store the access data
       const accessData = {
         paymentId: Number(parsedPaymentId), // Store as number now
         email: email,

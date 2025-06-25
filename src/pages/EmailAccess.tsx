@@ -146,3 +146,69 @@ const verifyEmailAccess = async () => {
     setLoading(false);
   }
 };
+const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      verifyEmailAccess();
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 font-rubik flex items-center justify-center p-4">
+      <Card className="w-full max-w-md border-gloster-gray/20">
+        <CardHeader className="text-center">
+          <div className="w-16 h-16 bg-gloster-yellow/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Lock className="h-8 w-8 text-gloster-gray" />
+          </div>
+          <CardTitle className="text-2xl font-bold text-slate-800 font-rubik">
+            Verificación de Acceso
+          </CardTitle>
+          <CardDescription className="font-rubik">
+            Ingresa tu email para acceder al estado de pago
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="email" className="text-sm font-medium text-slate-700 font-rubik">
+                Email del Mandante
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gloster-gray" />
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="mandante@empresa.com"
+                  className="pl-10 font-rubik"
+                  disabled={loading}
+                />
+              </div>
+            </div>
+
+            <Button
+              onClick={verifyEmailAccess}
+              disabled={loading || !email.trim()}
+              className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
+            >
+              {loading ? 'Verificando...' : 'Verificar Acceso'}
+            </Button>
+
+            <div className="text-center">
+              <Button
+                onClick={() => navigate('/')}
+                variant="ghost"
+                className="text-gloster-gray hover:text-slate-800 font-rubik"
+              >
+                Volver al Inicio
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default EmailAccess;

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -17,7 +18,7 @@ const EmailAccess = () => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [popupError, setPopupError] = useState('');
-  const [paymentDataLog, setPaymentDataLog] = useState<any>(null);  // Para ver la consulta y resultados de Supabase
+  const [paymentDataLog, setPaymentDataLog] = useState<any>(null);
 
   useEffect(() => {
     if (!paymentId) {
@@ -38,31 +39,26 @@ const EmailAccess = () => {
 
     setLoading(true);
 
-    const parsedPaymentId = Number(paymentId?.trim());
+    const parsedPaymentId = parseInt(paymentId?.trim() || '0');
     console.log("paymentId:", parsedPaymentId);
 
-    if (isNaN(parsedPaymentId)) {
+    if (isNaN(parsedPaymentId) || parsedPaymentId === 0) {
       toast({
         title: "ID de pago inválido",
         description: "El ID de pago proporcionado no es válido.",
         variant: "destructive",
       });
+      setLoading(false);
       return;
     }
 
     try {
-      // Paso 1: Consulta a Supabase para obtener el estado de pago
+      // Paso 1: Consulta a Supabase para obtener el estado de pago con URLMandante
       const { data: paymentData, error: paymentError } = await supabase
         .from('Estados de pago')
-        .select(`
-          id,
-          Proyectos!inner (
-            id,
-            Mandantes!inner (*)
-          )
-        `)
+        .select('id, URLMandante, Project')
         .eq('id', parsedPaymentId)
-        .single(); // Obtenemos solo un estado de pago
+        .single();
 
       console.log("paymentData (Estado de pago encontrado):", paymentData);
       console.log("paymentError (Error al obtener estado de pago):", paymentError);
@@ -70,21 +66,57 @@ const EmailAccess = () => {
       if (paymentError) {
         console.error('Error al obtener datos del estado de pago:', paymentError);
         setPopupError('No se pudo verificar la información del estado de pago.');
+        setLoading(false);
         return;
       }
 
       if (!paymentData) {
         setPopupError('No se encontró el estado de pago con el ID proporcionado.');
+        setLoading(false);
+        return;
+      }
+
+      // Paso 2: Obtener información del proyecto y mandante
+      const { data: projectData, error: projectError } = await supabase
+        .from('Proyectos')
+        .select(`
+          id,
+          Owner
+        `)
+        .eq('id', paymentData.Project)
+        .single();
+
+      if (projectError || !projectData) {
+        setPopupError('No se pudo obtener la información del proyecto.');
+        setLoading(false);
+        return;
+      }
+
+      // Paso 3: Obtener información del mandante
+      const { data: mandanteData, error: mandanteError } = await supabase
+        .from('Mandantes')
+        .select('ContactEmail, CompanyName')
+        .eq('id', projectData.Owner)
+        .single();
+
+      if (mandanteError || !mandanteData) {
+        setPopupError('No se pudo obtener la información del mandante.');
+        setLoading(false);
         return;
       }
 
       // Guardamos el resultado de la consulta para mostrar en la ventana emergente
-      setPaymentDataLog(paymentData);
+      setPaymentDataLog({
+        paymentData,
+        projectData,
+        mandanteData
+      });
 
-      // Paso 2: Verificación del email
-      const mandanteEmail = paymentData.Proyectos?.Mandantes?.ContactEmail;
+      // Paso 4: Verificación del email
+      const mandanteEmail = mandanteData.ContactEmail;
       if (!mandanteEmail) {
         setPopupError('No se encontró el email del mandante para este proyecto.');
+        setLoading(false);
         return;
       }
 
@@ -93,25 +125,27 @@ const EmailAccess = () => {
 
       if (email.toLowerCase() !== mandanteEmail.toLowerCase()) {
         setPopupError('El email ingresado no coincide con el mandante autorizado para este proyecto.');
+        setLoading(false);
         return;
       }
 
-      // Paso 3: Verificación del token si está presente
+      // Paso 5: Verificación del token si está presente
       if (token) {
         const expectedUrl = `${window.location.origin}/email-access?paymentId=${paymentId}&token=${token}`;
         console.log('Comprobando URL:', { esperado: expectedUrl, almacenado: paymentData.URLMandante });
 
         if (paymentData.URLMandante !== expectedUrl) {
           setPopupError('El enlace de acceso no es válido o ha expirado.');
+          setLoading(false);
           return;
         }
       }
 
-      // Paso 4: Verificación de otros estados de pago relacionados con el proyecto
+      // Paso 6: Verificación de otros estados de pago relacionados con el proyecto
       const { data: relatedPayments, error: relatedPaymentsError } = await supabase
         .from('Estados de pago')
         .select('id')
-        .eq('proyecto_id', paymentData.Proyectos.id); // Buscamos todos los estados de pago asociados al proyecto
+        .eq('Project', projectData.id);
 
       console.log("relatedPayments (Estados de pago relacionados):", relatedPayments);
       console.log("relatedPaymentsError (Error al obtener estados de pago relacionados):", relatedPaymentsError);
@@ -119,6 +153,7 @@ const EmailAccess = () => {
       if (relatedPaymentsError) {
         console.error("Error al obtener los estados de pago relacionados:", relatedPaymentsError);
         setPopupError('Hubo un error al obtener los estados de pago relacionados.');
+        setLoading(false);
         return;
       }
 
@@ -129,7 +164,6 @@ const EmailAccess = () => {
         toast({
           title: "Acceso verificado",
           description: "Estado de pago verificado correctamente.",
-          variant: "success",
         });
 
         // Guardamos en sessionStorage si el acceso es válido
@@ -137,7 +171,7 @@ const EmailAccess = () => {
           paymentId: paymentId,
           email: email,
           token: token || 'verified',
-          mandanteCompany: paymentData.Proyectos?.Mandantes?.CompanyName || '',
+          mandanteCompany: mandanteData.CompanyName || '',
           timestamp: new Date().toISOString()
         };
 
@@ -149,11 +183,11 @@ const EmailAccess = () => {
         }, 1000);
       } else {
         setPopupError('El estado de pago no coincide con los estados de pago encontrados para el proyecto.');
+        setLoading(false);
       }
     } catch (error) {
       console.error('Error al verificar el acceso:', error);
       setPopupError('No se pudo verificar el acceso. Intenta nuevamente.');
-    } finally {
       setLoading(false);
     }
   };

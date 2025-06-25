@@ -53,7 +53,7 @@ const EmailAccess = () => {
     const extractedPaymentId = paymentId;
     console.log("Payment ID extraído:", extractedPaymentId); // Verificar que el paymentId sea '40'
 
-    if (!extractedPaymentId || isNaN(parseInt(extractedPaymentId))) {
+    if (!extractedPaymentId || isNaN(Number(extractedPaymentId))) {
       toast({
         title: "ID de pago inválido",
         description: "El ID de pago proporcionado no es válido o no está presente en la URL.",
@@ -62,8 +62,8 @@ const EmailAccess = () => {
       return;
     }
 
-    const parsedPaymentId = parseInt(extractedPaymentId); // Convertimos el paymentId a número
-    console.log("Payment ID convertido a número:", parsedPaymentId); // Verificar que sea 40
+    const parsedPaymentId = BigInt(extractedPaymentId); // Usamos BigInt para comparar correctamente
+    console.log("Payment ID convertido a BigInt:", parsedPaymentId); // Verificar que sea BigInt
 
     setLoading(true);
 
@@ -72,7 +72,8 @@ const EmailAccess = () => {
       const { data: paymentData, error: paymentError } = await supabase
         .from('Estados de pago')
         .select('*')
-        .eq('id', parsedPaymentId);
+        .eq('id', parsedPaymentId.toString()) // Convertimos BigInt a string para la comparación
+        .single();
 
       if (paymentError) {
         console.error('Error fetching payment data:', paymentError);
@@ -84,7 +85,7 @@ const EmailAccess = () => {
         return;
       }
 
-      if (!paymentData || paymentData.length === 0) {
+      if (!paymentData) {
         toast({
           title: "Estado de pago no encontrado",
           description: "No se encontró el estado de pago con el ID proporcionado.",
@@ -93,7 +94,7 @@ const EmailAccess = () => {
         return;
       }
 
-      const paymentDataSingle = paymentData[0];
+      const paymentDataSingle = paymentData;
       console.log('Payment data found:', paymentDataSingle);
 
       // Obtener la relación del proyecto asociado al estado de pago
@@ -138,7 +139,7 @@ const EmailAccess = () => {
 
       // Si se pasa la verificación, almacenar los datos de acceso
       const accessData = {
-        paymentId: parsedPaymentId,
+        paymentId: parsedPaymentId.toString(), // Store as string
         email: email,
         token: token || 'verified',
         mandanteCompany: mandanteCompany || '', // Store the CompanyName

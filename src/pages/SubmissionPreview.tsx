@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -357,7 +356,7 @@ const SubmissionPreview = () => {
             paymentState={emailTemplateData.paymentState}
             project={emailTemplateData.project}
             documents={emailTemplateData.documents}
-            disableActions={true}
+            hideActionButtons={true}
           />
         </div>
       </div>

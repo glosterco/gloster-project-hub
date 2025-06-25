@@ -99,8 +99,8 @@ const EmailAccess = () => {
       // Obtener la relación del proyecto asociado al estado de pago
       const { data: proyectoData, error: proyectoError } = await supabase
         .from('Proyectos')
-        .select('Mandantes(ContactEmail)')
-        .eq('id', paymentDataSingle.proyecto_id)
+        .select('Mandantes(ContactEmail, CompanyName)')
+        .eq('id', paymentDataSingle.Project)
         .single();
 
       if (proyectoError) {

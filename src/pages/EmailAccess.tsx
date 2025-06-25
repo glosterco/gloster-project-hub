@@ -1,8 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Mail, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -12,11 +13,18 @@ const EmailAccess = () => {
   const paymentId = searchParams.get('paymentId');
   const token = searchParams.get('token');
   const { toast } = useToast();
-
+  
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [popupError, setPopupError] = useState<string | null>(null);
-  const [paymentDataLog, setPaymentDataLog] = useState<any>(null);
+  const [paymentDataLog, setPaymentDataLog] = useState<any>(null); // Used for logging
+
+  useEffect(() => {
+    if (!paymentId) {
+      navigate('/');
+      return;
+    }
+  }, [paymentId, navigate]);
 
   const verifyEmailAccess = async () => {
     if (!email.trim()) {
@@ -51,7 +59,6 @@ const EmailAccess = () => {
         .from('Estados de pago')
         .select(`
           id,
-          URLMandante,
           Proyectos!inner (
             id,
             Mandantes!inner (*)
@@ -130,6 +137,7 @@ const EmailAccess = () => {
         toast({
           title: "Acceso verificado",
           description: "Estado de pago verificado correctamente.",
+          variant: "success",
         });
 
         // Guardamos en sessionStorage si el acceso es válido
@@ -158,69 +166,75 @@ const EmailAccess = () => {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-slate-50 font-rubik">
-      <div className="container mx-auto px-6 py-8">
-        <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg p-6">
-          <div className="text-center mb-6">
-            <img 
-              src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
-              alt="Gloster Logo" 
-              className="w-12 h-12 mx-auto mb-4"
-            />
-            <h1 className="text-2xl font-bold text-slate-800 mb-2">Verificar Acceso</h1>
-            <p className="text-gloster-gray">Ingresa tu email para acceder al estado de pago</p>
-          </div>
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      verifyEmailAccess();
+    }
+  };
 
+  return (
+    <div className="min-h-screen bg-slate-50 font-rubik flex items-center justify-center p-4">
+      <Card className="w-full max-w-md border-gloster-gray/20">
+        <CardHeader className="text-center">
+          <div className="w-16 h-16 bg-gloster-yellow/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Lock className="h-8 w-8 text-gloster-gray" />
+          </div>
+          <CardTitle className="text-2xl font-bold text-slate-800 font-rubik">
+            Verificación de Acceso
+          </CardTitle>
+          <CardDescription className="font-rubik">
+            Ingresa tu email para acceder al estado de pago
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
           <div className="space-y-4">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-2">
+            <div className="space-y-2">
+              <label htmlFor="email" className="text-sm font-medium text-slate-700 font-rubik">
                 Email del Mandante
               </label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="ingresa tu email"
-                className="w-full"
-              />
-            </div>
-
-            {popupError && (
-              <div className="bg-red-50 border border-red-200 rounded-md p-3">
-                <p className="text-sm text-red-600">{popupError}</p>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gloster-gray" />
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="mandante@empresa.com"
+                  className="pl-10 font-rubik"
+                  disabled={loading}
+                />
               </div>
-            )}
-
+            </div>
+            
             <Button
               onClick={verifyEmailAccess}
-              disabled={loading}
+              disabled={loading || !email.trim()}
               className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
             >
               {loading ? 'Verificando...' : 'Verificar Acceso'}
             </Button>
-
+            
             <div className="text-center">
-              <button
+              <Button
                 onClick={() => navigate('/')}
-                className="text-sm text-gloster-gray hover:text-slate-800"
+                variant="ghost"
+                className="text-gloster-gray hover:text-slate-800 font-rubik"
               >
-                Volver al inicio
-              </button>
+                Volver al Inicio
+              </Button>
             </div>
           </div>
+        </CardContent>
+      </Card>
 
-          {/* Debug information */}
-          {paymentDataLog && (
-            <div className="mt-6 p-3 bg-gray-50 rounded-md">
-              <p className="text-xs text-gray-600">
-                Debug: {JSON.stringify(paymentDataLog, null, 2)}
-              </p>
-            </div>
-          )}
+      {/* Pop-up de error o log */}
+      {popupError && (
+        <div className="popup-error">
+          <p>{popupError}</p>
+          <pre>{JSON.stringify(paymentDataLog, null, 2)}</pre>
         </div>
-      </div>
+      )}
     </div>
   );
 };

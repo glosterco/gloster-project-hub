@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -91,11 +92,17 @@ const EmailAccess = () => {
       const paymentDataSingle = paymentData[0];
       console.log('Payment data found:', paymentDataSingle);
 
-      // Obtener la relación del proyecto asociado al estado de pago
+      // Obtener la relación del proyecto asociado al estado de pago usando la columna correcta 'Project'
       const { data: proyectoData, error: proyectoError } = await supabase
         .from('Proyectos')
-        .select('Mandantes(ContactEmail)')
-        .eq('id', paymentDataSingle.proyecto_id)
+        .select(`
+          *,
+          Mandantes!Proyectos_Owner_fkey (
+            ContactEmail,
+            CompanyName
+          )
+        `)
+        .eq('id', paymentDataSingle.Project)
         .single();
 
       if (proyectoError) {

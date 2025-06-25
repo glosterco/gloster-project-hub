@@ -196,3 +196,12 @@ const EmailAccess = () => {
             <p className="text-red-500 mt-4">{popupError}</p> {/* Mostrar el error en el popup */}
             <div className="mt-4">
               <Button onClick={closePopup} variant="ghost" className="w-full">Cerrar</Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default EmailAccess;

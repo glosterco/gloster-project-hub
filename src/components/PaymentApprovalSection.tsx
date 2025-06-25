@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,25 +10,47 @@ interface PaymentApprovalSectionProps {
     amount: number;
     projectName: string;
   };
+  disabled?: boolean;
 }
 
-const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({ paymentState }) => {
+const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({ paymentState, disabled = false }) => {
   const [approvalStatus, setApprovalStatus] = useState<'pending' | 'approved' | 'rejected'>('pending');
   const [rejectionComments, setRejectionComments] = useState('');
 
   const handleApprove = () => {
+    if (disabled) return;
     setApprovalStatus('approved');
     console.log(`Estado de pago ${paymentState.month} aprobado`);
   };
 
   const handleReject = () => {
+    if (disabled) return;
     setApprovalStatus('rejected');
   };
 
   const handleSubmitRejection = () => {
+    if (disabled) return;
     console.log(`Estado de pago ${paymentState.month} rechazado con comentarios:`, rejectionComments);
     // Aquí se enviarían los comentarios al sistema
   };
+
+  if (disabled) {
+    return (
+      <Card className="border-l-4 border-l-gray-300 bg-gray-50">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2 font-rubik text-gray-500">
+            <MessageSquare className="h-5 w-5 text-gray-400" />
+            <span>Acciones del Estado de Pago (Solo vista previa)</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-gray-500 font-rubik text-sm">
+            Esta es una vista previa. Las acciones de aprobación están disponibles en la vista de revisión.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (approvalStatus === 'approved') {
     return (

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -17,7 +18,7 @@ const EmailAccess = () => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [popupError, setPopupError] = useState('');
-  const [paymentDataLog, setPaymentDataLog] = useState<any>(null);  // Para almacenar y mostrar los datos
+  const [paymentDataLog, setPaymentDataLog] = useState<any>(null);
 
   useEffect(() => {
     if (!paymentId) {
@@ -51,23 +52,16 @@ const EmailAccess = () => {
     }
 
     try {
-      // Paso 1: Consulta a Supabase para obtener el estado de pago
+      // Paso 1: Consulta simplificada para obtener el estado de pago
       const { data: paymentData, error: paymentError } = await supabase
         .from('Estados de pago')
-        .select(`
-          id,
-          Proyectos!inner (
-            id,
-            Mandantes!inner (*)
-          )
-        `)
+        .select('id, URLMandante, Project')
         .eq('id', parsedPaymentId)
-        .single(); // Obtenemos solo un estado de pago
+        .single();
 
       console.log("Estado de pago encontrado (paymentData):", paymentData);
       console.log("Error al obtener estado de pago (paymentError):", paymentError);
 
-      // Paso 2: Comprobación de la respuesta de la consulta
       if (paymentError) {
         console.error('Error al obtener datos del estado de pago:', paymentError);
         setPopupError('No se pudo verificar la información del estado de pago.');
@@ -81,15 +75,41 @@ const EmailAccess = () => {
         return;
       }
 
+      // Paso 2: Obtener datos del proyecto y mandante por separado
+      const { data: projectData, error: projectError } = await supabase
+        .from('Proyectos')
+        .select(`
+          id,
+          Owner,
+          Mandantes!inner (
+            id,
+            CompanyName,
+            ContactEmail,
+            ContactName,
+            ContactPhone,
+            Status
+          )
+        `)
+        .eq('id', paymentData.Project)
+        .single();
+
+      if (projectError || !projectData) {
+        console.error('Error al obtener datos del proyecto:', projectError);
+        setPopupError('No se pudieron obtener los datos del proyecto.');
+        setPaymentDataLog({ paymentId: parsedPaymentId, error: projectError });
+        return;
+      }
+
       // Paso 3: Guardamos el resultado de la consulta
       setPaymentDataLog({
         paymentId: parsedPaymentId,
         paymentData: paymentData,
-        mandanteEmail: paymentData.Proyectos?.Mandantes?.ContactEmail
+        projectData: projectData,
+        mandanteEmail: projectData.Mandantes?.ContactEmail
       });
 
       // Paso 4: Verificación del email
-      const mandanteEmail = paymentData.Proyectos?.Mandantes?.ContactEmail;
+      const mandanteEmail = projectData.Mandantes?.ContactEmail;
       if (!mandanteEmail) {
         setPopupError('No se encontró el email del mandante para este proyecto.');
         return;
@@ -117,7 +137,7 @@ const EmailAccess = () => {
       const { data: relatedPayments, error: relatedPaymentsError } = await supabase
         .from('Estados de pago')
         .select('id')
-        .eq('proyecto_id', paymentData.Proyectos.id); // Buscamos todos los estados de pago asociados al proyecto
+        .eq('Project', projectData.id);
 
       console.log("Estados de pago relacionados (relatedPayments):", relatedPayments);
       console.log("Error al obtener estados de pago relacionados (relatedPaymentsError):", relatedPaymentsError);
@@ -135,7 +155,6 @@ const EmailAccess = () => {
         toast({
           title: "Acceso verificado",
           description: "Estado de pago verificado correctamente.",
-          variant: "success",
         });
 
         // Guardamos en sessionStorage si el acceso es válido
@@ -143,7 +162,7 @@ const EmailAccess = () => {
           paymentId: paymentId,
           email: email,
           token: token || 'verified',
-          mandanteCompany: paymentData.Proyectos?.Mandantes?.CompanyName || '',
+          mandanteCompany: projectData.Mandantes?.CompanyName || '',
           timestamp: new Date().toISOString()
         };
 

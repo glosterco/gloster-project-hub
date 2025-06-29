@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -13,7 +14,7 @@ const SubmissionView = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const paymentId = searchParams.get('paymentId') || '11';
-  const { payment, loading, error } = usePaymentDetail(paymentId, false);
+  const { payment, loading, error, refetch } = usePaymentDetail(paymentId, false);
   const { toast } = useToast();
   const [hasAccess, setHasAccess] = useState(false);
   const [checkingAccess, setCheckingAccess] = useState(true);
@@ -221,6 +222,35 @@ const SubmissionView = () => {
     }
   };
 
+  // Función para descargar archivos del Drive
+  const handleDownloadFile = async (fileName: string) => {
+    if (!payment?.URL) {
+      toast({
+        title: "Error",
+        description: "No se encontró la URL del archivo",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      // Abrir la URL del Drive en una nueva pestaña
+      window.open(payment.URL, '_blank');
+      
+      toast({
+        title: "Descarga iniciada",
+        description: `Se ha abierto la carpeta del Drive para descargar ${fileName}`,
+      });
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      toast({
+        title: "Error al descargar",
+        description: "No se pudo acceder al archivo",
+        variant: "destructive"
+      });
+    }
+  };
+
   if (checkingAccess) {
     return (
       <div className="min-h-screen bg-slate-50 font-rubik">
@@ -330,6 +360,17 @@ const SubmissionView = () => {
                 <Download className="h-4 w-4 mr-2" />
                 Descargar PDF
               </Button>
+              {payment?.URL && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDownloadFile('Documentos')}
+                  className="font-rubik"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Descargar Archivos
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -345,14 +386,13 @@ const SubmissionView = () => {
           />
         </div>
 
-        {/* Botones de acción para mandantes */}
+        {/* Botones de acción para mandantes - SOLO ESTOS BOTONES */}
         <div className="max-w-4xl mx-auto mt-6">
           <PaymentActionButtons 
             paymentId={paymentId}
             isMandante={isMandante()}
             onActionComplete={() => {
-              // Recargar la página o actualizar el estado
-              window.location.reload();
+              refetch();
             }}
           />
         </div>

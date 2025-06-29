@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -170,6 +171,35 @@ const SubmissionPreview = () => {
     }
   };
 
+  // Función para descargar archivos del Drive
+  const handleDownloadFile = async (fileName: string) => {
+    if (!payment?.URL) {
+      toast({
+        title: "Error",
+        description: "No se encontró la URL del archivo",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      // Abrir la URL del Drive en una nueva pestaña
+      window.open(payment.URL, '_blank');
+      
+      toast({
+        title: "Descarga iniciada",
+        description: `Se ha abierto la carpeta del Drive para descargar ${fileName}`,
+      });
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      toast({
+        title: "Error al descargar",
+        description: "No se pudo acceder al archivo",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleSendEmail = async () => {
     if (!payment || !payment.projectData) {
       toast({
@@ -180,23 +210,48 @@ const SubmissionPreview = () => {
       return;
     }
 
-    const mandanteUrl = await generateUniqueURLAndUpdate();
-    if (!mandanteUrl) return;
+    try {
+      const mandanteUrl = await generateUniqueURLAndUpdate();
+      if (!mandanteUrl) return;
 
-    const notificationData = {
-      paymentId: paymentId,
-      contratista: payment.projectData.Contratista?.ContactName || '',
-      mes: payment.Mes || '',
-      año: payment.Año || 0,
-      proyecto: payment.projectData.Name || '',
-      mandanteEmail: payment.projectData.Owner?.ContactEmail || '',
-      mandanteCompany: payment.projectData.Owner?.CompanyName || '',
-      contractorCompany: payment.projectData.Contratista?.CompanyName || '',
-      amount: payment.Total || 0,
-      dueDate: payment.ExpiryDate || ''
-    };
+      // Cambiar status a "Enviado"
+      const { error: statusError } = await supabase
+        .from('Estados de pago')
+        .update({ Status: 'Enviado' })
+        .eq('id', payment.id);
 
-    await sendNotificationToMandante(notificationData);
+      if (statusError) {
+        console.error('Error updating status:', statusError);
+        throw new Error('Error al actualizar el estado');
+      }
+
+      const notificationData = {
+        paymentId: paymentId,
+        contratista: payment.projectData.Contratista?.ContactName || '',
+        mes: payment.Mes || '',
+        año: payment.Año || 0,
+        proyecto: payment.projectData.Name || '',
+        mandanteEmail: payment.projectData.Owner?.ContactEmail || '',
+        mandanteCompany: payment.projectData.Owner?.CompanyName || '',
+        contractorCompany: payment.projectData.Contratista?.CompanyName || '',
+        amount: payment.Total || 0,
+        dueDate: payment.ExpiryDate || ''
+      };
+
+      await sendNotificationToMandante(notificationData);
+
+      toast({
+        title: "Notificación enviada",
+        description: "El estado de pago ha sido enviado y se actualizó el status",
+      });
+    } catch (error) {
+      console.error('Error sending notification:', error);
+      toast({
+        title: "Error al enviar",
+        description: "No se pudo enviar la notificación",
+        variant: "destructive"
+      });
+    }
   };
 
   const generateUniqueURLAndUpdate = async () => {
@@ -280,7 +335,10 @@ const SubmissionPreview = () => {
       contractor: payment.projectData.Contratista?.CompanyName || '',
       location: payment.projectData.Location || '',
       projectManager: payment.projectData.Contratista?.ContactName || '',
-      contactEmail: payment.projectData.Contratista?.ContactEmail || ''
+      contactEmail: payment.projectData.Contratista?.ContactEmail || '',
+      contractorRUT: payment.projectData.Contratista?.RUT || '',
+      contractorPhone: payment.projectData.Contratista?.ContactPhone || '',
+      contractorAddress: payment.projectData.Contratista?.Adress || ''
     },
     documents: documentsFromPayment
   };
@@ -320,6 +378,17 @@ const SubmissionPreview = () => {
                 <Download className="h-4 w-4 mr-2" />
                 Descargar PDF
               </Button>
+              {payment?.URL && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDownloadFile('Documentos')}
+                  className="font-rubik"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Descargar Archivos
+                </Button>
+              )}
               {isProjectUser && (
                 <Button
                   size="sm"

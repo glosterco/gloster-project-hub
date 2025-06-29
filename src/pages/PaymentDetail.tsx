@@ -4,17 +4,18 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-import { ArrowLeft, Calendar, Send, CheckCircle, Clock, Eye } from 'lucide-react';
+import { ArrowLeft, Calendar, Send, CheckCircle, Clock, Eye, Save, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { usePaymentDetail } from '@/hooks/usePaymentDetail';
 import { useMandanteNotification } from '@/hooks/useMandanteNotification';
 import { useGoogleDriveIntegration } from '@/hooks/useGoogleDriveIntegration';
 import { useDocumentUpload } from '@/hooks/useDocumentUpload';
+import { supabase } from '@/integrations/supabase/client';
 import PageHeader from '@/components/PageHeader';
 import DocumentUploadCard from '@/components/DocumentUploadCard';
 import LoadingModal from '@/components/LoadingModal';
-import { supabase } from '@/integrations/supabase/client';
 
 const PaymentDetail = () => {
   const { id } = useParams();
@@ -22,7 +23,7 @@ const PaymentDetail = () => {
   const { toast } = useToast();
 
   // Use real data from database
-  const { payment, loading } = usePaymentDetail(id || '');
+  const { payment, loading, refetch } = usePaymentDetail(id || '');
   const { sendNotificationToMandante, loading: notificationLoading } = useMandanteNotification();
   const { uploadDocumentsToDrive, loading: driveLoading } = useGoogleDriveIntegration();
 
@@ -43,6 +44,59 @@ const PaymentDetail = () => {
 
   const [achsSelection, setAchsSelection] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  
+  // Estados para los campos editables
+  const [editableAmount, setEditableAmount] = useState(payment?.Total?.toString() || '');
+  const [editablePercentage, setEditablePercentage] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Calcular valores automáticamente
+  const handleAmountChange = (value: string) => {
+    setEditableAmount(value);
+    if (value && payment?.projectData?.Budget) {
+      const percentage = (parseFloat(value) / payment.projectData.Budget) * 100;
+      setEditablePercentage(percentage.toFixed(2));
+    }
+  };
+
+  const handlePercentageChange = (value: string) => {
+    setEditablePercentage(value);
+    if (value && payment?.projectData?.Budget) {
+      const amount = (parseFloat(value) / 100) * payment.projectData.Budget;
+      setEditableAmount(amount.toString());
+    }
+  };
+
+  // Guardar cambios en la base de datos
+  const handleSaveAmount = async () => {
+    if (!payment?.id || !editableAmount) return;
+    
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('Estados de pago')
+        .update({ Total: parseFloat(editableAmount) })
+        .eq('id', payment.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Monto actualizado",
+        description: "El monto del estado de pago se ha actualizado correctamente",
+      });
+      
+      refetch();
+    } catch (error) {
+      console.error('Error updating amount:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el monto",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   // Map database data to match the UI structure
   const paymentState = payment ? {
@@ -253,6 +307,17 @@ const PaymentDetail = () => {
       const mandanteUrl = await generateUniqueURLAndUpdate();
       if (!mandanteUrl) return;
 
+      // Cambiar status a "Enviado"
+      const { error: statusError } = await supabase
+        .from('Estados de pago')
+        .update({ Status: 'Enviado' })
+        .eq('id', payment.id);
+
+      if (statusError) {
+        console.error('Error updating status:', statusError);
+        throw new Error('Error al actualizar el estado');
+      }
+
       // Get the payment state data to fetch the URL
       const { data: paymentStateData, error: paymentStateError } = await supabase
         .from('Estados de pago')
@@ -325,6 +390,33 @@ const PaymentDetail = () => {
 
   const getCompletedDocumentsCount = () => {
     return documents.filter(doc => documentStatus[doc.id as keyof typeof documentStatus]).length;
+  };
+
+  // Función para mostrar archivos del Drive si el status es "Enviado", "Aprobado" o "Rechazado"
+  const shouldShowDriveFiles = () => {
+    return payment?.Status === 'Enviado' || payment?.Status === 'Aprobado' || payment?.Status === 'Rechazado';
+  };
+
+  // Función para descargar archivos del Drive
+  const handleDownloadFile = async (fileName: string) => {
+    if (!payment?.URL) return;
+    
+    try {
+      // Abrir la URL del Drive en una nueva pestaña
+      window.open(payment.URL, '_blank');
+      
+      toast({
+        title: "Descarga iniciada",
+        description: `Se ha abierto la carpeta del Drive para descargar ${fileName}`,
+      });
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      toast({
+        title: "Error al descargar",
+        description: "No se pudo acceder al archivo",
+        variant: "destructive"
+      });
+    }
   };
 
   if (loading) {
@@ -405,9 +497,54 @@ const PaymentDetail = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="sm:col-span-2 lg:col-span-1">
+                      <p className="text-gloster-gray text-sm font-rubik mb-2">Monto del Estado</p>
+                      {shouldShowDriveFiles() ? (
+                        <p className="font-bold text-lg md:text-xl text-slate-800 font-rubik break-words">
+                          {formatCurrency(paymentState.amount)}
+                        </p>
+                      ) : (
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm text-gloster-gray">{payment?.projectData?.Currency || 'CLP'}</span>
+                          <Input
+                            type="number"
+                            value={editableAmount}
+                            onChange={(e) => handleAmountChange(e.target.value)}
+                            placeholder="Ingrese monto"
+                            className="w-32"
+                          />
+                          <Button
+                            size="sm"
+                            onClick={handleSaveAmount}
+                            disabled={isSaving}
+                            className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black"
+                          >
+                            <Save className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                     <div>
-                      <p className="text-gloster-gray text-sm font-rubik">Monto del Estado</p>
-                      <p className="font-bold text-lg md:text-xl text-slate-800 font-rubik break-words">{formatCurrency(paymentState.amount)}</p>
+                      <p className="text-gloster-gray text-sm font-rubik mb-2">% Avance Financiero</p>
+                      {shouldShowDriveFiles() ? (
+                        <p className="font-semibold text-slate-800 font-rubik">
+                          {payment?.projectData?.Budget ? 
+                            ((paymentState.amount / payment.projectData.Budget) * 100).toFixed(2) + '%' : 
+                            'N/A'
+                          }
+                        </p>
+                      ) : (
+                        <div className="flex items-center space-x-2">
+                          <Input
+                            type="number"
+                            value={editablePercentage}
+                            onChange={(e) => handlePercentageChange(e.target.value)}
+                            placeholder="0"
+                            className="w-20"
+                          />
+                          <span className="text-sm text-gloster-gray">%</span>
+                        </div>
+                      )}
                     </div>
                     <div>
                       <p className="text-gloster-gray text-sm font-rubik">Fecha de Vencimiento</p>
@@ -479,70 +616,116 @@ const PaymentDetail = () => {
             </div>
           </div>
 
-          {/* Documents List */}
-          <div className="space-y-4 mb-8">
-            <h3 className="text-lg md:text-xl font-bold text-slate-800 font-rubik">Documentación Requerida</h3>
-            
-            <div className="space-y-4">
-              {documents.map((doc) => doc.required ? (
-                <DocumentUploadCard
-                  key={doc.id}
-                  doc={doc}
-                  documentStatus={documentStatus[doc.id as keyof typeof documentStatus]}
-                  uploadedFiles={uploadedFiles[doc.id as keyof typeof uploadedFiles]}
-                  dragState={dragStates[doc.id as keyof typeof dragStates]}
-                  achsSelection={achsSelection}
-                  setAchsSelection={setAchsSelection}
-                  onDragOver={(e) => handleDragOver(e, doc.id)}
-                  onDragLeave={(e) => handleDragLeave(e, doc.id)}
-                  onDrop={(e) => handleDrop(e, doc.id, doc.allowMultiple)}
-                  onDocumentUpload={() => handleDocumentUpload(doc.id)}
-                  onFileRemove={(fileIndex) => handleFileRemove(doc.id, fileIndex)}
-                  getExamenesUrl={getExamenesUrl}
-                />) : null
-              )}
-            </div>
-          </div>
+          {/* Mostrar archivos del Drive si el status es "Enviado", "Aprobado" o "Rechazado" */}
+          {shouldShowDriveFiles() && (
+            <Card className="mb-8 border-l-4 border-l-blue-500">
+              <CardHeader>
+                <CardTitle className="font-rubik text-lg text-slate-800">Documentos en Drive</CardTitle>
+                <CardDescription className="font-rubik">
+                  Los documentos se encuentran almacenados en Google Drive
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {documents.filter(doc => doc.required).map((doc) => (
+                    <div key={doc.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-slate-800 font-rubik text-sm">{doc.name}</h4>
+                          <p className="text-xs text-gloster-gray font-rubik mt-1">{doc.description}</p>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDownloadFile(doc.name)}
+                          className="ml-2"
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 text-center">
+                  <Button
+                    onClick={() => window.open(payment?.URL, '_blank')}
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-rubik"
+                  >
+                    Ver Carpeta Completa en Drive
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
-          {/* Send Documents Banner */}
-          <Card className="border-l-4 border-l-green-500 bg-green-50/50">
-            <CardContent className="p-4 md:p-6">
-              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center shrink-0">
-                    <Send className="h-6 w-6 text-green-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-800 font-rubik mb-1">¿Listo para enviar?</h3>
-                    <p className="text-gloster-gray text-sm font-rubik">
-                      Una vez que hayas cargado todos los documentos requeridos, puedes enviarlos para su procesamiento.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                  <Button
-                    onClick={handlePreviewEmail}
-                    variant="outline"
-                    className="border-gloster-gray/30 hover:bg-gloster-gray/10 font-rubik px-6 md:px-8 py-3 w-full sm:w-auto"
-                    size="lg"
-                    disabled={isUploading || !areAllRequiredDocumentsUploaded()}
-                  >
-                    <Eye className="h-5 w-5 mr-2" />
-                    Vista Previa
-                  </Button>
-                  <Button
-                    onClick={handleSendDocuments}
-                    disabled={!documents.filter(d => d.required).every(d => documentStatus[d.id as keyof typeof documentStatus]) || isUploading}
-                    className="bg-green-600 hover:bg-green-700 text-white disabled:bg-slate-300 font-rubik px-6 md:px-8 py-3 w-full sm:w-auto"
-                    size="lg"
-                  >
-                    <Send className="h-5 w-5 mr-2" />
-                    {isUploading ? 'Subiendo...' : 'Enviar Email y Documentos'}
-                  </Button>
-                </div>
+          {/* Documents List - Solo mostrar si no es "Enviado", "Aprobado" o "Rechazado" */}
+          {!shouldShowDriveFiles() && (
+            <div className="space-y-4 mb-8">
+              <h3 className="text-lg md:text-xl font-bold text-slate-800 font-rubik">Documentación Requerida</h3>
+              
+              <div className="space-y-4">
+                {documents.map((doc) => doc.required ? (
+                  <DocumentUploadCard
+                    key={doc.id}
+                    doc={doc}
+                    documentStatus={documentStatus[doc.id as keyof typeof documentStatus]}
+                    uploadedFiles={uploadedFiles[doc.id as keyof typeof uploadedFiles]}
+                    dragState={dragStates[doc.id as keyof typeof dragStates]}
+                    achsSelection={achsSelection}
+                    setAchsSelection={setAchsSelection}
+                    onDragOver={(e) => handleDragOver(e, doc.id)}
+                    onDragLeave={(e) => handleDragLeave(e, doc.id)}
+                    onDrop={(e) => handleDrop(e, doc.id, doc.allowMultiple)}
+                    onDocumentUpload={() => handleDocumentUpload(doc.id)}
+                    onFileRemove={(fileIndex) => handleFileRemove(doc.id, fileIndex)}
+                    getExamenesUrl={getExamenesUrl}
+                  />) : null
+                )}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          )}
+
+          {/* Send Documents Banner - Solo mostrar si no es "Enviado", "Aprobado" o "Rechazado" */}
+          {!shouldShowDriveFiles() && (
+            <Card className="border-l-4 border-l-green-500 bg-green-50/50">
+              <CardContent className="p-4 md:p-6">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center shrink-0">
+                      <Send className="h-6 w-6 text-green-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-800 font-rubik mb-1">¿Listo para enviar?</h3>
+                      <p className="text-gloster-gray text-sm font-rubik">
+                        Una vez que hayas cargado todos los documentos requeridos, puedes enviarlos para su procesamiento.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                    <Button
+                      onClick={handlePreviewEmail}
+                      variant="outline"
+                      className="border-gloster-gray/30 hover:bg-gloster-gray/10 font-rubik px-6 md:px-8 py-3 w-full sm:w-auto"
+                      size="lg"
+                      disabled={isUploading || !areAllRequiredDocumentsUploaded()}
+                    >
+                      <Eye className="h-5 w-5 mr-2" />
+                      Vista Previa
+                    </Button>
+                    <Button
+                      onClick={handleSendDocuments}
+                      disabled={!documents.filter(d => d.required).every(d => documentStatus[d.id as keyof typeof documentStatus]) || isUploading}
+                      className="bg-green-600 hover:bg-green-700 text-white disabled:bg-slate-300 font-rubik px-6 md:px-8 py-3 w-full sm:w-auto"
+                      size="lg"
+                    >
+                      <Send className="h-5 w-5 mr-2" />
+                      {isUploading ? 'Subiendo...' : 'Enviar Email y Documentos'}
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </TooltipProvider>

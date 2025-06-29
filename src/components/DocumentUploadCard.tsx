@@ -119,7 +119,8 @@ const DocumentUploadCard: React.FC<DocumentUploadCardProps> = ({
           </div>
           
           <div className="flex flex-col sm:flex-row lg:flex-col gap-2 lg:min-w-max">
-            {doc.downloadUrl && (
+            {/* Botón de descarga/visitar sitio - Mostrar siempre para documentos con dropdown o downloadUrl */}
+            {(doc.downloadUrl || doc.hasDropdown) && (
               <Button
                 onClick={() => {
                   const url = doc.hasDropdown ? getExamenesUrl() : doc.downloadUrl;
@@ -133,13 +134,12 @@ const DocumentUploadCard: React.FC<DocumentUploadCardProps> = ({
                 disabled={doc.hasDropdown && !achsSelection}
               >
                 <Download className="h-4 w-4 mr-2" />
-                {doc.isUploadOnly ? 'Información' : 'visitar sitio'}
+                {doc.isUploadOnly ? 'Información' : 'Visitar Sitio'}
                 <ExternalLink className="h-3 w-3 ml-1" />
               </Button>
             )}
             
             <div className="flex items-center space-x-2">
-      
               <Button
                 onClick={onDocumentUpload}
                 size="sm"

@@ -151,7 +151,7 @@ const DocumentUploadCard: React.FC<DocumentUploadCardProps> = ({
                 className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik whitespace-nowrap"
               >
                 <Upload className="h-4 w-4 mr-2" />
-                {doc.allowMultiple ? 'Cargar Más' : 'Cargar'} Archivos
+                {doc.allowMultiple ? 'Cargar Más' : 'Cargar'} 
               </Button>
             </div>
           </div>

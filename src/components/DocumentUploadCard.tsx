@@ -139,12 +139,7 @@ const DocumentUploadCard: React.FC<DocumentUploadCardProps> = ({
             )}
             
             <div className="flex items-center space-x-2">
-              {documentStatus && (
-                <div className="flex items-center space-x-1 text-green-600">
-                  <CheckCircle className="h-4 w-4" />
-                  <span className="text-sm font-rubik">Cargado</span>
-                </div>
-              )}
+      
               <Button
                 onClick={onDocumentUpload}
                 size="sm"
@@ -153,6 +148,12 @@ const DocumentUploadCard: React.FC<DocumentUploadCardProps> = ({
                 <Upload className="h-4 w-4 mr-2" />
                 {doc.allowMultiple ? 'Cargar Más' : 'Cargar'} 
               </Button>
+              {documentStatus && (
+                <div className="flex items-center space-x-1 text-green-600">
+                  <CheckCircle className="h-4 w-4" />
+                  <span className="text-sm font-rubik">Cargado</span>
+                </div>
+              )}
             </div>
           </div>
         </div>

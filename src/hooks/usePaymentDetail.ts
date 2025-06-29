@@ -14,6 +14,9 @@ export interface PaymentDetail {
   Año: number;
   Project: number;
   Progress: number | null;
+  URL: string | null;
+  URLMandante: string | null;
+  Notes: string | null;
   projectData?: {
     id: number;
     Name: string;
@@ -86,7 +89,7 @@ export const usePaymentDetail = (paymentId: string, requireAuth: boolean = true)
           return;
         }
 
-        // First fetch the payment state
+        // First fetch the payment state with all fields including URL
         const { data: paymentData, error: paymentError } = await supabase
           .from('Estados de pago')
           .select('*')
@@ -161,7 +164,7 @@ export const usePaymentDetail = (paymentId: string, requireAuth: boolean = true)
         console.log('Payment detail loaded successfully:', paymentWithDetails);
       } else {
         // No auth required - just fetch the data
-        // First fetch the payment state
+        // First fetch the payment state with all fields including URL
         const { data: paymentData, error: paymentError } = await supabase
           .from('Estados de pago')
           .select('*')

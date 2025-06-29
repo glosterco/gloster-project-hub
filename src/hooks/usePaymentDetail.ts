@@ -13,6 +13,7 @@ export interface PaymentDetail {
   Mes: string;
   Año: number;
   Project: number;
+  Progress: number | null;
   projectData?: {
     id: number;
     Name: string;
@@ -28,6 +29,9 @@ export interface PaymentDetail {
       CompanyName: string;
       ContactName: string;
       ContactEmail: string;
+      RUT: string;
+      ContactPhone: number;
+      Adress: string;
     };
     Owner: {
       id: number;
@@ -103,7 +107,7 @@ export const usePaymentDetail = (paymentId: string, requireAuth: boolean = true)
 
         console.log('Payment data found:', paymentData);
 
-        // Now fetch the project details with relationships
+        // Now fetch the project details with complete contractor information
         const { data: projectData, error: projectError } = await supabase
           .from('Proyectos')
           .select(`
@@ -112,7 +116,10 @@ export const usePaymentDetail = (paymentId: string, requireAuth: boolean = true)
               id,
               CompanyName,
               ContactName,
-              ContactEmail
+              ContactEmail,
+              RUT,
+              ContactPhone,
+              Adress
             ),
             Mandantes!Proyectos_Owner_fkey (
               id,
@@ -175,7 +182,7 @@ export const usePaymentDetail = (paymentId: string, requireAuth: boolean = true)
 
         console.log('Payment data found:', paymentData);
 
-        // Now fetch the project details with relationships
+        // Now fetch the project details with complete contractor information
         const { data: projectData, error: projectError } = await supabase
           .from('Proyectos')
           .select(`
@@ -184,7 +191,10 @@ export const usePaymentDetail = (paymentId: string, requireAuth: boolean = true)
               id,
               CompanyName,
               ContactName,
-              ContactEmail
+              ContactEmail,
+              RUT,
+              ContactPhone,
+              Adress
             ),
             Mandantes!Proyectos_Owner_fkey (
               id,

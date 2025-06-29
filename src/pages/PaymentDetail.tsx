@@ -169,6 +169,12 @@ const PaymentDetail = () => {
     }
   };
 
+  // Función para verificar si todos los documentos requeridos están cargados
+  const areAllRequiredDocumentsUploaded = () => {
+    const requiredDocuments = documents.filter(doc => doc.required);
+    return requiredDocuments.every(doc => documentStatus[doc.id as keyof typeof documentStatus]);
+  };
+
   const generateUniqueURLAndUpdate = async () => {
     if (!payment || !payment.projectData) {
       toast({
@@ -453,7 +459,7 @@ const PaymentDetail = () => {
                       variant="outline"
                       className="border-gloster-gray/30 hover:bg-gloster-gray/10 font-rubik"
                       size="sm"
-                      disabled={isUploading}
+                      disabled={isUploading || !areAllRequiredDocumentsUploaded()}
                     >
                       <Eye className="h-4 w-4 mr-1" />
                       Vista Previa
@@ -519,7 +525,7 @@ const PaymentDetail = () => {
                     variant="outline"
                     className="border-gloster-gray/30 hover:bg-gloster-gray/10 font-rubik px-6 md:px-8 py-3 w-full sm:w-auto"
                     size="lg"
-                    disabled={isUploading}
+                    disabled={isUploading || !areAllRequiredDocumentsUploaded()}
                   >
                     <Eye className="h-5 w-5 mr-2" />
                     Vista Previa

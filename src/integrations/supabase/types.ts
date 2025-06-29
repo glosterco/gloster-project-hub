@@ -69,6 +69,7 @@ export type Database = {
           Mes: string | null
           Name: string
           Notes: string | null
+          Progress: number | null
           Project: number | null
           Status: string | null
           Total: number | null
@@ -83,6 +84,7 @@ export type Database = {
           Mes?: string | null
           Name: string
           Notes?: string | null
+          Progress?: number | null
           Project?: number | null
           Status?: string | null
           Total?: number | null
@@ -97,6 +99,7 @@ export type Database = {
           Mes?: string | null
           Name?: string
           Notes?: string | null
+          Progress?: number | null
           Project?: number | null
           Status?: string | null
           Total?: number | null

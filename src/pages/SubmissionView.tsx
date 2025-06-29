@@ -111,6 +111,14 @@ const SubmissionView = () => {
     }
   ];
 
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('es-CL', {
+      style: 'currency',
+      currency: 'CLP',
+      minimumFractionDigits: 0,
+    }).format(amount);
+  };
+
   const handlePrint = () => {
     const printStyles = `
       <style>
@@ -257,7 +265,7 @@ const SubmissionView = () => {
     );
   }
 
-  // Crear datos reales para el template
+  // Crear datos reales para el template con información completa del contratista
   const emailTemplateData = {
     paymentState: {
       month: `${payment.Mes} ${payment.Año}`,
@@ -272,10 +280,22 @@ const SubmissionView = () => {
       contractor: payment.projectData.Contratista?.CompanyName || '',
       location: payment.projectData.Location || '',
       projectManager: payment.projectData.Contratista?.ContactName || '',
-      contactEmail: payment.projectData.Contratista?.ContactEmail || ''
+      contactEmail: payment.projectData.Contratista?.ContactEmail || '',
+      contractorRUT: payment.projectData.Contratista?.RUT || '',
+      contractorPhone: payment.projectData.Contratista?.ContactPhone || '',
+      contractorAddress: payment.projectData.Contratista?.Adress || ''
     },
     documents: documentsFromPayment
   };
+
+  console.log('📊 Datos del contratista para EmailTemplate:', {
+    contractor: emailTemplateData.project.contractor,
+    projectManager: emailTemplateData.project.projectManager,
+    contactEmail: emailTemplateData.project.contactEmail,
+    contractorRUT: emailTemplateData.project.contractorRUT,
+    contractorPhone: emailTemplateData.project.contractorPhone,
+    contractorAddress: emailTemplateData.project.contractorAddress
+  });
 
   return (
     <div className="min-h-screen bg-slate-50 font-rubik">

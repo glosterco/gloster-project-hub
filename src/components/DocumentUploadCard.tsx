@@ -133,7 +133,7 @@ const DocumentUploadCard: React.FC<DocumentUploadCardProps> = ({
                 disabled={doc.hasDropdown && !achsSelection}
               >
                 <Download className="h-4 w-4 mr-2" />
-                {doc.isUploadOnly ? 'Información' : 'visitar sitio'}
+                {doc.isUploadOnly ? 'Información' : 'Descargar'}
                 <ExternalLink className="h-3 w-3 ml-1" />
               </Button>
             )}

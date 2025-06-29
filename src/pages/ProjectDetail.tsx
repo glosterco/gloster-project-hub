@@ -395,7 +395,7 @@ const ProjectDetail = () => {
                   </p>
                 </div>
                 <div>
-                  <p className="text-gloster-gray text-sm font-rubik">Duración (días)</p>
+                  <p className="text-gloster-gray text-sm font-rubik">Duración (meses)</p>
                   <p className="font-medium font-rubik">{project.Duration || 'No definida'}</p>
                 </div>
               </div>

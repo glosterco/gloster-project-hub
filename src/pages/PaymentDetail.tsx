@@ -511,7 +511,7 @@ const PaymentDetail = () => {
                             value={editableAmount}
                             onChange={(e) => handleAmountChange(e.target.value)}
                             placeholder="Ingrese monto"
-                            className="w-32"
+                            className="w-40"
                           />
                           <Button
                             size="sm"

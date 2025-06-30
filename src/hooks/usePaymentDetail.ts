@@ -12,6 +12,7 @@ export interface PaymentDetail {
   Progress: number;
   Status: string;
   ExpiryDate: string;
+  Project: number;
   URL?: string;
   URLMandante?: string;
   Notes?: string;
@@ -19,6 +20,8 @@ export interface PaymentDetail {
     id: number;
     Name: string;
     Location: string;
+    Budget?: number;
+    Currency?: string;
     Owner?: {
       id: number;
       CompanyName: string;
@@ -57,6 +60,8 @@ export const usePaymentDetail = (paymentId: string, shouldRefetch = true) => {
             id,
             Name,
             Location,
+            Budget,
+            Currency,
             Owner:Mandantes!Owner (
               id,
               CompanyName,
@@ -98,6 +103,8 @@ export const usePaymentDetail = (paymentId: string, shouldRefetch = true) => {
           id: paymentData.projectData.id,
           Name: paymentData.projectData.Name || '',
           Location: paymentData.projectData.Location || '',
+          Budget: paymentData.projectData.Budget || undefined,
+          Currency: paymentData.projectData.Currency || undefined,
           Owner: paymentData.projectData.Owner ? {
             id: paymentData.projectData.Owner.id,
             CompanyName: paymentData.projectData.Owner.CompanyName || '',

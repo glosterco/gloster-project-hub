@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -6,6 +7,7 @@ import { Calendar, DollarSign, FileText, CheckCircle, Building, User, Mail, Down
 import PaymentApprovalSection from './PaymentApprovalSection';
 
 interface EmailTemplateProps {
+  paymentId?: string;
   paymentState: {
     month: string;
     amount: number;
@@ -30,8 +32,8 @@ interface EmailTemplateProps {
   hideActionButtons?: boolean;
 }
 
-const EmailTemplate: React.FC<EmailTemplateProps> = ({ paymentState, project, documents, hideActionButtons = false }) => {
-  console.log('EmailTemplate props:', { paymentState, project, documents, hideActionButtons });
+const EmailTemplate: React.FC<EmailTemplateProps> = ({ paymentId, paymentState, project, documents, hideActionButtons = false }) => {
+  console.log('EmailTemplate props:', { paymentId, paymentState, project, documents, hideActionButtons });
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-CL', {
@@ -180,9 +182,10 @@ const EmailTemplate: React.FC<EmailTemplateProps> = ({ paymentState, project, do
         </Card>
 
         {/* Sección de Aprobación del Estado de Pago - Solo mostrar si hideActionButtons es false */}
-        {!hideActionButtons && (
+        {!hideActionButtons && paymentId && (
           <div className="mb-8">
             <PaymentApprovalSection 
+              paymentId={paymentId}
               paymentState={{
                 month: paymentState.month,
                 amount: paymentState.amount,

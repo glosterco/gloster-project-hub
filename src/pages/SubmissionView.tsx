@@ -385,17 +385,6 @@ const SubmissionView = () => {
             documents={emailTemplateData.documents}
           />
         </div>
-
-        {/* Botones de acción para mandantes - SOLO ESTOS BOTONES */}
-        <div className="max-w-4xl mx-auto mt-6">
-          <PaymentActionButtons 
-            paymentId={paymentId}
-            isMandante={isMandante()}
-            onActionComplete={() => {
-              refetch();
-            }}
-          />
-        </div>
       </div>
     </div>
   );

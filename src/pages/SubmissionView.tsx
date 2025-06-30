@@ -4,11 +4,11 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import EmailTemplate from '@/components/EmailTemplate';
+import PaymentApprovalSection from '@/components/PaymentApprovalSection';
 import { useToast } from '@/hooks/use-toast';
 import { usePaymentDetail } from '@/hooks/usePaymentDetail';
 import { supabase } from '@/integrations/supabase/client';
 import html2pdf from 'html2pdf.js';
-import PaymentActionButtons from '@/components/PaymentActionButtons';
 
 const SubmissionView = () => {
   const navigate = useNavigate();
@@ -18,6 +18,7 @@ const SubmissionView = () => {
   const { toast } = useToast();
   const [hasAccess, setHasAccess] = useState(false);
   const [checkingAccess, setCheckingAccess] = useState(true);
+  const [isMandante, setIsMandante] = useState(false);
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -35,6 +36,7 @@ const SubmissionView = () => {
 
           if (contractorData && payment.projectData.Contratista?.id === contractorData.id) {
             setHasAccess(true);
+            setIsMandante(false);
             setCheckingAccess(false);
             return;
           }
@@ -46,6 +48,7 @@ const SubmissionView = () => {
           const accessData = JSON.parse(mandanteAccess);
           if (accessData.paymentId === paymentId && accessData.token) {
             setHasAccess(true);
+            setIsMandante(true);
             setCheckingAccess(false);
             return;
           }
@@ -65,12 +68,6 @@ const SubmissionView = () => {
       checkAccess();
     }
   }, [payment, paymentId, navigate]);
-
-  // Verificar si es mandante (acceso vía token)
-  const isMandante = () => {
-    const mandanteAccess = sessionStorage.getItem('mandanteAccess');
-    return !!mandanteAccess;
-  };
 
   // Crear documentos basados en información real
   const documentsFromPayment = [
@@ -111,14 +108,6 @@ const SubmissionView = () => {
       uploaded: true
     }
   ];
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-CL', {
-      style: 'currency',
-      currency: 'CLP',
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
 
   const handlePrint = () => {
     const printStyles = `
@@ -251,6 +240,11 @@ const SubmissionView = () => {
     }
   };
 
+  const handleStatusChange = () => {
+    // Refrescar los datos del pago después de cambiar el status
+    refetch();
+  };
+
   if (checkingAccess) {
     return (
       <div className="min-h-screen bg-slate-50 font-rubik">
@@ -307,13 +301,13 @@ const SubmissionView = () => {
     project: {
       name: payment.projectData.Name,
       client: payment.projectData.Owner?.CompanyName || '',
-      contractor: payment.projectData.Contratista?.CompanyName || '',
+      contractor: payment.projectData.Contratista?.CompanyName || 'No disponible',
       location: payment.projectData.Location || '',
-      projectManager: payment.projectData.Contratista?.ContactName || '',
-      contactEmail: payment.projectData.Contratista?.ContactEmail || '',
-      contractorRUT: payment.projectData.Contratista?.RUT || '',
-      contractorPhone: payment.projectData.Contratista?.ContactPhone || '',
-      contractorAddress: payment.projectData.Contratista?.Adress || ''
+      projectManager: payment.projectData.Contratista?.ContactName || 'No disponible',
+      contactEmail: payment.projectData.Contratista?.ContactEmail || 'No disponible',
+      contractorRUT: payment.projectData.Contratista?.RUT || 'No disponible',
+      contractorPhone: payment.projectData.Contratista?.ContactPhone?.toString() || 'No disponible',
+      contractorAddress: payment.projectData.Contratista?.Adress || 'No disponible'
     },
     documents: documentsFromPayment
   };
@@ -378,12 +372,24 @@ const SubmissionView = () => {
 
       {/* Contenido de la plantilla */}
       <div className="container mx-auto px-6 py-8">
-        <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden email-template-container">
-          <EmailTemplate 
-            paymentState={emailTemplateData.paymentState}
-            project={emailTemplateData.project}
-            documents={emailTemplateData.documents}
-          />
+        <div className="max-w-4xl mx-auto space-y-6">
+          {/* Sección de aprobación para mandantes */}
+          {isMandante && (
+            <PaymentApprovalSection 
+              paymentId={paymentId}
+              paymentState={emailTemplateData.paymentState}
+              onStatusChange={handleStatusChange}
+            />
+          )}
+          
+          {/* Template del email */}
+          <div className="bg-white rounded-lg shadow-lg overflow-hidden email-template-container">
+            <EmailTemplate 
+              paymentState={emailTemplateData.paymentState}
+              project={emailTemplateData.project}
+              documents={emailTemplateData.documents}
+            />
+          </div>
         </div>
       </div>
     </div>

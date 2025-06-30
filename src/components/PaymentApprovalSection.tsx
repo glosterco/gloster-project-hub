@@ -4,38 +4,55 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { CheckCircle, XCircle, MessageSquare } from 'lucide-react';
+import { usePaymentActions } from '@/hooks/usePaymentActions';
 
 interface PaymentApprovalSectionProps {
+  paymentId: string;
   paymentState: {
     month: string;
     amount: number;
     projectName: string;
   };
   disabled?: boolean;
+  onStatusChange?: () => void;
 }
 
 const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({ 
+  paymentId,
   paymentState, 
-  disabled = false 
+  disabled = false,
+  onStatusChange
 }) => {
   const [approvalStatus, setApprovalStatus] = useState<'pending' | 'approved' | 'rejected'>('pending');
   const [rejectionComments, setRejectionComments] = useState('');
+  const { approvePayment, rejectPayment, loading } = usePaymentActions();
 
-  const handleApprove = () => {
-    if (disabled) return;
-    setApprovalStatus('approved');
-    console.log(`Estado de pago ${paymentState.month} aprobado`);
+  const handleApprove = async () => {
+    if (disabled || loading) return;
+    
+    console.log('🟢 Aprobando estado de pago:', paymentId);
+    const result = await approvePayment(paymentId);
+    
+    if (result.success) {
+      setApprovalStatus('approved');
+      if (onStatusChange) onStatusChange();
+    }
   };
 
   const handleReject = () => {
-    if (disabled) return;
+    if (disabled || loading) return;
     setApprovalStatus('rejected');
   };
 
-  const handleSubmitRejection = () => {
-    if (disabled) return;
-    console.log(`Estado de pago ${paymentState.month} rechazado con comentarios:`, rejectionComments);
-    // Aquí se enviarían los comentarios al sistema
+  const handleSubmitRejection = async () => {
+    if (disabled || loading || !rejectionComments.trim()) return;
+    
+    console.log('🔴 Rechazando estado de pago:', paymentId, 'con comentarios:', rejectionComments);
+    const result = await rejectPayment(paymentId, rejectionComments);
+    
+    if (result.success) {
+      if (onStatusChange) onStatusChange();
+    }
   };
 
   if (disabled) {
@@ -97,16 +114,17 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
             <Button
               onClick={handleSubmitRejection}
               variant="destructive"
-              disabled={!rejectionComments.trim()}
+              disabled={!rejectionComments.trim() || loading}
               className="font-rubik"
             >
               <MessageSquare className="h-4 w-4 mr-2" />
-              Enviar Comentarios
+              {loading ? 'Enviando...' : 'Enviar Comentarios'}
             </Button>
             <Button
               onClick={() => setApprovalStatus('pending')}
               variant="outline"
               className="font-rubik"
+              disabled={loading}
             >
               Cancelar
             </Button>
@@ -132,14 +150,16 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
           <Button
             onClick={handleApprove}
             className="bg-green-600 hover:bg-green-700 text-white font-rubik"
+            disabled={loading}
           >
             <CheckCircle className="h-4 w-4 mr-2" />
-            Aprobar Estado de Pago
+            {loading ? 'Aprobando...' : 'Aprobar Estado de Pago'}
           </Button>
           <Button
             onClick={handleReject}
             variant="destructive"
             className="font-rubik"
+            disabled={loading}
           >
             <XCircle className="h-4 w-4 mr-2" />
             Rechazar Estado de Pago

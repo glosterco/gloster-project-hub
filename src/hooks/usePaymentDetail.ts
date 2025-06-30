@@ -6,116 +6,65 @@ import { useToast } from '@/hooks/use-toast';
 export interface PaymentDetail {
   id: number;
   Name: string;
-  Status: string;
-  Total: number | null;
-  ExpiryDate: string;
-  Completion: boolean;
   Mes: string;
   Año: number;
-  Project: number;
-  Progress: number | null;
-  URL: string | null;
-  URLMandante: string | null;
-  Notes: string | null;
+  Total: number;
+  Progress: number;
+  Status: string;
+  ExpiryDate: string;
+  URL?: string;
+  URLMandante?: string;
+  Notes?: string;
   projectData?: {
     id: number;
     Name: string;
-    Description: string;
     Location: string;
-    Budget: number;
-    Currency: string;
-    StartDate: string;
-    Duration: number;
-    Requierment?: string[] | null;
-    Contratista: {
+    Owner?: {
       id: number;
       CompanyName: string;
       ContactName: string;
       ContactEmail: string;
-      RUT: string;
-      ContactPhone: number;
-      Adress: string;
+      ContactPhone?: number;
     };
-    Owner: {
+    Contratista?: {
       id: number;
       CompanyName: string;
       ContactName: string;
       ContactEmail: string;
+      RUT?: string;
+      ContactPhone?: number;
+      Adress?: string;
     };
   };
 }
 
-export const usePaymentDetail = (paymentId: string, requireAuth: boolean = true) => {
+export const usePaymentDetail = (paymentId: string, shouldRefetch = true) => {
   const [payment, setPayment] = useState<PaymentDetail | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchPaymentDetail = async () => {
-    if (!paymentId) return;
-    
-    setLoading(true);
-    setError(null);
-    
     try {
-      console.log('Fetching payment detail for ID:', paymentId);
-      
-      if (requireAuth) {
-        // Get current user only if auth is required
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (!user) {
-          console.log('No authenticated user found');
-          setError('Usuario no autenticado');
-          return;
-        }
+      setLoading(true);
+      console.log('🔍 Fetching payment detail for ID:', paymentId);
 
-        // Get contractor data for current user - use maybeSingle to handle no results
-        const { data: contractorData, error: contractorError } = await supabase
-          .from('Contratistas')
-          .select('*')
-          .eq('auth_user_id', user.id)
-          .maybeSingle();
-
-        if (contractorError) {
-          console.error('Error fetching contractor:', contractorError);
-          setError('Error al obtener datos del contratista');
-          return;
-        }
-
-        if (!contractorData) {
-          console.log('No contractor found for current user');
-          setError('No tienes un perfil de contratista válido');
-          return;
-        }
-
-        // First fetch the payment state with all fields including URL
-        const { data: paymentData, error: paymentError } = await supabase
-          .from('Estados de pago')
-          .select('*')
-          .eq('id', parseInt(paymentId))
-          .maybeSingle();
-
-        if (paymentError) {
-          console.error('Error fetching payment:', paymentError);
-          setError('Error al cargar estado de pago');
-          return;
-        }
-
-        if (!paymentData) {
-          console.log('Payment not found for ID:', paymentId);
-          setError('Estado de pago no encontrado');
-          return;
-        }
-
-        console.log('Payment data found:', paymentData);
-
-        // Now fetch the project details with complete contractor information
-        const { data: projectData, error: projectError } = await supabase
-          .from('Proyectos')
-          .select(`
-            *,
-            Contratistas!Proyectos_Contratista_fkey (
+      const { data: paymentData, error: paymentError } = await supabase
+        .from('Estados de pago')
+        .select(`
+          *,
+          projectData:Proyectos!Project (
+            id,
+            Name,
+            Location,
+            Owner:Mandantes!Owner (
+              id,
+              CompanyName,
+              ContactName,
+              ContactEmail,
+              ContactPhone
+            ),
+            Contratista:Contratistas!Contratista (
               id,
               CompanyName,
               ContactName,
@@ -123,131 +72,84 @@ export const usePaymentDetail = (paymentId: string, requireAuth: boolean = true)
               RUT,
               ContactPhone,
               Adress
-            ),
-            Mandantes!Proyectos_Owner_fkey (
-              id,
-              CompanyName,
-              ContactName,
-              ContactEmail
             )
-          `)
-          .eq('id', paymentData.Project)
-          .maybeSingle();
+          )
+        `)
+        .eq('id', parseInt(paymentId))
+        .maybeSingle();
 
-        if (projectError) {
-          console.error('Error fetching project:', projectError);
-          setError('Error al cargar proyecto');
-          return;
-        }
-
-        if (!projectData) {
-          setError('Proyecto no encontrado');
-          return;
-        }
-
-        // Verify that this payment belongs to a project of the current contractor
-        if (projectData.Contratistas?.id !== contractorData.id) {
-          setError('No tienes acceso a este estado de pago');
-          return;
-        }
-
-        const paymentWithDetails = {
-          ...paymentData,
-          projectData: {
-            ...projectData,
-            Contratista: projectData.Contratistas,
-            Owner: projectData.Mandantes
-          }
-        };
-
-        setPayment(paymentWithDetails);
-        console.log('Payment detail loaded successfully:', paymentWithDetails);
-      } else {
-        // No auth required - just fetch the data
-        // First fetch the payment state with all fields including URL
-        const { data: paymentData, error: paymentError } = await supabase
-          .from('Estados de pago')
-          .select('*')
-          .eq('id', parseInt(paymentId))
-          .maybeSingle();
-
-        if (paymentError) {
-          console.error('Error fetching payment:', paymentError);
-          setError('Error al cargar estado de pago');
-          return;
-        }
-
-        if (!paymentData) {
-          console.log('Payment not found for ID:', paymentId);
-          setError('Estado de pago no encontrado');
-          return;
-        }
-
-        console.log('Payment data found:', paymentData);
-
-        // Now fetch the project details with complete contractor information
-        const { data: projectData, error: projectError } = await supabase
-          .from('Proyectos')
-          .select(`
-            *,
-            Contratistas!Proyectos_Contratista_fkey (
-              id,
-              CompanyName,
-              ContactName,
-              ContactEmail,
-              RUT,
-              ContactPhone,
-              Adress
-            ),
-            Mandantes!Proyectos_Owner_fkey (
-              id,
-              CompanyName,
-              ContactName,
-              ContactEmail
-            )
-          `)
-          .eq('id', paymentData.Project)
-          .maybeSingle();
-
-        if (projectError) {
-          console.error('Error fetching project:', projectError);
-          setError('Error al cargar proyecto');
-          return;
-        }
-
-        if (!projectData) {
-          setError('Proyecto no encontrado');
-          return;
-        }
-
-        const paymentWithDetails = {
-          ...paymentData,
-          projectData: {
-            ...projectData,
-            Contratista: projectData.Contratistas,
-            Owner: projectData.Mandantes
-          }
-        };
-
-        setPayment(paymentWithDetails);
-        console.log('Payment detail loaded successfully:', paymentWithDetails);
+      if (paymentError) {
+        console.error('❌ Payment fetch error:', paymentError);
+        throw paymentError;
       }
-    } catch (error) {
-      console.error('Unexpected error:', error);
-      setError('Error inesperado al cargar el estado de pago');
+
+      if (!paymentData) {
+        console.log('❌ No payment found for ID:', paymentId);
+        setError('Estado de pago no encontrado');
+        return;
+      }
+
+      console.log('✅ Payment data fetched successfully:', paymentData);
+      
+      // Ensure projectData is properly structured
+      const processedPayment: PaymentDetail = {
+        ...paymentData,
+        projectData: paymentData.projectData ? {
+          id: paymentData.projectData.id,
+          Name: paymentData.projectData.Name || '',
+          Location: paymentData.projectData.Location || '',
+          Owner: paymentData.projectData.Owner ? {
+            id: paymentData.projectData.Owner.id,
+            CompanyName: paymentData.projectData.Owner.CompanyName || '',
+            ContactName: paymentData.projectData.Owner.ContactName || '',
+            ContactEmail: paymentData.projectData.Owner.ContactEmail || '',
+            ContactPhone: paymentData.projectData.Owner.ContactPhone || undefined
+          } : undefined,
+          Contratista: paymentData.projectData.Contratista ? {
+            id: paymentData.projectData.Contratista.id,
+            CompanyName: paymentData.projectData.Contratista.CompanyName || '',
+            ContactName: paymentData.projectData.Contratista.ContactName || '',
+            ContactEmail: paymentData.projectData.Contratista.ContactEmail || '',
+            RUT: paymentData.projectData.Contratista.RUT || '',
+            ContactPhone: paymentData.projectData.Contratista.ContactPhone || undefined,
+            Adress: paymentData.projectData.Contratista.Adress || ''
+          } : undefined
+        } : undefined
+      };
+
+      console.log('📊 Processed payment with contractor info:', {
+        contractorName: processedPayment.projectData?.Contratista?.CompanyName,
+        contactName: processedPayment.projectData?.Contratista?.ContactName,
+        contactEmail: processedPayment.projectData?.Contratista?.ContactEmail,
+        RUT: processedPayment.projectData?.Contratista?.RUT,
+        phone: processedPayment.projectData?.Contratista?.ContactPhone,
+        address: processedPayment.projectData?.Contratista?.Adress
+      });
+
+      setPayment(processedPayment);
+      setError(null);
+    } catch (err) {
+      console.error('❌ Error fetching payment detail:', err);
+      setError(err instanceof Error ? err.message : 'Error desconocido');
+      toast({
+        title: "Error",
+        description: "No se pudo cargar el detalle del estado de pago",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
+  const refetch = () => {
     fetchPaymentDetail();
-  }, [paymentId, requireAuth]);
-
-  return {
-    payment,
-    loading,
-    error,
-    refetch: fetchPaymentDetail
   };
+
+  useEffect(() => {
+    if (shouldRefetch) {
+      fetchPaymentDetail();
+    }
+  }, [paymentId, shouldRefetch]);
+
+  return { payment, loading, error, refetch };
 };

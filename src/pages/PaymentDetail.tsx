@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -67,30 +66,37 @@ const PaymentDetail = () => {
     }
   };
 
-  // Guardar cambios en la base de datos
+  // Guardar cambios en la base de datos (modificado para incluir Progress)
   const handleSaveAmount = async () => {
     if (!payment?.id || !editableAmount) return;
     
     setIsSaving(true);
     try {
+      const amount = parseFloat(editableAmount);
+      const percentage = editablePercentage ? parseFloat(editablePercentage) : 
+        (payment?.projectData?.Budget ? (amount / payment.projectData.Budget) * 100 : 0);
+
       const { error } = await supabase
         .from('Estados de pago')
-        .update({ Total: parseFloat(editableAmount) })
+        .update({ 
+          Total: amount,
+          Progress: Math.round(percentage)
+        })
         .eq('id', payment.id);
 
       if (error) throw error;
 
       toast({
-        title: "Monto actualizado",
-        description: "El monto del estado de pago se ha actualizado correctamente",
+        title: "Datos actualizados",
+        description: "El monto y porcentaje del estado de pago se han actualizado correctamente",
       });
       
       refetch();
     } catch (error) {
-      console.error('Error updating amount:', error);
+      console.error('Error updating amount and progress:', error);
       toast({
         title: "Error",
-        description: "No se pudo actualizar el monto",
+        description: "No se pudo actualizar la información",
         variant: "destructive"
       });
     } finally {

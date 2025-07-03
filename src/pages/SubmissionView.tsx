@@ -372,15 +372,6 @@ const SubmissionView = () => {
       {/* Contenido de la plantilla */}
       <div className="container mx-auto px-6 py-8">
         <div className="max-w-4xl mx-auto space-y-6">
-          {/* Sección de aprobación para mandantes */}
-          {isMandante && (
-            <PaymentApprovalSection 
-              paymentId={paymentId}
-              paymentState={emailTemplateData.paymentState}
-              onStatusChange={handleStatusChange}
-            />
-          )}
-          
           {/* Template del email */}
           <div className="bg-white rounded-lg shadow-lg overflow-hidden email-template-container">
             <EmailTemplate 

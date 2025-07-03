@@ -13,22 +13,30 @@ const SubmissionPreview = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const paymentId = searchParams.get('paymentId') || '11';
-  const { payment, loading, error } = usePaymentDetail(paymentId, false);
+  const { payment, loading, error } = usePaymentDetail(paymentId, true);
   const { sendNotificationToMandante, loading: notificationLoading } = useMandanteNotification();
   const { toast } = useToast();
   const [isProjectUser, setIsProjectUser] = useState(false);
+  const [userChecked, setUserChecked] = useState(false);
 
   useEffect(() => {
-    // Verificar si el usuario está autenticado para mostrar botón de envío
     const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setIsProjectUser(!!user);
+      if (userChecked) return;
+      
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        setIsProjectUser(!!user);
+        setUserChecked(true);
+      } catch (error) {
+        console.error('Error checking user:', error);
+        setIsProjectUser(false);
+        setUserChecked(true);
+      }
     };
     
     checkUser();
-  }, []);
+  }, [userChecked]);
 
-  // Crear documentos basados en información real
   const documentsFromPayment = [
     {
       id: 'eepp',
@@ -170,7 +178,6 @@ const SubmissionPreview = () => {
     }
   };
 
-  // Función para descargar archivos del Drive
   const handleDownloadFile = async (fileName: string) => {
     if (!payment?.URL) {
       toast({
@@ -182,7 +189,6 @@ const SubmissionPreview = () => {
     }
     
     try {
-      // Abrir la URL del Drive en una nueva pestaña
       window.open(payment.URL, '_blank');
       
       toast({
@@ -341,8 +347,6 @@ const SubmissionPreview = () => {
     },
     documents: documentsFromPayment
   };
-
-  console.log('SubmissionPreview data:', emailTemplateData);
 
   return (
     <div className="min-h-screen bg-slate-50 font-rubik">

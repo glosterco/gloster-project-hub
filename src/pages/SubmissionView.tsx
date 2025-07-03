@@ -13,15 +13,20 @@ const SubmissionView = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const paymentId = searchParams.get('paymentId') || '11';
-  const { payment, loading, error, refetch } = usePaymentDetail(paymentId, false);
+  const { payment, loading, error, refetch } = usePaymentDetail(paymentId, true);
   const { toast } = useToast();
   const [hasAccess, setHasAccess] = useState(false);
   const [checkingAccess, setCheckingAccess] = useState(true);
   const [isMandante, setIsMandante] = useState(false);
+  const [accessChecked, setAccessChecked] = useState(false);
 
   useEffect(() => {
     const checkAccess = async () => {
+      if (!payment || accessChecked) return;
+      
       try {
+        setCheckingAccess(true);
+        
         // Verificar si es usuario autenticado del proyecto
         const { data: { user } } = await supabase.auth.getUser();
         
@@ -36,6 +41,7 @@ const SubmissionView = () => {
           if (contractorData && payment.projectData.Contratista?.id === contractorData.id) {
             setHasAccess(true);
             setIsMandante(false);
+            setAccessChecked(true);
             setCheckingAccess(false);
             return;
           }
@@ -44,31 +50,37 @@ const SubmissionView = () => {
         // Verificar acceso desde mandanteAccess (para mandantes con token)
         const mandanteAccess = sessionStorage.getItem('mandanteAccess');
         if (mandanteAccess) {
-          const accessData = JSON.parse(mandanteAccess);
-          if (accessData.paymentId === paymentId && accessData.token) {
-            setHasAccess(true);
-            setIsMandante(true);
-            setCheckingAccess(false);
-            return;
+          try {
+            const accessData = JSON.parse(mandanteAccess);
+            if (accessData.paymentId === paymentId && accessData.token) {
+              setHasAccess(true);
+              setIsMandante(true);
+              setAccessChecked(true);
+              setCheckingAccess(false);
+              return;
+            }
+          } catch (parseError) {
+            console.error('Error parsing mandanteAccess:', parseError);
           }
         }
 
         // Sin acceso, redirigir a página de acceso
+        setAccessChecked(true);
         setCheckingAccess(false);
         navigate(`/email-access?paymentId=${paymentId}`);
       } catch (error) {
         console.error('Error checking access:', error);
+        setAccessChecked(true);
         setCheckingAccess(false);
         navigate(`/email-access?paymentId=${paymentId}`);
       }
     };
 
-    if (payment) {
+    if (payment && !accessChecked) {
       checkAccess();
     }
-  }, [payment, paymentId, navigate]);
+  }, [payment, paymentId, navigate, accessChecked]);
 
-  // Crear documentos basados en información real
   const documentsFromPayment = [
     {
       id: 'eepp',
@@ -210,7 +222,6 @@ const SubmissionView = () => {
     }
   };
 
-  // Función para descargar archivos del Drive
   const handleDownloadFile = async (fileName: string) => {
     if (!payment?.URL) {
       toast({
@@ -222,7 +233,6 @@ const SubmissionView = () => {
     }
     
     try {
-      // Abrir la URL del Drive en una nueva pestaña
       window.open(payment.URL, '_blank');
       
       toast({
@@ -240,7 +250,6 @@ const SubmissionView = () => {
   };
 
   const handleStatusChange = () => {
-    // Refrescar los datos del pago después de cambiar el status
     refetch();
   };
 
@@ -310,15 +319,6 @@ const SubmissionView = () => {
     },
     documents: documentsFromPayment
   };
-
-  console.log('📊 Datos del contratista para EmailTemplate:', {
-    contractor: emailTemplateData.project.contractor,
-    projectManager: emailTemplateData.project.projectManager,
-    contactEmail: emailTemplateData.project.contactEmail,
-    contractorRUT: emailTemplateData.project.contractorRUT,
-    contractorPhone: emailTemplateData.project.contractorPhone,
-    contractorAddress: emailTemplateData.project.contractorAddress
-  });
 
   return (
     <div className="min-h-screen bg-slate-50 font-rubik">

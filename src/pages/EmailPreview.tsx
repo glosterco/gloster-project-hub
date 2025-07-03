@@ -7,7 +7,6 @@ import EmailTemplate from '@/components/EmailTemplate';
 import { useToast } from '@/hooks/use-toast';
 import { usePaymentDetail } from '@/hooks/usePaymentDetail';
 import { supabase } from '@/integrations/supabase/client';
-import html2pdf from 'html2pdf.js';
 
 const EmailPreview = () => {
   const navigate = useNavigate();
@@ -135,79 +134,28 @@ const EmailPreview = () => {
     }, 100);
   };
 
-  const handleDownloadPDF = async () => {
+  const handleDownloadFiles = () => {
+    if (!payment?.URL) {
+      toast({
+        title: "Error",
+        description: "No se encontró la URL de los archivos",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     try {
-      const element = document.querySelector('.email-template-container') as HTMLElement;
-      if (!element) {
-        toast({
-          title: "Error",
-          description: "No se pudo encontrar el contenido a convertir",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Calculate the scale needed to fit content in one page
-      const elementHeight = element.scrollHeight;
-      const a4Height = 842; // A4 height in pixels at 72 DPI
-      const availableHeight = a4Height - 60; // Account for margins
-      const scale = Math.min(0.6, availableHeight / elementHeight);
-
-      const opt = {
-        margin: [0.2, 0.2, 0.2, 0.2],
-        filename: `Estado_Pago_${payment?.Mes}_${payment?.Año}_${payment?.projectData?.Name || 'Proyecto'}.pdf`,
-        image: { 
-          type: 'jpeg', 
-          quality: 0.98 
-        },
-        html2canvas: { 
-          scale: 1.2,
-          useCORS: true,
-          allowTaint: true,
-          height: element.scrollHeight,
-          width: element.scrollWidth,
-          scrollX: 0,
-          scrollY: 0
-        },
-        jsPDF: { 
-          unit: 'in', 
-          format: 'a4', 
-          orientation: 'portrait',
-          compress: true
-        },
-        pagebreak: { 
-          mode: ['avoid-all', 'css', 'legacy']
-        }
-      };
-
-      // Apply temporary scaling for PDF generation
-      const originalStyle = element.style.cssText;
-      const originalTransform = element.style.transform;
-      
-      // Scale down the content to fit on one page
-      element.style.transform = `scale(${scale})`;
-      element.style.transformOrigin = 'top left';
-      element.style.width = `${100 / scale}%`;
-      element.style.height = 'auto';
-
-      // Wait for the DOM to update
-      await new Promise(resolve => setTimeout(resolve, 300));
-
-      await html2pdf().set(opt).from(element).save();
-      
-      // Restore original styles
-      element.style.cssText = originalStyle;
-      element.style.transform = originalTransform;
+      window.open(payment.URL, '_blank');
       
       toast({
-        title: "PDF descargado",
-        description: "El estado de pago se ha descargado exitosamente en una sola página",
+        title: "Descarga iniciada",
+        description: "Se ha abierto la carpeta del Drive con los documentos",
       });
     } catch (error) {
-      console.error('Error generating PDF:', error);
+      console.error('Error downloading files:', error);
       toast({
         title: "Error al descargar",
-        description: "Hubo un problema al generar el PDF. Intenta nuevamente.",
+        description: "No se pudo acceder a los archivos",
         variant: "destructive"
       });
     }
@@ -303,15 +251,17 @@ const EmailPreview = () => {
               >
                 Imprimir
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDownloadPDF}
-                className="font-rubik"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Descargar PDF
-              </Button>
+              {payment?.URL && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDownloadFiles}
+                  className="font-rubik"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Descargar Archivos
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -338,6 +288,7 @@ const EmailPreview = () => {
             project={emailTemplateData.project}
             documents={emailTemplateData.documents}
             hideActionButtons={true}
+            driveUrl={payment?.URL}
           />
         </div>
       </div>

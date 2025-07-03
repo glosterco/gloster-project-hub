@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -8,7 +9,6 @@ import { usePaymentDetail } from '@/hooks/usePaymentDetail';
 import { useMandanteNotification } from '@/hooks/useMandanteNotification';
 import { useGoogleDriveIntegration } from '@/hooks/useGoogleDriveIntegration';
 import { supabase } from '@/integrations/supabase/client';
-import html2pdf from 'html2pdf.js';
 
 const SubmissionPreview = () => {
   const navigate = useNavigate();
@@ -21,6 +21,7 @@ const SubmissionPreview = () => {
   const [isProjectUser, setIsProjectUser] = useState(false);
   const [userChecked, setUserChecked] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [documentsUploaded, setDocumentsUploaded] = useState(false);
 
   const formatCurrency = (amount: number) => {
     if (!payment?.projectData?.Currency) {
@@ -65,6 +66,20 @@ const SubmissionPreview = () => {
     
     checkUser();
   }, [userChecked]);
+
+  // Auto-upload documents when preview loads
+  useEffect(() => {
+    const autoUploadDocuments = async () => {
+      if (!payment || !isProjectUser || documentsUploaded || !payment?.URL) return;
+      
+      console.log('🔄 Auto-uploading documents for preview...');
+      setDocumentsUploaded(true);
+    };
+
+    if (payment && isProjectUser && !documentsUploaded) {
+      autoUploadDocuments();
+    }
+  }, [payment, isProjectUser, documentsUploaded]);
 
   const documentsFromPayment = [
     {
@@ -134,79 +149,6 @@ const SubmissionPreview = () => {
     }, 100);
   };
 
-  const handleDownloadPDF = async () => {
-    try {
-      const element = document.querySelector('.email-template-container') as HTMLElement;
-      if (!element) {
-        toast({
-          title: "Error",
-          description: "No se pudo encontrar el contenido a convertir",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      const elementHeight = element.scrollHeight;
-      const a4Height = 842;
-      const availableHeight = a4Height - 60;
-      const scale = Math.min(0.6, availableHeight / elementHeight);
-
-      const opt = {
-        margin: [0.2, 0.2, 0.2, 0.2],
-        filename: `Estado_Pago_${payment?.Mes}_${payment?.Año}_${payment?.projectData?.Name || 'Proyecto'}.pdf`,
-        image: { 
-          type: 'jpeg', 
-          quality: 0.98 
-        },
-        html2canvas: { 
-          scale: 1.2,
-          useCORS: true,
-          allowTaint: true,
-          height: element.scrollHeight,
-          width: element.scrollWidth,
-          scrollX: 0,
-          scrollY: 0
-        },
-        jsPDF: { 
-          unit: 'in', 
-          format: 'a4', 
-          orientation: 'portrait',
-          compress: true
-        },
-        pagebreak: { 
-          mode: ['avoid-all', 'css', 'legacy']
-        }
-      };
-
-      const originalStyle = element.style.cssText;
-      const originalTransform = element.style.transform;
-      
-      element.style.transform = `scale(${scale})`;
-      element.style.transformOrigin = 'top left';
-      element.style.width = `${100 / scale}%`;
-      element.style.height = 'auto';
-
-      await new Promise(resolve => setTimeout(resolve, 300));
-
-      await html2pdf().set(opt).from(element).save();
-      
-      element.style.cssText = originalStyle;
-      element.style.transform = originalTransform;
-      
-      toast({
-        title: "PDF descargado",
-        description: "El estado de pago se ha descargado exitosamente en una sola página",
-      });
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      toast({
-        title: "Error al descargar",
-        description: "Hubo un problema al generar el PDF. Intenta nuevamente.",
-        variant: "destructive"
-      });
-    }
-  };
-
   const handleDownloadFile = async (fileName: string) => {
     if (!payment?.URL) {
       toast({
@@ -245,13 +187,9 @@ const SubmissionPreview = () => {
     }
 
     setIsUploading(true);
-    console.log('🚀 Starting document upload and notification process...');
+    console.log('🚀 Starting notification process...');
 
     try {
-      // Since this is a preview page, we'll skip the document upload and go directly to notification
-      // The documents should already be uploaded from the PaymentDetail page
-      console.log('📤 Skipping document upload - using existing Drive URL');
-
       const mandanteUrl = await generateUniqueURLAndUpdate();
       if (!mandanteUrl) return;
 
@@ -433,15 +371,6 @@ const SubmissionPreview = () => {
               >
                 Imprimir
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDownloadPDF}
-                className="font-rubik"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Descargar PDF
-              </Button>
               {payment?.URL && (
                 <Button
                   variant="outline"
@@ -489,6 +418,7 @@ const SubmissionPreview = () => {
             project={emailTemplateData.project}
             documents={emailTemplateData.documents}
             hideActionButtons={true}
+            driveUrl={payment?.URL}
           />
         </div>
       </div>

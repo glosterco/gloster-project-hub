@@ -248,35 +248,9 @@ const SubmissionPreview = () => {
     console.log('🚀 Starting document upload and notification process...');
 
     try {
-      // Upload documents to Drive first
-      console.log('📤 Uploading documents to Google Drive...');
-      const driveResult = await uploadDocumentsToDrive(payment.id.toString());
-      
-      if (!driveResult.success) {
-        console.error('❌ Drive upload failed:', driveResult.error);
-        toast({
-          title: "Error al subir documentos",
-          description: "No se pudieron subir los documentos al Drive",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      console.log('✅ Documents uploaded successfully to:', driveResult.folderId);
-
-      // Update payment with Drive URL
-      const driveUrl = `https://drive.google.com/drive/u/2/folders/${driveResult.folderId}`;
-      const { error: updateError } = await supabase
-        .from('Estados de pago')
-        .update({ URL: driveUrl })
-        .eq('id', payment.id);
-
-      if (updateError) {
-        console.error('❌ Error updating Drive URL:', updateError);
-        throw new Error('Error al actualizar la URL del Drive');
-      }
-
-      console.log('✅ Drive URL updated in database');
+      // Since this is a preview page, we'll skip the document upload and go directly to notification
+      // The documents should already be uploaded from the PaymentDetail page
+      console.log('📤 Skipping document upload - using existing Drive URL');
 
       const mandanteUrl = await generateUniqueURLAndUpdate();
       if (!mandanteUrl) return;

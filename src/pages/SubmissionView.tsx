@@ -20,7 +20,6 @@ const SubmissionView = () => {
   const [isMandante, setIsMandante] = useState(false);
   const [accessChecked, setAccessChecked] = useState(false);
 
-  // Format currency based on project currency
   const formatCurrency = (amount: number) => {
     if (!payment?.projectData?.Currency) {
       return new Intl.NumberFormat('es-CL', {
@@ -54,11 +53,9 @@ const SubmissionView = () => {
       try {
         setCheckingAccess(true);
         
-        // Verificar si es usuario autenticado del proyecto
         const { data: { user } } = await supabase.auth.getUser();
         
         if (user && payment?.projectData) {
-          // Verificar si el usuario autenticado es el contratista del proyecto
           const { data: contractorData } = await supabase
             .from('Contratistas')
             .select('*')
@@ -74,7 +71,6 @@ const SubmissionView = () => {
           }
         }
 
-        // Verificar acceso desde mandanteAccess (para mandantes con token)
         const mandanteAccess = sessionStorage.getItem('mandanteAccess');
         if (mandanteAccess) {
           try {
@@ -91,7 +87,6 @@ const SubmissionView = () => {
           }
         }
 
-        // Sin acceso, redirigir a página de acceso
         setAccessChecked(true);
         setCheckingAccess(false);
         navigate(`/email-access?paymentId=${paymentId}`);
@@ -324,14 +319,15 @@ const SubmissionView = () => {
     );
   }
 
-  // Crear datos reales para el template con información completa del contratista
   const emailTemplateData = {
     paymentState: {
       month: `${payment.Mes} ${payment.Año}`,
       amount: payment.Total || 0,
+      formattedAmount: formatCurrency(payment.Total || 0),
       dueDate: payment.ExpiryDate,
       projectName: payment.projectData.Name,
-      recipient: payment.projectData.Owner?.ContactEmail || ''
+      recipient: payment.projectData.Owner?.ContactEmail || '',
+      currency: payment.projectData.Currency || 'CLP'
     },
     project: {
       name: payment.projectData.Name,
@@ -349,7 +345,6 @@ const SubmissionView = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 font-rubik">
-      {/* Header de navegación */}
       <div className="bg-white border-b border-gloster-gray/20 shadow-sm print:hidden">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
@@ -396,10 +391,8 @@ const SubmissionView = () => {
         </div>
       </div>
 
-      {/* Contenido de la plantilla */}
       <div className="container mx-auto px-6 py-8">
         <div className="max-w-4xl mx-auto space-y-6">
-          {/* Template del email */}
           <div className="bg-white rounded-lg shadow-lg overflow-hidden email-template-container">
             <EmailTemplate 
               paymentId={paymentId}
@@ -409,7 +402,6 @@ const SubmissionView = () => {
             />
           </div>
 
-          {/* Payment Approval Section - Solo mostrar si es mandante */}
           {isMandante && (
             <PaymentApprovalSection
               paymentId={paymentId}

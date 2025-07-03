@@ -189,6 +189,24 @@ export const useGoogleDriveIntegration = () => {
 
       console.log('✅ Documents uploaded to Google Drive successfully:', data);
       
+      // CORRIGIENDO: Asegurar que las URLs de Google Drive tengan el formato correcto
+      if (data.driveUrl && !data.driveUrl.startsWith('https://drive.google.com/drive/u/2/folders/')) {
+        const correctedUrl = `https://drive.google.com/drive/u/2/folders/${data.driveUrl.replace(/^.*\//, '')}`;
+        console.log('🔧 Correcting Drive URL format:', correctedUrl);
+        
+        // Actualizar la URL en la base de datos con el formato correcto
+        const { error: updateError } = await supabase
+          .from('Estados de pago')
+          .update({ URL: correctedUrl })
+          .eq('id', paymentId);
+
+        if (updateError) {
+          console.error('❌ Error updating corrected URL:', updateError);
+        } else {
+          console.log('✅ URL format corrected in database');
+        }
+      }
+      
       return { success: true, uploadResults: data.uploadResults };
     } catch (error) {
       console.error('❌ Error uploading documents to Google Drive:', error);

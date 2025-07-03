@@ -20,7 +20,7 @@ const PaymentActionButtons: React.FC<PaymentActionButtonsProps> = ({ paymentId, 
     navigate(`/payment/${paymentId}`);
   };
 
-  // Check if status is one of the completed states
+  // Check if status is one of the completed states - CORRIGIENDO LÓGICA
   const isCompleted = status === 'Enviado' || status === 'Aprobado' || status === 'Rechazado';
 
   return (

@@ -6,6 +6,7 @@ import EmailTemplate from '@/components/EmailTemplate';
 import { useToast } from '@/hooks/use-toast';
 import { usePaymentDetail } from '@/hooks/usePaymentDetail';
 import { useMandanteNotification } from '@/hooks/useMandanteNotification';
+import { useGoogleDriveIntegration } from '@/hooks/useGoogleDriveIntegration';
 import { supabase } from '@/integrations/supabase/client';
 import html2pdf from 'html2pdf.js';
 
@@ -15,9 +16,37 @@ const SubmissionPreview = () => {
   const paymentId = searchParams.get('paymentId') || '11';
   const { payment, loading, error } = usePaymentDetail(paymentId, true);
   const { sendNotificationToMandante, loading: notificationLoading } = useMandanteNotification();
+  const { uploadDocumentsToDrive, loading: driveLoading } = useGoogleDriveIntegration();
   const { toast } = useToast();
   const [isProjectUser, setIsProjectUser] = useState(false);
   const [userChecked, setUserChecked] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const formatCurrency = (amount: number) => {
+    if (!payment?.projectData?.Currency) {
+      return new Intl.NumberFormat('es-CL', {
+        style: 'currency',
+        currency: 'CLP',
+        minimumFractionDigits: 0,
+      }).format(amount);
+    }
+
+    if (payment.projectData.Currency === 'UF') {
+      return `${amount.toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} UF`;
+    } else if (payment.projectData.Currency === 'USD') {
+      return new Intl.NumberFormat('es-CL', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 0,
+      }).format(amount);
+    } else {
+      return new Intl.NumberFormat('es-CL', {
+        style: 'currency',
+        currency: 'CLP',
+        minimumFractionDigits: 0,
+      }).format(amount);
+    }
+  };
 
   useEffect(() => {
     const checkUser = async () => {
@@ -215,11 +244,13 @@ const SubmissionPreview = () => {
       return;
     }
 
+    setIsUploading(true);
+    console.log('🚀 Starting document upload and notification process...');
+
     try {
       const mandanteUrl = await generateUniqueURLAndUpdate();
       if (!mandanteUrl) return;
 
-      // Cambiar status a "Enviado"
       const { error: statusError } = await supabase
         .from('Estados de pago')
         .update({ Status: 'Enviado' })
@@ -230,8 +261,24 @@ const SubmissionPreview = () => {
         throw new Error('Error al actualizar el estado');
       }
 
+      const { data: paymentStateData, error: paymentStateError } = await supabase
+        .from('Estados de pago')
+        .select('URL')
+        .eq('id', payment.id)
+        .single();
+
+      if (paymentStateError) {
+        console.error('Error fetching payment state URL:', paymentStateError);
+        toast({
+          title: "Error",
+          description: "No se pudo obtener la URL del estado de pago",
+          variant: "destructive"
+        });
+        return;
+      }
+
       const notificationData = {
-        paymentId: paymentId,
+        paymentId: payment.id.toString(),
         contratista: payment.projectData.Contratista?.ContactName || '',
         mes: payment.Mes || '',
         año: payment.Año || 0,
@@ -240,22 +287,32 @@ const SubmissionPreview = () => {
         mandanteCompany: payment.projectData.Owner?.CompanyName || '',
         contractorCompany: payment.projectData.Contratista?.CompanyName || '',
         amount: payment.Total || 0,
-        dueDate: payment.ExpiryDate || ''
+        dueDate: payment.ExpiryDate || '',
+        driveUrl: paymentStateData.URL || '',
+        uploadedDocuments: []
       };
 
-      await sendNotificationToMandante(notificationData);
-
-      toast({
-        title: "Notificación enviada",
-        description: "El estado de pago ha sido enviado y se actualizó el status",
-      });
+      const result = await sendNotificationToMandante(notificationData);
+      
+      if (result.success) {
+        toast({
+          title: "Notificación enviada exitosamente",
+          description: "Se ha enviado la notificación al mandante y actualizado el estado",
+        });
+        
+        setTimeout(() => {
+          navigate(`/project/${payment?.Project || 2}`);
+        }, 2000);
+      }
     } catch (error) {
-      console.error('Error sending notification:', error);
+      console.error('❌ Error in notification process:', error);
       toast({
-        title: "Error al enviar",
-        description: "No se pudo enviar la notificación",
+        title: "Error al enviar notificación",
+        description: error.message || "Error al procesar la solicitud",
         variant: "destructive"
       });
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -325,14 +382,15 @@ const SubmissionPreview = () => {
     );
   }
 
-  // Crear datos reales para el template
   const emailTemplateData = {
     paymentState: {
       month: `${payment.Mes} ${payment.Año}`,
       amount: payment.Total || 0,
+      formattedAmount: formatCurrency(payment.Total || 0),
       dueDate: payment.ExpiryDate,
       projectName: payment.projectData.Name,
-      recipient: payment.projectData.Owner?.ContactEmail || ''
+      recipient: payment.projectData.Owner?.ContactEmail || '',
+      currency: payment.projectData.Currency || 'CLP'
     },
     project: {
       name: payment.projectData.Name,
@@ -350,7 +408,6 @@ const SubmissionPreview = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 font-rubik">
-      {/* Header de navegación */}
       <div className="bg-white border-b border-gloster-gray/20 shadow-sm print:hidden">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
@@ -396,11 +453,11 @@ const SubmissionPreview = () => {
                 <Button
                   size="sm"
                   onClick={handleSendEmail}
-                  disabled={notificationLoading}
+                  disabled={isUploading || notificationLoading}
                   className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
                 >
                   <Send className="h-4 w-4 mr-2" />
-                  {notificationLoading ? 'Enviando...' : 'Enviar Notificación'}
+                  {isUploading || notificationLoading ? 'Enviando...' : 'Enviar Notificación'}
                 </Button>
               )}
             </div>
@@ -408,7 +465,6 @@ const SubmissionPreview = () => {
         </div>
       </div>
 
-      {/* Volver */}
       <div className="bg-slate-50 py-2 print:hidden">
         <div className="container mx-auto px-6">
           <button 
@@ -421,7 +477,6 @@ const SubmissionPreview = () => {
         </div>
       </div>
 
-      {/* Contenido de la plantilla */}
       <div className="container mx-auto px-6 py-8">
         <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden email-template-container">
           <EmailTemplate 

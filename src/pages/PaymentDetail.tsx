@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-import { ArrowLeft, Calendar, Send, CheckCircle, Clock, Eye, Save, Download } from 'lucide-react';
+import { ArrowLeft, Calendar, Send, CheckCircle, Clock, Eye, Save, Download, FileText, Upload, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { usePaymentDetail } from '@/hooks/usePaymentDetail';
 import { useMandanteNotification } from '@/hooks/useMandanteNotification';
@@ -45,20 +45,20 @@ const PaymentDetail = () => {
   const [achsSelection, setAchsSelection] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   
-  // Estados para los campos editables - Initialize with database values
+  // CORRIGIENDO: Estados para los campos editables - Initialize with database values
   const [editableAmount, setEditableAmount] = useState('');
   const [editablePercentage, setEditablePercentage] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
-  // Initialize editable values when payment data loads
+  // CORRIGIENDO: Initialize editable values when payment data loads
   useEffect(() => {
     if (payment) {
-      // Set amount if it exists in database
+      // Set amount if it exists in database and is not null
       if (payment.Total !== null && payment.Total !== undefined) {
         setEditableAmount(payment.Total.toString());
       }
       
-      // Set percentage if it exists in database
+      // Set percentage if it exists in database and is not null
       if (payment.Progress !== null && payment.Progress !== undefined) {
         setEditablePercentage(payment.Progress.toString());
       } else if (payment.Total && payment.projectData?.Budget) {
@@ -113,7 +113,7 @@ const PaymentDetail = () => {
     }
   };
 
-  // Guardar cambios en la base de datos (modificado para incluir Progress)
+  // Guardar cambios en la base de datos
   const handleSaveAmount = async () => {
     if (!payment?.id || !editableAmount) return;
     
@@ -148,6 +148,13 @@ const PaymentDetail = () => {
       });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // CORRIGIENDO: Auto-guardar antes de vista previa si hay cambios sin guardar
+  const handleAutoSaveBeforePreview = async () => {
+    if (editableAmount && payment?.Total?.toString() !== editableAmount) {
+      await handleSaveAmount();
     }
   };
 
@@ -429,6 +436,8 @@ const PaymentDetail = () => {
       return;
     }
 
+    // CORRIGIENDO: Auto-guardar antes de vista previa
+    await handleAutoSaveBeforePreview();
     await generateUniqueURLAndUpdate();
     navigate(`/submission-preview?paymentId=${payment.id}`);
   };
@@ -437,17 +446,23 @@ const PaymentDetail = () => {
     return documents.filter(doc => documentStatus[doc.id as keyof typeof documentStatus]).length;
   };
 
-  // Función para mostrar archivos del Drive si el status es "Enviado", "Aprobado" o "Rechazado"
+  // CORRIGIENDO: Función para mostrar archivos del Drive si el status es "Enviado", "Aprobado" o "Rechazado"
   const shouldShowDriveFiles = () => {
     return payment?.Status === 'Enviado' || payment?.Status === 'Aprobado' || payment?.Status === 'Rechazado';
   };
 
-  // Función para descargar archivos del Drive
+  // CORRIGIENDO: Función para descargar archivos del Drive
   const handleDownloadFile = async (fileName: string) => {
-    if (!payment?.URL) return;
+    if (!payment?.URL) {
+      toast({
+        title: "Error",
+        description: "No se encontró la URL del archivo",
+        variant: "destructive"
+      });
+      return;
+    }
     
     try {
-      // Abrir la URL del Drive en una nueva pestaña
       window.open(payment.URL, '_blank');
       
       toast({
@@ -464,7 +479,7 @@ const PaymentDetail = () => {
     }
   };
 
-  // Check if documents were updated (for enabling send button in sent states)
+  // CORRIGIENDO: Check if documents were updated (for enabling send button in sent states)
   const wereDocumentsUpdated = () => {
     return Object.keys(documentStatus).some(docId => documentStatus[docId as keyof typeof documentStatus]);
   };
@@ -670,43 +685,57 @@ const PaymentDetail = () => {
             </div>
           </div>
 
-          {/* Mostrar archivos del Drive si el status es "Enviado", "Aprobado" o "Rechazado" */}
+          {/* CORRIGIENDO: Mostrar archivos del Drive si el status es "Enviado", "Aprobado" o "Rechazado" */}
           {shouldShowDriveFiles() && (
             <Card className="mb-8 border-l-4 border-l-blue-500">
               <CardHeader>
                 <CardTitle className="font-rubik text-lg text-slate-800">Documentos en Drive</CardTitle>
                 <CardDescription className="font-rubik">
-                  Los documentos se encuentran almacenados en Google Drive
+                  Los documentos se encuentran almacenados en Google Drive. Puedes actualizar cualquier documento si es necesario.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {documents.filter(doc => doc.required).map((doc) => (
                     <div key={doc.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col space-y-3">
                         <div className="flex-1">
                           <h4 className="font-medium text-slate-800 font-rubik text-sm">{doc.name}</h4>
                           <p className="text-xs text-gloster-gray font-rubik mt-1">{doc.description}</p>
                         </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDownloadFile(doc.name)}
-                          className="ml-2"
-                        >
-                          <Download className="h-4 w-4" />
-                        </Button>
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDownloadFile(doc.name)}
+                            className="flex-1"
+                          >
+                            <Download className="h-4 w-4 mr-1" />
+                            <span className="text-xs">Descargar</span>
+                          </Button>
+                          {doc.downloadUrl && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => window.open(doc.downloadUrl, '_blank')}
+                              className="flex-1"
+                            >
+                              <ExternalLink className="h-4 w-4 mr-1" />
+                              <span className="text-xs">Visitar</span>
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            onClick={() => handleDocumentUpload(doc.id)}
+                            className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black flex-1"
+                          >
+                            <Upload className="h-4 w-4 mr-1" />
+                            <span className="text-xs">Actualizar</span>
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))}
-                </div>
-                <div className="mt-4 text-center">
-                  <Button
-                    onClick={() => window.open(payment?.URL, '_blank')}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-rubik"
-                  >
-                    Ver Carpeta Completa en Drive
-                  </Button>
                 </div>
               </CardContent>
             </Card>

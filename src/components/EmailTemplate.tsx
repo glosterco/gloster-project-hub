@@ -1,258 +1,189 @@
 
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Calendar, DollarSign, FileText, CheckCircle, Building, User, Mail, Download, Eye, Printer, Linkedin } from 'lucide-react';
-import PaymentApprovalSection from './PaymentApprovalSection';
+
+interface PaymentState {
+  month: string;
+  amount: number;
+  formattedAmount?: string; // AGREGANDO FORMATO PERSONALIZADO
+  dueDate: string;
+  projectName: string;
+  recipient: string;
+  currency?: string; // AGREGANDO CURRENCY
+}
+
+interface Project {
+  name: string;
+  client: string;
+  contractor: string;
+  location: string;
+  projectManager: string;
+  contactEmail: string;
+  contractorRUT?: string;
+  contractorPhone?: string;
+  contractorAddress?: string;
+}
+
+interface Document {
+  id: string;
+  name: string;
+  description: string;
+  uploaded: boolean;
+}
 
 interface EmailTemplateProps {
   paymentId?: string;
-  paymentState: {
-    month: string;
-    amount: number;
-    dueDate: string;
-    projectName: string;
-    recipient: string;
-  };
-  project: {
-    name: string;
-    client: string;
-    contractor?: string;
-    location: string;
-    projectManager: string;
-    contactEmail: string;
-  };
-  documents: Array<{
-    id: string;
-    name: string;
-    description: string;
-    uploaded: boolean;
-  }>;
+  paymentState: PaymentState;
+  project: Project;
+  documents: Document[];
   hideActionButtons?: boolean;
 }
 
-const EmailTemplate: React.FC<EmailTemplateProps> = ({ paymentId, paymentState, project, documents, hideActionButtons = false }) => {
-  console.log('EmailTemplate props:', { paymentId, paymentState, project, documents, hideActionButtons });
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-CL', {
-      style: 'currency',
-      currency: 'CLP',
-      minimumFractionDigits: 0,
-    }).format(amount);
+const EmailTemplate: React.FC<EmailTemplateProps> = ({
+  paymentState,
+  project,
+  documents,
+  hideActionButtons = false
+}) => {
+  // CORRIGIENDO: Usar el formato personalizado si está disponible, sino formatear según currency
+  const formatAmount = () => {
+    if (paymentState.formattedAmount) {
+      return paymentState.formattedAmount;
+    }
+    
+    // Fallback formatting
+    if (paymentState.currency === 'UF') {
+      return `${paymentState.amount.toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} UF`;
+    } else if (paymentState.currency === 'USD') {
+      return new Intl.NumberFormat('es-CL', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 0,
+      }).format(paymentState.amount);
+    } else {
+      return new Intl.NumberFormat('es-CL', {
+        style: 'currency',
+        currency: 'CLP',
+        minimumFractionDigits: 0,
+      }).format(paymentState.amount);
+    }
   };
 
-  const uploadedDocuments = documents.filter(doc => doc.uploaded);
-
   return (
-    <div className="max-w-4xl mx-auto bg-white font-rubik">
-      {/* Header superior con logo Gloster */}
-      <div className="bg-gloster-yellow p-4 flex items-center justify-center">
-        <div className="flex items-center space-x-3">
-          <img 
-            src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
-            alt="Gloster Logo" 
-            className="w-8 h-8"
-          />
-          <span className="text-2xl font-bold text-slate-800 font-rubik">Gloster</span>
-        </div>
+    <div className="bg-white font-rubik">
+      {/* Header con logo */}
+      <div className="bg-gloster-yellow p-6 text-center">
+        <img 
+          src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
+          alt="Gloster Logo" 
+          className="w-16 h-16 mx-auto mb-4"
+        />
+        <h1 className="text-2xl font-bold text-slate-800">Estado de Pago</h1>
+        <p className="text-slate-600 mt-2">{paymentState.month}</p>
       </div>
 
-      {/* Header con información del contratista */}
-      <div className="bg-gloster-white border-b-2 border-gloster-gray/20 p-8">
-        <div className="flex items-center space-x-4 mb-6">
-          <div className="w-16 h-16 bg-gloster-gray/20 rounded-lg flex items-center justify-center">
-            <Building className="h-8 w-8 text-gloster-gray" />
+      {/* Información del proyecto */}
+      <div className="p-6 border-b border-gray-200">
+        <h2 className="text-xl font-bold text-slate-800 mb-4">Información del Proyecto</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <p className="text-sm text-gray-600">Proyecto</p>
+            <p className="font-semibold text-slate-800">{project.name}</p>
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-slate-800 font-rubik">
-              {project.contractor || "Contractor No Disponible"}
-            </h1>
-            <p className="text-gloster-gray font-rubik">Contratista General</p>
+            <p className="text-sm text-gray-600">Cliente</p>
+            <p className="font-semibold text-slate-800">{project.client}</p>
           </div>
-        </div>
-        
-        <div className="border-t border-gloster-gray/20 pt-6">
-          <h2 className="text-2xl font-bold text-slate-800 font-rubik mb-2">
-            Estado de Pago - {paymentState.month}
-          </h2>
-          <p className="text-gloster-gray font-rubik">
-            Documentación completa para procesamiento de pago
-          </p>
+          <div>
+            <p className="text-sm text-gray-600">Contratista</p>
+            <p className="font-semibold text-slate-800">{project.contractor}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">Ubicación</p>
+            <p className="font-semibold text-slate-800">{project.location}</p>
+          </div>
         </div>
       </div>
 
-      {/* Información del proyecto y estado de pago */}
-      <div className="p-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-          {/* Información del Estado de Pago */}
-          <Card className="border-l-4 border-l-gloster-yellow">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2 font-rubik text-slate-800">
-                <Calendar className="h-5 w-5 text-gloster-gray" />
-                <span>Información del Estado de Pago</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <p className="text-gloster-gray text-sm font-rubik">Período</p>
-                <p className="font-semibold text-slate-800 font-rubik">{paymentState.month}</p>
-              </div>
-              <div>
-                <p className="text-gloster-gray text-sm font-rubik">Monto</p>
-                <p className="font-bold text-xl text-slate-800 font-rubik">{formatCurrency(paymentState.amount)}</p>
-              </div>
-              <div>
-                <p className="text-gloster-gray text-sm font-rubik">Fecha de Vencimiento</p>
-                <p className="font-semibold text-slate-800 font-rubik">{paymentState.dueDate}</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Información del Proyecto */}
-          <Card className="border-l-4 border-l-gloster-gray">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2 font-rubik text-slate-800">
-                <Building className="h-5 w-5 text-gloster-gray" />
-                <span>Información del Proyecto</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <p className="text-gloster-gray text-sm font-rubik">Proyecto</p>
-                <p className="font-semibold text-slate-800 font-rubik">{project.name}</p>
-              </div>
-              <div>
-                <p className="text-gloster-gray text-sm font-rubik">Mandante</p>
-                <p className="font-semibold text-slate-800 font-rubik">{project.client}</p>
-              </div>
-              <div>
-                <p className="text-gloster-gray text-sm font-rubik">Contratista</p>
-                <p className="font-semibold text-slate-800 font-rubik">{project.contractor || "No disponible"}</p>
-              </div>
-              <div>
-                <p className="text-gloster-gray text-sm font-rubik">Ubicación</p>
-                <p className="font-semibold text-slate-800 font-rubik">{project.location}</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Documentos adjuntos */}
-        <Card className="mb-8">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center space-x-2 font-rubik text-slate-800">
-                <FileText className="h-5 w-5 text-gloster-gray" />
-                <span>Documentos Adjuntos ({uploadedDocuments.length})</span>
-              </CardTitle>
-              <Button variant="outline" size="sm" className="font-rubik">
-                <Download className="h-4 w-4 mr-2" />
-                Descargar Todo
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {uploadedDocuments.map((doc, index) => (
-                <div key={doc.id} className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
-                  <div className="flex items-center space-x-3 flex-1">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-slate-800 font-rubik text-sm">{doc.name}</p>
-                      <p className="text-gloster-gray text-xs font-rubik">{doc.description}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-1 ml-2">
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                      <Eye className="h-3 w-3" />
-                    </Button>
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                      <Download className="h-3 w-3" />
-                    </Button>
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                      <Printer className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Sección de Aprobación del Estado de Pago - Solo mostrar si hideActionButtons es false */}
-        {!hideActionButtons && paymentId && (
-          <div className="mb-8">
-            <PaymentApprovalSection 
-              paymentId={paymentId}
-              paymentState={{
-                month: paymentState.month,
-                amount: paymentState.amount,
-                projectName: paymentState.projectName
-              }}
-            />
+      {/* Información del estado de pago */}
+      <div className="p-6 border-b border-gray-200">
+        <h2 className="text-xl font-bold text-slate-800 mb-4">Detalle del Estado de Pago</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <p className="text-sm text-gray-600">Período</p>
+            <p className="font-semibold text-slate-800">{paymentState.month}</p>
           </div>
-        )}
-
-        {/* Información de contacto del contratista */}
-        <Card className="bg-slate-50">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2 font-rubik text-slate-800">
-              <User className="h-5 w-5 text-gloster-gray" />
-              <span>Información del Contratista</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <p className="text-gloster-gray text-sm font-rubik">Empresa</p>
-              <p className="font-semibold text-slate-800 font-rubik">{project.contractor || "No disponible"}</p>
-            </div>
-            <div>
-              <p className="text-gloster-gray text-sm font-rubik">Project Manager</p>
-              <p className="font-semibold text-slate-800 font-rubik">{project.projectManager || "No disponible"}</p>
-            </div>
-            <div>
-              <p className="text-gloster-gray text-sm font-rubik">Email de Contacto</p>
-              <p className="font-semibold text-slate-800 font-rubik flex items-center space-x-2">
-                <Mail className="h-4 w-4 text-gloster-gray" />
-                <span>{project.contactEmail || "No disponible"}</span>
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Footer */}
-        <div className="mt-8 pt-6 border-t border-gloster-gray/20 text-center">
-          <p className="text-gloster-gray text-sm font-rubik mb-2">
-            Este estado de pago ha sido generado automáticamente por el sistema Gloster
-          </p>
-          <p className="text-gloster-gray text-xs font-rubik mb-4">
-            Para cualquier consulta, contacte al contratista indicado arriba o al equipo Gloster
-          </p>
-          <div className="mt-4 flex flex-col items-center justify-center space-y-2">
-            <div className="flex items-center space-x-2">
-              <img 
-                src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
-                alt="Gloster Logo" 
-                className="w-6 h-6"
-              />
-              <span className="text-gloster-gray text-sm font-rubik font-semibold">Gloster - Gestión de Proyectos</span>
-            </div>
-            <div className="flex flex-col items-center space-y-1">
-              <p className="text-gloster-gray text-xs font-rubik">soporte.gloster@gmail.com</p>
-              <a 
-                href="https://www.linkedin.com/company/glostercl/" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="flex items-center space-x-1 text-gloster-gray hover:text-slate-800 text-xs"
-              >
-                <Linkedin className="h-3 w-3" />
-                <span>LinkedIn</span>
-              </a>
-            </div>
+          <div>
+            <p className="text-sm text-gray-600">Monto</p>
+            <p className="font-semibold text-slate-800 text-lg">{formatAmount()}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">Fecha de Vencimiento</p>
+            <p className="font-semibold text-slate-800">{paymentState.dueDate}</p>
           </div>
         </div>
+      </div>
+
+      {/* Información del contacto */}
+      <div className="p-6 border-b border-gray-200">
+        <h2 className="text-xl font-bold text-slate-800 mb-4">Información de Contacto</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <p className="text-sm text-gray-600">Responsable del Proyecto</p>
+            <p className="font-semibold text-slate-800">{project.projectManager}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">Email de Contacto</p>
+            <p className="font-semibold text-slate-800">{project.contactEmail}</p>
+          </div>
+          {project.contractorRUT && (
+            <div>
+              <p className="text-sm text-gray-600">RUT</p>
+              <p className="font-semibold text-slate-800">{project.contractorRUT}</p>
+            </div>
+          )}
+          {project.contractorPhone && (
+            <div>
+              <p className="text-sm text-gray-600">Teléfono</p>
+              <p className="font-semibold text-slate-800">{project.contractorPhone}</p>
+            </div>
+          )}
+          {project.contractorAddress && (
+            <div className="md:col-span-2">
+              <p className="text-sm text-gray-600">Dirección</p>
+              <p className="font-semibold text-slate-800">{project.contractorAddress}</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Documentación adjunta */}
+      <div className="p-6">
+        <h2 className="text-xl font-bold text-slate-800 mb-4">Documentación Adjunta</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {documents.filter(doc => doc.uploaded).map((doc) => (
+            <div key={doc.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+              <div className="flex-1">
+                <p className="font-medium text-slate-800">{doc.name}</p>
+                <p className="text-sm text-gray-600">{doc.description}</p>
+              </div>
+              <div className="ml-3">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  ✓ Incluido
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Mensaje final */}
+      <div className="p-6 bg-gray-50 text-center">
+        <p className="text-gray-600">
+          Este estado de pago ha sido enviado para su revisión y aprobación.
+        </p>
+        <p className="text-sm text-gray-500 mt-2">
+          Para cualquier consulta, contactar a {project.contactEmail}
+        </p>
       </div>
     </div>
   );

@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -45,56 +44,10 @@ const PaymentDetail = () => {
   const [achsSelection, setAchsSelection] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   
-  // Estados para los campos editables - Initialize with database values
-  const [editableAmount, setEditableAmount] = useState('');
+  // Estados para los campos editables
+  const [editableAmount, setEditableAmount] = useState(payment?.Total?.toString() || '');
   const [editablePercentage, setEditablePercentage] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-
-  // Initialize editable values when payment data loads
-  useEffect(() => {
-    if (payment) {
-      // Set amount if it exists in database
-      if (payment.Total !== null && payment.Total !== undefined) {
-        setEditableAmount(payment.Total.toString());
-      }
-      
-      // Set percentage if it exists in database
-      if (payment.Progress !== null && payment.Progress !== undefined) {
-        setEditablePercentage(payment.Progress.toString());
-      } else if (payment.Total && payment.projectData?.Budget) {
-        // Calculate percentage from amount and budget if Progress is null
-        const percentage = (payment.Total / payment.projectData.Budget) * 100;
-        setEditablePercentage(percentage.toFixed(2));
-      }
-    }
-  }, [payment]);
-
-  // Format currency based on project currency
-  const formatCurrency = (amount: number) => {
-    if (!payment?.projectData?.Currency) {
-      return new Intl.NumberFormat('es-CL', {
-        style: 'currency',
-        currency: 'CLP',
-        minimumFractionDigits: 0,
-      }).format(amount);
-    }
-
-    if (payment.projectData.Currency === 'UF') {
-      return `${amount.toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} UF`;
-    } else if (payment.projectData.Currency === 'USD') {
-      return new Intl.NumberFormat('es-CL', {
-        style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 0,
-      }).format(amount);
-    } else {
-      return new Intl.NumberFormat('es-CL', {
-        style: 'currency',
-        currency: 'CLP',
-        minimumFractionDigits: 0,
-      }).format(amount);
-    }
-  };
 
   // Calcular valores automáticamente
   const handleAmountChange = (value: string) => {
@@ -255,6 +208,14 @@ const PaymentDetail = () => {
     }
   ];
 
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('es-CL', {
+      style: 'currency',
+      currency: 'CLP',
+      minimumFractionDigits: 0,
+    }).format(amount);
+  };
+
   const getExamenesUrl = () => {
     switch (achsSelection) {
       case 'achs':
@@ -344,10 +305,10 @@ const PaymentDetail = () => {
       );
 
       if (!uploadResult.success) {
-        throw new Error("Error al subir documentos a Google Drive");
+        throw new Error("Error al subir documentos");
       }
 
-      console.log('✅ Documents uploaded successfully to Google Drive');
+      console.log('✅ Documents uploaded successfully');
 
       const mandanteUrl = await generateUniqueURLAndUpdate();
       if (!mandanteUrl) return;
@@ -400,7 +361,7 @@ const PaymentDetail = () => {
       if (result.success) {
         toast({
           title: "Documentos enviados exitosamente",
-          description: "Los documentos se han subido a Google Drive y se ha enviado la notificación al mandante",
+          description: "Los documentos se han subido y se ha enviado la notificación al mandante",
         });
         
         setTimeout(() => {
@@ -411,7 +372,7 @@ const PaymentDetail = () => {
       console.error('❌ Error in upload process:', error);
       toast({
         title: "Error al enviar documentos",
-        description: error.message || "Error al subir documentos a Google Drive",
+        description: error.message || "Error al subir documentos",
         variant: "destructive"
       });
     } finally {
@@ -446,15 +407,7 @@ const PaymentDetail = () => {
   const handleDownloadFile = async (fileName: string) => {
     if (!payment?.URL) return;
     
-    try {
-      // Abrir la URL del Drive en una nueva pestaña
-      window.open(payment.URL, '_blank');
-      
-      toast({
-        title: "Descarga iniciada",
-        description: `Se ha abierto la carpeta del Drive para descargar ${fileName}`,
-      });
-    } catch (error) {
+    catch (error) {
       console.error('Error downloading file:', error);
       toast({
         title: "Error al descargar",
@@ -462,11 +415,6 @@ const PaymentDetail = () => {
         variant: "destructive"
       });
     }
-  };
-
-  // Check if documents were updated (for enabling send button in sent states)
-  const wereDocumentsUpdated = () => {
-    return Object.keys(documentStatus).some(docId => documentStatus[docId as keyof typeof documentStatus]);
   };
 
   if (loading) {
@@ -646,18 +594,14 @@ const PaymentDetail = () => {
                       variant="outline"
                       className="border-gloster-gray/30 hover:bg-gloster-gray/10 font-rubik"
                       size="sm"
-                      disabled={isUploading || (!areAllRequiredDocumentsUploaded() && !shouldShowDriveFiles())}
+                      disabled={isUploading || !areAllRequiredDocumentsUploaded()}
                     >
                       <Eye className="h-4 w-4 mr-1" />
                       Vista Previa
                     </Button>
                     <Button
                       onClick={handleSendDocuments}
-                      disabled={
-                        shouldShowDriveFiles() 
-                          ? !wereDocumentsUpdated() || isUploading
-                          : !documents.filter(d => d.required).every(d => documentStatus[d.id as keyof typeof documentStatus]) || isUploading
-                      }
+                      disabled={!documents.filter(d => d.required).every(d => documentStatus[d.id as keyof typeof documentStatus]) || isUploading}
                       className="bg-green-600 hover:bg-green-700 text-white disabled:bg-slate-300 font-rubik"
                       size="sm"
                     >

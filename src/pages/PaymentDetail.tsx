@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -44,32 +43,11 @@ const PaymentDetail = () => {
 
   const [achsSelection, setAchsSelection] = useState('');
   const [isUploading, setIsUploading] = useState(false);
-  const [documentsUpdated, setDocumentsUpdated] = useState(false);
   
   // Estados para los campos editables
-  const [editableAmount, setEditableAmount] = useState('');
+  const [editableAmount, setEditableAmount] = useState(payment?.Total?.toString() || '');
   const [editablePercentage, setEditablePercentage] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-
-  // Initialize editable fields when payment data loads
-  useEffect(() => {
-    if (payment) {
-      setEditableAmount(payment.Total?.toString() || '');
-      if (payment.Progress !== null && payment.Progress !== undefined) {
-        setEditablePercentage(payment.Progress.toString());
-      } else if (payment.Total && payment.projectData?.Budget) {
-        const percentage = (payment.Total / payment.projectData.Budget) * 100;
-        setEditablePercentage(percentage.toFixed(2));
-      }
-    }
-  }, [payment]);
-
-  // Track document updates for completed statuses
-  const handleDocumentUpdate = () => {
-    if (shouldShowDriveFiles()) {
-      setDocumentsUpdated(true);
-    }
-  };
 
   // Calcular valores automáticamente
   const handleAmountChange = (value: string) => {
@@ -136,8 +114,7 @@ const PaymentDetail = () => {
     projectName: payment.projectData?.Name || "",
     contractorName: payment.projectData?.Contratista?.CompanyName || "",
     clientName: payment.projectData?.Owner?.CompanyName || "",
-    recipient: payment.projectData?.Owner?.ContactEmail || "",
-    currency: payment.projectData?.Currency || 'CLP'
+    recipient: payment.projectData?.Owner?.ContactEmail || ""
   } : {
     id: parseInt(id || '1'),
     month: "Cargando...",
@@ -147,8 +124,7 @@ const PaymentDetail = () => {
     projectName: "Cargando...",
     contractorName: "Cargando...",
     clientName: "Cargando...",
-    recipient: "",
-    currency: 'CLP'
+    recipient: ""
   };
 
   // Document definitions
@@ -232,10 +208,10 @@ const PaymentDetail = () => {
     }
   ];
 
-  const formatCurrency = (amount: number, currency: string = 'CLP') => {
+  const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-CL', {
       style: 'currency',
-      currency: currency,
+      currency: 'CLP',
       minimumFractionDigits: 0,
     }).format(amount);
   };
@@ -396,7 +372,7 @@ const PaymentDetail = () => {
       console.error('❌ Error in upload process:', error);
       toast({
         title: "Error al enviar documentos",
-        description: error instanceof Error ? error.message : "Error al subir documentos",
+        description: error.message || "Error al subir documentos",
         variant: "destructive"
       });
     } finally {
@@ -431,9 +407,7 @@ const PaymentDetail = () => {
   const handleDownloadFile = async (fileName: string) => {
     if (!payment?.URL) return;
     
-    try {
-      window.open(payment.URL, '_blank');
-    } catch (error) {
+    catch (error) {
       console.error('Error downloading file:', error);
       toast({
         title: "Error al descargar",
@@ -525,11 +499,11 @@ const PaymentDetail = () => {
                       <p className="text-gloster-gray text-sm font-rubik mb-2">Monto del Estado</p>
                       {shouldShowDriveFiles() ? (
                         <p className="font-bold text-lg md:text-xl text-slate-800 font-rubik break-words">
-                          {formatCurrency(paymentState.amount, paymentState.currency)}
+                          {formatCurrency(paymentState.amount)}
                         </p>
                       ) : (
                         <div className="flex items-center space-x-2">
-                          <span className="text-sm text-gloster-gray">{paymentState.currency}</span>
+                          <span className="text-sm text-gloster-gray">{payment?.projectData?.Currency || 'CLP'}</span>
                           <Input
                             type="number"
                             value={editableAmount}
@@ -620,14 +594,14 @@ const PaymentDetail = () => {
                       variant="outline"
                       className="border-gloster-gray/30 hover:bg-gloster-gray/10 font-rubik"
                       size="sm"
-                      disabled={isUploading || (!shouldShowDriveFiles() && !areAllRequiredDocumentsUploaded())}
+                      disabled={isUploading || !areAllRequiredDocumentsUploaded()}
                     >
                       <Eye className="h-4 w-4 mr-1" />
                       Vista Previa
                     </Button>
                     <Button
                       onClick={handleSendDocuments}
-                      disabled={shouldShowDriveFiles() ? (!documentsUpdated || isUploading) : (!documents.filter(d => d.required).every(d => documentStatus[d.id as keyof typeof documentStatus]) || isUploading)}
+                      disabled={!documents.filter(d => d.required).every(d => documentStatus[d.id as keyof typeof documentStatus]) || isUploading}
                       className="bg-green-600 hover:bg-green-700 text-white disabled:bg-slate-300 font-rubik"
                       size="sm"
                     >
@@ -700,10 +674,7 @@ const PaymentDetail = () => {
                     onDragOver={(e) => handleDragOver(e, doc.id)}
                     onDragLeave={(e) => handleDragLeave(e, doc.id)}
                     onDrop={(e) => handleDrop(e, doc.id, doc.allowMultiple)}
-                    onDocumentUpload={() => {
-                      handleDocumentUpload(doc.id);
-                      handleDocumentUpdate();
-                    }}
+                    onDocumentUpload={() => handleDocumentUpload(doc.id)}
                     onFileRemove={(fileIndex) => handleFileRemove(doc.id, fileIndex)}
                     getExamenesUrl={getExamenesUrl}
                   />) : null

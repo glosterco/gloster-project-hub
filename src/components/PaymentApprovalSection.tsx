@@ -1,172 +1,278 @@
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { CheckCircle, XCircle, MessageSquare } from 'lucide-react';
-import { usePaymentActions } from '@/hooks/usePaymentActions';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useEmailNotifications } from '@/hooks/useEmailNotifications';
 
 interface PaymentApprovalSectionProps {
   paymentId: string;
   paymentState: {
     month: string;
     amount: number;
+    formattedAmount?: string;
     projectName: string;
   };
-  disabled?: boolean;
   onStatusChange?: () => void;
 }
 
-const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({ 
+const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
   paymentId,
-  paymentState, 
-  disabled = false,
+  paymentState,
   onStatusChange
 }) => {
-  const [approvalStatus, setApprovalStatus] = useState<'pending' | 'approved' | 'rejected'>('pending');
-  const [rejectionComments, setRejectionComments] = useState('');
-  const { approvePayment, rejectPayment, loading } = usePaymentActions();
+  const [loading, setLoading] = useState(false);
+  const [showRejectionForm, setShowRejectionForm] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const { toast } = useToast();
+  const { sendContractorNotification } = useEmailNotifications();
 
   const handleApprove = async () => {
-    if (disabled || loading) return;
-    
-    console.log('🟢 Aprobando estado de pago:', paymentId);
-    const result = await approvePayment(paymentId);
-    
-    if (result.success) {
-      setApprovalStatus('approved');
-      if (onStatusChange) onStatusChange();
+    setLoading(true);
+    try {
+      console.log('🟢 Approving payment:', paymentId);
+
+      // Update payment status
+      const { error: updateError } = await supabase
+        .from('Estados de pago')
+        .update({ Status: 'Aprobado' })
+        .eq('id', paymentId);
+
+      if (updateError) {
+        console.error('Error updating payment status:', updateError);
+        throw updateError;
+      }
+
+      // Get payment and contractor details for notification
+      const { data: paymentData, error: fetchError } = await supabase
+        .from('Estados de pago')
+        .select(`
+          *,
+          projectData:Proyectos!Project (
+            Name,
+            Owner:Mandantes!Owner (
+              CompanyName
+            ),
+            Contratista:Contratistas!Contratista (
+              CompanyName,
+              ContactName,
+              ContactEmail
+            )
+          )
+        `)
+        .eq('id', paymentId)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching payment data:', fetchError);
+        throw fetchError;
+      }
+
+      // Send notification to contractor
+      if (paymentData.projectData?.Contratista?.ContactEmail) {
+        const contractorNotificationData = {
+          paymentId: paymentId,
+          contractorEmail: paymentData.projectData.Contratista.ContactEmail,
+          contractorName: paymentData.projectData.Contratista.ContactName || 'Contratista',
+          contractorCompany: paymentData.projectData.Contratista.CompanyName || '',
+          mandanteCompany: paymentData.projectData.Owner?.CompanyName || '',
+          proyecto: paymentData.projectData.Name || '',
+          mes: paymentData.Mes || '',
+          año: paymentData.Año || new Date().getFullYear(),
+          amount: paymentData.Total || 0,
+          status: 'Aprobado' as const,
+          platformUrl: `${window.location.origin}/payment/${paymentId}`,
+        };
+
+        await sendContractorNotification(contractorNotificationData);
+      }
+
+      toast({
+        title: "Estado de pago aprobado",
+        description: "El estado de pago ha sido aprobado exitosamente y se ha notificado al contratista.",
+      });
+
+      onStatusChange?.();
+    } catch (error) {
+      console.error('Error approving payment:', error);
+      toast({
+        title: "Error al aprobar",
+        description: "Hubo un problema al aprobar el estado de pago.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleReject = () => {
-    if (disabled || loading) return;
-    setApprovalStatus('rejected');
-  };
+  const handleReject = async () => {
+    if (!rejectionReason.trim()) {
+      toast({
+        title: "Motivo requerido",
+        description: "Por favor ingrese el motivo del rechazo.",
+        variant: "destructive"
+      });
+      return;
+    }
 
-  const handleSubmitRejection = async () => {
-    if (disabled || loading || !rejectionComments.trim()) return;
-    
-    console.log('🔴 Rechazando estado de pago:', paymentId, 'con comentarios:', rejectionComments);
-    const result = await rejectPayment(paymentId, rejectionComments);
-    
-    if (result.success) {
-      if (onStatusChange) onStatusChange();
+    setLoading(true);
+    try {
+      console.log('🔴 Rejecting payment:', paymentId, 'Reason:', rejectionReason);
+
+      // Update payment status with rejection reason
+      const { error: updateError } = await supabase
+        .from('Estados de pago')
+        .update({ 
+          Status: 'Rechazado',
+          Notes: rejectionReason
+        })
+        .eq('id', paymentId);
+
+      if (updateError) {
+        console.error('Error updating payment status:', updateError);
+        throw updateError;
+      }
+
+      // Get payment and contractor details for notification
+      const { data: paymentData, error: fetchError } = await supabase
+        .from('Estados de pago')
+        .select(`
+          *,
+          projectData:Proyectos!Project (
+            Name,
+            Owner:Mandantes!Owner (
+              CompanyName
+            ),
+            Contratista:Contratistas!Contratista (
+              CompanyName,
+              ContactName,
+              ContactEmail
+            )
+          )
+        `)
+        .eq('id', paymentId)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching payment data:', fetchError);
+        throw fetchError;
+      }
+
+      // Send notification to contractor
+      if (paymentData.projectData?.Contratista?.ContactEmail) {
+        const contractorNotificationData = {
+          paymentId: paymentId,
+          contractorEmail: paymentData.projectData.Contratista.ContactEmail,
+          contractorName: paymentData.projectData.Contratista.ContactName || 'Contratista',
+          contractorCompany: paymentData.projectData.Contratista.CompanyName || '',
+          mandanteCompany: paymentData.projectData.Owner?.CompanyName || '',
+          proyecto: paymentData.projectData.Name || '',
+          mes: paymentData.Mes || '',
+          año: paymentData.Año || new Date().getFullYear(),
+          amount: paymentData.Total || 0,
+          status: 'Rechazado' as const,
+          rejectionReason: rejectionReason,
+          platformUrl: `${window.location.origin}/payment/${paymentId}`,
+        };
+
+        await sendContractorNotification(contractorNotificationData);
+      }
+
+      toast({
+        title: "Estado de pago rechazado",
+        description: "El estado de pago ha sido rechazado y se ha notificado al contratista.",
+      });
+
+      setShowRejectionForm(false);
+      setRejectionReason('');
+      onStatusChange?.();
+    } catch (error) {
+      console.error('Error rejecting payment:', error);
+      toast({
+        title: "Error al rechazar",
+        description: "Hubo un problema al rechazar el estado de pago.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
     }
   };
-
-  if (disabled) {
-    return (
-      <Card className="border-l-4 border-l-gray-300 bg-gray-50">
-        <CardContent className="pt-6">
-          <div className="flex items-center space-x-3">
-            <MessageSquare className="h-6 w-6 text-gray-400" />
-            <div>
-              <p className="font-semibold text-gray-600 font-rubik">Acciones Deshabilitadas</p>
-              <p className="text-gray-500 text-sm font-rubik">
-                Las acciones de aprobación están deshabilitadas en esta vista
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (approvalStatus === 'approved') {
-    return (
-      <Card className="border-l-4 border-l-green-500 bg-green-50">
-        <CardContent className="pt-6">
-          <div className="flex items-center space-x-3">
-            <CheckCircle className="h-6 w-6 text-green-600" />
-            <div>
-              <p className="font-semibold text-green-800 font-rubik">Estado de Pago Aprobado</p>
-              <p className="text-green-600 text-sm font-rubik">
-                El estado de pago de {paymentState.month} ha sido aprobado exitosamente
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (approvalStatus === 'rejected') {
-    return (
-      <Card className="border-l-4 border-l-red-500 bg-red-50">
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2 font-rubik text-red-800">
-            <XCircle className="h-5 w-5 text-red-600" />
-            <span>Estado de Pago Rechazado</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-red-600 text-sm font-rubik">
-            Por favor, proporcione los comentarios sobre el rechazo del estado de pago:
-          </p>
-          <Textarea
-            placeholder="Ingrese los motivos del rechazo y las correcciones necesarias..."
-            value={rejectionComments}
-            onChange={(e) => setRejectionComments(e.target.value)}
-            className="min-h-[100px] border-red-200 focus:border-red-400"
-          />
-          <div className="flex space-x-3">
-            <Button
-              onClick={handleSubmitRejection}
-              variant="destructive"
-              disabled={!rejectionComments.trim() || loading}
-              className="font-rubik"
-            >
-              <MessageSquare className="h-4 w-4 mr-2" />
-              {loading ? 'Enviando...' : 'Enviar Comentarios'}
-            </Button>
-            <Button
-              onClick={() => setApprovalStatus('pending')}
-              variant="outline"
-              className="font-rubik"
-              disabled={loading}
-            >
-              Cancelar
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
-    <Card className="border-l-4 border-l-gloster-yellow bg-yellow-50">
-      <CardHeader>
-        <CardTitle className="flex items-center space-x-2 font-rubik text-slate-800">
-          <MessageSquare className="h-5 w-5 text-gloster-gray" />
-          <span>Aprobación del Estado de Pago</span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <p className="text-gloster-gray font-rubik">
-          Como mandante, puede aprobar o rechazar este estado de pago de <strong>{paymentState.month}</strong>
+    <div className="bg-white rounded-lg shadow-lg p-6">
+      <div className="mb-6">
+        <h2 className="text-xl font-bold text-slate-800 mb-2">Revisión del Estado de Pago</h2>
+        <p className="text-gray-600">
+          Proyecto: <strong>{paymentState.projectName}</strong> | 
+          Período: <strong>{paymentState.month}</strong> | 
+          Monto: <strong>{paymentState.formattedAmount}</strong>
         </p>
-        <div className="flex space-x-3">
+      </div>
+
+      {!showRejectionForm ? (
+        <div className="flex space-x-4">
           <Button
             onClick={handleApprove}
-            className="bg-green-600 hover:bg-green-700 text-white font-rubik"
             disabled={loading}
+            className="bg-green-600 hover:bg-green-700 text-white flex items-center"
           >
             <CheckCircle className="h-4 w-4 mr-2" />
             {loading ? 'Aprobando...' : 'Aprobar Estado de Pago'}
           </Button>
+          
           <Button
-            onClick={handleReject}
-            variant="destructive"
-            className="font-rubik"
+            onClick={() => setShowRejectionForm(true)}
             disabled={loading}
+            variant="destructive"
+            className="flex items-center"
           >
             <XCircle className="h-4 w-4 mr-2" />
             Rechazar Estado de Pago
           </Button>
         </div>
-      </CardContent>
-    </Card>
+      ) : (
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <MessageSquare className="h-4 w-4 inline mr-1" />
+              Motivo del rechazo
+            </label>
+            <Textarea
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              placeholder="Ingrese el motivo del rechazo..."
+              className="w-full"
+              rows={4}
+            />
+          </div>
+          
+          <div className="flex space-x-4">
+            <Button
+              onClick={handleReject}
+              disabled={loading || !rejectionReason.trim()}
+              variant="destructive"
+              className="flex items-center"
+            >
+              <XCircle className="h-4 w-4 mr-2" />
+              {loading ? 'Rechazando...' : 'Confirmar Rechazo'}
+            </Button>
+            
+            <Button
+              onClick={() => {
+                setShowRejectionForm(false);
+                setRejectionReason('');
+              }}
+              disabled={loading}
+              variant="outline"
+            >
+              Cancelar
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

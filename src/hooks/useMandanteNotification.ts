@@ -1,9 +1,9 @@
 
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { useEmailNotifications } from '@/hooks/useEmailNotifications';
 
-interface NotificationData {
+interface MandanteNotificationData {
   paymentId: string;
   contratista: string;
   mes: string;
@@ -14,33 +14,28 @@ interface NotificationData {
   contractorCompany: string;
   amount: number;
   dueDate: string;
+  driveUrl: string;
+  uploadedDocuments: string[];
 }
 
 export const useMandanteNotification = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { sendMandanteNotification } = useEmailNotifications();
 
-  const sendNotificationToMandante = async (data: NotificationData) => {
+  const sendNotificationToMandante = async (data: MandanteNotificationData) => {
     setLoading(true);
     
     try {
-      // Generar URL única para el mandante
+      console.log('🚀 Starting mandante notification process:', data);
+
+      // Generate access URL
       const uniqueId = crypto.randomUUID();
-      const mandanteUrl = `${window.location.origin}/email-access?paymentId=${data.paymentId}&token=${uniqueId}`;
+      const accessUrl = `${window.location.origin}/email-access?paymentId=${data.paymentId}&token=${uniqueId}`;
 
-      // Actualizar la base de datos con la URL del mandante
-      const { error: updateError } = await supabase
-        .from('Estados de pago')
-        .update({ URLMandante: mandanteUrl })
-        .eq('id', parseInt(data.paymentId));
-
-      if (updateError) {
-        console.error('Error updating URLMandante:', updateError);
-        throw new Error('Error al actualizar la URL del mandante');
-      }
-
-      // Preparar datos para el webhook
-      const webhookData = {
+      // Prepare notification data
+      const notificationData = {
+        paymentId: data.paymentId,
         contratista: data.contratista,
         mes: data.mes,
         año: data.año,
@@ -48,42 +43,28 @@ export const useMandanteNotification = () => {
         mandanteEmail: data.mandanteEmail,
         mandanteCompany: data.mandanteCompany,
         contractorCompany: data.contractorCompany,
-        URLMandante: mandanteUrl,
-        paymentId: data.paymentId,
         amount: data.amount,
         dueDate: data.dueDate,
-        timestamp: new Date().toISOString(),
-        type: 'mandante_notification'
+        accessUrl: accessUrl,
       };
 
-      console.log('Sending notification to mandante:', webhookData);
-
-      // Enviar al webhook de Make.com
-      const response = await fetch('https://hook.us2.make.com/vomlhkl0es487ui7dfphtyv5hdoymbek', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(webhookData),
-      });
-
-      if (response.ok) {
-        toast({
-          title: "Notificación enviada",
-          description: `Email enviado exitosamente a ${data.mandanteEmail}`,
-        });
+      // Send notification using the new edge function
+      const result = await sendMandanteNotification(notificationData);
+      
+      if (result.success) {
+        console.log('✅ Mandante notification sent successfully');
         return { success: true };
       } else {
-        throw new Error('Network response was not ok');
+        throw new Error(result.error || 'Failed to send notification');
       }
     } catch (error) {
-      console.error('Error sending mandante notification:', error);
+      console.error('❌ Error in mandante notification process:', error);
       toast({
-        title: "Error al enviar",
-        description: "Hubo un problema al enviar la notificación. Intenta nuevamente.",
+        title: "Error al enviar notificación",
+        description: error.message || "Error al procesar la solicitud",
         variant: "destructive"
       });
-      return { success: false, error };
+      return { success: false, error: error.message };
     } finally {
       setLoading(false);
     }

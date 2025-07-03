@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -44,10 +45,56 @@ const PaymentDetail = () => {
   const [achsSelection, setAchsSelection] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   
-  // Estados para los campos editables
-  const [editableAmount, setEditableAmount] = useState(payment?.Total?.toString() || '');
+  // Estados para los campos editables - Initialize with database values
+  const [editableAmount, setEditableAmount] = useState('');
   const [editablePercentage, setEditablePercentage] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+
+  // Initialize editable values when payment data loads
+  useEffect(() => {
+    if (payment) {
+      // Set amount if it exists in database
+      if (payment.Total !== null && payment.Total !== undefined) {
+        setEditableAmount(payment.Total.toString());
+      }
+      
+      // Set percentage if it exists in database
+      if (payment.Progress !== null && payment.Progress !== undefined) {
+        setEditablePercentage(payment.Progress.toString());
+      } else if (payment.Total && payment.projectData?.Budget) {
+        // Calculate percentage from amount and budget if Progress is null
+        const percentage = (payment.Total / payment.projectData.Budget) * 100;
+        setEditablePercentage(percentage.toFixed(2));
+      }
+    }
+  }, [payment]);
+
+  // Format currency based on project currency
+  const formatCurrency = (amount: number) => {
+    if (!payment?.projectData?.Currency) {
+      return new Intl.NumberFormat('es-CL', {
+        style: 'currency',
+        currency: 'CLP',
+        minimumFractionDigits: 0,
+      }).format(amount);
+    }
+
+    if (payment.projectData.Currency === 'UF') {
+      return `${amount.toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} UF`;
+    } else if (payment.projectData.Currency === 'USD') {
+      return new Intl.NumberFormat('es-CL', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 0,
+      }).format(amount);
+    } else {
+      return new Intl.NumberFormat('es-CL', {
+        style: 'currency',
+        currency: 'CLP',
+        minimumFractionDigits: 0,
+      }).format(amount);
+    }
+  };
 
   // Calcular valores automáticamente
   const handleAmountChange = (value: string) => {
@@ -207,14 +254,6 @@ const PaymentDetail = () => {
       helpText: 'Accede al portal del SII con tu RUT y clave, dirígete a "Facturación electrónica" y emite la factura correspondiente al período de trabajo.'
     }
   ];
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-CL', {
-      style: 'currency',
-      currency: 'CLP',
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
 
   const getExamenesUrl = () => {
     switch (achsSelection) {
@@ -425,6 +464,11 @@ const PaymentDetail = () => {
     }
   };
 
+  // Check if documents were updated (for enabling send button in sent states)
+  const wereDocumentsUpdated = () => {
+    return Object.keys(documentStatus).some(docId => documentStatus[docId as keyof typeof documentStatus]);
+  };
+
   if (loading) {
     return (
       <TooltipProvider>
@@ -602,14 +646,18 @@ const PaymentDetail = () => {
                       variant="outline"
                       className="border-gloster-gray/30 hover:bg-gloster-gray/10 font-rubik"
                       size="sm"
-                      disabled={isUploading || !areAllRequiredDocumentsUploaded()}
+                      disabled={isUploading || (!areAllRequiredDocumentsUploaded() && !shouldShowDriveFiles())}
                     >
                       <Eye className="h-4 w-4 mr-1" />
                       Vista Previa
                     </Button>
                     <Button
                       onClick={handleSendDocuments}
-                      disabled={!documents.filter(d => d.required).every(d => documentStatus[d.id as keyof typeof documentStatus]) || isUploading}
+                      disabled={
+                        shouldShowDriveFiles() 
+                          ? !wereDocumentsUpdated() || isUploading
+                          : !documents.filter(d => d.required).every(d => documentStatus[d.id as keyof typeof documentStatus]) || isUploading
+                      }
                       className="bg-green-600 hover:bg-green-700 text-white disabled:bg-slate-300 font-rubik"
                       size="sm"
                     >

@@ -20,6 +20,33 @@ const SubmissionView = () => {
   const [isMandante, setIsMandante] = useState(false);
   const [accessChecked, setAccessChecked] = useState(false);
 
+  // Format currency based on project currency
+  const formatCurrency = (amount: number) => {
+    if (!payment?.projectData?.Currency) {
+      return new Intl.NumberFormat('es-CL', {
+        style: 'currency',
+        currency: 'CLP',
+        minimumFractionDigits: 0,
+      }).format(amount);
+    }
+
+    if (payment.projectData.Currency === 'UF') {
+      return `${amount.toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} UF`;
+    } else if (payment.projectData.Currency === 'USD') {
+      return new Intl.NumberFormat('es-CL', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 0,
+      }).format(amount);
+    } else {
+      return new Intl.NumberFormat('es-CL', {
+        style: 'currency',
+        currency: 'CLP',
+        minimumFractionDigits: 0,
+      }).format(amount);
+    }
+  };
+
   useEffect(() => {
     const checkAccess = async () => {
       if (!payment || accessChecked) return;
@@ -381,6 +408,15 @@ const SubmissionView = () => {
               documents={emailTemplateData.documents}
             />
           </div>
+
+          {/* Payment Approval Section - Solo mostrar si es mandante */}
+          {isMandante && (
+            <PaymentApprovalSection
+              paymentId={paymentId}
+              paymentState={emailTemplateData.paymentState}
+              onStatusChange={handleStatusChange}
+            />
+          )}
         </div>
       </div>
     </div>

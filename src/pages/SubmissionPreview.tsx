@@ -248,6 +248,36 @@ const SubmissionPreview = () => {
     console.log('🚀 Starting document upload and notification process...');
 
     try {
+      // Upload documents to Drive first
+      console.log('📤 Uploading documents to Google Drive...');
+      const driveResult = await uploadDocumentsToDrive(payment.id.toString());
+      
+      if (!driveResult.success) {
+        console.error('❌ Drive upload failed:', driveResult.error);
+        toast({
+          title: "Error al subir documentos",
+          description: "No se pudieron subir los documentos al Drive",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      console.log('✅ Documents uploaded successfully to:', driveResult.folderId);
+
+      // Update payment with Drive URL
+      const driveUrl = `https://drive.google.com/drive/u/2/folders/${driveResult.folderId}`;
+      const { error: updateError } = await supabase
+        .from('Estados de pago')
+        .update({ URL: driveUrl })
+        .eq('id', payment.id);
+
+      if (updateError) {
+        console.error('❌ Error updating Drive URL:', updateError);
+        throw new Error('Error al actualizar la URL del Drive');
+      }
+
+      console.log('✅ Drive URL updated in database');
+
       const mandanteUrl = await generateUniqueURLAndUpdate();
       if (!mandanteUrl) return;
 
@@ -362,7 +392,7 @@ const SubmissionPreview = () => {
     );
   }
 
-  if (error || !payment || !payment.projectData) {
+  if (!payment || !payment.projectData) {
     return (
       <div className="min-h-screen bg-slate-50 font-rubik">
         <div className="container mx-auto px-6 py-8">
@@ -400,7 +430,7 @@ const SubmissionPreview = () => {
       projectManager: payment.projectData.Contratista?.ContactName || '',
       contactEmail: payment.projectData.Contratista?.ContactEmail || '',
       contractorRUT: payment.projectData.Contratista?.RUT || '',
-      contractorPhone: payment.projectData.Contratista?.ContactPhone || '',
+      contractorPhone: payment.projectData.Contratista?.ContactPhone?.toString() || '',
       contractorAddress: payment.projectData.Contratista?.Adress || ''
     },
     documents: documentsFromPayment

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, Calendar, ChevronRight, Search, Filter, Plus } from 'lucide-react';
+import { ArrowLeft, Calendar, ChevronRight, Search, Filter, Plus, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import PageHeader from '@/components/PageHeader';
 import { useProjectDetail } from '@/hooks/useProjectDetail';
@@ -51,6 +51,10 @@ const ProjectDetail = () => {
         return 'programado';
       case 'en progreso':
         return 'pendiente'; // Tratar "en progreso" como pendiente para permitir acceso
+      case 'enviado':
+        return 'enviado';
+      case 'rechazado':
+        return 'rechazado';
       default:
         return dbStatus || 'programado';
     }
@@ -64,6 +68,10 @@ const ProjectDetail = () => {
         return 'bg-gloster-yellow/20 text-gloster-gray';
       case 'programado':
         return 'bg-blue-100 text-blue-700';
+      case 'enviado':
+        return 'bg-orange-100 text-orange-700';
+      case 'rechazado':
+        return 'bg-red-100 text-red-700';
       default:
         return 'bg-gray-100 text-gray-700';
     }
@@ -107,6 +115,10 @@ const ProjectDetail = () => {
       return;
     }
     
+    navigate(`/payment/${payment.id}`);
+  };
+
+  const handleViewDocuments = (payment: any) => {
     navigate(`/payment/${payment.id}`);
   };
 
@@ -277,6 +289,8 @@ const ProjectDetail = () => {
                   <SelectItem value="aprobado">Aprobado</SelectItem>
                   <SelectItem value="pendiente">Pendiente</SelectItem>
                   <SelectItem value="programado">Programado</SelectItem>
+                  <SelectItem value="enviado">Enviado</SelectItem>
+                  <SelectItem value="rechazado">Rechazado</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -354,13 +368,14 @@ const ProjectDetail = () => {
                           </Button>
                         )}
                         
-                        {status === 'aprobado' && (
+                        {(status === 'aprobado' || status === 'enviado' || status === 'rechazado') && (
                           <Button
                             variant="outline"
-                            onClick={() => handlePaymentClick(payment)}
+                            onClick={() => handleViewDocuments(payment)}
                             className="w-full border-gloster-gray/30 hover:bg-gloster-gray/10 font-rubik"
                             size="sm"
                           >
+                            <Eye className="h-4 w-4 mr-2" />
                             Ver Documentos
                             <ChevronRight className="h-4 w-4 ml-2" />
                           </Button>

@@ -16,6 +16,7 @@ export interface PaymentDetail {
   URL?: string;
   URLMandante?: string;
   Notes?: string;
+  Completion?: boolean;
   projectData?: {
     id: number;
     Name: string;
@@ -99,6 +100,9 @@ export const usePaymentDetail = (paymentId: string, shouldRefetch = true) => {
       // Ensure projectData is properly structured
       const processedPayment: PaymentDetail = {
         ...paymentData,
+        Total: paymentData.Total || 0,
+        Progress: paymentData.Progress || 0,
+        Año: paymentData.Año || new Date().getFullYear(),
         projectData: paymentData.projectData ? {
           id: paymentData.projectData.id,
           Name: paymentData.projectData.Name || '',

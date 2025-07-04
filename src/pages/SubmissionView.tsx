@@ -99,6 +99,7 @@ const SubmissionView = () => {
     );
   }
 
+  // PASO 1: Corregir mapeo de información del contratista
   const emailTemplateData = {
     paymentState: {
       month: `${payment.Mes} ${payment.Año}`,
@@ -112,27 +113,19 @@ const SubmissionView = () => {
     project: {
       name: payment.projectData.Name,
       client: payment.projectData.Owner?.CompanyName || '',
-      contractor: payment.projectData.Contratista?.CompanyName || 'No disponible',
+      contractor: payment.projectData.Contratista?.CompanyName || '',
       location: payment.projectData.Location || '',
-      projectManager: payment.projectData.Contratista?.ContactName || 'No disponible',
-      contactEmail: payment.projectData.Contratista?.ContactEmail || 'No disponible',
-      contractorRUT: payment.projectData.Contratista?.RUT || 'No disponible',
-      contractorPhone: payment.projectData.Contratista?.ContactPhone?.toString() || 'No disponible',
-      contractorAddress: payment.projectData.Contratista?.Adress || 'No disponible'
+      projectManager: payment.projectData.Contratista?.ContactName || '',
+      contactEmail: payment.projectData.Contratista?.ContactEmail || '',
+      contractorRUT: payment.projectData.Contratista?.RUT || '',
+      contractorPhone: payment.projectData.Contratista?.ContactPhone?.toString() || '',
+      contractorAddress: payment.projectData.Contratista?.Adress || ''
     },
     documents: documentsFromPayment
   };
 
   return (
     <div className="min-h-screen bg-slate-50 font-rubik">
-      <SubmissionHeader
-        onPrint={handlePrint}
-        onDownloadPDF={handleDownloadPDF}
-        onDownloadFiles={handleDownloadFiles}
-        downloadLoading={downloadLoading}
-        downloadProgress={downloadProgress}
-      />
-
       <SubmissionContent
         paymentId={paymentId}
         emailTemplateData={emailTemplateData}

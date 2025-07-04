@@ -183,7 +183,6 @@ const SubmissionPreview = () => {
     }
   };
 
-  // Styling for header adjustment
   const headerStyle = {
     backgroundColor: '#F1C40F',  // Amarillo más cálido
     padding: '20px 30px',  // Ajuste en grosor
@@ -193,54 +192,144 @@ const SubmissionPreview = () => {
     borderBottom: '2px solid #F39C12',
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 font-rubik">
+        <div className="container mx-auto px-6 py-8">
+          <div className="text-center">Cargando vista previa...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!payment || !payment.projectData) {
+    return (
+      <div className="min-h-screen bg-slate-50 font-rubik">
+        <div className="container mx-auto px-6 py-8">
+          <div className="text-center">
+            <p className="text-gloster-gray mb-4">
+              {error || "Estado de pago no encontrado."}
+            </p>
+            <p className="text-sm text-gloster-gray mb-4">
+              ID solicitado: {paymentId}
+            </p>
+            <Button onClick={() => navigate('/')} className="mt-4">
+              Volver al Inicio
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const emailTemplateData = {
+    paymentState: {
+      month: `${payment.Mes} ${payment.Año}`,
+      amount: payment.Total || 0,
+      formattedAmount: formatCurrency(payment.Total || 0),
+      dueDate: payment.ExpiryDate,
+      projectName: payment.projectData.Name,
+      recipient: payment.projectData.Owner?.ContactEmail || '',
+      currency: payment.projectData.Currency || 'CLP'
+    },
+    project: {
+      name: payment.projectData.Name,
+      client: payment.projectData.Owner?.CompanyName || '',
+      contractor: payment.projectData.Contratista?.CompanyName || '',
+      location: payment.projectData.Location || '',
+      projectManager: payment.projectData.Contratista?.ContactName || '',
+      contactEmail: payment.projectData.Contratista?.ContactEmail || '',
+      contractorRUT: payment.projectData.Contratista?.RUT || '',
+      contractorPhone: payment.projectData.Contratista?.ContactPhone?.toString() || '',
+      contractorAddress: payment.projectData.Contratista?.Adress || ''
+    },
+    documents: documentsFromPayment
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 font-rubik">
-      <div style={headerStyle} className="bg-white border-b border-gloster-gray/20 shadow-sm">
-        <div className="flex items-center space-x-3">
-          <img 
-            src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
-            alt="Gloster Logo" 
-            className="w-12 h-12"  // Ajuste de tamaño
-          />
-          <h1 className="text-2xl font-bold text-slate-800">Vista previa del Email</h1>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleDownloadAll}
-          className="font-rubik"
-        >
-          Descargar Todo
-        </Button>
-      </div>
-
-      <div className="bg-slate-50 py-2">
-        <div className="max-w-6xl mx-auto p-6">
-          <div className="text-center py-6">
-            <h2 className="text-lg font-semibold text-slate-700">Documentación Adjunta</h2>
-          </div>
-
-          {/* Document cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {documentsFromPayment.map((doc) => (
-              <div key={doc.id} className="bg-white shadow-sm border border-gray-200 rounded-md p-4">
-                <div className="text-center">
-                  <h3 className="text-xl font-semibold text-slate-700">{doc.name}</h3>
-                  <p className="text-sm text-slate-500">{doc.description}</p>
-                </div>
-
+      <div className="bg-white border-b border-gloster-gray/20 shadow-sm print:hidden" style={headerStyle}>
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <img 
+                src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
+                alt="Gloster Logo" 
+                className="w-8 h-8"
+              />
+              <h1 className="text-xl font-bold text-slate-800 font-rubik">Vista previa del Email</h1>
+            </div>
+            
+            <div className="flex items-center space-x-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePrint}
+                className="font-rubik"
+              >
+                Imprimir
+              </Button>
+              {payment?.URL && (
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => handleDownloadFile(doc.name)}
-                  className="mt-4 w-full"
+                  onClick={() => handleDownloadFile('Documentos')}
+                  className="font-rubik"
                 >
-                  Descargar
+                  <Download className="h-4 w-4 mr-2" />
+                  Descargar Archivos
                 </Button>
-              </div>
-            ))}
+              )}
+              {isProjectUser && (
+                <Button
+                  size="sm"
+                  onClick={handleSendEmail}
+                  disabled={isUploading || notificationLoading}
+                  className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
+                >
+                  <Send className="h-4 w-4 mr-2" />
+                  {isUploading || notificationLoading ? 'Enviando...' : 'Enviar Notificación'}
+                </Button>
+              )}
+            </div>
           </div>
         </div>
+      </div>
+
+      <div className="bg-slate-50 py-2 print:hidden">
+        <div className="container mx-auto px-6">
+          <button 
+            onClick={() => isProjectUser ? navigate(`/payment/${payment.id}`) : navigate('/')}
+            className="text-gloster-gray hover:text-slate-800 text-sm font-rubik flex items-center"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            {isProjectUser ? 'Volver' : 'Volver al Inicio'}
+          </button>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-6 py-8">
+        <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden email-template-container">
+          <EmailTemplate 
+            paymentId={paymentId}
+            paymentState={emailTemplateData.paymentState}
+            project={emailTemplateData.project}
+            documents={emailTemplateData.documents}
+            hideActionButtons={true}
+            driveUrl={payment?.URL}
+          />
+        </div>
+      </div>
+
+      {/* Botón Descargar Todo */}
+      <div className="container mx-auto px-6 py-4 flex justify-end">
+        <Button
+          size="sm"
+          onClick={handleDownloadAll}
+          className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
+        >
+          Descargar Todo
+        </Button>
       </div>
     </div>
   );

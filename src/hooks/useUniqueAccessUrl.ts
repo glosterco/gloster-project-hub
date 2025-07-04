@@ -25,13 +25,20 @@ export const useUniqueAccessUrl = () => {
     setLoading(true);
     
     try {
-      console.log('🔍 Checking existing access URL for payment:', paymentId);
+      // Convert paymentId to number to ensure type compatibility
+      const numericPaymentId = typeof paymentId === 'string' ? parseInt(paymentId, 10) : paymentId;
+      
+      if (isNaN(numericPaymentId)) {
+        throw new Error('ID de pago inválido');
+      }
+
+      console.log('🔍 Checking existing access URL for payment:', numericPaymentId);
 
       // Verificar si ya existe un enlace para este pago
       const { data: existingPayment, error: fetchError } = await supabase
         .from('Estados de pago')
         .select('URLMandante')
-        .eq('id', paymentId)
+        .eq('id', numericPaymentId)
         .single();
 
       if (fetchError) {
@@ -49,13 +56,13 @@ export const useUniqueAccessUrl = () => {
       console.log('🔄 Generating new unique access URL...');
       const uniqueToken = crypto.randomUUID();
       const baseUrl = getBaseUrl();
-      const newAccessUrl = `${baseUrl}/email-access?paymentId=${paymentId}&token=${uniqueToken}`;
+      const newAccessUrl = `${baseUrl}/email-access?paymentId=${numericPaymentId}&token=${uniqueToken}`;
 
       // Guardar el nuevo enlace en la base de datos
       const { error: updateError } = await supabase
         .from('Estados de pago')
         .update({ URLMandante: newAccessUrl })
-        .eq('id', paymentId);
+        .eq('id', numericPaymentId);
 
       if (updateError) {
         console.error('Error updating URLMandante:', updateError);

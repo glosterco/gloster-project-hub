@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Send } from 'lucide-react';
+import { ArrowLeft, Download, Send } from 'lucide-react';
 import EmailTemplate from '@/components/EmailTemplate';
 import { useToast } from '@/hooks/use-toast';
 import { usePaymentDetail } from '@/hooks/usePaymentDetail';
@@ -9,7 +9,6 @@ import { useMandanteNotification } from '@/hooks/useMandanteNotification';
 import { useGoogleDriveIntegration } from '@/hooks/useGoogleDriveIntegration';
 import { supabase } from '@/integrations/supabase/client';
 import { useUniqueAccessUrl } from '@/hooks/useUniqueAccessUrl';
-import { useNavigationGuard } from '@/hooks/useNavigationGuard';
 
 const SubmissionPreview = () => {
   const navigate = useNavigate();
@@ -23,13 +22,7 @@ const SubmissionPreview = () => {
   const [userChecked, setUserChecked] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [documentsUploaded, setDocumentsUploaded] = useState(false);
-  const [hasUnsentDocuments, setHasUnsentDocuments] = useState(false);
   const { ensureUniqueAccessUrl } = useUniqueAccessUrl();
-
-  const { showConfirm, confirmNavigation, cancelNavigation, guardedNavigate } = useNavigationGuard({
-    hasUnsavedChanges: hasUnsentDocuments,
-    message: 'Aún no has enviado los documentos al mandante. ¿Estás seguro de que quieres salir?'
-  });
 
   const formatCurrency = (amount: number) => {
     if (!payment?.projectData?.Currency) {
@@ -75,11 +68,17 @@ const SubmissionPreview = () => {
     checkUser();
   }, [userChecked]);
 
-  // PASO 4: Detectar documentos no enviados
+  // Auto-upload documents when preview loads
   useEffect(() => {
-    if (payment && isProjectUser && !documentsUploaded && payment?.URL) {
-      setHasUnsentDocuments(true);
+    const autoUploadDocuments = async () => {
+      if (!payment || !isProjectUser || documentsUploaded || !payment?.URL) return;
+      
+      console.log('🔄 Auto-uploading documents for preview...');
       setDocumentsUploaded(true);
+    };
+
+    if (payment && isProjectUser && !documentsUploaded) {
+      autoUploadDocuments();
     }
   }, [payment, isProjectUser, documentsUploaded]);
 
@@ -151,6 +150,48 @@ const SubmissionPreview = () => {
     }, 100);
   };
 
+  const handleDownloadFile = async (fileName: string) => {
+    if (!payment?.URL) {
+      toast({
+        title: "Error",
+        description: "No se encontró la URL del archivo",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const fileId = payment.URL.split("/d/")[1]?.split("/")[0];  // Extracting the file ID from the URL
+      if (!fileId) {
+        throw new Error("Archivo no encontrado en la URL");
+      }
+
+      // Direct download link
+      const downloadLink = `https://drive.google.com/uc?export=download&id=${fileId}`;
+
+      // Trigger download
+      const link = document.createElement("a");
+      link.href = downloadLink;
+      link.target = "_blank";  // Open in a new tab (optional)
+      link.download = fileName;  // Suggested download file name
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast({
+        title: "Descarga iniciada",
+        description: `Se está descargando el archivo: ${fileName}`,
+      });
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      toast({
+        title: "Error al descargar",
+        description: "No se pudo acceder al archivo",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleSendEmail = async () => {
     if (!payment || !payment.projectData) {
       toast({
@@ -165,6 +206,7 @@ const SubmissionPreview = () => {
     console.log('🚀 Starting notification process...');
 
     try {
+      // Usar el sistema de enlace único
       const accessUrl = await ensureUniqueAccessUrl(payment.id);
       if (!accessUrl) {
         throw new Error('No se pudo generar el enlace de acceso');
@@ -214,7 +256,6 @@ const SubmissionPreview = () => {
       const result = await sendNotificationToMandante(notificationData);
       
       if (result.success) {
-        setHasUnsentDocuments(false);
         toast({
           title: "Notificación enviada exitosamente",
           description: "Se ha enviado la notificación al mandante y actualizado el estado",
@@ -292,26 +333,6 @@ const SubmissionPreview = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 font-rubik">
-      {/* Navigation Guard Confirmation Dialog */}
-      {showConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-lg shadow-lg max-w-md mx-4">
-            <h3 className="text-lg font-semibold mb-4">Documentos no enviados</h3>
-            <p className="text-gray-600 mb-6">
-              Aún no has enviado los documentos al mandante. ¿Estás seguro de que quieres salir?
-            </p>
-            <div className="flex space-x-4 justify-end">
-              <Button variant="outline" onClick={cancelNavigation}>
-                Cancelar
-              </Button>
-              <Button variant="destructive" onClick={confirmNavigation}>
-                Salir sin enviar
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="bg-white border-b border-gloster-gray/20 shadow-sm">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
@@ -325,6 +346,25 @@ const SubmissionPreview = () => {
             </div>
             
             <div className="flex items-center space-x-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePrint}
+                className="font-rubik"
+              >
+                Imprimir
+              </Button>
+              {payment?.URL && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDownloadFile('Documentos')}
+                  className="font-rubik"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Descargar Archivos
+                </Button>
+              )}
               {isProjectUser && (
                 <Button
                   size="sm"
@@ -344,9 +384,7 @@ const SubmissionPreview = () => {
       <div className="bg-slate-50 py-2">
         <div className="container mx-auto px-6">
           <button 
-            onClick={() => guardedNavigate(() => 
-              isProjectUser ? navigate(`/payment/${payment.id}`) : navigate('/')
-            )}
+            onClick={() => isProjectUser ? navigate(`/payment/${payment.id}`) : navigate('/')}
             className="text-gloster-gray hover:text-slate-800 text-sm font-rubik flex items-center"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />

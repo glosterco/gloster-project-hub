@@ -5,13 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
-import { Loader2, ArrowLeft, Eye, Send, Download, AlertTriangle } from 'lucide-react';
+import { Loader2, ArrowLeft, Eye, Send, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { usePaymentDetail } from '@/hooks/usePaymentDetail';
 import { useDirectDownload } from '@/hooks/useDirectDownload';
 import { useNavigationGuard } from '@/hooks/useNavigationGuard';
 import { supabase } from '@/integrations/supabase/client';
-import DocumentUploadCard from '@/components/DocumentUploadCard';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const PaymentDetail = () => {
@@ -295,60 +294,76 @@ const PaymentDetail = () => {
           <Card className="p-6">
             <h2 className="text-xl font-semibold mb-4">Documentación Requerida</h2>
             
-            <div className="space-y-3">
-              <DocumentUploadCard
-                title="Carátula EEPP"
-                description="Presentación y resumen del estado de pago"
-                onUpload={() => {}}
-                onDownload={canDownloadFiles ? handleDownloadFiles : undefined}
-                isUploaded={true}
-                downloadLoading={downloadLoading}
-              />
-              
-              <DocumentUploadCard
-                title="Avance Periódico"
-                description="Planilla detallada del avance de obras del período"
-                onUpload={() => {}}
-                onDownload={canDownloadFiles ? handleDownloadFiles : undefined}
-                isUploaded={true}
-                downloadLoading={downloadLoading}
-              />
-              
-              <DocumentUploadCard
-                title="Certificado de Pago de Cotizaciones"
-                description="Certificado de cumplimiento de obligaciones previsionales"
-                onUpload={() => {}}
-                onDownload={canDownloadFiles ? handleDownloadFiles : undefined}
-                isUploaded={true}
-                downloadLoading={downloadLoading}
-              />
-              
-              <DocumentUploadCard
-                title="Certificado F30"
-                description="Certificado de antecedentes laborales y previsionales"
-                onUpload={() => {}}
-                onDownload={canDownloadFiles ? handleDownloadFiles : undefined}
-                isUploaded={true}
-                downloadLoading={downloadLoading}
-              />
-              
-              <DocumentUploadCard
-                title="Certificado F30-1"
-                description="Certificado de cumplimiento de obligaciones laborales y previsionales"
-                onUpload={() => {}}
-                onDownload={canDownloadFiles ? handleDownloadFiles : undefined}
-                isUploaded={true}
-                downloadLoading={downloadLoading}
-              />
-              
-              <DocumentUploadCard
-                title="Factura"
-                description="Factura del período correspondiente"
-                onUpload={() => {}}
-                onDownload={canDownloadFiles ? handleDownloadFiles : undefined}
-                isUploaded={true}
-                downloadLoading={downloadLoading}
-              />
+            <div className="space-y-4">
+              {/* Documentos simplificados para evitar errores de tipos */}
+              <div className="p-4 border border-slate-200 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-medium">Carátula EEPP</h3>
+                    <p className="text-sm text-slate-600">Presentación y resumen del estado de pago</p>
+                  </div>
+                  {canDownloadFiles && (
+                    <Button
+                      onClick={handleDownloadFiles}
+                      variant="outline"
+                      size="sm"
+                      disabled={downloadLoading}
+                    >
+                      {downloadLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        'Descargar'
+                      )}
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              <div className="p-4 border border-slate-200 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-medium">Avance Periódico</h3>
+                    <p className="text-sm text-slate-600">Planilla detallada del avance de obras del período</p>
+                  </div>
+                  {canDownloadFiles && (
+                    <Button
+                      onClick={handleDownloadFiles}
+                      variant="outline"
+                      size="sm"
+                      disabled={downloadLoading}
+                    >
+                      {downloadLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        'Descargar'
+                      )}
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              <div className="p-4 border border-slate-200 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-medium">Certificados y Factura</h3>
+                    <p className="text-sm text-slate-600">Documentos de cumplimiento y facturación</p>
+                  </div>
+                  {canDownloadFiles && (
+                    <Button
+                      onClick={handleDownloadFiles}
+                      variant="outline"
+                      size="sm"
+                      disabled={downloadLoading}
+                    >
+                      {downloadLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        'Descargar'
+                      )}
+                    </Button>
+                  )}
+                </div>
+              </div>
             </div>
           </Card>
         </div>

@@ -13,12 +13,12 @@ import DynamicPageHeader from '@/components/DynamicPageHeader';
 const ProjectDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { project, payments, loading, error } = useProjectDetail(id || '');
+  const { project, loading, refetch } = useProjectDetail(id || '');
 
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 font-rubik">
-        <DynamicPageHeader />
+        <DynamicPageHeader pageType="project" />
         <div className="container mx-auto px-6 py-8">
           <div className="flex items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin mr-2" />
@@ -29,14 +29,14 @@ const ProjectDetail = () => {
     );
   }
 
-  if (error || !project) {
+  if (!project) {
     return (
       <div className="min-h-screen bg-slate-50 font-rubik">
-        <DynamicPageHeader />
+        <DynamicPageHeader pageType="project" />
         <div className="container mx-auto px-6 py-8">
           <div className="text-center">
             <p className="text-gloster-gray mb-4">
-              {error || "Proyecto no encontrado."}
+              Proyecto no encontrado.
             </p>
             <Button onClick={() => navigate('/dashboard')} className="mt-4">
               Volver al Dashboard
@@ -111,7 +111,7 @@ const ProjectDetail = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 font-rubik">
-      <DynamicPageHeader />
+      <DynamicPageHeader pageType="project" />
       
       <div className="container mx-auto px-6 py-8">
         <div className="mb-6">
@@ -174,7 +174,7 @@ const ProjectDetail = () => {
             <Card className="p-6">
               <h2 className="text-xl font-semibold mb-4">Estados de Pago</h2>
               <div className="space-y-4">
-                {payments.map((payment) => (
+                {project.EstadosPago.map((payment) => (
                   <div
                     key={payment.id}
                     className="flex items-center justify-between p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
@@ -234,7 +234,7 @@ const ProjectDetail = () => {
                   <Phone className="h-5 w-5 text-gloster-gray mr-3" />
                   <div>
                     <p className="font-medium">Teléfono</p>
-                    <p className="text-slate-600">{project.Owner?.ContactPhone || 'No disponible'}</p>
+                    <p className="text-slate-600">{project.Owner?.ContactPhone?.toString() || 'No disponible'}</p>
                   </div>
                 </div>
               </div>
@@ -268,7 +268,7 @@ const ProjectDetail = () => {
                   <Phone className="h-5 w-5 text-gloster-gray mr-3" />
                   <div>
                     <p className="font-medium">Teléfono</p>
-                    <p className="text-slate-600">{project.Contratista?.ContactPhone || 'No disponible'}</p>
+                    <p className="text-slate-600">{project.Contratista?.ContactPhone?.toString() || 'No disponible'}</p>
                   </div>
                 </div>
               </div>

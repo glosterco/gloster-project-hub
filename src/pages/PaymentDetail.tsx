@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -387,6 +386,20 @@ const PaymentDetail = () => {
         return;
       }
 
+      // Convert uploadedFiles to string array for the notification
+      const uploadedDocuments: string[] = [];
+      Object.entries(uploadedFiles).forEach(([docId, files]) => {
+        if (files && files.length > 0) {
+          files.forEach(file => {
+            if (typeof file === 'string') {
+              uploadedDocuments.push(file);
+            } else if (file && typeof file === 'object' && 'name' in file) {
+              uploadedDocuments.push(file.name);
+            }
+          });
+        }
+      });
+
       const notificationData = {
         paymentId: payment.id.toString(),
         contratista: payment.projectData.Contratista?.ContactName || '',
@@ -399,7 +412,7 @@ const PaymentDetail = () => {
         amount: payment.Total || 0,
         dueDate: payment.ExpiryDate || '',
         driveUrl: paymentStateData.URL || '',
-        uploadedDocuments: uploadedFiles
+        uploadedDocuments: uploadedDocuments
       };
 
       const result = await sendNotificationToMandante(notificationData);

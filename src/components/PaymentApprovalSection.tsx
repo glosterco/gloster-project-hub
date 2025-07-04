@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -38,7 +37,7 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
       const { error: updateError } = await supabase
         .from('Estados de pago')
         .update({ Status: 'Aprobado' })
-        .eq('id', paymentId);
+        .eq('id', parseInt(paymentId));
 
       if (updateError) {
         console.error('Error updating payment status:', updateError);
@@ -62,7 +61,7 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
             )
           )
         `)
-        .eq('id', paymentId)
+        .eq('id', parseInt(paymentId))
         .single();
 
       if (fetchError) {
@@ -128,7 +127,7 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
           Status: 'Rechazado',
           Notes: rejectionReason
         })
-        .eq('id', paymentId);
+        .eq('id', parseInt(paymentId));
 
       if (updateError) {
         console.error('Error updating payment status:', updateError);
@@ -152,7 +151,7 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
             )
           )
         `)
-        .eq('id', paymentId)
+        .eq('id', parseInt(paymentId))
         .single();
 
       if (fetchError) {

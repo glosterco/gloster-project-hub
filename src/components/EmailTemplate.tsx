@@ -129,27 +129,25 @@ const EmailTemplate: React.FC<EmailTemplateProps> = ({
 
   return (
     <div className="bg-white font-rubik max-w-4xl mx-auto">
-      {/* Header - More compact */}
+      {/* Header - Gloster logo and name */}
       <div className="bg-gloster-yellow px-4 py-3 text-center">
         <div className="flex items-center justify-center mb-1">
           <img 
             src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
             alt="Gloster Logo" 
-            className="w-2 h-2 mr-2"
+            className="w-6 h-6 mr-2"
           />
-          <h1 className="text-lg font-bold text-slate-800">Estado de Pago</h1>
-        </div>
-        <div className="flex items-center justify-center text-slate-700">
-          <Calendar className="w-3 h-3 mr-1" />
-          <p className="text-xs">{paymentState.month}</p>
+          <h1 className="text-lg font-bold text-slate-800">Gloster</h1>
         </div>
       </div>
 
-      {/* Project Information */}
+      {/* Payment State: "Estado de pago" with month, year, and contractor */}
       <div className="p-4 border-b border-gray-100">
         <div className="flex items-center mb-3">
           <Building className="w-4 h-4 mr-2 text-gloster-gray" />
-          <h2 className="text-base font-semibold text-slate-800">Información del Proyecto</h2>
+          <h2 className="text-base font-semibold text-slate-800">
+            Estado de pago - {paymentState.month} {new Date().getFullYear()} - {project.contractor}
+          </h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
@@ -220,7 +218,7 @@ const EmailTemplate: React.FC<EmailTemplateProps> = ({
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {documents.filter(doc => doc.uploaded).map((doc) => (
-            <div key={doc.id} className="group border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow">
+            <div key={doc.id} className="border border-gray-200 rounded-lg p-3">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center mb-1">
@@ -236,7 +234,7 @@ const EmailTemplate: React.FC<EmailTemplateProps> = ({
                       size="sm"
                       variant="outline"
                       onClick={() => handleDownloadDocument(doc.name)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity text-xs px-2 py-1 h-auto"
+                      className="text-xs px-2 py-1 h-auto"
                     >
                       <Download className="w-3 h-3 mr-1" />
                       Descargar

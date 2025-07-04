@@ -99,6 +99,14 @@ const SubmissionView = () => {
     );
   }
 
+  // DEBUG: Log contractor data to see what's actually coming from the database
+  console.log('🔍 DEBUG - Contractor data from payment:', {
+    contratista: payment.projectData.Contratista,
+    rut: payment.projectData.Contratista?.RUT,
+    phone: payment.projectData.Contratista?.ContactPhone,
+    address: payment.projectData.Contratista?.Adress
+  });
+
   // Construct emailTemplateData exactly like SubmissionPreview does
   const emailTemplateData = {
     paymentState: {
@@ -117,12 +125,20 @@ const SubmissionView = () => {
       location: payment.projectData.Location || '',
       projectManager: payment.projectData.Contratista?.ContactName || '',
       contactEmail: payment.projectData.Contratista?.ContactEmail || '',
-      contractorRUT: payment.projectData.Contratista?.RUT || '',
+      // FIXED: Handle null/undefined/empty values properly for contractor fields
+      contractorRUT: payment.projectData.Contratista?.RUT?.trim() || '',
       contractorPhone: payment.projectData.Contratista?.ContactPhone?.toString() || '',
-      contractorAddress: payment.projectData.Contratista?.Adress || ''
+      contractorAddress: payment.projectData.Contratista?.Adress?.trim() || ''
     },
     documents: documentsFromPayment
   };
+
+  // DEBUG: Log final emailTemplateData to verify contractor info
+  console.log('📧 DEBUG - Email template data:', {
+    contractorRUT: emailTemplateData.project.contractorRUT,
+    contractorPhone: emailTemplateData.project.contractorPhone,
+    contractorAddress: emailTemplateData.project.contractorAddress
+  });
 
   return (
     <div className="min-h-screen bg-slate-50 font-rubik">

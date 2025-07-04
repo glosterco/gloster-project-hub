@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -37,12 +38,13 @@ const ProjectDetail = () => {
     return new Intl.NumberFormat('es-CL', config).format(amount);
   };
 
+  // FIXED: Use real status from database without fallback calculations
   const getPaymentStatus = (payment: any) => {
-    return payment.Status?.toLowerCase() || 'programado';
+    return payment.Status || 'Sin Estado';
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
+    switch (status.toLowerCase()) {
       case 'aprobado':
         return 'bg-green-100 text-green-700';
       case 'pendiente':
@@ -55,6 +57,8 @@ const ProjectDetail = () => {
         return 'bg-red-100 text-red-700';
       case 'en progreso':
         return 'bg-gloster-yellow/20 text-gloster-gray';
+      case 'sin estado':
+        return 'bg-gray-100 text-gray-700';
       default:
         return 'bg-gray-100 text-gray-700';
     }
@@ -89,7 +93,7 @@ const ProjectDetail = () => {
   const handlePaymentClick = (payment: any) => {
     const status = getPaymentStatus(payment);
     
-    if (status === 'programado') {
+    if (status === 'Programado') {
       toast({
         title: "Estado programado",
         description: "Este estado de pago aún no está disponible para gestionar",
@@ -111,7 +115,7 @@ const ProjectDetail = () => {
           const matchesSearch = payment.Name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                                payment.Mes?.toLowerCase().includes(searchTerm.toLowerCase());
           const status = getPaymentStatus(payment);
-          const matchesFilter = filterBy === 'all' || status === filterBy;
+          const matchesFilter = filterBy === 'all' || status.toLowerCase() === filterBy.toLowerCase();
           return matchesSearch && matchesFilter;
         })
         .sort((a, b) => {
@@ -303,7 +307,7 @@ const ProjectDetail = () => {
                   <Card 
                     key={payment.id} 
                     className={`hover:shadow-xl transition-all duration-300 border-gloster-gray/20 hover:border-gloster-gray/50 h-full ${
-                      status === 'programado' ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'
+                      status === 'Programado' ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'
                     }`}
                   >
                     <CardContent className="p-4 md:p-6 h-full flex flex-col">
@@ -341,7 +345,7 @@ const ProjectDetail = () => {
                       </div>
 
                       <div className="pt-4 mt-auto">
-                        {(status === 'pendiente' || status === 'en progreso') && (
+                        {(status === 'Pendiente' || status === 'En Progreso') && (
                           <Button
                             onClick={() => handlePaymentClick(payment)}
                             className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold font-rubik"
@@ -352,7 +356,7 @@ const ProjectDetail = () => {
                           </Button>
                         )}
                         
-                        {(status === 'aprobado' || status === 'enviado' || status === 'rechazado') && (
+                        {(status === 'Aprobado' || status === 'Enviado' || status === 'Rechazado') && (
                           <Button
                             variant="outline"
                             onClick={() => handleViewDocuments(payment)}
@@ -365,7 +369,7 @@ const ProjectDetail = () => {
                           </Button>
                         )}
                         
-                        {status === 'programado' && (
+                        {status === 'Programado' && (
                           <Button variant="ghost" disabled className="w-full font-rubik" size="sm">
                             Programado
                           </Button>

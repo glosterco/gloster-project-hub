@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -5,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-import { ArrowLeft, Calendar, Send, CheckCircle, Clock, Eye, Save, Download, FileText, Upload, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Calendar, Send, CheckCircle, Clock, Eye, Save, Download, FileText, Upload, ExternalLink, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { usePaymentDetail } from '@/hooks/usePaymentDetail';
 import { useMandanteNotification } from '@/hooks/useMandanteNotification';
@@ -71,6 +72,32 @@ const PaymentDetail = () => {
   }, [payment]);
 
   const { ensureUniqueAccessUrl } = useUniqueAccessUrl();
+
+  // NEW: Validation functions for Total and Progress
+  const isAmountValid = () => {
+    return editableAmount && editableAmount.trim() !== '' && parseFloat(editableAmount) > 0;
+  };
+
+  const isProgressValid = () => {
+    return editablePercentage && editablePercentage.trim() !== '' && parseFloat(editablePercentage) >= 0;
+  };
+
+  const areFieldsValidForActions = () => {
+    return isAmountValid() && isProgressValid();
+  };
+
+  const getValidationMessage = () => {
+    if (!isAmountValid() && !isProgressValid()) {
+      return "Por favor completa el monto y porcentaje antes de continuar";
+    }
+    if (!isAmountValid()) {
+      return "Por favor completa el monto antes de continuar";
+    }
+    if (!isProgressValid()) {
+      return "Por favor completa el porcentaje antes de continuar";
+    }
+    return "";
+  };
 
   // Format currency based on project currency
   const formatCurrency = (amount: number) => {
@@ -290,6 +317,16 @@ const PaymentDetail = () => {
   };
 
   const handleSendDocuments = async () => {
+    // NEW: Validate fields before sending
+    if (!areFieldsValidForActions()) {
+      toast({
+        title: "Campos incompletos",
+        description: getValidationMessage(),
+        variant: "destructive"
+      });
+      return;
+    }
+
     const requiredDocuments = documents.filter(doc => doc.required);
     const allRequiredUploaded = requiredDocuments.every(doc => documentStatus[doc.id as keyof typeof documentStatus]);
     
@@ -416,6 +453,16 @@ const PaymentDetail = () => {
   };
 
   const handlePreviewEmail = async () => {
+    // NEW: Validate fields before preview
+    if (!areFieldsValidForActions()) {
+      toast({
+        title: "Campos incompletos",
+        description: getValidationMessage(),
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (!payment) {
       toast({
         title: "Error",
@@ -567,6 +614,23 @@ const PaymentDetail = () => {
         <div className="container mx-auto px-6 py-8">
           <h3 className="text-xl md:text-2xl font-bold text-slate-800 mb-6 font-rubik">Estado de Pago y Documentación</h3>
           
+          {/* NEW: Validation Warning Card - Show when fields are incomplete */}
+          {!areFieldsValidForActions() && !shouldShowDriveFiles() && (
+            <Card className="mb-6 border-l-4 border-l-orange-500 bg-orange-50/50">
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-3">
+                  <AlertCircle className="h-5 w-5 text-orange-600 shrink-0" />
+                  <div>
+                    <p className="font-medium text-orange-800 font-rubik">Campos requeridos incompletos</p>
+                    <p className="text-sm text-orange-700 font-rubik mt-1">
+                      {getValidationMessage()}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          
           {/* Payment Info and Summary Cards */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             <div className="lg:col-span-2">
@@ -605,7 +669,7 @@ const PaymentDetail = () => {
                             value={editableAmount}
                             onChange={(e) => handleAmountChange(e.target.value)}
                             placeholder="Ingrese monto"
-                            className="w-40"
+                            className={`w-40 ${!isAmountValid() ? 'border-orange-500 focus:border-orange-500' : ''}`}
                           />
                           <Button
                             size="sm"
@@ -634,7 +698,7 @@ const PaymentDetail = () => {
                             value={editablePercentage}
                             onChange={(e) => handlePercentageChange(e.target.value)}
                             placeholder="0"
-                            className="w-20"
+                            className={`w-20 ${!isProgressValid() ? 'border-orange-500 focus:border-orange-500' : ''}`}
                           />
                           <span className="text-sm text-gloster-gray">%</span>
                         </div>
@@ -685,29 +749,51 @@ const PaymentDetail = () => {
                     ): null)}
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      onClick={handlePreviewEmail}
-                      variant="outline"
-                      className="border-gloster-gray/30 hover:bg-gloster-gray/10 font-rubik"
-                      size="sm"
-                      disabled={isUploading || isPreviewUploading || (!areAllRequiredDocumentsUploaded() && !shouldShowDriveFiles())}
-                    >
-                      <Eye className="h-4 w-4 mr-1" />
-                      Vista Previa
-                    </Button>
-                    <Button
-                      onClick={handleSendDocuments}
-                      disabled={
-                        shouldShowDriveFiles() 
-                          ? !wereDocumentsUpdated() || isUploading || isPreviewUploading
-                          : !documents.filter(d => d.required).every(d => documentStatus[d.id as keyof typeof documentStatus]) || isUploading || isPreviewUploading
-                      }
-                      className="bg-green-600 hover:bg-green-700 text-white disabled:bg-slate-300 font-rubik"
-                      size="sm"
-                    >
-                      <Send className="h-4 w-4 mr-1" />
-                      {isUploading ? 'Enviando...' : 'Enviar'}
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div>
+                          <Button
+                            onClick={handlePreviewEmail}
+                            variant="outline"
+                            className="border-gloster-gray/30 hover:bg-gloster-gray/10 font-rubik w-full"
+                            size="sm"
+                            disabled={isUploading || isPreviewUploading || (!areAllRequiredDocumentsUploaded() && !shouldShowDriveFiles()) || !areFieldsValidForActions()}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            Vista Previa
+                          </Button>
+                        </div>
+                      </TooltipTrigger>
+                      {!areFieldsValidForActions() && (
+                        <TooltipContent>
+                          <p>{getValidationMessage()}</p>
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div>
+                          <Button
+                            onClick={handleSendDocuments}
+                            disabled={
+                              shouldShowDriveFiles() 
+                                ? !wereDocumentsUpdated() || isUploading || isPreviewUploading || !areFieldsValidForActions()
+                                : !documents.filter(d => d.required).every(d => documentStatus[d.id as keyof typeof documentStatus]) || isUploading || isPreviewUploading || !areFieldsValidForActions()
+                            }
+                            className="bg-green-600 hover:bg-green-700 text-white disabled:bg-slate-300 font-rubik w-full"
+                            size="sm"
+                          >
+                            <Send className="h-4 w-4 mr-1" />
+                            {isUploading ? 'Enviando...' : 'Enviar'}
+                          </Button>
+                        </div>
+                      </TooltipTrigger>
+                      {!areFieldsValidForActions() && (
+                        <TooltipContent>
+                          <p>{getValidationMessage()}</p>
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
                   </div>
                 </CardContent>
               </Card>
@@ -809,30 +895,52 @@ const PaymentDetail = () => {
                     <div>
                       <h3 className="text-lg font-bold text-slate-800 font-rubik mb-1">¿Listo para enviar?</h3>
                       <p className="text-gloster-gray text-sm font-rubik">
-                        Una vez que hayas cargado todos los documentos requeridos, puedes enviarlos para su procesamiento.
+                        Una vez que hayas cargado todos los documentos requeridos y completado el monto y porcentaje, puedes enviarlos para su procesamiento.
                       </p>
                     </div>
                   </div>
                   <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                    <Button
-                      onClick={handlePreviewEmail}
-                      variant="outline"
-                      className="border-gloster-gray/30 hover:bg-gloster-gray/10 font-rubik px-6 md:px-8 py-3 w-full sm:w-auto"
-                      size="lg"
-                      disabled={isUploading || isPreviewUploading || !areAllRequiredDocumentsUploaded()}
-                    >
-                      <Eye className="h-5 w-5 mr-2" />
-                      {isPreviewUploading ? 'Subiendo...' : 'Vista Previa'}
-                    </Button>
-                    <Button
-                      onClick={handleSendDocuments}
-                      disabled={!documents.filter(d => d.required).every(d => documentStatus[d.id as keyof typeof documentStatus]) || isUploading || isPreviewUploading}
-                      className="bg-green-600 hover:bg-green-700 text-white disabled:bg-slate-300 font-rubik px-6 md:px-8 py-3 w-full sm:w-auto"
-                      size="lg"
-                    >
-                      <Send className="h-5 w-5 mr-2" />
-                      {isUploading ? 'Subiendo...' : 'Enviar Email y Documentos'}
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div>
+                          <Button
+                            onClick={handlePreviewEmail}
+                            variant="outline"
+                            className="border-gloster-gray/30 hover:bg-gloster-gray/10 font-rubik px-6 md:px-8 py-3 w-full sm:w-auto"
+                            size="lg"
+                            disabled={isUploading || isPreviewUploading || !areAllRequiredDocumentsUploaded() || !areFieldsValidForActions()}
+                          >
+                            <Eye className="h-5 w-5 mr-2" />
+                            {isPreviewUploading ? 'Subiendo...' : 'Vista Previa'}
+                          </Button>
+                        </div>
+                      </TooltipTrigger>
+                      {!areFieldsValidForActions() && (
+                        <TooltipContent>
+                          <p>{getValidationMessage()}</p>
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div>
+                          <Button
+                            onClick={handleSendDocuments}
+                            disabled={!documents.filter(d => d.required).every(d => documentStatus[d.id as keyof typeof documentStatus]) || isUploading || isPreviewUploading || !areFieldsValidForActions()}
+                            className="bg-green-600 hover:bg-green-700 text-white disabled:bg-slate-300 font-rubik px-6 md:px-8 py-3 w-full sm:w-auto"
+                            size="lg"
+                          >
+                            <Send className="h-5 w-5 mr-2" />
+                            {isUploading ? 'Subiendo...' : 'Enviar Email y Documentos'}
+                          </Button>
+                        </div>
+                      </TooltipTrigger>
+                      {!areFieldsValidForActions() && (
+                        <TooltipContent>
+                          <p>{getValidationMessage()}</p>
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
                   </div>
                 </div>
               </CardContent>

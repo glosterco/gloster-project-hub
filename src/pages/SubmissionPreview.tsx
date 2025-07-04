@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -160,32 +159,26 @@ const SubmissionPreview = () => {
     }
 
     try {
-      // Obtener el archivo directamente desde el enlace de Google Drive
-      const response = await fetch(payment.URL);
-      
-      if (!response.ok) {
-        throw new Error('Error al obtener el archivo desde el servidor');
+      const fileId = payment.URL.split("/d/")[1]?.split("/")[0];  // Extracting the file ID from the URL
+      if (!fileId) {
+        throw new Error("Archivo no encontrado en la URL");
       }
 
-      // Crear un Blob para el archivo
-      const fileBlob = await response.blob();
-      
-      // Crear un objeto URL para el Blob
-      const downloadUrl = URL.createObjectURL(fileBlob);
+      // Direct download link
+      const downloadLink = `https://drive.google.com/uc?export=download&id=${fileId}`;
 
-      // Crear un enlace de descarga y simular el clic
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = fileName;
+      // Trigger download
+      const link = document.createElement("a");
+      link.href = downloadLink;
+      link.target = "_blank";  // Open in a new tab (optional)
+      link.download = fileName;  // Suggested download file name
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
 
-      // Liberar la URL del Blob después de la descarga
-      URL.revokeObjectURL(downloadUrl);
-
-      // Mostrar el toast de éxito
       toast({
         title: "Descarga iniciada",
-        description: `Se ha descargado el archivo: ${fileName}`,
+        description: `Se está descargando el archivo: ${fileName}`,
       });
     } catch (error) {
       console.error('Error downloading file:', error);
@@ -268,9 +261,9 @@ const SubmissionPreview = () => {
         }, 2000);
       }
     } catch (error) {
-      console.error('❌ Error in notification process:', error);
+      console.error('Error sending notification:', error);
       toast({
-        title: "Error al enviar notificación",
+        title: "Error",
         description: error.message || "Error al procesar la solicitud",
         variant: "destructive"
       });
@@ -280,51 +273,168 @@ const SubmissionPreview = () => {
   };
 
   const generateUniqueURLAndUpdate = async () => {
+    if (!payment || !payment.projectData) {
+      toast({
+        title: "Error",
+        description: "No se pueden cargar los datos del estado de pago",
+        variant: "destructive"
+      });
+      return null;
+    }
+
     try {
-      // Suponiendo que aquí hay una función para generar una URL única de algún proceso
-      const uniqueUrl = `https://example.com/${payment.id}`;
-      return uniqueUrl;
+      const uniqueId = crypto.randomUUID();
+      const mandanteUrl = `${window.location.origin}/email-access?paymentId=${payment.id}&token=${uniqueId}`;
+
+      const { error: updateError } = await supabase
+        .from('Estados de pago')
+        .update({ URLMandante: mandanteUrl })
+        .eq('id', payment.id);
+
+      if (updateError) {
+        console.error('Error updating URLMandante:', updateError);
+        throw new Error('Error al actualizar la URL del mandante');
+      }
+
+      return mandanteUrl;
     } catch (error) {
-      console.error("Error al generar la URL única:", error);
+      console.error('Error generating unique URL:', error);
+      toast({
+        title: "Error",
+        description: "Error al generar URL única",
+        variant: "destructive"
+      });
       return null;
     }
   };
 
-  if (loading || !payment) {
-    return <div>Cargando...</div>;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 font-rubik">
+        <div className="container mx-auto px-6 py-8">
+          <div className="text-center">Cargando vista previa...</div>
+        </div>
+      </div>
+    );
   }
 
-  return (
-    <div>
-      <div className="flex items-center space-x-4">
-        <Button onClick={() => navigate(-1)} variant="outline">
-          <ArrowLeft className="mr-2" /> Volver
-        </Button>
-        <Button onClick={handleSendEmail} disabled={isUploading || notificationLoading}>
-          {isUploading ? 'Enviando...' : 'Enviar Notificación'}
-        </Button>
-      </div>
-
-      <div className="mt-4">
-        {documentsFromPayment.map((doc) => (
-          <div key={doc.id} className="flex justify-between items-center py-2">
-            <div className="flex-1">
-              <strong>{doc.name}</strong> - {doc.description}
-            </div>
-            <Button
-              onClick={() => handleDownloadFile(doc.name)}
-              variant="link"
-              disabled={isUploading || !doc.uploaded}
-              className="flex items-center"
-            >
-              <Download className="mr-2" /> Descargar
+  if (!payment || !payment.projectData) {
+    return (
+      <div className="min-h-screen bg-slate-50 font-rubik">
+        <div className="container mx-auto px-6 py-8">
+          <div className="text-center">
+            <p className="text-gloster-gray mb-4">
+              {error || "Estado de pago no encontrado."}
+            </p>
+            <p className="text-sm text-gloster-gray mb-4">
+              ID solicitado: {paymentId}
+            </p>
+            <Button onClick={() => navigate('/')} className="mt-4">
+              Volver al Inicio
             </Button>
           </div>
-        ))}
+        </div>
+      </div>
+    );
+  }
+
+  const emailTemplateData = {
+    paymentState: {
+      month: `${payment.Mes} ${payment.Año}`,
+      amount: payment.Total || 0,
+      formattedAmount: formatCurrency(payment.Total || 0),
+      dueDate: payment.ExpiryDate,
+      projectName: payment.projectData.Name,
+      recipient: payment.projectData.Owner?.ContactEmail || '',
+      currency: payment.projectData.Currency || 'CLP'
+    },
+    project: {
+      name: payment.projectData.Name,
+      client: payment.projectData.Owner?.CompanyName || '',
+      contractor: payment.projectData.Contratista?.CompanyName || '',
+      location: payment.projectData.Location || '',
+      projectManager: payment.projectData.Contratista?.ContactName || '',
+      contactEmail: payment.projectData.Contratista?.ContactEmail || '',
+      contractorRUT: payment.projectData.Contratista?.RUT || '',
+      contractorPhone: payment.projectData.Contratista?.ContactPhone?.toString() || '',
+      contractorAddress: payment.projectData.Contratista?.Adress || ''
+    },
+    documents: documentsFromPayment
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 font-rubik">
+      <div className="bg-white border-b border-gloster-gray/20 shadow-sm">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <img 
+                src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
+                alt="Gloster Logo" 
+                className="w-8 h-8"
+              />
+              <h1 className="text-xl font-bold text-slate-800 font-rubik">Vista previa del Email</h1>
+            </div>
+            
+            <div className="flex items-center space-x-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePrint}
+                className="font-rubik"
+              >
+                Imprimir
+              </Button>
+              {payment?.URL && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDownloadFile('Documentos')}
+                  className="font-rubik"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Descargar Archivos
+                </Button>
+              )}
+              {isProjectUser && (
+                <Button
+                  size="sm"
+                  onClick={handleSendEmail}
+                  disabled={isUploading || notificationLoading}
+                  className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
+                >
+                  <Send className="h-4 w-4 mr-2" />
+                  {isUploading || notificationLoading ? 'Enviando...' : 'Enviar Notificación'}
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="mt-8">
-        <EmailTemplate payment={payment} formatCurrency={formatCurrency} />
+      <div className="bg-slate-50 py-2">
+        <div className="container mx-auto px-6">
+          <button 
+            onClick={() => isProjectUser ? navigate(`/payment/${payment.id}`) : navigate('/')}
+            className="text-gloster-gray hover:text-slate-800 text-sm font-rubik flex items-center"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            {isProjectUser ? 'Volver' : 'Volver al Inicio'}
+          </button>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-6 py-8">
+        <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden email-template-container">
+          <EmailTemplate 
+            paymentId={paymentId}
+            paymentState={emailTemplateData.paymentState}
+            project={emailTemplateData.project}
+            documents={emailTemplateData.documents}
+            hideActionButtons={true}
+            driveUrl={payment?.URL}
+          />
+        </div>
       </div>
     </div>
   );

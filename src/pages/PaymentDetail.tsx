@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +15,7 @@ import { supabase } from '@/integrations/supabase/client';
 import PageHeader from '@/components/PageHeader';
 import DocumentUploadCard from '@/components/DocumentUploadCard';
 import LoadingModal from '@/components/LoadingModal';
+import { useUniqueAccessUrl } from '@/hooks/useUniqueAccessUrl';
 
 const PaymentDetail = () => {
   const { id } = useParams();
@@ -69,6 +69,8 @@ const PaymentDetail = () => {
       }
     }
   }, [payment]);
+
+  const { ensureUniqueAccessUrl } = useUniqueAccessUrl();
 
   // Format currency based on project currency
   const formatCurrency = (amount: number) => {
@@ -287,42 +289,6 @@ const PaymentDetail = () => {
     return Object.keys(documentStatus).some(docId => documentStatus[docId as keyof typeof documentStatus]);
   };
 
-  const generateUniqueURLAndUpdate = async () => {
-    if (!payment || !payment.projectData) {
-      toast({
-        title: "Error",
-        description: "No se pueden cargar los datos del estado de pago",
-        variant: "destructive"
-      });
-      return null;
-    }
-
-    try {
-      const uniqueId = crypto.randomUUID();
-      const mandanteUrl = `${window.location.origin}/email-access?paymentId=${payment.id}&token=${uniqueId}`;
-
-      const { error: updateError } = await supabase
-        .from('Estados de pago')
-        .update({ URLMandante: mandanteUrl })
-        .eq('id', payment.id);
-
-      if (updateError) {
-        console.error('Error updating URLMandante:', updateError);
-        throw new Error('Error al actualizar la URL del mandante');
-      }
-
-      return mandanteUrl;
-    } catch (error) {
-      console.error('Error generating unique URL:', error);
-      toast({
-        title: "Error",
-        description: "Error al generar URL única",
-        variant: "destructive"
-      });
-      return null;
-    }
-  };
-
   const handleSendDocuments = async () => {
     const requiredDocuments = documents.filter(doc => doc.required);
     const allRequiredUploaded = requiredDocuments.every(doc => documentStatus[doc.id as keyof typeof documentStatus]);
@@ -362,8 +328,11 @@ const PaymentDetail = () => {
 
       console.log('✅ Documents uploaded successfully to Google Drive');
 
-      const mandanteUrl = await generateUniqueURLAndUpdate();
-      if (!mandanteUrl) return;
+      // Usar el sistema de enlace único
+      const accessUrl = await ensureUniqueAccessUrl(payment.id);
+      if (!accessUrl) {
+        throw new Error('No se pudo generar el enlace de acceso');
+      }
 
       // Cambiar status a "Enviado"
       const { error: statusError } = await supabase
@@ -497,8 +466,8 @@ const PaymentDetail = () => {
       }
     }
 
-    // Generate unique URL and navigate to preview
-    await generateUniqueURLAndUpdate();
+    // Usar el sistema de enlace único para preview también
+    await ensureUniqueAccessUrl(payment.id);
     navigate(`/submission-preview?paymentId=${payment.id}`);
   };
 

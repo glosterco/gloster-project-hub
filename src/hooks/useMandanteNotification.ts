@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useEmailNotifications } from '@/hooks/useEmailNotifications';
+import { useUniqueAccessUrl } from '@/hooks/useUniqueAccessUrl';
 
 interface MandanteNotificationData {
   paymentId: string;
@@ -22,6 +23,7 @@ export const useMandanteNotification = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const { sendMandanteNotification } = useEmailNotifications();
+  const { ensureUniqueAccessUrl } = useUniqueAccessUrl();
 
   const sendNotificationToMandante = async (data: MandanteNotificationData) => {
     setLoading(true);
@@ -29,11 +31,13 @@ export const useMandanteNotification = () => {
     try {
       console.log('🚀 Starting mandante notification process:', data);
 
-      // Generate access URL
-      const uniqueId = crypto.randomUUID();
-      const accessUrl = `${window.location.origin}/email-access?paymentId=${data.paymentId}&token=${uniqueId}`;
+      // Usar el sistema de enlace único
+      const accessUrl = await ensureUniqueAccessUrl(data.paymentId);
+      if (!accessUrl) {
+        throw new Error('No se pudo generar el enlace de acceso');
+      }
 
-      // Prepare notification data
+      // Preparar datos de notificación con el enlace único
       const notificationData = {
         paymentId: data.paymentId,
         contratista: data.contratista,
@@ -48,7 +52,7 @@ export const useMandanteNotification = () => {
         accessUrl: accessUrl,
       };
 
-      // Send notification using the new edge function
+      // Enviar notificación usando la función edge existente
       const result = await sendMandanteNotification(notificationData);
       
       if (result.success) {

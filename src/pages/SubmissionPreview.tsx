@@ -8,6 +8,7 @@ import { usePaymentDetail } from '@/hooks/usePaymentDetail';
 import { useMandanteNotification } from '@/hooks/useMandanteNotification';
 import { useGoogleDriveIntegration } from '@/hooks/useGoogleDriveIntegration';
 import { supabase } from '@/integrations/supabase/client';
+import { useUniqueAccessUrl } from '@/hooks/useUniqueAccessUrl';
 
 const SubmissionPreview = () => {
   const navigate = useNavigate();
@@ -21,6 +22,7 @@ const SubmissionPreview = () => {
   const [userChecked, setUserChecked] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [documentsUploaded, setDocumentsUploaded] = useState(false);
+  const { ensureUniqueAccessUrl } = useUniqueAccessUrl();
 
   const formatCurrency = (amount: number) => {
     if (!payment?.projectData?.Currency) {
@@ -204,8 +206,11 @@ const SubmissionPreview = () => {
     console.log('🚀 Starting notification process...');
 
     try {
-      const mandanteUrl = await generateUniqueURLAndUpdate();
-      if (!mandanteUrl) return;
+      // Usar el sistema de enlace único
+      const accessUrl = await ensureUniqueAccessUrl(payment.id);
+      if (!accessUrl) {
+        throw new Error('No se pudo generar el enlace de acceso');
+      }
 
       const { error: statusError } = await supabase
         .from('Estados de pago')
@@ -269,42 +274,6 @@ const SubmissionPreview = () => {
       });
     } finally {
       setIsUploading(false);
-    }
-  };
-
-  const generateUniqueURLAndUpdate = async () => {
-    if (!payment || !payment.projectData) {
-      toast({
-        title: "Error",
-        description: "No se pueden cargar los datos del estado de pago",
-        variant: "destructive"
-      });
-      return null;
-    }
-
-    try {
-      const uniqueId = crypto.randomUUID();
-      const mandanteUrl = `${window.location.origin}/email-access?paymentId=${payment.id}&token=${uniqueId}`;
-
-      const { error: updateError } = await supabase
-        .from('Estados de pago')
-        .update({ URLMandante: mandanteUrl })
-        .eq('id', payment.id);
-
-      if (updateError) {
-        console.error('Error updating URLMandante:', updateError);
-        throw new Error('Error al actualizar la URL del mandante');
-      }
-
-      return mandanteUrl;
-    } catch (error) {
-      console.error('Error generating unique URL:', error);
-      toast({
-        title: "Error",
-        description: "Error al generar URL única",
-        variant: "destructive"
-      });
-      return null;
     }
   };
 

@@ -183,6 +183,36 @@ const SubmissionPreview = () => {
     }
   };
 
+  // Function to print the page
+  const handlePrint = () => {
+    window.print();
+  };
+
+  // Function to handle sending email or notification
+  const handleSendEmail = async () => {
+    try {
+      // Simulating email sending or notification logic here
+      toast({
+        title: "Enviando notificación...",
+        description: "La notificación está siendo procesada.",
+      });
+
+      // Simulate a delay
+      setTimeout(() => {
+        toast({
+          title: "Notificación Enviada",
+          description: "La notificación se ha enviado exitosamente.",
+        });
+      }, 2000);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Hubo un problema al enviar la notificación.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const headerStyle = {
     backgroundColor: '#F1C40F',  // Amarillo más cálido
     padding: '20px 30px',  // Ajuste en grosor
@@ -225,25 +255,10 @@ const SubmissionPreview = () => {
   const emailTemplateData = {
     paymentState: {
       month: `${payment.Mes} ${payment.Año}`,
-      amount: payment.Total || 0,
-      formattedAmount: formatCurrency(payment.Total || 0),
-      dueDate: payment.ExpiryDate,
-      projectName: payment.projectData.Name,
-      recipient: payment.projectData.Owner?.ContactEmail || '',
-      currency: payment.projectData.Currency || 'CLP'
+      amount: formatCurrency(payment.amount),
     },
-    project: {
-      name: payment.projectData.Name,
-      client: payment.projectData.Owner?.CompanyName || '',
-      contractor: payment.projectData.Contratista?.CompanyName || '',
-      location: payment.projectData.Location || '',
-      projectManager: payment.projectData.Contratista?.ContactName || '',
-      contactEmail: payment.projectData.Contratista?.ContactEmail || '',
-      contractorRUT: payment.projectData.Contratista?.RUT || '',
-      contractorPhone: payment.projectData.Contratista?.ContactPhone?.toString() || '',
-      contractorAddress: payment.projectData.Contratista?.Adress || ''
-    },
-    documents: documentsFromPayment
+    project: payment.projectData,
+    documents: documentsFromPayment,
   };
 
   return (

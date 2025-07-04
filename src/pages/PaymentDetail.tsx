@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -43,6 +44,7 @@ const PaymentDetail = () => {
 
   const [achsSelection, setAchsSelection] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [isPreviewUploading, setIsPreviewUploading] = useState(false);
   
   // CORRIGIENDO: Estados para los campos editables - Initialize with database values
   const [editableAmount, setEditableAmount] = useState('');
@@ -280,6 +282,11 @@ const PaymentDetail = () => {
     return requiredDocuments.every(doc => documentStatus[doc.id as keyof typeof documentStatus]);
   };
 
+  // Helper function to check if there are documents to upload for preview
+  const hasDocumentsToUpload = () => {
+    return Object.keys(documentStatus).some(docId => documentStatus[docId as keyof typeof documentStatus]);
+  };
+
   const generateUniqueURLAndUpdate = async () => {
     if (!payment || !payment.projectData) {
       toast({
@@ -449,8 +456,48 @@ const PaymentDetail = () => {
       return;
     }
 
-    // CORRIGIENDO: Auto-guardar antes de vista previa
+    // Auto-guardar antes de vista previa
     await handleAutoSaveBeforePreview();
+    
+    // Check if there are documents to upload
+    if (hasDocumentsToUpload()) {
+      setIsPreviewUploading(true);
+      console.log('🚀 Uploading documents before preview...');
+
+      try {
+        const uploadResult = await uploadDocumentsToDrive(
+          payment.id, 
+          uploadedFiles, 
+          documentStatus, 
+          fileObjects
+        );
+
+        if (!uploadResult.success) {
+          throw new Error("Error al subir documentos a Google Drive");
+        }
+
+        console.log('✅ Documents uploaded successfully before preview');
+        
+        toast({
+          title: "Documentos subidos",
+          description: "Los documentos se han subido correctamente al Drive",
+        });
+
+      } catch (error) {
+        console.error('❌ Error uploading documents for preview:', error);
+        toast({
+          title: "Error al subir documentos",
+          description: error.message || "Error al subir documentos a Google Drive",
+          variant: "destructive"
+        });
+        setIsPreviewUploading(false);
+        return;
+      } finally {
+        setIsPreviewUploading(false);
+      }
+    }
+
+    // Generate unique URL and navigate to preview
     await generateUniqueURLAndUpdate();
     navigate(`/submission-preview?paymentId=${payment.id}`);
   };
@@ -515,11 +562,11 @@ const PaymentDetail = () => {
       <div className="min-h-screen bg-slate-50 font-rubik">
         <PageHeader />
         
-        {/* Loading Modal */}
+        {/* Loading Modal for uploads and preview */}
         <LoadingModal 
-          isOpen={isUploading}
-          title="Subiendo documentos..."
-          description="Por favor espera mientras se procesa la información y se envía la notificación al mandante"
+          isOpen={isUploading || isPreviewUploading}
+          title={isPreviewUploading ? "Subiendo documentos para vista previa..." : "Subiendo documentos..."}
+          description={isPreviewUploading ? "Por favor espera mientras se suben los documentos al Drive antes de mostrar la vista previa" : "Por favor espera mientras se procesa la información y se envía la notificación al mandante"}
         />
 
         {/* Hidden file inputs */}
@@ -674,7 +721,7 @@ const PaymentDetail = () => {
                       variant="outline"
                       className="border-gloster-gray/30 hover:bg-gloster-gray/10 font-rubik"
                       size="sm"
-                      disabled={isUploading || (!areAllRequiredDocumentsUploaded() && !shouldShowDriveFiles())}
+                      disabled={isUploading || isPreviewUploading || (!areAllRequiredDocumentsUploaded() && !shouldShowDriveFiles())}
                     >
                       <Eye className="h-4 w-4 mr-1" />
                       Vista Previa
@@ -683,8 +730,8 @@ const PaymentDetail = () => {
                       onClick={handleSendDocuments}
                       disabled={
                         shouldShowDriveFiles() 
-                          ? !wereDocumentsUpdated() || isUploading
-                          : !documents.filter(d => d.required).every(d => documentStatus[d.id as keyof typeof documentStatus]) || isUploading
+                          ? !wereDocumentsUpdated() || isUploading || isPreviewUploading
+                          : !documents.filter(d => d.required).every(d => documentStatus[d.id as keyof typeof documentStatus]) || isUploading || isPreviewUploading
                       }
                       className="bg-green-600 hover:bg-green-700 text-white disabled:bg-slate-300 font-rubik"
                       size="sm"
@@ -803,14 +850,14 @@ const PaymentDetail = () => {
                       variant="outline"
                       className="border-gloster-gray/30 hover:bg-gloster-gray/10 font-rubik px-6 md:px-8 py-3 w-full sm:w-auto"
                       size="lg"
-                      disabled={isUploading || !areAllRequiredDocumentsUploaded()}
+                      disabled={isUploading || isPreviewUploading || !areAllRequiredDocumentsUploaded()}
                     >
                       <Eye className="h-5 w-5 mr-2" />
-                      Vista Previa
+                      {isPreviewUploading ? 'Subiendo...' : 'Vista Previa'}
                     </Button>
                     <Button
                       onClick={handleSendDocuments}
-                      disabled={!documents.filter(d => d.required).every(d => documentStatus[d.id as keyof typeof documentStatus]) || isUploading}
+                      disabled={!documents.filter(d => d.required).every(d => documentStatus[d.id as keyof typeof documentStatus]) || isUploading || isPreviewUploading}
                       className="bg-green-600 hover:bg-green-700 text-white disabled:bg-slate-300 font-rubik px-6 md:px-8 py-3 w-full sm:w-auto"
                       size="lg"
                     >

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRegistrationSteps } from '@/hooks/useRegistrationSteps';
@@ -16,36 +17,121 @@ import PaymentInfoStep from '@/components/registration/PaymentInfoStep';
 
 const Register = () => {
   const navigate = useNavigate();
-  const { currentStep, nextStep, prevStep, isFirstStep, isLastStep, steps } = useRegistrationSteps();
-  const { registrationData, updateRegistrationData } = useRegistrationData();
-  const { isLoading, error, completeRegistration } = useRegistrationProcess();
+  const { currentStep, totalSteps, handleNext, handlePrevious, handleSubmit } = useRegistrationSteps();
+  const { prepareContratistaData, prepareMandanteData, prepareProyectoData } = useRegistrationData();
+  const { processRegistration } = useRegistrationProcess();
   const { toast } = useToast();
 
   const renderStepContent = () => {
     switch (currentStep) {
       case 1:
-        return <CompanyInfoStep />;
+        return <CompanyInfoStep 
+          companyName=""
+          setCompanyName={() => {}}
+          rut=""
+          setRut={() => {}}
+          specialization=""
+          setSpecialization={() => {}}
+          experience=""
+          setExperience={() => {}}
+          address=""
+          setAddress={() => {}}
+          city=""
+          setCity={() => {}}
+          contactName=""
+          setContactName={() => {}}
+          contactEmail=""
+          setContactEmail={() => {}}
+          contactPhone=""
+          setContactPhone={() => {}}
+          username=""
+          setUsername={() => {}}
+          password=""
+          setPassword={() => {}}
+        />;
       case 2:
-        return <ContactInfoStep />;
+        return <ContactInfoStep 
+          contactName=""
+          setContactName={() => {}}
+          email=""
+          setEmail={() => {}}
+          phone=""
+          setPhone={() => {}}
+          address=""
+          setAddress={() => {}}
+          city=""
+          setCity={() => {}}
+          specialization=""
+          setSpecialization={() => {}}
+          experience=""
+          setExperience={() => {}}
+        />;
       case 3:
-        return <ClientInfoStep />;
+        return <ClientInfoStep 
+          clientCompany=""
+          setClientCompany={() => {}}
+          clientContact=""
+          setClientContact={() => {}}
+          clientEmail=""
+          setClientEmail={() => {}}
+          clientPhone=""
+          setClientPhone={() => {}}
+          clientAddress=""
+          setClientAddress={() => {}}
+        />;
       case 4:
-        return <ProjectInfoStep />;
+        return <ProjectInfoStep 
+          projectName=""
+          setProjectName={() => {}}
+          projectAddress=""
+          setProjectAddress={() => {}}
+          projectDescription=""
+          setProjectDescription={() => {}}
+          budget=""
+          setBudget={() => {}}
+          currency=""
+          setCurrency={() => {}}
+          duration=""
+          setDuration={() => {}}
+          startDate=""
+          setStartDate={() => {}}
+          requirements={[]}
+          setRequirements={() => {}}
+          expiryRate=""
+          setExpiryRate={() => {}}
+        />;
       case 5:
-        return <PaymentInfoStep />;
+        return <PaymentInfoStep 
+          firstPaymentDate=""
+          setFirstPaymentDate={() => {}}
+          paymentPeriod=""
+          setPaymentPeriod={() => {}}
+          totalPayments=""
+          setTotalPayments={() => {}}
+          paymentAmount=""
+          setPaymentAmount={() => {}}
+          currency=""
+          setCurrency={() => {}}
+          expiryRate=""
+          setExpiryRate={() => {}}
+          requirements={[]}
+          setRequirements={() => {}}
+        />;
       default:
         return <div>Paso no encontrado</div>;
     }
   };
 
-  const handleSubmit = async () => {
+  const handleCompleteRegistration = async () => {
     try {
-      await completeRegistration(registrationData);
-      toast({
-        title: "Registro Exitoso",
-        description: "Su información ha sido registrada correctamente.",
-      });
-      navigate('/dashboard');
+      const success = await handleSubmit();
+      if (success) {
+        toast({
+          title: "Registro Exitoso",
+          description: "Su información ha sido registrada correctamente.",
+        });
+        navigate('/dashboard');
+      }
     } catch (err: any) {
       console.error("Error during registration:", err);
       toast({
@@ -55,6 +141,10 @@ const Register = () => {
       });
     }
   };
+
+  const steps = Array.from({ length: totalSteps }, (_, i) => i + 1);
+  const isFirstStep = currentStep === 1;
+  const isLastStep = currentStep === totalSteps;
 
   return (
     <div className="min-h-screen bg-slate-50 font-rubik">
@@ -69,8 +159,8 @@ const Register = () => {
             <div className="flex justify-between mt-6">
               <Button
                 variant="outline"
-                onClick={prevStep}
-                disabled={isFirstStep || isLoading}
+                onClick={handlePrevious}
+                disabled={isFirstStep}
                 className="flex items-center"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
@@ -78,25 +168,15 @@ const Register = () => {
               </Button>
               {isLastStep ? (
                 <Button
-                  onClick={handleSubmit}
-                  disabled={isLoading}
+                  onClick={handleCompleteRegistration}
                   className="bg-green-600 text-white hover:bg-green-700 flex items-center"
                 >
-                  {isLoading ? (
-                    <>
-                      Registrando...
-                    </>
-                  ) : (
-                    <>
-                      Completar Registro
-                      <CheckCircle className="ml-2 h-4 w-4" />
-                    </>
-                  )}
+                  Completar Registro
+                  <CheckCircle className="ml-2 h-4 w-4" />
                 </Button>
               ) : (
                 <Button
-                  onClick={nextStep}
-                  disabled={isLoading}
+                  onClick={handleNext}
                   className="bg-blue-600 text-white hover:bg-blue-700 flex items-center"
                 >
                   Siguiente

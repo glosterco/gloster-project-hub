@@ -52,7 +52,12 @@ const DocumentsUploadSection: React.FC<DocumentsUploadSectionProps> = ({
         {documents.map((doc) => doc.required ? (
           <DocumentUploadCard
             key={doc.id}
-            doc={doc}
+            doc={{
+              ...doc,
+              downloadUrl: doc.downloadUrl || null,
+              uploaded: false,
+              helpText: doc.helpText || ''
+            }}
             documentStatus={documentStatus[doc.id]}
             uploadedFiles={uploadedFiles[doc.id]}
             dragState={dragStates[doc.id]}

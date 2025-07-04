@@ -345,7 +345,7 @@ const PaymentDetail = () => {
       const uploadedDocuments: string[] = [];
       Object.entries(uploadedFiles).forEach(([docId, files]) => {
         if (files && files.length > 0) {
-          files.forEach(file => {
+          files.forEach((file: any) => {
             if (typeof file === 'string') {
               uploadedDocuments.push(file);
             } else if (file && typeof file === 'object' && 'name' in file) {
@@ -382,7 +382,7 @@ const PaymentDetail = () => {
           navigate(`/project/${payment?.Project || 2}`);
         }, 2000);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Error in upload process:', error);
       toast({
         title: "Error al enviar documentos",

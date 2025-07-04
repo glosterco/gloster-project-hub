@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import DynamicPageHeader from '@/components/DynamicPageHeader';
@@ -49,7 +50,7 @@ const SubmissionView = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 font-rubik">
-      <DynamicPageHeader title="Vista Previa de Documentos" />
+      <DynamicPageHeader />
 
       <div className="container mx-auto px-6 py-8">
         <Card className="mb-8 border-l-4 border-l-blue-500">

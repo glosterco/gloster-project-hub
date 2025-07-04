@@ -1,176 +1,116 @@
+
 import React from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Building, FileText, Users, DollarSign } from 'lucide-react';
-import PageHeader from '@/components/PageHeader';
-import ProjectsGrid from '@/components/ProjectsGrid';
-import PaymentStatesTable from '@/components/PaymentStatesTable';
+import { Calendar, FileText, Building, TrendingUp, Clock, User } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ProjectsGrid } from '@/components/ProjectsGrid';
+import { PaymentStatesTable } from '@/components/PaymentStatesTable';
+import { useProjectsWithDetails } from '@/hooks/useProjectsWithDetails';
+import { useEstadosPago } from '@/hooks/useEstadosPago';
 
 const Dashboard = () => {
-  const { user, signOut } = useAuth();
+  const { loading } = useAuth();
   const navigate = useNavigate();
+  const { projects, loading: projectsLoading } = useProjectsWithDetails();
+  const { estadosPago, loading: estadosLoading } = useEstadosPago();
 
-  const { data: projects, isLoading: isLoadingProjects, error: projectsError } = useQuery({
-    queryKey: ['projects'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('Proyectos')
-        .select('*');
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      return data;
-    }
-  });
-
-  const { data: paymentStates, isLoading: isLoadingPaymentStates, error: paymentStatesError } = useQuery({
-    queryKey: ['paymentStates'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('Estados de pago')
-        .select(`
-          *,
-          Proyectos (
-            Name
-          )
-        `);
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      return data;
-    }
-  });
-
-  if (!user) {
-    return <div>Loading...</div>;
+  if (loading || projectsLoading || estadosLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-slate-600">Cargando dashboard...</p>
+        </div>
+      </div>
+    );
   }
+
+  const activeProjects = projects.filter(p => p.Status);
+  const pendingPayments = estadosPago.filter(ep => ep.Status === 'Pendiente');
+  const completedPayments = estadosPago.filter(ep => ep.Status === 'Aprobado');
 
   return (
     <div className="min-h-screen bg-slate-50 font-rubik">
-      <PageHeader />
-
       <div className="container mx-auto px-6 py-8">
-        <h2 className="text-3xl font-bold mb-4 text-slate-800">Dashboard</h2>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-slate-800 mb-2">Dashboard</h1>
+          <p className="text-slate-600">Resumen de proyectos y estados de pago</p>
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <Card className="border-gloster-gray/20 hover:shadow-xl transition-all duration-300">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2 font-rubik">
-                <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <Building className="h-5 w-5 text-blue-600" />
-                </div>
-                <span className="text-slate-800">Proyectos</span>
-              </CardTitle>
-              <CardDescription className="text-gloster-gray font-rubik text-sm">
-                {projects ? projects.length : 'Cargando...'} Proyectos totales
-              </CardDescription>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Proyectos Activos</CardTitle>
+              <Building className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              {isLoadingProjects ? (
-                <p>Cargando...</p>
-              ) : projectsError ? (
-                <p>Error: {projectsError.message}</p>
-              ) : (
-                <Button onClick={() => navigate('/projects')} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-rubik">
-                  Ver Proyectos
-                </Button>
-              )}
+              <div className="text-2xl font-bold">{activeProjects.length}</div>
+              <p className="text-xs text-muted-foreground">
+                {projects.length - activeProjects.length} inactivos
+              </p>
             </CardContent>
           </Card>
 
-          <Card className="border-gloster-gray/20 hover:shadow-xl transition-all duration-300">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2 font-rubik">
-                <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                  <FileText className="h-5 w-5 text-green-600" />
-                </div>
-                <span className="text-slate-800">Estados de Pago</span>
-              </CardTitle>
-              <CardDescription className="text-gloster-gray font-rubik text-sm">
-                {paymentStates ? paymentStates.length : 'Cargando...'} Estados de pago totales
-              </CardDescription>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Estados Pendientes</CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              {isLoadingPaymentStates ? (
-                <p>Cargando...</p>
-              ) : paymentStatesError ? (
-                <p>Error: {paymentStatesError.message}</p>
-              ) : (
-                <Button onClick={() => navigate('/payment-states')} className="w-full bg-green-600 hover:bg-green-700 text-white font-rubik">
-                  Ver Estados de Pago
-                </Button>
-              )}
+              <div className="text-2xl font-bold">{pendingPayments.length}</div>
+              <p className="text-xs text-muted-foreground">
+                Requieren atención
+              </p>
             </CardContent>
           </Card>
 
-          <Card className="border-gloster-gray/20 hover:shadow-xl transition-all duration-300">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2 font-rubik">
-                <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
-                  <Users className="h-5 w-5 text-yellow-600" />
-                </div>
-                <span className="text-slate-800">Usuarios</span>
-              </CardTitle>
-              <CardDescription className="text-gloster-gray font-rubik text-sm">
-                Gestiona los usuarios de la plataforma
-              </CardDescription>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Estados Completados</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <Button onClick={() => navigate('/users')} className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-rubik">
-                Gestionar Usuarios
-              </Button>
+              <div className="text-2xl font-bold">{completedPayments.length}</div>
+              <p className="text-xs text-muted-foreground">
+                Este mes
+              </p>
             </CardContent>
           </Card>
 
-          <Card className="border-gloster-gray/20 hover:shadow-xl transition-all duration-300">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2 font-rubik">
-                <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
-                  <DollarSign className="h-5 w-5 text-indigo-600" />
-                </div>
-                <span className="text-slate-800">Finanzas</span>
-              </CardTitle>
-              <CardDescription className="text-gloster-gray font-rubik text-sm">
-                Visualiza el estado financiero de tus proyectos
-              </CardDescription>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Estados</CardTitle>
+              <FileText className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <Button onClick={() => navigate('/finances')} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-rubik">
-                Ver Finanzas
-              </Button>
+              <div className="text-2xl font-bold">{estadosPago.length}</div>
+              <p className="text-xs text-muted-foreground">
+                Todos los estados
+              </p>
             </CardContent>
           </Card>
         </div>
 
-        <section className="mb-8">
-          <h3 className="text-xl font-bold mb-4 text-slate-800 font-rubik">Proyectos Recientes</h3>
-          {isLoadingProjects ? (
-            <p>Cargando proyectos...</p>
-          ) : projectsError ? (
-            <p>Error: {projectsError.message}</p>
-          ) : (
-            <ProjectsGrid projects={projects || []} />
-          )}
-        </section>
+        {/* Projects Section */}
+        <div className="mb-8">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-slate-800">Proyectos</h2>
+            <Button onClick={() => navigate('/register')}>
+              Nuevo Proyecto
+            </Button>
+          </div>
+          <ProjectsGrid projects={projects} />
+        </div>
 
-        <section>
-          <h3 className="text-xl font-bold mb-4 text-slate-800 font-rubik">Últimos Estados de Pago</h3>
-          {isLoadingPaymentStates ? (
-            <p>Cargando estados de pago...</p>
-          ) : paymentStatesError ? (
-            <p>Error: {paymentStatesError.message}</p>
-          ) : (
-            <PaymentStatesTable paymentStates={paymentStates || []} />
-          )}
-        </section>
+        {/* Recent Payment States */}
+        <div>
+          <h2 className="text-2xl font-bold text-slate-800 mb-6">Estados de Pago Recientes</h2>
+          <PaymentStatesTable estadosPago={estadosPago.slice(0, 10)} />
+        </div>
       </div>
     </div>
   );

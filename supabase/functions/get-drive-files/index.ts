@@ -9,6 +9,7 @@ const corsHeaders = {
 interface GetFilesRequest {
   paymentId: string;
   documentName: string;
+  downloadContent?: boolean; // Nuevo parámetro para obtener contenido
 }
 
 const getAccessToken = async (): Promise<string> => {
@@ -53,6 +54,32 @@ const searchFileInFolder = async (accessToken: string, folderId: string, fileNam
   return data.files || [];
 };
 
+const downloadFileContent = async (accessToken: string, fileId: string): Promise<string> => {
+  const response = await fetch(
+    `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+    {
+      headers: {
+        "Authorization": `Bearer ${accessToken}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Failed to download file: ${response.status}`);
+  }
+
+  const arrayBuffer = await response.arrayBuffer();
+  const bytes = new Uint8Array(arrayBuffer);
+  
+  // Convertir a base64
+  let binary = '';
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+};
+
 const getFolderIdFromUrl = (driveUrl: string): string | null => {
   const match = driveUrl.match(/\/folders\/([a-zA-Z0-9-_]+)/);
   return match ? match[1] : null;
@@ -64,8 +91,8 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { paymentId, documentName }: GetFilesRequest = await req.json();
-    console.log("Getting drive files for:", { paymentId, documentName });
+    const { paymentId, documentName, downloadContent = false }: GetFilesRequest = await req.json();
+    console.log("Getting drive files for:", { paymentId, documentName, downloadContent });
 
     // Get payment data from Supabase to find the drive URL
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -101,19 +128,40 @@ const handler = async (req: Request): Promise<Response> => {
     const accessToken = await getAccessToken();
     const files = await searchFileInFolder(accessToken, folderId, documentName);
 
-    console.log("Found files:", files);
+    console.log("Found files:", files.length);
+
+    // Si se solicita contenido, descargarlo
+    const filesWithContent = [];
+    for (const file of files) {
+      const fileData = {
+        id: file.id,
+        name: file.name,
+        mimeType: file.mimeType,
+        size: file.size,
+        downloadUrl: file.webContentLink,
+        viewUrl: file.webViewLink
+      };
+
+      if (downloadContent) {
+        try {
+          console.log(`📥 Downloading content for: ${file.name}`);
+          const content = await downloadFileContent(accessToken, file.id);
+          fileData.content = content;
+          console.log(`✅ Content downloaded for: ${file.name}`);
+        } catch (contentError) {
+          console.error(`❌ Error downloading content for ${file.name}:`, contentError);
+          // Continuar sin el contenido si hay error
+        }
+      }
+
+      filesWithContent.push(fileData);
+    }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        files: files.map(file => ({
-          id: file.id,
-          name: file.name,
-          mimeType: file.mimeType,
-          size: file.size,
-          downloadUrl: file.webContentLink,
-          viewUrl: file.webViewLink
-        }))
+        files: filesWithContent,
+        totalFiles: filesWithContent.length
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

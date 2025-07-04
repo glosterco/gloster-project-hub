@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
+import { Download, Loader2 } from 'lucide-react';
 import EmailTemplate from '@/components/EmailTemplate';
 import PaymentApprovalSection from '@/components/PaymentApprovalSection';
 import { useToast } from '@/hooks/use-toast';
 import { usePaymentDetail } from '@/hooks/usePaymentDetail';
+import { useDirectDownload } from '@/hooks/useDirectDownload';
 import { supabase } from '@/integrations/supabase/client';
 import html2pdf from 'html2pdf.js';
 
@@ -14,6 +15,7 @@ const SubmissionView = () => {
   const [searchParams] = useSearchParams();
   const paymentId = searchParams.get('paymentId') || '11';
   const { payment, loading, error, refetch } = usePaymentDetail(paymentId, true);
+  const { downloadFilesDirect, loading: downloadLoading, downloadProgress } = useDirectDownload();
   const { toast } = useToast();
   const [hasAccess, setHasAccess] = useState(false);
   const [checkingAccess, setCheckingAccess] = useState(true);
@@ -52,10 +54,12 @@ const SubmissionView = () => {
       
       try {
         setCheckingAccess(true);
+        console.log('🔍 Checking access for payment:', paymentId);
         
         const { data: { user } } = await supabase.auth.getUser();
         
         if (user && payment?.projectData) {
+          // Verificar si es contratista autenticado
           const { data: contractorData } = await supabase
             .from('Contratistas')
             .select('*')
@@ -63,6 +67,7 @@ const SubmissionView = () => {
             .maybeSingle();
 
           if (contractorData && payment.projectData.Contratista?.id === contractorData.id) {
+            console.log('✅ Contractor access granted');
             setHasAccess(true);
             setIsMandante(false);
             setAccessChecked(true);
@@ -71,11 +76,13 @@ const SubmissionView = () => {
           }
         }
 
+        // Verificar acceso del mandante desde sessionStorage
         const mandanteAccess = sessionStorage.getItem('mandanteAccess');
         if (mandanteAccess) {
           try {
             const accessData = JSON.parse(mandanteAccess);
             if (accessData.paymentId === paymentId && accessData.token) {
+              console.log('✅ Mandante access granted');
               setHasAccess(true);
               setIsMandante(true);
               setAccessChecked(true);
@@ -87,6 +94,7 @@ const SubmissionView = () => {
           }
         }
 
+        console.log('❌ Access denied, redirecting to email access');
         setAccessChecked(true);
         setCheckingAccess(false);
         navigate(`/email-access?paymentId=${paymentId}`);
@@ -244,42 +252,105 @@ const SubmissionView = () => {
     }
   };
 
-  const handleDownloadFile = async (fileName: string) => {
-    if (!payment?.URL) {
+  const handleDownloadFiles = async () => {
+    if (!payment) {
       toast({
         title: "Error",
-        description: "No se encontró la URL del archivo",
+        description: "No se encontraron datos del estado de pago",
         variant: "destructive"
       });
       return;
     }
+
+    console.log('🚀 Starting direct file download for payment:', paymentId);
     
-    try {
-      window.open(payment.URL, '_blank');
-      
-      toast({
-        title: "Descarga iniciada",
-        description: `Se ha abierto la carpeta del Drive para descargar ${fileName}`,
-      });
-    } catch (error) {
-      console.error('Error downloading file:', error);
-      toast({
-        title: "Error al descargar",
-        description: "No se pudo acceder al archivo",
-        variant: "destructive"
-      });
+    const result = await downloadFilesDirect(paymentId);
+    
+    if (result.success) {
+      console.log(`✅ Successfully downloaded ${result.filesCount} files`);
+    } else {
+      console.error('❌ Failed to download files:', result.error);
     }
   };
 
   const handleStatusChange = () => {
+    console.log('🔄 Status changed, refreshing payment data...');
     refetch();
   };
+
+  const formatCurrency = (amount: number) => {
+    if (!payment?.projectData?.Currency) {
+      return new Intl.NumberFormat('es-CL', {
+        style: 'currency',
+        currency: 'CLP',
+        minimumFractionDigits: 0,
+      }).format(amount);
+    }
+
+    if (payment.projectData.Currency === 'UF') {
+      return `${amount.toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} UF`;
+    } else if (payment.projectData.Currency === 'USD') {
+      return new Intl.NumberFormat('es-CL', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 0,
+      }).format(amount);
+    } else {
+      return new Intl.NumberFormat('es-CL', {
+        style: 'currency',
+        currency: 'CLP',
+        minimumFractionDigits: 0,
+      }).format(amount);
+    }
+  };
+
+  const documentsFromPayment = [
+    {
+      id: 'eepp',
+      name: 'Carátula EEPP',
+      description: 'Presentación y resumen del estado de pago',
+      uploaded: true
+    },
+    {
+      id: 'planilla',
+      name: 'Avance Periódico',
+      description: 'Planilla detallada del avance de obras del período',
+      uploaded: true
+    },
+    {
+      id: 'cotizaciones',
+      name: 'Certificado de Pago de Cotizaciones Previsionales',
+      description: 'Certificado de cumplimiento de obligaciones previsionales',
+      uploaded: true
+    },
+    {
+      id: 'f30',
+      name: 'Certificado F30',
+      description: 'Certificado de antecedentes laborales y previsionales',
+      uploaded: true
+    },
+    {
+      id: 'f30_1',
+      name: 'Certificado F30-1',
+      description: 'Certificado de cumplimiento de obligaciones laborales y previsionales',
+      uploaded: true
+    },
+    {
+      id: 'factura',
+      name: 'Factura',
+      description: 'Factura del período correspondiente',
+      uploaded: true
+    }
+  ];
 
   if (checkingAccess) {
     return (
       <div className="min-h-screen bg-slate-50 font-rubik">
         <div className="container mx-auto px-6 py-8">
-          <div className="text-center">Verificando acceso...</div>
+          <div className="flex items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin mr-2" />
+            <span>Verificando acceso...</span>
+          </div>
         </div>
       </div>
     );
@@ -293,7 +364,10 @@ const SubmissionView = () => {
     return (
       <div className="min-h-screen bg-slate-50 font-rubik">
         <div className="container mx-auto px-6 py-8">
-          <div className="text-center">Cargando vista previa...</div>
+          <div className="flex items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin mr-2" />
+            <span>Cargando datos del estado de pago...</span>
+          </div>
         </div>
       </div>
     );
@@ -375,17 +449,23 @@ const SubmissionView = () => {
                 <Download className="h-4 w-4 mr-2" />
                 Descargar PDF
               </Button>
-              {payment?.URL && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleDownloadFile('Documentos')}
-                  className="font-rubik"
-                >
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDownloadFiles}
+                disabled={downloadLoading}
+                className="font-rubik"
+              >
+                {downloadLoading ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
                   <Download className="h-4 w-4 mr-2" />
-                  Descargar Archivos
-                </Button>
-              )}
+                )}
+                {downloadLoading ? 
+                  `Descargando... ${downloadProgress}%` : 
+                  'Descargar Archivos'
+                }
+              </Button>
             </div>
           </div>
         </div>

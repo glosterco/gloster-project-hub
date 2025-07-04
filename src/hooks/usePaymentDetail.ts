@@ -96,7 +96,7 @@ export const usePaymentDetail = (paymentId: string, shouldRefetch = true) => {
 
       console.log('✅ Payment data fetched successfully:', paymentData);
       
-      // Ensure projectData is properly structured
+      // Ensure projectData is properly structured with proper contractor data mapping
       const processedPayment: PaymentDetail = {
         ...paymentData,
         projectData: paymentData.projectData ? {

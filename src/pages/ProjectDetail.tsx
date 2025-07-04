@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -37,27 +38,10 @@ const ProjectDetail = () => {
     return new Intl.NumberFormat('es-CL', config).format(amount);
   };
 
-  // Usar directamente el estado de la base de datos sin lógica adicional
+  // Use the exact status from the database without any additional logic
   const getPaymentStatus = (payment: any) => {
-    // Usar directamente el Status de la base de datos
-    const dbStatus = payment.Status?.toLowerCase();
-    
-    switch (dbStatus) {
-      case 'aprobado':
-        return 'aprobado';
-      case 'pendiente':
-        return 'pendiente'; 
-      case 'programado':
-        return 'programado';
-      case 'en progreso':
-        return 'pendiente'; // Tratar "en progreso" como pendiente para permitir acceso
-      case 'enviado':
-        return 'enviado';
-      case 'rechazado':
-        return 'rechazado';
-      default:
-        return dbStatus || 'programado';
-    }
+    // Return the exact status from the database, converting to lowercase for consistency
+    return payment.Status?.toLowerCase() || 'programado';
   };
 
   const getStatusColor = (status: string) => {
@@ -72,6 +56,8 @@ const ProjectDetail = () => {
         return 'bg-orange-100 text-orange-700';
       case 'rechazado':
         return 'bg-red-100 text-red-700';
+      case 'en progreso':
+        return 'bg-gloster-yellow/20 text-gloster-gray';
       default:
         return 'bg-gray-100 text-gray-700';
     }
@@ -291,6 +277,7 @@ const ProjectDetail = () => {
                   <SelectItem value="programado">Programado</SelectItem>
                   <SelectItem value="enviado">Enviado</SelectItem>
                   <SelectItem value="rechazado">Rechazado</SelectItem>
+                  <SelectItem value="en progreso">En Progreso</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -357,7 +344,7 @@ const ProjectDetail = () => {
                       </div>
 
                       <div className="pt-4 mt-auto">
-                        {status === 'pendiente' && (
+                        {(status === 'pendiente' || status === 'en progreso') && (
                           <Button
                             onClick={() => handlePaymentClick(payment)}
                             className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold font-rubik"

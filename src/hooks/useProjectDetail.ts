@@ -120,7 +120,7 @@ export const useProjectDetail = (projectId: string) => {
         return;
       }
 
-      // Fetch payment states for this project
+      // Fetch payment states for this project WITHOUT modifying their status
       const { data: paymentsData, error: paymentsError } = await supabase
         .from('Estados de pago')
         .select('*')

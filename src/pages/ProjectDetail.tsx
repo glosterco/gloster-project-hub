@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -18,7 +17,7 @@ const ProjectDetail = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 font-rubik">
-        <DynamicPageHeader pageType="project" />
+        <DynamicPageHeader pageType="projects" />
         <div className="container mx-auto px-6 py-8">
           <div className="flex items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin mr-2" />
@@ -32,7 +31,7 @@ const ProjectDetail = () => {
   if (!project) {
     return (
       <div className="min-h-screen bg-slate-50 font-rubik">
-        <DynamicPageHeader pageType="project" />
+        <DynamicPageHeader pageType="projects" />
         <div className="container mx-auto px-6 py-8">
           <div className="text-center">
             <p className="text-gloster-gray mb-4">
@@ -111,7 +110,7 @@ const ProjectDetail = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 font-rubik">
-      <DynamicPageHeader pageType="project" />
+      <DynamicPageHeader pageType="projects" />
       
       <div className="container mx-auto px-6 py-8">
         <div className="mb-6">
@@ -234,7 +233,7 @@ const ProjectDetail = () => {
                   <Phone className="h-5 w-5 text-gloster-gray mr-3" />
                   <div>
                     <p className="font-medium">Teléfono</p>
-                    <p className="text-slate-600">{project.Owner?.ContactPhone?.toString() || 'No disponible'}</p>
+                    <p className="text-slate-600">{project.Owner?.ContactPhone || 'No disponible'}</p>
                   </div>
                 </div>
               </div>
@@ -268,7 +267,7 @@ const ProjectDetail = () => {
                   <Phone className="h-5 w-5 text-gloster-gray mr-3" />
                   <div>
                     <p className="font-medium">Teléfono</p>
-                    <p className="text-slate-600">{project.Contratista?.ContactPhone?.toString() || 'No disponible'}</p>
+                    <p className="text-slate-600">{project.Contratista?.ContactPhone || 'No disponible'}</p>
                   </div>
                 </div>
               </div>

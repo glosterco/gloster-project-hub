@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Download, ExternalLink, Upload } from 'lucide-react';
 
-interface PaymentDocument {
+interface Document {
   id: string;
   name: string;
   description: string;
@@ -13,7 +13,7 @@ interface PaymentDocument {
 }
 
 interface DriveDocumentsSectionProps {
-  documents: PaymentDocument[];
+  documents: Document[];
   onDownloadFile: (fileName: string) => void;
   onDocumentUpload: (docId: string) => void;
 }

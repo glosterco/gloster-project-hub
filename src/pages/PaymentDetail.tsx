@@ -17,19 +17,6 @@ import DriveDocumentsSection from '@/components/payment/DriveDocumentsSection';
 import DocumentsUploadSection from '@/components/payment/DocumentsUploadSection';
 import SendDocumentsBanner from '@/components/payment/SendDocumentsBanner';
 
-interface PaymentDocument {
-  id: string;
-  name: string;
-  description: string;
-  downloadUrl?: string | null;
-  uploaded: boolean;
-  required: boolean;
-  isUploadOnly?: boolean;
-  helpText?: string;
-  hasDropdown?: boolean;
-  allowMultiple?: boolean;
-}
-
 const PaymentDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -345,7 +332,7 @@ const PaymentDetail = () => {
       const uploadedDocuments: string[] = [];
       Object.entries(uploadedFiles).forEach(([docId, files]) => {
         if (files && files.length > 0) {
-          files.forEach((file: any) => {
+          files.forEach(file => {
             if (typeof file === 'string') {
               uploadedDocuments.push(file);
             } else if (file && typeof file === 'object' && 'name' in file) {
@@ -382,7 +369,7 @@ const PaymentDetail = () => {
           navigate(`/project/${payment?.Project || 2}`);
         }, 2000);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ Error in upload process:', error);
       toast({
         title: "Error al enviar documentos",
@@ -444,7 +431,7 @@ const PaymentDetail = () => {
   };
 
   // Document definitions
-  const documents: PaymentDocument[] = [
+  const documents = [
     {
       id: 'eepp',
       name: 'Carátula EEPP',

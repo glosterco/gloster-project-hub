@@ -2,7 +2,7 @@
 import React from 'react';
 import DocumentUploadCard from '@/components/DocumentUploadCard';
 
-interface PaymentDocument {
+interface Document {
   id: string;
   name: string;
   description: string;
@@ -16,7 +16,7 @@ interface PaymentDocument {
 }
 
 interface DocumentsUploadSectionProps {
-  documents: PaymentDocument[];
+  documents: Document[];
   documentStatus: Record<string, boolean>;
   uploadedFiles: Record<string, any>;
   dragStates: Record<string, boolean>;
@@ -52,12 +52,7 @@ const DocumentsUploadSection: React.FC<DocumentsUploadSectionProps> = ({
         {documents.map((doc) => doc.required ? (
           <DocumentUploadCard
             key={doc.id}
-            doc={{
-              ...doc,
-              downloadUrl: doc.downloadUrl || null,
-              uploaded: false,
-              helpText: doc.helpText || ''
-            }}
+            doc={doc}
             documentStatus={documentStatus[doc.id]}
             uploadedFiles={uploadedFiles[doc.id]}
             dragState={dragStates[doc.id]}

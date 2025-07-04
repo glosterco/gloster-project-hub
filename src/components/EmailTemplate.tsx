@@ -135,13 +135,9 @@ const EmailTemplate: React.FC<EmailTemplateProps> = ({
           <img 
             src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
             alt="Gloster Logo" 
-            className="w-2 h-2 mr-2"
+            className="w-6 h-6 mr-2"
           />
-          <h1 className="text-lg font-bold text-slate-800">Estado de Pago</h1>
-        </div>
-        <div className="flex items-center justify-center text-slate-700">
-          <Calendar className="w-3 h-3 mr-1" />
-          <p className="text-xs">{paymentState.month}</p>
+          <h1 className="text-lg font-bold text-slate-800">Gloster</h1>
         </div>
       </div>
 

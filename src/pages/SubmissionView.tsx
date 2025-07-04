@@ -99,6 +99,7 @@ const SubmissionView = () => {
     );
   }
 
+  // Construct emailTemplateData exactly like SubmissionPreview does
   const emailTemplateData = {
     paymentState: {
       month: `${payment.Mes} ${payment.Año}`,

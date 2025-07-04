@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, FileText, Calendar, MapPin, User, Mail, Phone, Building } from 'lucide-react';
@@ -89,7 +90,6 @@ const EmailTemplate: React.FC<EmailTemplateProps> = ({
       const result = await getDriveFiles(paymentId, documentName);
       
       if (result.success && result.files.length > 0) {
-        // If multiple files found, download the first one or open drive folder
         const file = result.files[0];
         if (file.downloadUrl) {
           window.open(file.downloadUrl, '_blank');
@@ -102,7 +102,6 @@ const EmailTemplate: React.FC<EmailTemplateProps> = ({
           description: `Descargando ${documentName}`,
         });
       } else {
-        // Fallback to drive folder if specific file not found
         if (driveUrl) {
           window.open(driveUrl, '_blank');
           toast({
@@ -129,7 +128,7 @@ const EmailTemplate: React.FC<EmailTemplateProps> = ({
 
   return (
     <div className="bg-white font-rubik max-w-4xl mx-auto">
-      {/* Header - More compact */}
+      {/* Header */}
       <div className="bg-gloster-yellow px-4 py-3 text-center">
         <div className="flex items-center justify-center mb-1">
           <img 

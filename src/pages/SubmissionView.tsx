@@ -99,12 +99,17 @@ const SubmissionView = () => {
     );
   }
 
-  // DEBUG: Log contractor data to see what's actually coming from the database
-  console.log('🔍 DEBUG - Contractor data from payment:', {
-    contratista: payment.projectData.Contratista,
-    rut: payment.projectData.Contratista?.RUT,
-    phone: payment.projectData.Contratista?.ContactPhone,
-    address: payment.projectData.Contratista?.Adress
+  // DEBUG: Log payment data to verify contractor info is coming through
+  console.log('🔍 SubmissionView - Full payment data:', payment);
+  console.log('🔍 SubmissionView - Contractor data:', payment.projectData.Contratista);
+  console.log('🔍 SubmissionView - Contractor fields:', {
+    id: payment.projectData.Contratista?.id,
+    CompanyName: payment.projectData.Contratista?.CompanyName,
+    ContactName: payment.projectData.Contratista?.ContactName,
+    ContactEmail: payment.projectData.Contratista?.ContactEmail,
+    RUT: payment.projectData.Contratista?.RUT,
+    ContactPhone: payment.projectData.Contratista?.ContactPhone,
+    Adress: payment.projectData.Contratista?.Adress
   });
 
   // Construct emailTemplateData exactly like SubmissionPreview does
@@ -125,16 +130,16 @@ const SubmissionView = () => {
       location: payment.projectData.Location || '',
       projectManager: payment.projectData.Contratista?.ContactName || '',
       contactEmail: payment.projectData.Contratista?.ContactEmail || '',
-      // FIXED: Handle null/undefined/empty values properly for contractor fields
-      contractorRUT: payment.projectData.Contratista?.RUT?.trim() || '',
+      contractorRUT: payment.projectData.Contratista?.RUT || '',
       contractorPhone: payment.projectData.Contratista?.ContactPhone?.toString() || '',
-      contractorAddress: payment.projectData.Contratista?.Adress?.trim() || ''
+      contractorAddress: payment.projectData.Contratista?.Adress || ''
     },
     documents: documentsFromPayment
   };
 
-  // DEBUG: Log final emailTemplateData to verify contractor info
-  console.log('📧 DEBUG - Email template data:', {
+  // DEBUG: Log constructed emailTemplateData to verify contractor info mapping
+  console.log('📧 SubmissionView - Email template data being passed:', emailTemplateData);
+  console.log('📧 SubmissionView - Project contractor info:', {
     contractorRUT: emailTemplateData.project.contractorRUT,
     contractorPhone: emailTemplateData.project.contractorPhone,
     contractorAddress: emailTemplateData.project.contractorAddress

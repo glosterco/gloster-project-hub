@@ -43,6 +43,14 @@ const SubmissionContent: React.FC<SubmissionContentProps> = ({
   isMandante,
   onStatusChange
 }) => {
+  // DEBUG: Log received data in SubmissionContent
+  console.log('📦 SubmissionContent - Received emailTemplateData:', emailTemplateData);
+  console.log('📦 SubmissionContent - Contractor info received:', {
+    contractorRUT: emailTemplateData.project.contractorRUT,
+    contractorPhone: emailTemplateData.project.contractorPhone,
+    contractorAddress: emailTemplateData.project.contractorAddress
+  });
+
   return (
     <div className="container mx-auto px-6 py-8">
       <div className="max-w-4xl mx-auto space-y-6">

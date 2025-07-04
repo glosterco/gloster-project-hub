@@ -1,93 +1,40 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
-import { LogOut, User } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
+import { ArrowLeft } from 'lucide-react';
 
-const PageHeader = () => {
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const { signOut, loading } = useAuth();
-  const [contractorInfo, setContractorInfo] = useState<{
-    ContactName: string;
-    CompanyName: string;
-  } | null>(null);
+interface PageHeaderProps {
+  showBackButton?: boolean;
+  onBack?: () => void;
+}
 
-  useEffect(() => {
-    const fetchContractorInfo = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (!user) return;
-
-        const { data: contractorData, error } = await supabase
-          .from('Contratistas')
-          .select('ContactName, CompanyName')
-          .eq('auth_user_id', user.id)
-          .maybeSingle();
-
-        if (!error && contractorData) {
-          setContractorInfo(contractorData);
-        }
-      } catch (error) {
-        console.error('Error fetching contractor info:', error);
-      }
-    };
-
-    fetchContractorInfo();
-  }, []);
-
-  const handleLogout = async () => {
-    console.log('Attempting logout...');
-    
-    const { error } = await signOut();
-    
-    if (!error) {
-      // Navigation will be handled by the auth state change listener in Index.tsx
-      console.log('Logout successful, redirecting to login');
-      navigate('/');
-    }
-  };
-
-  const displayName = contractorInfo 
-    ? `${contractorInfo.ContactName} - ${contractorInfo.CompanyName}`
-    : 'Usuario';
-
+const PageHeader: React.FC<PageHeaderProps> = ({ showBackButton = false, onBack }) => {
   return (
-    <header className="bg-gloster-white border-b border-gloster-gray/20 shadow-sm">
-      <div className="container mx-auto px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <img 
-              src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
-              alt="Gloster Logo" 
-              className="w-8 h-8"
+    <div className="bg-white border-b border-slate-200 px-6 py-4">
+      <div className="container mx-auto flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          {showBackButton && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onBack}
+              className="flex items-center space-x-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>Volver</span>
+            </Button>
+          )}
+          <div className="flex items-center space-x-2">
+            <img
+              src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png"
+              alt="Gloster Logo"
+              className="h-8 w-auto"
             />
             <h1 className="text-xl font-bold text-slate-800 font-rubik">Gloster</h1>
           </div>
-          
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2 text-gloster-gray">
-              <User className="h-4 w-4" />
-              <span className="text-sm font-rubik">{displayName}</span>
-            </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleLogout}
-              disabled={loading}
-              className="text-gloster-gray hover:text-slate-800 border-gloster-gray/30 font-rubik"
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              {loading ? 'Cerrando...' : 'Cerrar Sesión'}
-            </Button>
-          </div>
         </div>
       </div>
-    </header>
+    </div>
   );
 };
 

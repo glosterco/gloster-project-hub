@@ -10,6 +10,7 @@ export interface DocumentStatus {
   examenes: boolean;
   finiquito: boolean;
   factura: boolean;
+  [key: string]: boolean;
 }
 
 export interface UploadedFiles {
@@ -21,6 +22,7 @@ export interface UploadedFiles {
   examenes: string[];
   finiquito: string[];
   factura: string[];
+  [key: string]: string[];
 }
 
 export interface FileObjects {
@@ -36,6 +38,7 @@ export interface DragStates {
   examenes: boolean;
   finiquito: boolean;
   factura: boolean;
+  [key: string]: boolean;
 }
 
 export const useDocumentUpload = () => {
@@ -120,8 +123,7 @@ export const useDocumentUpload = () => {
 
     const fileNames = validFiles.map(file => file.name);
     setUploadedFiles(prev => {
-      // Ensure the array exists before spreading
-      const currentFiles = prev[documentId as keyof UploadedFiles] || [];
+      const currentFiles = prev[documentId] || [];
       return {
         ...prev,
         [documentId]: allowMultiple 
@@ -131,7 +133,6 @@ export const useDocumentUpload = () => {
     });
 
     setFileObjects(prev => {
-      // Ensure the array exists before spreading
       const currentFiles = prev[documentId] || [];
       return {
         ...prev,
@@ -141,7 +142,6 @@ export const useDocumentUpload = () => {
       };
     });
 
-    // Clear the file input to allow re-upload of same file
     const input = fileInputRefs.current[documentId];
     if (input) {
       input.value = '';
@@ -156,9 +156,8 @@ export const useDocumentUpload = () => {
   const handleFileRemove = (documentId: string, fileIndex: number) => {
     console.log(`🗑️ Removing file at index ${fileIndex} from ${documentId}`);
 
-    // Update uploaded files
     setUploadedFiles(prev => {
-      const currentFiles = prev[documentId as keyof UploadedFiles] || [];
+      const currentFiles = prev[documentId] || [];
       const newFiles = [...currentFiles];
       newFiles.splice(fileIndex, 1);
       return {
@@ -167,7 +166,6 @@ export const useDocumentUpload = () => {
       };
     });
 
-    // Update file objects
     setFileObjects(prev => {
       const currentFiles = prev[documentId] || [];
       const newFiles = [...currentFiles];
@@ -178,10 +176,9 @@ export const useDocumentUpload = () => {
       };
     });
 
-    // Update document status - set to false only if no files left
     setDocumentStatus(prev => {
-      const currentFiles = uploadedFiles[documentId as keyof UploadedFiles] || [];
-      const willHaveFiles = currentFiles.length > 1; // Will have files after removal
+      const currentFiles = uploadedFiles[documentId] || [];
+      const willHaveFiles = currentFiles.length > 1;
       return {
         ...prev,
         [documentId]: willHaveFiles

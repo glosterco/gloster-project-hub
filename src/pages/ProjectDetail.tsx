@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,9 +37,7 @@ const ProjectDetail = () => {
     return new Intl.NumberFormat('es-CL', config).format(amount);
   };
 
-  // Use the exact status from the database without any additional logic
   const getPaymentStatus = (payment: any) => {
-    // Return the exact status from the database, converting to lowercase for consistency
     return payment.Status?.toLowerCase() || 'programado';
   };
 

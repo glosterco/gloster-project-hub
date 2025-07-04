@@ -112,13 +112,13 @@ const SubmissionView = () => {
     project: {
       name: payment.projectData.Name,
       client: payment.projectData.Owner?.CompanyName || '',
-      contractor: payment.projectData.Contratista?.CompanyName || 'No disponible',
+      contractor: payment.projectData.Contratista?.CompanyName || '',
       location: payment.projectData.Location || '',
-      projectManager: payment.projectData.Contratista?.ContactName || 'No disponible',
-      contactEmail: payment.projectData.Contratista?.ContactEmail || 'No disponible',
-      contractorRUT: payment.projectData.Contratista?.RUT || 'No disponible',
-      contractorPhone: payment.projectData.Contratista?.ContactPhone?.toString() || 'No disponible',
-      contractorAddress: payment.projectData.Contratista?.Adress || 'No disponible'
+      projectManager: payment.projectData.Contratista?.ContactName || '',
+      contactEmail: payment.projectData.Contratista?.ContactEmail || '',
+      contractorRUT: payment.projectData.Contratista?.RUT || '',
+      contractorPhone: payment.projectData.Contratista?.ContactPhone?.toString() || '',
+      contractorAddress: payment.projectData.Contratista?.Adress || ''
     },
     documents: documentsFromPayment
   };

@@ -10,6 +10,7 @@ export interface DocumentStatus {
   examenes: boolean;
   finiquito: boolean;
   factura: boolean;
+  [key: string]: boolean;
 }
 
 export interface UploadedFiles {
@@ -21,6 +22,7 @@ export interface UploadedFiles {
   examenes: string[];
   finiquito: string[];
   factura: string[];
+  [key: string]: string[];
 }
 
 export interface FileObjects {
@@ -36,6 +38,7 @@ export interface DragStates {
   examenes: boolean;
   finiquito: boolean;
   factura: boolean;
+  [key: string]: boolean;
 }
 
 export const useDocumentUpload = () => {

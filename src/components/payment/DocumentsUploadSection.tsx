@@ -2,7 +2,7 @@
 import React from 'react';
 import DocumentUploadCard from '@/components/DocumentUploadCard';
 
-interface Document {
+interface PaymentDocument {
   id: string;
   name: string;
   description: string;
@@ -16,7 +16,7 @@ interface Document {
 }
 
 interface DocumentsUploadSectionProps {
-  documents: Document[];
+  documents: PaymentDocument[];
   documentStatus: Record<string, boolean>;
   uploadedFiles: Record<string, any>;
   dragStates: Record<string, boolean>;

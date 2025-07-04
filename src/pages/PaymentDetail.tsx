@@ -17,6 +17,19 @@ import DriveDocumentsSection from '@/components/payment/DriveDocumentsSection';
 import DocumentsUploadSection from '@/components/payment/DocumentsUploadSection';
 import SendDocumentsBanner from '@/components/payment/SendDocumentsBanner';
 
+interface PaymentDocument {
+  id: string;
+  name: string;
+  description: string;
+  downloadUrl?: string | null;
+  uploaded: boolean;
+  required: boolean;
+  isUploadOnly?: boolean;
+  helpText?: string;
+  hasDropdown?: boolean;
+  allowMultiple?: boolean;
+}
+
 const PaymentDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -431,7 +444,7 @@ const PaymentDetail = () => {
   };
 
   // Document definitions
-  const documents = [
+  const documents: PaymentDocument[] = [
     {
       id: 'eepp',
       name: 'Carátula EEPP',

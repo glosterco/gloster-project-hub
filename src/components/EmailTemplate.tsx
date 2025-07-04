@@ -146,7 +146,7 @@ const EmailTemplate: React.FC<EmailTemplateProps> = ({
         <div className="flex items-center mb-3">
           <Building className="w-4 h-4 mr-2 text-gloster-gray" />
           <h2 className="text-base font-semibold text-slate-800">
-            Estado de pago - {paymentState.month} {new Date().getFullYear()} - {project.contractor}
+            Estado de pago {paymentState.month} - {project.contractor}
           </h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

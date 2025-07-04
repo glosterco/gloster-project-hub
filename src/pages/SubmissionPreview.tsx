@@ -1,323 +1,443 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Download, FileText, Calendar, MapPin, User, Mail, Phone, Building } from 'lucide-react';
-import { useEmailNotifications } from '@/hooks/useEmailNotifications';
+import { ArrowLeft, Download, Send } from 'lucide-react';
+import EmailTemplate from '@/components/EmailTemplate';
 import { useToast } from '@/hooks/use-toast';
+import { usePaymentDetail } from '@/hooks/usePaymentDetail';
+import { useMandanteNotification } from '@/hooks/useMandanteNotification';
+import { useGoogleDriveIntegration } from '@/hooks/useGoogleDriveIntegration';
+import { supabase } from '@/integrations/supabase/client';
 
-interface PaymentState {
-  month: string;
-  amount: number;
-  formattedAmount?: string;
-  dueDate: string;
-  projectName: string;
-  recipient: string;
-  currency?: string;
-}
-
-interface Project {
-  name: string;
-  client: string;
-  contractor: string;
-  location: string;
-  projectManager: string;
-  contactEmail: string;
-  contractorRUT?: string;
-  contractorPhone?: string;
-  contractorAddress?: string;
-}
-
-interface Document {
-  id: string;
-  name: string;
-  description: string;
-  uploaded: boolean;
-}
-
-interface EmailTemplateProps {
-  paymentId?: string;
-  paymentState: PaymentState;
-  project: Project;
-  documents: Document[];
-  hideActionButtons?: boolean;
-  driveUrl?: string;
-}
-
-const EmailTemplate: React.FC<EmailTemplateProps> = ({
-  paymentId,
-  paymentState,
-  project,
-  documents,
-  hideActionButtons = false,
-  driveUrl
-}) => {
-  const { getDriveFiles } = useEmailNotifications();
+const SubmissionPreview = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const paymentId = searchParams.get('paymentId') || '11';
+  const { payment, loading, error } = usePaymentDetail(paymentId, true);
+  const { sendNotificationToMandante, loading: notificationLoading } = useMandanteNotification();
+  const { uploadDocumentsToDrive, loading: driveLoading } = useGoogleDriveIntegration();
   const { toast } = useToast();
+  const [isProjectUser, setIsProjectUser] = useState(false);
+  const [userChecked, setUserChecked] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [documentsUploaded, setDocumentsUploaded] = useState(false);
 
-  const formatAmount = () => {
-    if (paymentState.formattedAmount) {
-      return paymentState.formattedAmount;
+  const formatCurrency = (amount: number) => {
+    if (!payment?.projectData?.Currency) {
+      return new Intl.NumberFormat('es-CL', {
+        style: 'currency',
+        currency: 'CLP',
+        minimumFractionDigits: 0,
+      }).format(amount);
     }
-    
-    if (paymentState.currency === 'UF') {
-      return `${paymentState.amount.toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} UF`;
-    } else if (paymentState.currency === 'USD') {
+
+    if (payment.projectData.Currency === 'UF') {
+      return `${amount.toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} UF`;
+    } else if (payment.projectData.Currency === 'USD') {
       return new Intl.NumberFormat('es-CL', {
         style: 'currency',
         currency: 'USD',
         minimumFractionDigits: 0,
-      }).format(paymentState.amount);
+      }).format(amount);
     } else {
       return new Intl.NumberFormat('es-CL', {
         style: 'currency',
         currency: 'CLP',
         minimumFractionDigits: 0,
-      }).format(paymentState.amount);
+      }).format(amount);
     }
   };
 
-  const handleDownloadDocument = async (documentName: string) => {
-    if (!paymentId) {
+  useEffect(() => {
+    const checkUser = async () => {
+      if (userChecked) return;
+      
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        setIsProjectUser(!!user);
+        setUserChecked(true);
+      } catch (error) {
+        console.error('Error checking user:', error);
+        setIsProjectUser(false);
+        setUserChecked(true);
+      }
+    };
+    
+    checkUser();
+  }, [userChecked]);
+
+  // Auto-upload documents when preview loads
+  useEffect(() => {
+    const autoUploadDocuments = async () => {
+      if (!payment || !isProjectUser || documentsUploaded || !payment?.URL) return;
+      
+      console.log('🔄 Auto-uploading documents for preview...');
+      setDocumentsUploaded(true);
+    };
+
+    if (payment && isProjectUser && !documentsUploaded) {
+      autoUploadDocuments();
+    }
+  }, [payment, isProjectUser, documentsUploaded]);
+
+  const documentsFromPayment = [
+    {
+      id: 'eepp',
+      name: 'Carátula EEPP',
+      description: 'Presentación y resumen del estado de pago',
+      uploaded: true
+    },
+    {
+      id: 'planilla',
+      name: 'Avance Periódico',
+      description: 'Planilla detallada del avance de obras del período',
+      uploaded: true
+    },
+    {
+      id: 'cotizaciones',
+      name: 'Certificado de Pago de Cotizaciones Previsionales',
+      description: 'Certificado de cumplimiento de obligaciones previsionales',
+      uploaded: true
+    },
+    {
+      id: 'f30',
+      name: 'Certificado F30',
+      description: 'Certificado de antecedentes laborales y previsionales',
+      uploaded: true
+    },
+    {
+      id: 'f30_1',
+      name: 'Certificado F30-1',
+      description: 'Certificado de cumplimiento de obligaciones laborales y previsionales',
+      uploaded: true
+    },
+    {
+      id: 'factura',
+      name: 'Factura',
+      description: 'Factura del período correspondiente',
+      uploaded: true
+    }
+  ];
+
+  const handlePrint = () => {
+    const printStyles = `
+      <style>
+        @media print {
+          body * { visibility: hidden; }
+          .email-template-container, .email-template-container * { visibility: visible; }
+          .email-template-container { 
+            position: absolute; 
+            left: 0; 
+            top: 0; 
+            width: 100%; 
+            transform: scale(0.65);
+            transform-origin: top left;
+          }
+          .print\\:hidden { display: none !important; }
+          @page { margin: 0.3in; size: A4; }
+        }
+      </style>
+    `;
+    
+    const originalHead = document.head.innerHTML;
+    document.head.innerHTML += printStyles;
+    
+    setTimeout(() => {
+      window.print();
+      document.head.innerHTML = originalHead;
+    }, 100);
+  };
+
+  const handleDownloadFile = async (fileName: string) => {
+    if (!payment?.URL) {
       toast({
         title: "Error",
-        description: "ID de pago no disponible",
+        description: "No se encontró la URL del archivo",
         variant: "destructive"
       });
       return;
     }
 
     try {
-      const result = await getDriveFiles(paymentId, documentName);
-      
-      if (result.success && result.files.length > 0) {
-        // If multiple files found, download the first one or open drive folder
-        const file = result.files[0];
-        if (file.downloadUrl) {
-          window.open(file.downloadUrl, '_blank');
-        } else if (driveUrl) {
-          window.open(driveUrl, '_blank');
-        }
-        
-        toast({
-          title: "Descarga iniciada",
-          description: `Descargando ${documentName}`,
-        });
-      } else {
-        // Fallback to drive folder if specific file not found
-        if (driveUrl) {
-          window.open(driveUrl, '_blank');
-          toast({
-            title: "Abriendo carpeta",
-            description: "Se ha abierto la carpeta del Drive",
-          });
-        } else {
-          toast({
-            title: "Archivo no encontrado",
-            description: `No se encontró el archivo ${documentName}`,
-            variant: "destructive"
-          });
-        }
+      const fileId = payment.URL.split("/d/")[1]?.split("/")[0];  // Extracting the file ID from the URL
+      if (!fileId) {
+        throw new Error("Archivo no encontrado en la URL");
       }
+
+      // Direct download link
+      const downloadLink = `https://drive.google.com/uc?export=download&id=${fileId}`;
+
+      // Trigger download
+      const link = document.createElement("a");
+      link.href = downloadLink;
+      link.target = "_blank";  // Open in a new tab (optional)
+      link.download = fileName;  // Suggested download file name
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast({
+        title: "Descarga iniciada",
+        description: `Se está descargando el archivo: ${fileName}`,
+      });
     } catch (error) {
-      console.error('Error downloading document:', error);
+      console.error('Error downloading file:', error);
       toast({
         title: "Error al descargar",
-        description: "No se pudo descargar el documento",
+        description: "No se pudo acceder al archivo",
         variant: "destructive"
       });
     }
   };
 
+  const handleSendEmail = async () => {
+    if (!payment || !payment.projectData) {
+      toast({
+        title: "Error",
+        description: "No se pueden cargar los datos del estado de pago",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    console.log('🚀 Starting notification process...');
+
+    try {
+      const mandanteUrl = await generateUniqueURLAndUpdate();
+      if (!mandanteUrl) return;
+
+      const { error: statusError } = await supabase
+        .from('Estados de pago')
+        .update({ Status: 'Enviado' })
+        .eq('id', payment.id);
+
+      if (statusError) {
+        console.error('Error updating status:', statusError);
+        throw new Error('Error al actualizar el estado');
+      }
+
+      const { data: paymentStateData, error: paymentStateError } = await supabase
+        .from('Estados de pago')
+        .select('URL')
+        .eq('id', payment.id)
+        .single();
+
+      if (paymentStateError) {
+        console.error('Error fetching payment state URL:', paymentStateError);
+        toast({
+          title: "Error",
+          description: "No se pudo obtener la URL del estado de pago",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const notificationData = {
+        paymentId: payment.id.toString(),
+        contratista: payment.projectData.Contratista?.ContactName || '',
+        mes: payment.Mes || '',
+        año: payment.Año || 0,
+        proyecto: payment.projectData.Name || '',
+        mandanteEmail: payment.projectData.Owner?.ContactEmail || '',
+        mandanteCompany: payment.projectData.Owner?.CompanyName || '',
+        contractorCompany: payment.projectData.Contratista?.CompanyName || '',
+        amount: payment.Total || 0,
+        dueDate: payment.ExpiryDate || '',
+        driveUrl: paymentStateData.URL || '',
+        uploadedDocuments: []
+      };
+
+      const result = await sendNotificationToMandante(notificationData);
+      
+      if (result.success) {
+        toast({
+          title: "Notificación enviada exitosamente",
+          description: "Se ha enviado la notificación al mandante y actualizado el estado",
+        });
+        
+        setTimeout(() => {
+          navigate(`/project/${payment?.Project || 2}`);
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('Error sending notification:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Error al procesar la solicitud",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const generateUniqueURLAndUpdate = async () => {
+    if (!payment || !payment.projectData) {
+      toast({
+        title: "Error",
+        description: "No se pueden cargar los datos del estado de pago",
+        variant: "destructive"
+      });
+      return null;
+    }
+
+    try {
+      const uniqueId = crypto.randomUUID();
+      const mandanteUrl = `${window.location.origin}/email-access?paymentId=${payment.id}&token=${uniqueId}`;
+
+      const { error: updateError } = await supabase
+        .from('Estados de pago')
+        .update({ URLMandante: mandanteUrl })
+        .eq('id', payment.id);
+
+      if (updateError) {
+        console.error('Error updating URLMandante:', updateError);
+        throw new Error('Error al actualizar la URL del mandante');
+      }
+
+      return mandanteUrl;
+    } catch (error) {
+      console.error('Error generating unique URL:', error);
+      toast({
+        title: "Error",
+        description: "Error al generar URL única",
+        variant: "destructive"
+      });
+      return null;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 font-rubik">
+        <div className="container mx-auto px-6 py-8">
+          <div className="text-center">Cargando vista previa...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!payment || !payment.projectData) {
+    return (
+      <div className="min-h-screen bg-slate-50 font-rubik">
+        <div className="container mx-auto px-6 py-8">
+          <div className="text-center">
+            <p className="text-gloster-gray mb-4">
+              {error || "Estado de pago no encontrado."}
+            </p>
+            <p className="text-sm text-gloster-gray mb-4">
+              ID solicitado: {paymentId}
+            </p>
+            <Button onClick={() => navigate('/')} className="mt-4">
+              Volver al Inicio
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const emailTemplateData = {
+    paymentState: {
+      month: `${payment.Mes} ${payment.Año}`,
+      amount: payment.Total || 0,
+      formattedAmount: formatCurrency(payment.Total || 0),
+      dueDate: payment.ExpiryDate,
+      projectName: payment.projectData.Name,
+      recipient: payment.projectData.Owner?.ContactEmail || '',
+      currency: payment.projectData.Currency || 'CLP'
+    },
+    project: {
+      name: payment.projectData.Name,
+      client: payment.projectData.Owner?.CompanyName || '',
+      contractor: payment.projectData.Contratista?.CompanyName || '',
+      location: payment.projectData.Location || '',
+      projectManager: payment.projectData.Contratista?.ContactName || '',
+      contactEmail: payment.projectData.Contratista?.ContactEmail || '',
+      contractorRUT: payment.projectData.Contratista?.RUT || '',
+      contractorPhone: payment.projectData.Contratista?.ContactPhone?.toString() || '',
+      contractorAddress: payment.projectData.Contratista?.Adress || ''
+    },
+    documents: documentsFromPayment
+  };
+
   return (
-    <div className="bg-white font-rubik max-w-4xl mx-auto">
-      {/* Header - Gloster logo and name */}
-      <div className="bg-gloster-yellow px-4 py-3 text-center">
-        <div className="flex items-center justify-center mb-1">
-          <img 
-            src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
-            alt="Gloster Logo" 
-            className="w-6 h-6 mr-2"
+    <div className="min-h-screen bg-slate-50 font-rubik">
+      <div className="bg-white border-b border-gloster-gray/20 shadow-sm">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <img 
+                src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
+                alt="Gloster Logo" 
+                className="w-8 h-8"
+              />
+              <h1 className="text-xl font-bold text-slate-800 font-rubik">Vista previa del Email</h1>
+            </div>
+            
+            <div className="flex items-center space-x-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePrint}
+                className="font-rubik"
+              >
+                Imprimir
+              </Button>
+              {payment?.URL && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDownloadFile('Documentos')}
+                  className="font-rubik"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Descargar Archivos
+                </Button>
+              )}
+              {isProjectUser && (
+                <Button
+                  size="sm"
+                  onClick={handleSendEmail}
+                  disabled={isUploading || notificationLoading}
+                  className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
+                >
+                  <Send className="h-4 w-4 mr-2" />
+                  {isUploading || notificationLoading ? 'Enviando...' : 'Enviar Notificación'}
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-slate-50 py-2">
+        <div className="container mx-auto px-6">
+          <button 
+            onClick={() => isProjectUser ? navigate(`/payment/${payment.id}`) : navigate('/')}
+            className="text-gloster-gray hover:text-slate-800 text-sm font-rubik flex items-center"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            {isProjectUser ? 'Volver' : 'Volver al Inicio'}
+          </button>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-6 py-8">
+        <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden email-template-container">
+          <EmailTemplate 
+            paymentId={paymentId}
+            paymentState={emailTemplateData.paymentState}
+            project={emailTemplateData.project}
+            documents={emailTemplateData.documents}
+            hideActionButtons={true}
+            driveUrl={payment?.URL}
           />
-          <h1 className="text-lg font-bold text-slate-800">Gloster</h1>
-        </div>
-      </div>
-
-      {/* Payment State: "Estado de pago" with month, year, and contractor */}
-      <div className="p-4 border-b border-gray-100">
-        <div className="flex items-center mb-3">
-          <Building className="w-4 h-4 mr-2 text-gloster-gray" />
-          <h2 className="text-base font-semibold text-slate-800">
-            Estado de pago - {paymentState.month} {new Date().getFullYear()} - {project.contractor}
-          </h2>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <div className="flex items-start">
-              <FileText className="w-3 h-3 mr-2 mt-1 text-gray-500" />
-              <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wide">Proyecto</p>
-                <p className="text-sm font-medium text-slate-800">{project.name}</p>
-              </div>
-            </div>
-            <div className="flex items-start">
-              <Building className="w-3 h-3 mr-2 mt-1 text-gray-500" />
-              <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wide">Cliente</p>
-                <p className="text-sm font-medium text-slate-800">{project.client}</p>
-              </div>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-start">
-              <User className="w-3 h-3 mr-2 mt-1 text-gray-500" />
-              <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wide">Contratista</p>
-                <p className="text-sm font-medium text-slate-800">{project.contractor}</p>
-              </div>
-            </div>
-            <div className="flex items-start">
-              <MapPin className="w-3 h-3 mr-2 mt-1 text-gray-500" />
-              <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wide">Ubicación</p>
-                <p className="text-sm font-medium text-slate-800">{project.location}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Payment Details */}
-      <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
-        <div className="flex items-center mb-3">
-          <Calendar className="w-4 h-4 mr-2 text-blue-600" />
-          <h2 className="text-base font-semibold text-slate-800">Detalle del Estado de Pago</h2>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="text-center p-3 bg-white rounded-lg shadow-sm">
-            <Calendar className="w-5 h-5 mx-auto mb-1 text-blue-500" />
-            <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Período</p>
-            <p className="text-sm font-semibold text-slate-800">{paymentState.month}</p>
-          </div>
-          <div className="text-center p-3 bg-white rounded-lg shadow-sm">
-            <div className="w-5 h-5 mx-auto mb-1 text-green-500 text-base">💰</div>
-            <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Monto</p>
-            <p className="text-sm font-bold text-green-600">{formatAmount()}</p>
-          </div>
-          <div className="text-center p-3 bg-white rounded-lg shadow-sm">
-            <Calendar className="w-5 h-5 mx-auto mb-1 text-red-500" />
-            <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Vencimiento</p>
-            <p className="text-sm font-semibold text-slate-800">{paymentState.dueDate}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Documents Section */}
-      <div className="p-4 border-b border-gray-100">
-        <div className="flex items-center mb-3">
-          <FileText className="w-4 h-4 mr-2 text-purple-600" />
-          <h2 className="text-base font-semibold text-slate-800">Documentación Adjunta</h2>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {documents.filter(doc => doc.uploaded).map((doc) => (
-            <div key={doc.id} className="border border-gray-200 rounded-lg p-3">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center mb-1">
-                    <FileText className="w-3 h-3 mr-2 text-blue-500" />
-                    <p className="text-sm font-medium text-slate-800">{doc.name}</p>
-                  </div>
-                  <p className="text-xs text-gray-600 mb-2">{doc.description}</p>
-                  <div className="flex items-center justify-between">
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                      ✓ Incluido
-                    </span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleDownloadDocument(doc.name)}
-                      className="text-xs px-2 py-1 h-auto"
-                    >
-                      <Download className="w-3 h-3 mr-1" />
-                      Descargar
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Contact Information */}
-      <div className="p-4 border-b border-gray-100 bg-gray-50">
-        <div className="flex items-center mb-3">
-          <Mail className="w-4 h-4 mr-2 text-indigo-600" />
-          <h2 className="text-base font-semibold text-slate-800">Información de Contacto</h2>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-3">
-            <div className="flex items-start">
-              <User className="w-3 h-3 mr-2 mt-1 text-gray-500" />
-              <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wide">Responsable del Proyecto</p>
-                <p className="text-sm font-medium text-slate-800">{project.projectManager}</p>
-              </div>
-            </div>
-            <div className="flex items-start">
-              <Mail className="w-3 h-3 mr-2 mt-1 text-gray-500" />
-              <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wide">Email de Contacto</p>
-                <p className="text-sm font-medium text-slate-800">{project.contactEmail}</p>
-              </div>
-            </div>
-          </div>
-          <div className="space-y-3">
-            {project.contractorRUT && (
-              <div className="flex items-start">
-                <FileText className="w-3 h-3 mr-2 mt-1 text-gray-500" />
-                <div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide">RUT</p>
-                  <p className="text-sm font-medium text-slate-800">{project.contractorRUT}</p>
-                </div>
-              </div>
-            )}
-            {project.contractorPhone && (
-              <div className="flex items-start">
-                <Phone className="w-3 h-3 mr-2 mt-1 text-gray-500" />
-                <div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide">Teléfono</p>
-                  <p className="text-sm font-medium text-slate-800">{project.contractorPhone}</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-        {project.contractorAddress && (
-          <div className="mt-3 pt-3 border-t border-gray-200">
-            <div className="flex items-start">
-              <MapPin className="w-3 h-3 mr-2 mt-1 text-gray-500" />
-              <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wide">Dirección</p>
-                <p className="text-sm font-medium text-slate-800">{project.contractorAddress}</p>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Footer Message */}
-      <div className="p-4 text-center bg-slate-50">
-        <div className="max-w-md mx-auto">
-          <p className="text-gray-600 text-sm mb-2">
-            Este estado de pago ha sido enviado para su revisión y aprobación.
-          </p>
-          <div className="flex items-center justify-center text-xs text-gray-500">
-            <Mail className="w-3 h-3 mr-1" />
-            <span>Para consultas, contactar a {project.contactEmail}</span>
-          </div>
         </div>
       </div>
     </div>
   );
 };
 
-export default EmailTemplate;
+export default SubmissionPreview;

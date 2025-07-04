@@ -261,9 +261,9 @@ const SubmissionPreview = () => {
         }, 2000);
       }
     } catch (error) {
-      console.error('❌ Error in notification process:', error);
+      console.error('Error sending notification:', error);
       toast({
-        title: "Error al enviar notificación",
+        title: "Error",
         description: error.message || "Error al procesar la solicitud",
         variant: "destructive"
       });
@@ -364,7 +364,7 @@ const SubmissionPreview = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 font-rubik">
-      <div className="bg-white border-b border-gloster-gray/20 shadow-sm print:hidden">
+      <div className="bg-white border-b border-gloster-gray/20 shadow-sm">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -412,7 +412,7 @@ const SubmissionPreview = () => {
         </div>
       </div>
 
-      <div className="bg-slate-50 py-2 print:hidden">
+      <div className="bg-slate-50 py-2">
         <div className="container mx-auto px-6">
           <button 
             onClick={() => isProjectUser ? navigate(`/payment/${payment.id}`) : navigate('/')}

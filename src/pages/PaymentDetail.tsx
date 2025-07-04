@@ -1,8 +1,11 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
-import { Tooltip, TooltipProvider } from '@/components/ui/tooltip';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { ArrowLeft, Calendar, Send, CheckCircle, Clock, Eye, Save, Download, FileText, Upload, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { usePaymentDetail } from '@/hooks/usePaymentDetail';
 import { useMandanteNotification } from '@/hooks/useMandanteNotification';
@@ -10,22 +13,20 @@ import { useGoogleDriveIntegration } from '@/hooks/useGoogleDriveIntegration';
 import { useDocumentUpload } from '@/hooks/useDocumentUpload';
 import { supabase } from '@/integrations/supabase/client';
 import PageHeader from '@/components/PageHeader';
+import DocumentUploadCard from '@/components/DocumentUploadCard';
 import LoadingModal from '@/components/LoadingModal';
-import PaymentInfoSection from '@/components/payment/PaymentInfoSection';
-import PaymentSummaryCard from '@/components/payment/PaymentSummaryCard';
-import DriveDocumentsSection from '@/components/payment/DriveDocumentsSection';
-import DocumentsUploadSection from '@/components/payment/DocumentsUploadSection';
-import SendDocumentsBanner from '@/components/payment/SendDocumentsBanner';
 
 const PaymentDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Use real data from database
   const { payment, loading, refetch } = usePaymentDetail(id || '');
-  const { sendNotificationToMandante } = useMandanteNotification();
-  const { uploadDocumentsToDrive } = useGoogleDriveIntegration();
+  const { sendNotificationToMandante, loading: notificationLoading } = useMandanteNotification();
+  const { uploadDocumentsToDrive, loading: driveLoading } = useGoogleDriveIntegration();
 
+  // Use the document upload hook
   const {
     documentStatus,
     uploadedFiles,
@@ -42,25 +43,32 @@ const PaymentDetail = () => {
 
   const [achsSelection, setAchsSelection] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  
+  // CORRIGIENDO: Estados para los campos editables - Initialize with database values
   const [editableAmount, setEditableAmount] = useState('');
   const [editablePercentage, setEditablePercentage] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
+  // CORRIGIENDO: Initialize editable values when payment data loads
   useEffect(() => {
     if (payment) {
+      // Set amount if it exists in database and is not null
       if (payment.Total !== null && payment.Total !== undefined) {
         setEditableAmount(payment.Total.toString());
       }
       
+      // Set percentage if it exists in database and is not null
       if (payment.Progress !== null && payment.Progress !== undefined) {
         setEditablePercentage(payment.Progress.toString());
       } else if (payment.Total && payment.projectData?.Budget) {
+        // Calculate percentage from amount and budget if Progress is null
         const percentage = (payment.Total / payment.projectData.Budget) * 100;
         setEditablePercentage(percentage.toFixed(2));
       }
     }
   }, [payment]);
 
+  // Format currency based on project currency
   const formatCurrency = (amount: number) => {
     if (!payment?.projectData?.Currency) {
       return new Intl.NumberFormat('es-CL', {
@@ -87,6 +95,7 @@ const PaymentDetail = () => {
     }
   };
 
+  // Calcular valores automáticamente
   const handleAmountChange = (value: string) => {
     setEditableAmount(value);
     if (value && payment?.projectData?.Budget) {
@@ -103,6 +112,7 @@ const PaymentDetail = () => {
     }
   };
 
+  // Guardar cambios en la base de datos
   const handleSaveAmount = async () => {
     if (!payment?.id || !editableAmount) return;
     
@@ -140,274 +150,14 @@ const PaymentDetail = () => {
     }
   };
 
+  // CORRIGIENDO: Auto-guardar antes de vista previa si hay cambios sin guardar
   const handleAutoSaveBeforePreview = async () => {
     if (editableAmount && payment?.Total?.toString() !== editableAmount) {
       await handleSaveAmount();
     }
   };
 
-  const handleUploadDocumentsBeforePreview = async () => {
-    if (!payment || !payment.projectData) {
-      toast({
-        title: "Error",
-        description: "No se pueden cargar los datos del estado de pago",
-        variant: "destructive"
-      });
-      return false;
-    }
-
-    const hasDocumentsToUpload = Object.keys(documentStatus).some(docId => documentStatus[docId]);
-    
-    if (!hasDocumentsToUpload) {
-      console.log('No documents to upload for preview');
-      return true;
-    }
-
-    try {
-      console.log('🚀 Uploading documents before preview...');
-      
-      const uploadResult = await uploadDocumentsToDrive(
-        payment.id, 
-        uploadedFiles, 
-        documentStatus, 
-        fileObjects
-      );
-
-      if (!uploadResult.success) {
-        throw new Error("Error al subir documentos a Google Drive");
-      }
-
-      console.log('✅ Documents uploaded successfully before preview');
-      return true;
-    } catch (error) {
-      console.error('❌ Error uploading documents before preview:', error);
-      toast({
-        title: "Error al subir documentos",
-        description: "No se pudieron subir los documentos al Drive",
-        variant: "destructive"
-      });
-      return false;
-    }
-  };
-
-  const generateUniqueURLAndUpdate = async () => {
-    if (!payment || !payment.projectData) {
-      toast({
-        title: "Error",
-        description: "No se pueden cargar los datos del estado de pago",
-        variant: "destructive"
-      });
-      return null;
-    }
-
-    try {
-      const uniqueId = crypto.randomUUID();
-      const mandanteUrl = `${window.location.origin}/email-access?paymentId=${payment.id}&token=${uniqueId}`;
-
-      const { error: updateError } = await supabase
-        .from('Estados de pago')
-        .update({ URLMandante: mandanteUrl })
-        .eq('id', payment.id);
-
-      if (updateError) {
-        console.error('Error updating URLMandante:', updateError);
-        throw new Error('Error al actualizar la URL del mandante');
-      }
-
-      return mandanteUrl;
-    } catch (error) {
-      console.error('Error generating unique URL:', error);
-      toast({
-        title: "Error",
-        description: "Error al generar URL única",
-        variant: "destructive"
-      });
-      return null;
-    }
-  };
-
-  const handlePreviewEmail = async () => {
-    if (!payment) {
-      toast({
-        title: "Error",
-        description: "No se pueden cargar los datos del estado de pago",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsUploading(true);
-    
-    try {
-      await handleAutoSaveBeforePreview();
-      
-      const uploadSuccess = await handleUploadDocumentsBeforePreview();
-      if (!uploadSuccess) {
-        return;
-      }
-      
-      await generateUniqueURLAndUpdate();
-      navigate(`/submission-preview?paymentId=${payment.id}`);
-      
-    } catch (error) {
-      console.error('❌ Error in preview process:', error);
-      toast({
-        title: "Error",
-        description: "Error al preparar la vista previa",
-        variant: "destructive"
-      });
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  const handleSendDocuments = async () => {
-    const requiredDocuments = documents.filter(doc => doc.required);
-    const allRequiredUploaded = requiredDocuments.every(doc => documentStatus[doc.id]);
-    
-    if (!allRequiredUploaded) {
-      toast({
-        title: "Documentos incompletos",
-        description: "Por favor, carga todos los documentos requeridos antes de enviar",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!payment || !payment.projectData) {
-      toast({
-        title: "Error",
-        description: "No se pueden cargar los datos del estado de pago",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsUploading(true);
-    console.log('🚀 Starting document upload process...');
-
-    try {
-      const uploadResult = await uploadDocumentsToDrive(
-        payment.id, 
-        uploadedFiles, 
-        documentStatus, 
-        fileObjects
-      );
-
-      if (!uploadResult.success) {
-        throw new Error("Error al subir documentos a Google Drive");
-      }
-
-      console.log('✅ Documents uploaded successfully to Google Drive');
-
-      const mandanteUrl = await generateUniqueURLAndUpdate();
-      if (!mandanteUrl) return;
-
-      const { error: statusError } = await supabase
-        .from('Estados de pago')
-        .update({ Status: 'Enviado' })
-        .eq('id', payment.id);
-
-      if (statusError) {
-        console.error('Error updating status:', statusError);
-        throw new Error('Error al actualizar el estado');
-      }
-
-      const { data: paymentStateData, error: paymentStateError } = await supabase
-        .from('Estados de pago')
-        .select('URL')
-        .eq('id', payment.id)
-        .single();
-
-      if (paymentStateError) {
-        console.error('Error fetching payment state URL:', paymentStateError);
-        toast({
-          title: "Error",
-          description: "No se pudo obtener la URL del estado de pago",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      const uploadedDocuments: string[] = [];
-      Object.entries(uploadedFiles).forEach(([docId, files]) => {
-        if (files && files.length > 0) {
-          files.forEach(file => {
-            if (typeof file === 'string') {
-              uploadedDocuments.push(file);
-            } else if (file && typeof file === 'object' && 'name' in file) {
-              uploadedDocuments.push(file.name);
-            }
-          });
-        }
-      });
-
-      const notificationData = {
-        paymentId: payment.id.toString(),
-        contratista: payment.projectData.Contratista?.ContactName || '',
-        mes: payment.Mes || '',
-        año: payment.Año || 0,
-        proyecto: payment.projectData.Name || '',
-        mandanteEmail: payment.projectData.Owner?.ContactEmail || '',
-        mandanteCompany: payment.projectData.Owner?.CompanyName || '',
-        contractorCompany: payment.projectData.Contratista?.CompanyName || '',
-        amount: payment.Total || 0,
-        dueDate: payment.ExpiryDate || '',
-        driveUrl: paymentStateData.URL || '',
-        uploadedDocuments: uploadedDocuments
-      };
-
-      const result = await sendNotificationToMandante(notificationData);
-      
-      if (result.success) {
-        toast({
-          title: "Documentos enviados exitosamente",
-          description: "Los documentos se han subido a Google Drive y se ha enviado la notificación al mandante",
-        });
-        
-        setTimeout(() => {
-          navigate(`/project/${payment?.Project || 2}`);
-        }, 2000);
-      }
-    } catch (error) {
-      console.error('❌ Error in upload process:', error);
-      toast({
-        title: "Error al enviar documentos",
-        description: error.message || "Error al subir documentos a Google Drive",
-        variant: "destructive"
-      });
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  const handleDownloadFile = async (fileName: string) => {
-    if (!payment?.URL) {
-      toast({
-        title: "Error",
-        description: "No se encontró la URL del archivo",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    try {
-      window.open(payment.URL, '_blank');
-      toast({
-        title: "Descarga iniciada",
-        description: `Se ha abierto la carpeta del Drive para descargar ${fileName}`,
-      });
-    } catch (error) {
-      console.error('Error downloading file:', error);
-      toast({
-        title: "Error al descargar",
-        description: "No se pudo acceder al archivo",
-        variant: "destructive"
-      });
-    }
-  };
-
-  // Map database data
+  // Map database data to match the UI structure
   const paymentState = payment ? {
     id: payment.id,
     month: `${payment.Mes} ${payment.Año}`,
@@ -524,21 +274,227 @@ const PaymentDetail = () => {
     }
   };
 
+  // Función para verificar si todos los documentos requeridos están cargados
   const areAllRequiredDocumentsUploaded = () => {
     const requiredDocuments = documents.filter(doc => doc.required);
-    return requiredDocuments.every(doc => documentStatus[doc.id]);
+    return requiredDocuments.every(doc => documentStatus[doc.id as keyof typeof documentStatus]);
+  };
+
+  const generateUniqueURLAndUpdate = async () => {
+    if (!payment || !payment.projectData) {
+      toast({
+        title: "Error",
+        description: "No se pueden cargar los datos del estado de pago",
+        variant: "destructive"
+      });
+      return null;
+    }
+
+    try {
+      const uniqueId = crypto.randomUUID();
+      const mandanteUrl = `${window.location.origin}/email-access?paymentId=${payment.id}&token=${uniqueId}`;
+
+      const { error: updateError } = await supabase
+        .from('Estados de pago')
+        .update({ URLMandante: mandanteUrl })
+        .eq('id', payment.id);
+
+      if (updateError) {
+        console.error('Error updating URLMandante:', updateError);
+        throw new Error('Error al actualizar la URL del mandante');
+      }
+
+      return mandanteUrl;
+    } catch (error) {
+      console.error('Error generating unique URL:', error);
+      toast({
+        title: "Error",
+        description: "Error al generar URL única",
+        variant: "destructive"
+      });
+      return null;
+    }
+  };
+
+  const handleSendDocuments = async () => {
+    const requiredDocuments = documents.filter(doc => doc.required);
+    const allRequiredUploaded = requiredDocuments.every(doc => documentStatus[doc.id as keyof typeof documentStatus]);
+    
+    if (!allRequiredUploaded) {
+      toast({
+        title: "Documentos incompletos",
+        description: "Por favor, carga todos los documentos requeridos antes de enviar",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!payment || !payment.projectData) {
+      toast({
+        title: "Error",
+        description: "No se pueden cargar los datos del estado de pago",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    console.log('🚀 Starting document upload process...');
+
+    try {
+      const uploadResult = await uploadDocumentsToDrive(
+        payment.id, 
+        uploadedFiles, 
+        documentStatus, 
+        fileObjects
+      );
+
+      if (!uploadResult.success) {
+        throw new Error("Error al subir documentos a Google Drive");
+      }
+
+      console.log('✅ Documents uploaded successfully to Google Drive');
+
+      const mandanteUrl = await generateUniqueURLAndUpdate();
+      if (!mandanteUrl) return;
+
+      // Cambiar status a "Enviado"
+      const { error: statusError } = await supabase
+        .from('Estados de pago')
+        .update({ Status: 'Enviado' })
+        .eq('id', payment.id);
+
+      if (statusError) {
+        console.error('Error updating status:', statusError);
+        throw new Error('Error al actualizar el estado');
+      }
+
+      // Get the payment state data to fetch the URL
+      const { data: paymentStateData, error: paymentStateError } = await supabase
+        .from('Estados de pago')
+        .select('URL')
+        .eq('id', payment.id)
+        .single();
+
+      if (paymentStateError) {
+        console.error('Error fetching payment state URL:', paymentStateError);
+        toast({
+          title: "Error",
+          description: "No se pudo obtener la URL del estado de pago",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Convert uploadedFiles to string array for the notification
+      const uploadedDocuments: string[] = [];
+      Object.entries(uploadedFiles).forEach(([docId, files]) => {
+        if (files && files.length > 0) {
+          files.forEach(file => {
+            if (typeof file === 'string') {
+              uploadedDocuments.push(file);
+            } else if (file && typeof file === 'object' && 'name' in file) {
+              uploadedDocuments.push(file.name);
+            }
+          });
+        }
+      });
+
+      const notificationData = {
+        paymentId: payment.id.toString(),
+        contratista: payment.projectData.Contratista?.ContactName || '',
+        mes: payment.Mes || '',
+        año: payment.Año || 0,
+        proyecto: payment.projectData.Name || '',
+        mandanteEmail: payment.projectData.Owner?.ContactEmail || '',
+        mandanteCompany: payment.projectData.Owner?.CompanyName || '',
+        contractorCompany: payment.projectData.Contratista?.CompanyName || '',
+        amount: payment.Total || 0,
+        dueDate: payment.ExpiryDate || '',
+        driveUrl: paymentStateData.URL || '',
+        uploadedDocuments: uploadedDocuments
+      };
+
+      const result = await sendNotificationToMandante(notificationData);
+      
+      if (result.success) {
+        toast({
+          title: "Documentos enviados exitosamente",
+          description: "Los documentos se han subido a Google Drive y se ha enviado la notificación al mandante",
+        });
+        
+        setTimeout(() => {
+          navigate(`/project/${payment?.Project || 2}`);
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('❌ Error in upload process:', error);
+      toast({
+        title: "Error al enviar documentos",
+        description: error.message || "Error al subir documentos a Google Drive",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handlePreviewEmail = async () => {
+    if (!payment) {
+      toast({
+        title: "Error",
+        description: "No se pueden cargar los datos del estado de pago",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // CORRIGIENDO: Auto-guardar antes de vista previa
+    await handleAutoSaveBeforePreview();
+    await generateUniqueURLAndUpdate();
+    navigate(`/submission-preview?paymentId=${payment.id}`);
   };
 
   const getCompletedDocumentsCount = () => {
-    return documents.filter(doc => documentStatus[doc.id]).length;
+    return documents.filter(doc => documentStatus[doc.id as keyof typeof documentStatus]).length;
   };
 
+  // CORRIGIENDO: Función para mostrar archivos del Drive si el status es "Enviado", "Aprobado" o "Rechazado"
   const shouldShowDriveFiles = () => {
     return payment?.Status === 'Enviado' || payment?.Status === 'Aprobado' || payment?.Status === 'Rechazado';
   };
 
+  // CORRIGIENDO: Función para descargar archivos del Drive
+  const handleDownloadFile = async (fileName: string) => {
+    if (!payment?.URL) {
+      toast({
+        title: "Error",
+        description: "No se encontró la URL del archivo",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      window.open(payment.URL, '_blank');
+      
+      toast({
+        title: "Descarga iniciada",
+        description: `Se ha abierto la carpeta del Drive para descargar ${fileName}`,
+      });
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      toast({
+        title: "Error al descargar",
+        description: "No se pudo acceder al archivo",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // CORRIGIENDO: Check if documents were updated (for enabling send button in sent states)
   const wereDocumentsUpdated = () => {
-    return Object.keys(documentStatus).some(docId => documentStatus[docId]);
+    return Object.keys(documentStatus).some(docId => documentStatus[docId as keyof typeof documentStatus]);
   };
 
   if (loading) {
@@ -559,10 +515,11 @@ const PaymentDetail = () => {
       <div className="min-h-screen bg-slate-50 font-rubik">
         <PageHeader />
         
+        {/* Loading Modal */}
         <LoadingModal 
           isOpen={isUploading}
-          title="Procesando..."
-          description="Subiendo documentos y preparando vista previa..."
+          title="Subiendo documentos..."
+          description="Por favor espera mientras se procesa la información y se envía la notificación al mandante"
         />
 
         {/* Hidden file inputs */}
@@ -597,71 +554,273 @@ const PaymentDetail = () => {
           {/* Payment Info and Summary Cards */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             <div className="lg:col-span-2">
-              <PaymentInfoSection
-                paymentState={paymentState}
-                shouldShowDriveFiles={shouldShowDriveFiles()}
-                editableAmount={editableAmount}
-                editablePercentage={editablePercentage}
-                isSaving={isSaving}
-                currency={payment?.projectData?.Currency}
-                budget={payment?.projectData?.Budget}
-                onAmountChange={handleAmountChange}
-                onPercentageChange={handlePercentageChange}
-                onSaveAmount={handleSaveAmount}
-                formatCurrency={formatCurrency}
-              />
+              <Card className="border-l-4 border-l-gloster-yellow hover:shadow-xl transition-all duration-300 h-full">
+                <CardHeader className="pb-4">
+                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                    <div className="flex items-center space-x-3 min-w-0 flex-1">
+                      <div className="w-12 h-12 bg-gloster-yellow/20 rounded-lg flex items-center justify-center shrink-0">
+                        <Calendar className="h-6 w-6 text-gloster-gray" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <CardTitle className="text-xl md:text-2xl mb-2 font-rubik text-slate-800">{paymentState.month}</CardTitle>
+                        <CardDescription className="text-gloster-gray font-rubik text-sm md:text-base">
+                          {paymentState.projectName}
+                        </CardDescription>
+                      </div>
+                    </div>
+                    <Badge variant="secondary" className="bg-gloster-gray/20 text-gloster-gray border-gloster-gray/30 self-start shrink-0">
+                      {paymentState.status}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="sm:col-span-2 lg:col-span-1">
+                      <p className="text-gloster-gray text-sm font-rubik mb-2">Monto del Estado</p>
+                      {shouldShowDriveFiles() ? (
+                        <p className="font-bold text-lg md:text-xl text-slate-800 font-rubik break-words">
+                          {formatCurrency(paymentState.amount)}
+                        </p>
+                      ) : (
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm text-gloster-gray">{payment?.projectData?.Currency || 'CLP'}</span>
+                          <Input
+                            type="number"
+                            value={editableAmount}
+                            onChange={(e) => handleAmountChange(e.target.value)}
+                            placeholder="Ingrese monto"
+                            className="w-40"
+                          />
+                          <Button
+                            size="sm"
+                            onClick={handleSaveAmount}
+                            disabled={isSaving}
+                            className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black"
+                          >
+                            <Save className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-gloster-gray text-sm font-rubik mb-2">% Avance Financiero</p>
+                      {shouldShowDriveFiles() ? (
+                        <p className="font-semibold text-slate-800 font-rubik">
+                          {payment?.projectData?.Budget ? 
+                            ((paymentState.amount / payment.projectData.Budget) * 100).toFixed(2) + '%' : 
+                            'N/A'
+                          }
+                        </p>
+                      ) : (
+                        <div className="flex items-center space-x-2">
+                          <Input
+                            type="number"
+                            value={editablePercentage}
+                            onChange={(e) => handlePercentageChange(e.target.value)}
+                            placeholder="0"
+                            className="w-20"
+                          />
+                          <span className="text-sm text-gloster-gray">%</span>
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-gloster-gray text-sm font-rubik">Fecha de Vencimiento</p>
+                      <p className="font-semibold text-slate-800 font-rubik">{paymentState.dueDate}</p>
+                    </div>
+                    <div className="sm:col-span-2 lg:col-span-1">
+                      <p className="text-gloster-gray text-sm font-rubik">Destinatario</p>
+                      <p className="font-semibold text-slate-800 font-rubik break-words">{paymentState.recipient}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
 
             <div className="lg:col-span-1">
-              <PaymentSummaryCard
-                completedDocumentsCount={getCompletedDocumentsCount()}
-                totalDocuments={documents.length}
-                documents={documents}
-                documentStatus={documentStatus}
-                shouldShowDriveFiles={shouldShowDriveFiles()}
-                wereDocumentsUpdated={wereDocumentsUpdated()}
-                isUploading={isUploading}
-                onPreviewEmail={handlePreviewEmail}
-                onSendDocuments={handleSendDocuments}
-              />
+              <Card className="border-gloster-gray/20 hover:shadow-xl transition-all duration-300 h-full">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center space-x-2 font-rubik text-lg">
+                    <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                      <CheckCircle className="h-5 w-5 text-green-600" />
+                    </div>
+                    <span className="text-slate-800">Resumen</span>
+                  </CardTitle>
+                  <CardDescription className="font-rubik text-sm">
+                    {getCompletedDocumentsCount()} de {documents.length} documentos cargados
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="space-y-2 mb-4">
+                    <p className="text-gloster-gray font-rubik text-xs mb-3">
+                      Para procesar este estado de pago, debes obtener cada documento, cargar los archivos y luego enviarlos.
+                    </p>
+                  </div>
+                  <div className="space-y-1 mb-4 max-h-32 md:max-h-40 overflow-y-auto">
+                    {documents.map((doc) => doc.required ? (
+                      <div key={doc.id} className="flex items-center justify-between text-xs">
+                        <span className="font-rubik text-slate-700 truncate flex-1 pr-2">{doc.name}</span>
+                        {documentStatus[doc.id as keyof typeof documentStatus] ? (
+                          <CheckCircle className="h-3 w-3 text-green-600 shrink-0" />
+                        ) : (
+                          <Clock className="h-3 w-3 text-gloster-gray shrink-0" />
+                        )}
+                      </div>
+                    ): null)}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      onClick={handlePreviewEmail}
+                      variant="outline"
+                      className="border-gloster-gray/30 hover:bg-gloster-gray/10 font-rubik"
+                      size="sm"
+                      disabled={isUploading || (!areAllRequiredDocumentsUploaded() && !shouldShowDriveFiles())}
+                    >
+                      <Eye className="h-4 w-4 mr-1" />
+                      Vista Previa
+                    </Button>
+                    <Button
+                      onClick={handleSendDocuments}
+                      disabled={
+                        shouldShowDriveFiles() 
+                          ? !wereDocumentsUpdated() || isUploading
+                          : !documents.filter(d => d.required).every(d => documentStatus[d.id as keyof typeof documentStatus]) || isUploading
+                      }
+                      className="bg-green-600 hover:bg-green-700 text-white disabled:bg-slate-300 font-rubik"
+                      size="sm"
+                    >
+                      <Send className="h-4 w-4 mr-1" />
+                      {isUploading ? 'Enviando...' : 'Enviar'}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
 
-          {/* Drive Documents Section */}
+          {/* CORRIGIENDO: Mostrar archivos del Drive si el status es "Enviado", "Aprobado" o "Rechazado" */}
           {shouldShowDriveFiles() && (
-            <DriveDocumentsSection
-              documents={documents}
-              onDownloadFile={handleDownloadFile}
-              onDocumentUpload={handleDocumentUpload}
-            />
+            <Card className="mb-8 border-l-4 border-l-blue-500">
+              <CardHeader>
+                <CardTitle className="font-rubik text-lg text-slate-800">Documentos en Drive</CardTitle>
+                <CardDescription className="font-rubik">
+                  Los documentos se encuentran almacenados en Google Drive. Puedes actualizar cualquier documento si es necesario.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {documents.filter(doc => doc.required).map((doc) => (
+                    <div key={doc.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                      <div className="flex flex-col space-y-3">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-slate-800 font-rubik text-sm">{doc.name}</h4>
+                          <p className="text-xs text-gloster-gray font-rubik mt-1">{doc.description}</p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDownloadFile(doc.name)}
+                            className="flex-1"
+                          >
+                            <Download className="h-4 w-4 mr-1" />
+                            <span className="text-xs">Descargar</span>
+                          </Button>
+                          {doc.downloadUrl && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => window.open(doc.downloadUrl, '_blank')}
+                              className="flex-1"
+                            >
+                              <ExternalLink className="h-4 w-4 mr-1" />
+                              <span className="text-xs">Visitar</span>
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            onClick={() => handleDocumentUpload(doc.id)}
+                            className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black flex-1"
+                          >
+                            <Upload className="h-4 w-4 mr-1" />
+                            <span className="text-xs">Actualizar</span>
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           )}
 
-          {/* Documents Upload Section */}
+          {/* Documents List - Solo mostrar si no es "Enviado", "Aprobado" o "Rechazado" */}
           {!shouldShowDriveFiles() && (
-            <DocumentsUploadSection
-              documents={documents}
-              documentStatus={documentStatus}
-              uploadedFiles={uploadedFiles}
-              dragStates={dragStates}
-              achsSelection={achsSelection}
-              setAchsSelection={setAchsSelection}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              onDocumentUpload={handleDocumentUpload}
-              onFileRemove={handleFileRemove}
-              getExamenesUrl={getExamenesUrl}
-            />
+            <div className="space-y-4 mb-8">
+              <h3 className="text-lg md:text-xl font-bold text-slate-800 font-rubik">Documentación Requerida</h3>
+              
+              <div className="space-y-4">
+                {documents.map((doc) => doc.required ? (
+                  <DocumentUploadCard
+                    key={doc.id}
+                    doc={doc}
+                    documentStatus={documentStatus[doc.id as keyof typeof documentStatus]}
+                    uploadedFiles={uploadedFiles[doc.id as keyof typeof uploadedFiles]}
+                    dragState={dragStates[doc.id as keyof typeof dragStates]}
+                    achsSelection={achsSelection}
+                    setAchsSelection={setAchsSelection}
+                    onDragOver={(e) => handleDragOver(e, doc.id)}
+                    onDragLeave={(e) => handleDragLeave(e, doc.id)}
+                    onDrop={(e) => handleDrop(e, doc.id, doc.allowMultiple)}
+                    onDocumentUpload={() => handleDocumentUpload(doc.id)}
+                    onFileRemove={(fileIndex) => handleFileRemove(doc.id, fileIndex)}
+                    getExamenesUrl={getExamenesUrl}
+                  />) : null
+                )}
+              </div>
+            </div>
           )}
 
-          {/* Send Documents Banner */}
+          {/* Send Documents Banner - Solo mostrar si no es "Enviado", "Aprobado" o "Rechazado" */}
           {!shouldShowDriveFiles() && (
-            <SendDocumentsBanner
-              isUploading={isUploading}
-              allRequiredDocumentsUploaded={areAllRequiredDocumentsUploaded()}
-              onPreviewEmail={handlePreviewEmail}
-              onSendDocuments={handleSendDocuments}
-            />
+            <Card className="border-l-4 border-l-green-500 bg-green-50/50">
+              <CardContent className="p-4 md:p-6">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center shrink-0">
+                      <Send className="h-6 w-6 text-green-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-800 font-rubik mb-1">¿Listo para enviar?</h3>
+                      <p className="text-gloster-gray text-sm font-rubik">
+                        Una vez que hayas cargado todos los documentos requeridos, puedes enviarlos para su procesamiento.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                    <Button
+                      onClick={handlePreviewEmail}
+                      variant="outline"
+                      className="border-gloster-gray/30 hover:bg-gloster-gray/10 font-rubik px-6 md:px-8 py-3 w-full sm:w-auto"
+                      size="lg"
+                      disabled={isUploading || !areAllRequiredDocumentsUploaded()}
+                    >
+                      <Eye className="h-5 w-5 mr-2" />
+                      Vista Previa
+                    </Button>
+                    <Button
+                      onClick={handleSendDocuments}
+                      disabled={!documents.filter(d => d.required).every(d => documentStatus[d.id as keyof typeof documentStatus]) || isUploading}
+                      className="bg-green-600 hover:bg-green-700 text-white disabled:bg-slate-300 font-rubik px-6 md:px-8 py-3 w-full sm:w-auto"
+                      size="lg"
+                    >
+                      <Send className="h-5 w-5 mr-2" />
+                      {isUploading ? 'Subiendo...' : 'Enviar Email y Documentos'}
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           )}
         </div>
       </div>

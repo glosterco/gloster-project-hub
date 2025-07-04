@@ -20,6 +20,22 @@ interface NotificationRequest {
   accessUrl: string;
 }
 
+// UTF-8 compatible base64 encoding function
+const encodeBase64UTF8 = (str: string): string => {
+  const encoder = new TextEncoder();
+  const bytes = encoder.encode(str);
+  
+  let binary = '';
+  bytes.forEach(byte => {
+    binary += String.fromCharCode(byte);
+  });
+  
+  return btoa(binary)
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+};
+
 const getAccessToken = async (): Promise<string> => {
   const clientId = Deno.env.get("GMAIL_CLIENT_ID");
   const clientSecret = Deno.env.get("GMAIL_CLIENT_SECRET");
@@ -154,14 +170,14 @@ const handler = async (req: Request): Promise<Response> => {
     const emailHtml = createEmailHtml(data);
     
     const emailData = {
-      raw: btoa(
+      raw: encodeBase64UTF8(
         `From: Gloster <${fromEmail}>
 To: ${data.mandanteEmail}
 Subject: Nuevo Estado de Pago - ${data.proyecto} (${data.mes} ${data.año})
 Content-Type: text/html; charset=utf-8
 
 ${emailHtml}`
-      ).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''),
+      ),
     };
 
     const response = await fetch(

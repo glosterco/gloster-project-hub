@@ -7,18 +7,17 @@ export const useUniqueAccessUrl = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  // Usar dominio base fijo para producción, con fallback para desarrollo
+  // Detectar automáticamente el dominio base
   const getBaseUrl = () => {
-    const productionUrl = 'https://your-production-domain.com'; // Configurar según tu dominio
     const currentUrl = window.location.origin;
     
-    // Si estamos en desarrollo local, usar la URL actual
+    // Para desarrollo local, usar la URL actual
     if (currentUrl.includes('localhost') || currentUrl.includes('127.0.0.1')) {
       return currentUrl;
     }
     
-    // Para producción, usar el dominio fijo
-    return productionUrl;
+    // Para producción (Lovable o cualquier otro dominio), usar la URL actual
+    return currentUrl;
   };
 
   const ensureUniqueAccessUrl = async (paymentId: string | number) => {
@@ -46,13 +45,22 @@ export const useUniqueAccessUrl = () => {
         throw new Error('Error al verificar el enlace existente');
       }
 
-      // Si ya existe un enlace válido, reutilizarlo
+      // Si ya existe un enlace válido, verificar si el dominio coincide con el actual
       if (existingPayment?.URLMandante) {
-        console.log('✅ Reusing existing access URL:', existingPayment.URLMandante);
-        return existingPayment.URLMandante;
+        const currentBaseUrl = getBaseUrl();
+        const existingUrl = new URL(existingPayment.URLMandante);
+        const currentUrlObj = new URL(currentBaseUrl);
+        
+        // Si el dominio coincide, reutilizar el enlace existente
+        if (existingUrl.origin === currentUrlObj.origin) {
+          console.log('✅ Reusing existing access URL:', existingPayment.URLMandante);
+          return existingPayment.URLMandante;
+        } else {
+          console.log('🔄 Domain changed, generating new URL...');
+        }
       }
 
-      // Si no existe, generar uno nuevo
+      // Si no existe o el dominio cambió, generar uno nuevo
       console.log('🔄 Generating new unique access URL...');
       const uniqueToken = crypto.randomUUID();
       const baseUrl = getBaseUrl();

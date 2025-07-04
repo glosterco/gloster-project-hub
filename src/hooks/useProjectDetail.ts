@@ -29,12 +29,14 @@ export interface ProjectDetail {
     CompanyName: string;
     ContactName: string;
     ContactEmail: string;
+    ContactPhone?: number;
   };
   Owner: {
     id: number;
     CompanyName: string;
     ContactName: string;
     ContactEmail: string;
+    ContactPhone?: number;
   };
   EstadosPago: PaymentState[];
 }
@@ -88,13 +90,15 @@ export const useProjectDetail = (projectId: string) => {
             id,
             CompanyName,
             ContactName,
-            ContactEmail
+            ContactEmail,
+            ContactPhone
           ),
           Mandantes!Proyectos_Owner_fkey (
             id,
             CompanyName,
             ContactName,
-            ContactEmail
+            ContactEmail,
+            ContactPhone
           )
         `)
         .eq('id', parseInt(projectId))

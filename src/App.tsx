@@ -36,6 +36,8 @@ const App = () => (
             <Route path="/payment/:id" element={<PaymentDetail />} />
             <Route path="/submission/:id" element={<SubmissionView />} />
             <Route path="/submission/:id/preview" element={<SubmissionPreview />} />
+            <Route path="/submission-view" element={<SubmissionView />} />
+            <Route path="/submission-preview" element={<SubmissionPreview />} />
             <Route path="/email-access" element={<EmailAccess />} />
             <Route path="/email/:id" element={<EmailPreview />} />
             <Route path="/data-viewer" element={<DataViewer />} />

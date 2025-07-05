@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useBeforeUnload } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +11,7 @@ import { usePaymentDetail } from '@/hooks/usePaymentDetail';
 import { useMandanteNotification } from '@/hooks/useMandanteNotification';
 import { useGoogleDriveIntegration } from '@/hooks/useGoogleDriveIntegration';
 import { useDocumentUpload } from '@/hooks/useDocumentUpload';
+import { useDirectDriveDownload } from '@/hooks/useDirectDriveDownload';
 import { supabase } from '@/integrations/supabase/client';
 import PageHeader from '@/components/PageHeader';
 import DocumentUploadCard from '@/components/DocumentUploadCard';
@@ -27,6 +27,7 @@ const PaymentDetail = () => {
   const { payment, loading, refetch } = usePaymentDetail(id || '');
   const { sendNotificationToMandante, loading: notificationLoading } = useMandanteNotification();
   const { uploadDocumentsToDrive, loading: driveLoading } = useGoogleDriveIntegration();
+  const { downloadDocument, loading: downloadLoading } = useDirectDriveDownload();
 
   // Use the document upload hook
   const {
@@ -560,32 +561,19 @@ const PaymentDetail = () => {
     return payment?.Status === 'Enviado' || payment?.Status === 'Aprobado' || payment?.Status === 'Rechazado';
   };
 
-  // CORRIGIENDO: Función para descargar archivos del Drive
+  // UPDATED: Function to handle direct download from Drive
   const handleDownloadFile = async (fileName: string) => {
-    if (!payment?.URL) {
+    if (!payment?.id) {
       toast({
         title: "Error",
-        description: "No se encontró la URL del archivo",
+        description: "No se pudo identificar el estado de pago",
         variant: "destructive"
       });
       return;
     }
     
-    try {
-      window.open(payment.URL, '_blank');
-      
-      toast({
-        title: "Descarga iniciada",
-        description: `Se ha abierto la carpeta del Drive para descargar ${fileName}`,
-      });
-    } catch (error) {
-      console.error('Error downloading file:', error);
-      toast({
-        title: "Error al descargar",
-        description: "No se pudo acceder al archivo",
-        variant: "destructive"
-      });
-    }
+    console.log(`📥 Downloading document: ${fileName} for payment ID: ${payment.id}`);
+    await downloadDocument(payment.id.toString(), fileName);
   };
 
   // CORRIGIENDO: Check if documents were updated (for enabling send button in sent states)
@@ -873,10 +861,11 @@ const PaymentDetail = () => {
                             size="sm"
                             variant="outline"
                             onClick={() => handleDownloadFile(doc.name)}
+                            disabled={downloadLoading}
                             className="flex-1"
                           >
                             <Download className="h-4 w-4 mr-1" />
-                            <span className="text-xs">Descargar</span>
+                            <span className="text-xs">{downloadLoading ? 'Descargando...' : 'Descargar'}</span>
                           </Button>
                           {doc.downloadUrl && (
                             <Button

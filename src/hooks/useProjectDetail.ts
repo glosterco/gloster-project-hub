@@ -49,11 +49,13 @@ export const useProjectDetail = (projectId: string) => {
     
     setLoading(true);
     try {
+      console.log('🔍 FETCHING PROJECT DETAIL - READONLY MODE');
+      
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        console.log('No authenticated user found');
+        console.log('❌ No authenticated user found');
         return;
       }
 
@@ -65,12 +67,12 @@ export const useProjectDetail = (projectId: string) => {
         .maybeSingle();
 
       if (contractorError) {
-        console.error('Error fetching contractor:', contractorError);
+        console.error('❌ Error fetching contractor:', contractorError);
         return;
       }
 
       if (!contractorData) {
-        console.log('No contractor found for current user');
+        console.log('❌ No contractor found for current user');
         toast({
           title: "Acceso denegado",
           description: "No tienes un perfil de contratista válido",
@@ -79,7 +81,9 @@ export const useProjectDetail = (projectId: string) => {
         return;
       }
 
-      // Fetch project details with relationships
+      console.log('✅ Contractor found:', contractorData.CompanyName);
+
+      // Fetch project details with relationships - READONLY QUERY
       const { data: projectData, error: projectError } = await supabase
         .from('Proyectos')
         .select(`
@@ -102,7 +106,7 @@ export const useProjectDetail = (projectId: string) => {
         .maybeSingle();
 
       if (projectError) {
-        console.error('Error fetching project:', projectError);
+        console.error('❌ Error fetching project:', projectError);
         toast({
           title: "Error al cargar proyecto",
           description: projectError.message,
@@ -112,6 +116,7 @@ export const useProjectDetail = (projectId: string) => {
       }
 
       if (!projectData) {
+        console.log('❌ Project not found or no access');
         toast({
           title: "Proyecto no encontrado",
           description: "No se encontró el proyecto o no tienes acceso a él",
@@ -120,7 +125,10 @@ export const useProjectDetail = (projectId: string) => {
         return;
       }
 
-      // Fetch payment states for this project WITHOUT modifying their status
+      console.log('✅ Project found:', projectData.Name);
+
+      // Fetch payment states for this project - STRICTLY READONLY, NO MODIFICATIONS
+      console.log('🔍 Fetching payment states - READONLY MODE');
       const { data: paymentsData, error: paymentsError } = await supabase
         .from('Estados de pago')
         .select('*')
@@ -128,7 +136,7 @@ export const useProjectDetail = (projectId: string) => {
         .order('ExpiryDate', { ascending: true });
 
       if (paymentsError) {
-        console.error('Error fetching payment states:', paymentsError);
+        console.error('❌ Error fetching payment states:', paymentsError);
         toast({
           title: "Error al cargar estados de pago",
           description: paymentsError.message,
@@ -136,6 +144,13 @@ export const useProjectDetail = (projectId: string) => {
         });
         return;
       }
+
+      console.log('✅ Payment states fetched (READONLY):', paymentsData?.length || 0, 'records');
+      
+      // LOG THE EXACT STATUS VALUES WE'RE READING (NOT MODIFYING)
+      paymentsData?.forEach(payment => {
+        console.log(`📋 Payment "${payment.Name}" has status: "${payment.Status}" (READ ONLY)`);
+      });
 
       const projectWithDetails = {
         ...projectData,
@@ -145,9 +160,10 @@ export const useProjectDetail = (projectId: string) => {
       };
 
       setProject(projectWithDetails);
-      console.log('Project detail loaded:', projectWithDetails);
+      console.log('✅ Project detail loaded successfully (READONLY)');
+      
     } catch (error) {
-      console.error('Unexpected error:', error);
+      console.error('❌ Unexpected error in fetchProjectDetail:', error);
       toast({
         title: "Error inesperado",
         description: "Hubo un error al cargar el proyecto",
@@ -159,6 +175,7 @@ export const useProjectDetail = (projectId: string) => {
   };
 
   useEffect(() => {
+    console.log('🔄 useProjectDetail effect triggered for projectId:', projectId);
     fetchProjectDetail();
   }, [projectId]);
 

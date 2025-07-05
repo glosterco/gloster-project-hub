@@ -37,29 +37,36 @@ const ProjectDetail = () => {
     return new Intl.NumberFormat('es-CL', config).format(amount);
   };
 
-  // FIXED: Use DIRECT status from database without any fallback logic
+  // STRICTLY READ-ONLY: Get payment status directly from database without any modifications
   const getPaymentStatus = (payment: any) => {
-    // Return the exact status from the database, or a default if truly null/undefined
-    return payment.Status || 'Sin Estado';
+    const originalStatus = payment.Status;
+    console.log(`📋 READONLY: Payment "${payment.Name}" status is "${originalStatus}"`);
+    
+    // Return the exact status from the database without any fallback or modification logic
+    return originalStatus || 'Sin Estado';
   };
 
   const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'Aprobado':
+    const normalizedStatus = status.toLowerCase();
+    console.log(`🎨 Getting color for status: "${status}" (normalized: "${normalizedStatus}")`);
+    
+    switch (normalizedStatus) {
+      case 'aprobado':
         return 'bg-green-100 text-green-700';
-      case 'Pendiente':
+      case 'pendiente':
         return 'bg-gloster-yellow/20 text-gloster-gray';
-      case 'Programado':
+      case 'programado':
         return 'bg-blue-100 text-blue-700';
-      case 'Enviado':
+      case 'enviado':
         return 'bg-orange-100 text-orange-700';
-      case 'Rechazado':
+      case 'rechazado':
         return 'bg-red-100 text-red-700';
-      case 'En progreso':
+      case 'en progreso':
         return 'bg-gloster-yellow/20 text-gloster-gray';
-      case 'Sin estado':
+      case 'sin estado':
         return 'bg-gray-100 text-gray-700';
       default:
+        console.log(`⚠️ Unknown status color for: "${status}"`);
         return 'bg-gray-100 text-gray-700';
     }
   };
@@ -92,6 +99,7 @@ const ProjectDetail = () => {
 
   const handlePaymentClick = (payment: any) => {
     const status = getPaymentStatus(payment);
+    console.log(`🖱️ Payment clicked: "${payment.Name}" with status: "${status}"`);
     
     if (status === 'Programado') {
       toast({
@@ -106,6 +114,7 @@ const ProjectDetail = () => {
   };
 
   const handleViewDocuments = (payment: any) => {
+    console.log(`👁️ View documents clicked for: "${payment.Name}"`);
     navigate(`/payment/${payment.id}`);
   };
 
@@ -165,6 +174,8 @@ const ProjectDetail = () => {
 
   const progress = getProjectProgress();
   const paidValue = getPaidValue();
+
+  console.log('🏗️ Rendering ProjectDetail with', project.EstadosPago?.length || 0, 'payment states');
 
   return (
     <div className="min-h-screen bg-slate-50 font-rubik">
@@ -302,6 +313,7 @@ const ProjectDetail = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredAndSortedPayments.map((payment) => {
                 const status = getPaymentStatus(payment);
+                console.log(`🔄 Rendering payment card: "${payment.Name}" with status: "${status}"`);
                 
                 return (
                   <Card 

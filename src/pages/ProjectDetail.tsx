@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,8 +37,9 @@ const ProjectDetail = () => {
     return new Intl.NumberFormat('es-CL', config).format(amount);
   };
 
-  // FIXED: Use real status from database without fallback calculations
+  // FIXED: Use DIRECT status from database without any fallback logic
   const getPaymentStatus = (payment: any) => {
+    // Return the exact status from the database, or a default if truly null/undefined
     return payment.Status || 'Sin Estado';
   };
 

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useBeforeUnload } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -52,6 +52,9 @@ const PaymentDetail = () => {
   const [editablePercentage, setEditablePercentage] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
+  // NEW: State to track if user has unsaved changes
+  const [hasUnsavedFiles, setHasUnsavedFiles] = useState(false);
+
   // CORRIGIENDO: Initialize editable values when payment data loads
   useEffect(() => {
     if (payment) {
@@ -70,6 +73,35 @@ const PaymentDetail = () => {
       }
     }
   }, [payment]);
+
+  // NEW: Track when files are uploaded but not sent
+  useEffect(() => {
+    const hasFiles = Object.keys(documentStatus).some(docId => documentStatus[docId as keyof typeof documentStatus]);
+    const isSentStatus = payment?.Status === 'Enviado' || payment?.Status === 'Aprobado' || payment?.Status === 'Rechazado';
+    setHasUnsavedFiles(hasFiles && !isSentStatus);
+  }, [documentStatus, payment?.Status]);
+
+  // NEW: Prevent navigation if files are uploaded but not sent
+  useBeforeUnload(
+    React.useCallback(() => {
+      if (hasUnsavedFiles) {
+        return 'Tienes archivos cargados que aún no han sido respaldados. Si sales de la página se perderá el progreso. ¿Estás seguro de que quieres continuar?';
+      }
+    }, [hasUnsavedFiles])
+  );
+
+  // NEW: Custom navigation handler with warning
+  const handleNavigation = (targetPath: string) => {
+    if (hasUnsavedFiles) {
+      const confirmed = window.confirm(
+        'Tienes archivos cargados que aún no han sido respaldados y enviados. Si sales de la página se perderá el progreso.\n\nDebes enviar la solicitud o ver la previsualización para que se respalde la información.\n\n¿Estás seguro de que quieres continuar?'
+      );
+      if (!confirmed) {
+        return;
+      }
+    }
+    navigate(targetPath);
+  };
 
   const { ensureUniqueAccessUrl } = useUniqueAccessUrl();
 
@@ -97,6 +129,15 @@ const PaymentDetail = () => {
       return "Por favor completa el porcentaje antes de continuar";
     }
     return "";
+  };
+
+  // NEW: Show validation alert for required fields
+  const showFieldValidationAlert = () => {
+    toast({
+      title: "Campos obligatorios",
+      description: getValidationMessage(),
+      variant: "destructive"
+    });
   };
 
   // Format currency based on project currency
@@ -319,11 +360,7 @@ const PaymentDetail = () => {
   const handleSendDocuments = async () => {
     // NEW: Validate fields before sending
     if (!areFieldsValidForActions()) {
-      toast({
-        title: "Campos incompletos",
-        description: getValidationMessage(),
-        variant: "destructive"
-      });
+      showFieldValidationAlert();
       return;
     }
 
@@ -455,11 +492,7 @@ const PaymentDetail = () => {
   const handlePreviewEmail = async () => {
     // NEW: Validate fields before preview
     if (!areFieldsValidForActions()) {
-      toast({
-        title: "Campos incompletos",
-        description: getValidationMessage(),
-        variant: "destructive"
-      });
+      showFieldValidationAlert();
       return;
     }
 
@@ -602,7 +635,7 @@ const PaymentDetail = () => {
         <div className="bg-slate-50 py-2">
           <div className="container mx-auto px-6">
             <button 
-              onClick={() => navigate(`/project/${payment?.Project || 2}`)}
+              onClick={() => handleNavigation(`/project/${payment?.Project || 2}`)}
               className="text-gloster-gray hover:text-slate-800 text-sm font-rubik flex items-center"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -624,6 +657,23 @@ const PaymentDetail = () => {
                     <p className="font-medium text-orange-800 font-rubik">Campos requeridos incompletos</p>
                     <p className="text-sm text-orange-700 font-rubik mt-1">
                       {getValidationMessage()}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* NEW: Unsaved Files Warning Card */}
+          {hasUnsavedFiles && (
+            <Card className="mb-6 border-l-4 border-l-yellow-500 bg-yellow-50/50">
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-3">
+                  <AlertCircle className="h-5 w-5 text-yellow-600 shrink-0" />
+                  <div>
+                    <p className="font-medium text-yellow-800 font-rubik">Archivos sin respaldar</p>
+                    <p className="text-sm text-yellow-700 font-rubik mt-1">
+                      Tienes archivos cargados que aún no han sido respaldados. Debes enviar la solicitud o ver la previsualización para respaldar la información.
                     </p>
                   </div>
                 </div>

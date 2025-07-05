@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Download } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import EmailTemplate from '@/components/EmailTemplate';
 import { useToast } from '@/hooks/use-toast';
 import { usePaymentDetail } from '@/hooks/usePaymentDetail';
@@ -105,62 +105,6 @@ const EmailPreview = () => {
     }
   ];
 
-  const handlePrint = () => {
-    const printStyles = `
-      <style>
-        @media print {
-          body * { visibility: hidden; }
-          .email-template-container, .email-template-container * { visibility: visible; }
-          .email-template-container { 
-            position: absolute; 
-            left: 0; 
-            top: 0; 
-            width: 100%; 
-            transform: scale(0.65);
-            transform-origin: top left;
-          }
-          .print\\:hidden { display: none !important; }
-          @page { margin: 0.3in; size: A4; }
-        }
-      </style>
-    `;
-    
-    const originalHead = document.head.innerHTML;
-    document.head.innerHTML += printStyles;
-    
-    setTimeout(() => {
-      window.print();
-      document.head.innerHTML = originalHead;
-    }, 100);
-  };
-
-  const handleDownloadFiles = () => {
-    if (!payment?.URL) {
-      toast({
-        title: "Error",
-        description: "No se encontró la URL de los archivos",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    try {
-      window.open(payment.URL, '_blank');
-      
-      toast({
-        title: "Descarga iniciada",
-        description: "Se ha abierto la carpeta del Drive con los documentos",
-      });
-    } catch (error) {
-      console.error('Error downloading files:', error);
-      toast({
-        title: "Error al descargar",
-        description: "No se pudo acceder a los archivos",
-        variant: "destructive"
-      });
-    }
-  };
-
   if (checkingAccess) {
     return (
       <div className="min-h-screen bg-slate-50 font-rubik">
@@ -229,7 +173,7 @@ const EmailPreview = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 font-rubik">
-      {/* Header de navegación */}
+      {/* Header de navegación - Sin botones de descarga */}
       <div className="bg-white border-b border-gloster-gray/20 shadow-sm print:hidden">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
@@ -242,27 +186,7 @@ const EmailPreview = () => {
               <h1 className="text-xl font-bold text-slate-800 font-rubik">Vista previa del Email</h1>
             </div>
             
-            <div className="flex items-center space-x-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handlePrint}
-                className="font-rubik"
-              >
-                Imprimir
-              </Button>
-              {payment?.URL && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleDownloadFiles}
-                  className="font-rubik"
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Descargar Archivos
-                </Button>
-              )}
-            </div>
+            {/* Removed all download buttons */}
           </div>
         </div>
       </div>

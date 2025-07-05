@@ -7,7 +7,6 @@ import { useToast } from '@/hooks/use-toast';
 import { usePaymentDetail } from '@/hooks/usePaymentDetail';
 import { useDirectDownload } from '@/hooks/useDirectDownload';
 import { useAccessVerification } from '@/hooks/useAccessVerification';
-import { usePrintAndDownload } from '@/hooks/usePrintAndDownload';
 import SubmissionHeader from '@/components/submission/SubmissionHeader';
 import SubmissionContent from '@/components/submission/SubmissionContent';
 import { formatCurrency } from '@/utils/currencyUtils';
@@ -18,31 +17,8 @@ const SubmissionView = () => {
   const [searchParams] = useSearchParams();
   const paymentId = searchParams.get('paymentId') || '11';
   const { payment, loading, error, refetch } = usePaymentDetail(paymentId, true);
-  const { downloadFilesDirect, loading: downloadLoading, downloadProgress } = useDirectDownload();
   const { toast } = useToast();
   const { hasAccess, checkingAccess, isMandante } = useAccessVerification(payment, paymentId);
-  const { handlePrint, handleDownloadPDF } = usePrintAndDownload(payment);
-
-  const handleDownloadFiles = async () => {
-    if (!payment) {
-      toast({
-        title: "Error",
-        description: "No se encontraron datos del estado de pago",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    console.log('🚀 Starting direct file download for payment:', paymentId);
-    
-    const result = await downloadFilesDirect(paymentId);
-    
-    if (result.success) {
-      console.log(`✅ Successfully downloaded ${result.filesCount} files`);
-    } else {
-      console.error('❌ Failed to download files:', result.error);
-    }
-  };
 
   const handleStatusChange = () => {
     console.log('🔄 Status changed, refreshing payment data...');
@@ -147,13 +123,7 @@ const SubmissionView = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 font-rubik">
-      <SubmissionHeader
-        onPrint={handlePrint}
-        onDownloadPDF={handleDownloadPDF}
-        onDownloadFiles={handleDownloadFiles}
-        downloadLoading={downloadLoading}
-        downloadProgress={downloadProgress}
-      />
+      <SubmissionHeader />
 
       <SubmissionContent
         paymentId={paymentId}

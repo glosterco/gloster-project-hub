@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 interface EmailHTMLTemplateProps {
@@ -7,6 +6,7 @@ interface EmailHTMLTemplateProps {
     amount: number;
     projectName: string;
     recipient: string;
+    currency?: string;
   };
   project: {
     name: string;
@@ -24,12 +24,30 @@ const EmailHTMLTemplate: React.FC<EmailHTMLTemplateProps> = ({
   project, 
   accessUrl 
 }) => {
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-CL', {
-      style: 'currency',
-      currency: 'CLP',
-      minimumFractionDigits: 0,
-    }).format(amount);
+  const formatCurrency = (amount: number, currency?: string) => {
+    if (!currency) {
+      return new Intl.NumberFormat('es-CL', {
+        style: 'currency',
+        currency: 'CLP',
+        minimumFractionDigits: 0,
+      }).format(amount);
+    }
+
+    if (currency === 'UF') {
+      return `${amount.toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} UF`;
+    } else if (currency === 'USD') {
+      return new Intl.NumberFormat('es-CL', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 0,
+      }).format(amount);
+    } else {
+      return new Intl.NumberFormat('es-CL', {
+        style: 'currency',
+        currency: 'CLP',
+        minimumFractionDigits: 0,
+      }).format(amount);
+    }
   };
 
   return (
@@ -117,7 +135,7 @@ const EmailHTMLTemplate: React.FC<EmailHTMLTemplateProps> = ({
                 fontSize: '16px',
                 color: '#059669' 
               }}>
-                {formatCurrency(paymentState.amount)}
+                {formatCurrency(paymentState.amount, paymentState.currency)}
               </span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center' }}>

@@ -66,7 +66,8 @@ export const usePaymentApproval = ({ paymentId, onStatusChange }: PaymentApprova
   };
 
   const sendContractorNotification = async (paymentData: any, status: 'Aprobado' | 'Rechazado', rejectionReason?: string) => {
-    console.log('📤 Preparing contractor notification data...', {
+    console.log('📤 Starting contractor notification process...', {
+      paymentId,
       contractorEmail: paymentData.projectData?.Contratista?.ContactEmail,
       status,
       rejectionReason
@@ -74,7 +75,7 @@ export const usePaymentApproval = ({ paymentId, onStatusChange }: PaymentApprova
 
     if (!paymentData.projectData?.Contratista?.ContactEmail) {
       console.warn('⚠️ No contractor email found, skipping notification');
-      return { success: false, error: 'No contractor email found' };
+      throw new Error('No se encontró email del contratista');
     }
 
     const contractorNotificationData = {
@@ -88,11 +89,11 @@ export const usePaymentApproval = ({ paymentId, onStatusChange }: PaymentApprova
       año: paymentData.Año || new Date().getFullYear(),
       amount: paymentData.Total || 0,
       status: status,
-      rejectionReason: rejectionReason,
+      rejectionReason: rejectionReason || '',
       platformUrl: `${window.location.origin}/payment/${paymentId}`,
     };
 
-    console.log(`📤 Invoking send-contractor-notification edge function with data:`, contractorNotificationData);
+    console.log('📤 Invoking send-contractor-notification with data:', contractorNotificationData);
     
     try {
       const { data: result, error } = await supabase.functions.invoke('send-contractor-notification', {
@@ -103,19 +104,19 @@ export const usePaymentApproval = ({ paymentId, onStatusChange }: PaymentApprova
 
       if (error) {
         console.error('❌ Error calling send-contractor-notification:', error);
-        throw error;
+        throw new Error(`Error en edge function: ${error.message}`);
       }
 
-      if (!result.success) {
-        console.error('❌ Edge function returned error:', result.error);
-        throw new Error(result.error || 'Failed to send contractor notification');
+      if (!result || !result.success) {
+        console.error('❌ Edge function returned unsuccessful result:', result);
+        throw new Error(result?.error || 'La función de notificación no fue exitosa');
       }
 
       console.log('✅ Contractor notification sent successfully:', result);
       return { success: true, messageId: result.messageId };
     } catch (error) {
-      console.error('❌ Error sending contractor notification:', error);
-      return { success: false, error: error.message };
+      console.error('❌ Error in sendContractorNotification:', error);
+      throw error;
     }
   };
 
@@ -140,20 +141,12 @@ export const usePaymentApproval = ({ paymentId, onStatusChange }: PaymentApprova
       const paymentData = await fetchPaymentDataForNotification();
 
       // 3. Send notification to contractor
-      const notificationResult = await sendContractorNotification(paymentData, 'Aprobado');
+      await sendContractorNotification(paymentData, 'Aprobado');
 
-      if (notificationResult.success) {
-        toast({
-          title: "Estado de pago aprobado",
-          description: "El estado de pago ha sido aprobado exitosamente y se ha notificado al contratista.",
-        });
-      } else {
-        toast({
-          title: "Estado de pago aprobado",
-          description: "El estado de pago ha sido aprobado, pero hubo un problema al enviar la notificación.",
-          variant: "destructive"
-        });
-      }
+      toast({
+        title: "Estado de pago aprobado",
+        description: "El estado de pago ha sido aprobado exitosamente y se ha notificado al contratista.",
+      });
 
       // 4. Update UI after a delay to prevent loops
       setTimeout(() => {
@@ -165,8 +158,8 @@ export const usePaymentApproval = ({ paymentId, onStatusChange }: PaymentApprova
     } catch (error) {
       console.error('❌ Error in approval process:', error);
       toast({
-        title: "Error al aprobar",
-        description: error.message || "Hubo un problema al aprobar el estado de pago.",
+        title: "Error en el proceso",
+        description: error.message || "Hubo un problema en el proceso de aprobación.",
         variant: "destructive"
       });
     } finally {
@@ -203,20 +196,12 @@ export const usePaymentApproval = ({ paymentId, onStatusChange }: PaymentApprova
       const paymentData = await fetchPaymentDataForNotification();
 
       // 3. Send rejection notification to contractor
-      const notificationResult = await sendContractorNotification(paymentData, 'Rechazado', rejectionReason);
+      await sendContractorNotification(paymentData, 'Rechazado', rejectionReason);
 
-      if (notificationResult.success) {
-        toast({
-          title: "Estado de pago rechazado",
-          description: "El estado de pago ha sido rechazado y se ha notificado al contratista.",
-        });
-      } else {
-        toast({
-          title: "Estado de pago rechazado",
-          description: "El estado de pago ha sido rechazado, pero hubo un problema al enviar la notificación.",
-          variant: "destructive"
-        });
-      }
+      toast({
+        title: "Estado de pago rechazado",
+        description: "El estado de pago ha sido rechazado y se ha notificado al contratista.",
+      });
 
       // 4. Update UI after a delay to prevent loops
       setTimeout(() => {
@@ -228,8 +213,8 @@ export const usePaymentApproval = ({ paymentId, onStatusChange }: PaymentApprova
     } catch (error) {
       console.error('❌ Error in rejection process:', error);
       toast({
-        title: "Error al rechazar",
-        description: error.message || "Hubo un problema al rechazar el estado de pago.",
+        title: "Error en el proceso",
+        description: error.message || "Hubo un problema en el proceso de rechazo.",
         variant: "destructive"
       });
     } finally {

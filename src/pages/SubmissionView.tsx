@@ -5,7 +5,6 @@ import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { usePaymentDetail } from '@/hooks/usePaymentDetail';
 import { useAccessVerification } from '@/hooks/useAccessVerification';
-import { useDirectDriveDownload } from '@/hooks/useDirectDriveDownload';
 import SubmissionHeader from '@/components/submission/SubmissionHeader';
 import SubmissionContent from '@/components/submission/SubmissionContent';
 import { formatCurrency } from '@/utils/currencyUtils';
@@ -15,7 +14,6 @@ const SubmissionView = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const paymentId = searchParams.get('paymentId') || '11';
-  const { downloadDocument } = useDirectDriveDownload();
 
   const { payment, loading, error, refetch } = usePaymentDetail(paymentId, true);
   const { toast } = useToast();
@@ -24,10 +22,6 @@ const SubmissionView = () => {
   const handleStatusChange = () => {
     console.log('🔄 Status changed, refreshing payment data...');
     refetch();
-  };
-
-  const handleDownloadDocument = async (documentName: string) => {
-    await downloadDocument(paymentId, documentName);
   };
 
   if (checkingAccess) {
@@ -111,10 +105,7 @@ const SubmissionView = () => {
       contractorPhone: payment.projectData?.Contratista?.ContactPhone?.toString() || '',
       contractorAddress: payment.projectData?.Contratista?.Adress || '',
     },
-    documents: documentsFromPayment.map(doc => ({
-      ...doc,
-      onDownload: () => handleDownloadDocument(doc.name)
-    })),
+    documents: documentsFromPayment,
   };
 
   // Más logs para verificar emailTemplateData

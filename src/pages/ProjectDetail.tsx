@@ -45,19 +45,19 @@ const ProjectDetail = () => {
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'aprobado':
+      case 'Aprobado':
         return 'bg-green-100 text-green-700';
-      case 'pendiente':
+      case 'Pendiente':
         return 'bg-gloster-yellow/20 text-gloster-gray';
-      case 'programado':
+      case 'Programado':
         return 'bg-blue-100 text-blue-700';
-      case 'enviado':
+      case 'Enviado':
         return 'bg-orange-100 text-orange-700';
-      case 'rechazado':
+      case 'Rechazado':
         return 'bg-red-100 text-red-700';
-      case 'en progreso':
+      case 'En progreso':
         return 'bg-gloster-yellow/20 text-gloster-gray';
-      case 'sin estado':
+      case 'Sin estado':
         return 'bg-gray-100 text-gray-700';
       default:
         return 'bg-gray-100 text-gray-700';

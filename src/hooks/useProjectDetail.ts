@@ -126,18 +126,14 @@ export const useProjectDetail = (projectId: string) => {
         return;
       }
 
-      // CRITICAL: Fetch payment states with ABSOLUTE READ-ONLY approach
-      console.log('🔍 FETCHING PAYMENT STATES - ABSOLUTE READ-ONLY MODE');
-      const beforeTime = Date.now();
+      // ONLY READ payment states - NO UPDATES OR CALLS TO FUNCTIONS
+      console.log('🔍 FETCHING PAYMENT STATES - READ-ONLY');
       
       const { data: paymentsData, error: paymentsError } = await supabase
         .from('Estados de pago')
         .select('id, Name, Status, Total, ExpiryDate, Completion, Mes, "Año"')
         .eq('Project', parseInt(projectId))
         .order('ExpiryDate', { ascending: true });
-
-      const afterTime = Date.now();
-      console.log(`⏱️ Payment query took ${afterTime - beforeTime}ms`);
 
       if (paymentsError) {
         console.error('❌ Error fetching payment states:', paymentsError);
@@ -150,13 +146,6 @@ export const useProjectDetail = (projectId: string) => {
       }
 
       console.log('📊 RAW PAYMENT DATA:', paymentsData);
-      
-      // Log each payment status individually
-      if (paymentsData && Array.isArray(paymentsData)) {
-        paymentsData.forEach((payment, index) => {
-          console.log(`📋 Payment ${index + 1}: "${payment.Name}" = "${payment.Status}"`);
-        });
-      }
 
       // Create project object
       const projectWithDetails: ProjectDetail = {
@@ -166,7 +155,7 @@ export const useProjectDetail = (projectId: string) => {
         EstadosPago: paymentsData || []
       };
 
-      console.log('✅ Setting project state with payments:', projectWithDetails.EstadosPago.length);
+      console.log('✅ Setting project state');
       setProject(projectWithDetails);
       
     } catch (error) {
@@ -186,39 +175,8 @@ export const useProjectDetail = (projectId: string) => {
     fetchProjectDetail();
   }, [projectId]);
 
-  // Set up real-time monitoring
-  useEffect(() => {
-    if (!projectId) return;
-
-    console.log('🔴 Setting up real-time monitoring for project:', projectId);
-    
-    const channel = supabase
-      .channel(`payment-changes-${projectId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'Estados de pago',
-          filter: `Project=eq.${projectId}`
-        },
-        (payload) => {
-          console.log('🚨 REAL-TIME CHANGE DETECTED:', payload);
-          console.log('🚨 Event type:', payload.eventType);
-          console.log('🚨 Old record:', payload.old);
-          console.log('🚨 New record:', payload.new);
-          
-          // Refetch data when changes are detected
-          fetchProjectDetail();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      console.log('🔴 Cleaning up real-time subscription');
-      supabase.removeChannel(channel);
-    };
-  }, [projectId]);
+  // REMOVED REAL-TIME SUBSCRIPTION TO PREVENT UNWANTED UPDATES
+  // Real-time monitoring was causing potential loops and unwanted calls
 
   return {
     project,

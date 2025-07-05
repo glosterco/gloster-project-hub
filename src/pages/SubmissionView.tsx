@@ -86,9 +86,17 @@ const SubmissionView = () => {
   // DEBUG logs para ayudar a diagnosticar
   console.log('🔍 SubmissionView - payment completo:', payment);
   console.log('🔍 SubmissionView - projectData:', payment.projectData);
-  console.log('🔍 SubmissionView - Contratista:', payment.projectData?.Contratista);
+  console.log('🔍 SubmissionView - Contratista completo:', payment.projectData?.Contratista);
+  console.log('🔍 SubmissionView - Contractor info detallado:', {
+    contractorEmail: payment.projectData?.Contratista?.ContactEmail,
+    contractorName: payment.projectData?.Contratista?.ContactName,
+    contractorCompany: payment.projectData?.Contratista?.CompanyName,
+    contractorRUT: payment.projectData?.Contratista?.RUT,
+    contractorPhone: payment.projectData?.Contratista?.ContactPhone,
+    contractorAddress: payment.projectData?.Contratista?.Adress
+  });
 
-  // Construir emailTemplateData con validación para evitar undefined
+  // Construir emailTemplateData exactamente como en SubmissionPreview que funciona
   const emailTemplateData = {
     paymentState: {
       month: `${payment.Mes || ''} ${payment.Año || ''}`,
@@ -113,8 +121,16 @@ const SubmissionView = () => {
     documents: documentsFromPayment,
   };
 
-  // Más logs para verificar emailTemplateData
-  console.log('📧 SubmissionView - emailTemplateData:', emailTemplateData);
+  // Log para verificar que los datos del contractor se están pasando correctamente
+  console.log('📧 SubmissionView - emailTemplateData completo:', emailTemplateData);
+  console.log('📧 SubmissionView - project data being passed:', {
+    contactEmail: emailTemplateData.project.contactEmail,
+    contractorRUT: emailTemplateData.project.contractorRUT,
+    contractorPhone: emailTemplateData.project.contractorPhone,
+    contractorAddress: emailTemplateData.project.contractorAddress,
+    projectManager: emailTemplateData.project.projectManager,
+    contractor: emailTemplateData.project.contractor
+  });
 
   return (
     <div className="min-h-screen bg-slate-50 font-rubik">

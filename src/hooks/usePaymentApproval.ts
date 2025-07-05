@@ -33,13 +33,24 @@ export const usePaymentApproval = ({ paymentId, onStatusChange }: PaymentApprova
   const fetchPaymentDataForNotification = async () => {
     console.log('🔍 Fetching payment data for notification...', { paymentId });
     
-    // Use the same query structure as usePaymentDetail to ensure contractor data is fetched correctly
+    // Use EXACTLY the same query structure as usePaymentDetail - this is what works correctly
     const { data: paymentData, error: paymentError } = await supabase
       .from('Estados de pago')
       .select(`
         *,
         projectData:Proyectos!Project (
-          *,
+          id,
+          Name,
+          Location,
+          Budget,
+          Currency,
+          Owner:Mandantes!Owner (
+            id,
+            CompanyName,
+            ContactName,
+            ContactEmail,
+            ContactPhone
+          ),
           Contratista:Contratistas!Contratista (
             id,
             CompanyName,
@@ -48,25 +59,33 @@ export const usePaymentApproval = ({ paymentId, onStatusChange }: PaymentApprova
             RUT,
             ContactPhone,
             Adress
-          ),
-          Owner:Mandantes!Owner (
-            id,
-            CompanyName,
-            ContactName,
-            ContactEmail
           )
         )
       `)
       .eq('id', parseInt(paymentId))
-      .single();
+      .maybeSingle();
 
-    if (paymentError || !paymentData) {
+    if (paymentError) {
       console.error('❌ Error fetching payment with project data:', paymentError);
-      throw new Error('No se encontró el estado de pago con datos del proyecto');
+      throw new Error(`Error al obtener datos del pago: ${paymentError.message}`);
+    }
+
+    if (!paymentData) {
+      console.error('❌ No payment found for ID:', paymentId);
+      throw new Error('No se encontró el estado de pago');
     }
 
     console.log('✅ Payment data with project:', paymentData);
-    console.log('📧 Contractor data:', paymentData.projectData?.Contratista);
+    console.log('📧 Contractor data structure:', {
+      hasProjectData: !!paymentData.projectData,
+      hasContratista: !!paymentData.projectData?.Contratista,
+      contractorEmail: paymentData.projectData?.Contratista?.ContactEmail,
+      contractorName: paymentData.projectData?.Contratista?.ContactName,
+      contractorCompany: paymentData.projectData?.Contratista?.CompanyName,
+      contractorRUT: paymentData.projectData?.Contratista?.RUT,
+      contractorPhone: paymentData.projectData?.Contratista?.ContactPhone,
+      contractorAddress: paymentData.projectData?.Contratista?.Adress
+    });
     console.log('🏢 Mandante data:', paymentData.projectData?.Owner);
 
     return paymentData;

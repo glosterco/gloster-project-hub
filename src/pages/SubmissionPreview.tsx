@@ -180,7 +180,8 @@ const SubmissionPreview = () => {
         amount: payment.Total || 0,
         dueDate: payment.ExpiryDate || '',
         driveUrl: paymentStateData.URL || '',
-        uploadedDocuments: []
+        uploadedDocuments: [],
+        currency: payment.projectData.Currency || 'CLP'
       };
 
       const result = await sendNotificationToMandante(notificationData);

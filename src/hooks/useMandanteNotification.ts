@@ -1,8 +1,7 @@
 
 import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useEmailNotifications } from '@/hooks/useEmailNotifications';
-import { useUniqueAccessUrl } from '@/hooks/useUniqueAccessUrl';
 
 interface MandanteNotificationData {
   paymentId: string;
@@ -17,28 +16,23 @@ interface MandanteNotificationData {
   dueDate: string;
   driveUrl: string;
   uploadedDocuments: string[];
+  currency?: string;
 }
 
 export const useMandanteNotification = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const { sendMandanteNotification } = useEmailNotifications();
-  const { ensureUniqueAccessUrl } = useUniqueAccessUrl();
 
   const sendNotificationToMandante = async (data: MandanteNotificationData) => {
     setLoading(true);
-    
     try {
-      console.log('🚀 Starting mandante notification process:', data);
+      // Generar URL de acceso único
+      const baseUrl = window.location.origin;
+      const accessUrl = `${baseUrl}/email-access?paymentId=${data.paymentId}`;
 
-      // Usar el sistema de enlace único
-      const accessUrl = await ensureUniqueAccessUrl(data.paymentId);
-      if (!accessUrl) {
-        throw new Error('No se pudo generar el enlace de acceso');
-      }
+      console.log('🚀 Sending mandante notification with data:', data);
 
-      // Preparar datos de notificación con el enlace único
-      const notificationData = {
+      const notificationPayload = {
         paymentId: data.paymentId,
         contratista: data.contratista,
         mes: data.mes,
@@ -50,23 +44,36 @@ export const useMandanteNotification = () => {
         amount: data.amount,
         dueDate: data.dueDate,
         accessUrl: accessUrl,
+        currency: data.currency
       };
 
-      // Enviar notificación usando la función edge existente
-      const result = await sendMandanteNotification(notificationData);
-      
-      if (result.success) {
-        console.log('✅ Mandante notification sent successfully');
-        return { success: true };
-      } else {
-        throw new Error(result.error || 'Failed to send notification');
+      const { data: result, error } = await supabase.functions.invoke('send-mandante-notification', {
+        body: notificationPayload,
+      });
+
+      if (error) {
+        console.error('Error calling send-mandante-notification:', error);
+        throw error;
       }
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to send mandante notification');
+      }
+
+      console.log('✅ Mandante notification sent successfully:', result);
+      
+      toast({
+        title: "Notificación enviada",
+        description: `Email enviado exitosamente a ${data.mandanteEmail}`,
+      });
+
+      return { success: true, messageId: result.messageId };
     } catch (error) {
-      console.error('❌ Error in mandante notification process:', error);
+      console.error('Error sending mandante notification:', error);
       toast({
         title: "Error al enviar notificación",
-        description: error.message || "Error al procesar la solicitud",
-        variant: "destructive"
+        description: "No se pudo enviar la notificación al mandante",
+        variant: "destructive",
       });
       return { success: false, error: error.message };
     } finally {
@@ -76,6 +83,6 @@ export const useMandanteNotification = () => {
 
   return {
     sendNotificationToMandante,
-    loading
+    loading,
   };
 };

@@ -18,6 +18,7 @@ interface NotificationRequest {
   amount: number;
   dueDate: string;
   accessUrl: string;
+  currency?: string;
 }
 
 // UTF-8 compatible base64 encoding function
@@ -58,12 +59,30 @@ const getAccessToken = async (): Promise<string> => {
   return data.access_token;
 };
 
-const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat('es-CL', {
-    style: 'currency',
-    currency: 'CLP',
-    minimumFractionDigits: 0,
-  }).format(amount);
+const formatCurrency = (amount: number, currency?: string): string => {
+  if (!currency) {
+    return new Intl.NumberFormat('es-CL', {
+      style: 'currency',
+      currency: 'CLP',
+      minimumFractionDigits: 0,
+    }).format(amount);
+  }
+
+  if (currency === 'UF') {
+    return `${amount.toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} UF`;
+  } else if (currency === 'USD') {
+    return new Intl.NumberFormat('es-CL', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+    }).format(amount);
+  } else {
+    return new Intl.NumberFormat('es-CL', {
+      style: 'currency',
+      currency: 'CLP',
+      minimumFractionDigits: 0,
+    }).format(amount);
+  }
 };
 
 const createEmailHtml = (data: NotificationRequest): string => {
@@ -126,7 +145,7 @@ const createEmailHtml = (data: NotificationRequest): string => {
               </div>
               <div class="info-item">
                 <span class="info-label">💰 Monto:</span>
-                <span class="info-value amount">${formatCurrency(data.amount)}</span>
+                <span class="info-value amount">${formatCurrency(data.amount, data.currency)}</span>
               </div>
               <div class="info-item">
                 <span class="info-label">⏰ Vencimiento:</span>

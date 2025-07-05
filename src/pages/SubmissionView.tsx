@@ -130,19 +130,6 @@ const SubmissionView = () => {
             useDirectDownload={true}
           />
 
-          {/* SOLO mostrar PaymentApprovalSection para mandantes con estados pendientes */}
-          {isMandante && (payment.Status === 'Pendiente' || payment.Status === 'Enviado') && (
-            <PaymentApprovalSection
-              paymentId={paymentId}
-              paymentState={{
-                month: `${payment.Mes || ''} ${payment.Año || ''}`,
-                amount: payment.Total || 0,
-                formattedAmount: formatCurrency(payment.Total || 0, payment.projectData?.Currency || 'CLP'),
-                projectName: payment.projectData?.Name || '',
-              }}
-              onStatusChange={handleStatusChange}
-            />
-          )}
         </div>
       </div>
     </div>

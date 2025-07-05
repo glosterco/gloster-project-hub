@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { useEmailNotifications } from '@/hooks/useEmailNotifications';
 
 interface PaymentApprovalHookProps {
   paymentId: string;
@@ -12,7 +11,6 @@ interface PaymentApprovalHookProps {
 export const usePaymentApproval = ({ paymentId, onStatusChange }: PaymentApprovalHookProps) => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const { sendContractorNotification } = useEmailNotifications();
 
   const updatePaymentStatus = async (status: 'Aprobado' | 'Rechazado', notes: string) => {
     console.log('🔄 Updating payment status...', { paymentId, status, notes });
@@ -42,6 +40,7 @@ export const usePaymentApproval = ({ paymentId, onStatusChange }: PaymentApprova
         *,
         projectData:Proyectos!Project (
           Name,
+          Currency,
           Owner:Mandantes!Owner (
             CompanyName,
             ContactName,
@@ -66,40 +65,57 @@ export const usePaymentApproval = ({ paymentId, onStatusChange }: PaymentApprova
     return paymentData;
   };
 
-  const sendNotificationToContractor = async (paymentData: any, status: 'Aprobado' | 'Rechazado', rejectionReason?: string) => {
-    console.log('📤 Preparing to send notification to contractor...', {
+  const sendContractorNotification = async (paymentData: any, status: 'Aprobado' | 'Rechazado', rejectionReason?: string) => {
+    console.log('📤 Preparing contractor notification data...', {
       contractorEmail: paymentData.projectData?.Contratista?.ContactEmail,
       status,
       rejectionReason
     });
 
-    if (paymentData.projectData?.Contratista?.ContactEmail) {
-      const contractorNotificationData = {
-        paymentId: paymentId,
-        contractorEmail: paymentData.projectData.Contratista.ContactEmail,
-        contractorName: paymentData.projectData.Contratista.ContactName || 'Contratista',
-        contractorCompany: paymentData.projectData.Contratista.CompanyName || '',
-        mandanteCompany: paymentData.projectData.Owner?.CompanyName || '',
-        proyecto: paymentData.projectData.Name || '',
-        mes: paymentData.Mes || '',
-        año: paymentData.Año || new Date().getFullYear(),
-        amount: paymentData.Total || 0,
-        status: status,
-        rejectionReason: rejectionReason,
-        platformUrl: `${window.location.origin}/payment/${paymentId}`,
-      };
-
-      console.log(`📤 Sending ${status.toLowerCase()} notification to contractor:`, contractorNotificationData);
-      
-      const notificationResult = await sendContractorNotification(contractorNotificationData);
-      
-      if (!notificationResult.success) {
-        console.warn('⚠️ Notification failed but continuing:', notificationResult.error);
-      } else {
-        console.log(`✅ Contractor ${status.toLowerCase()} notification sent successfully`);
-      }
-    } else {
+    if (!paymentData.projectData?.Contratista?.ContactEmail) {
       console.warn('⚠️ No contractor email found, skipping notification');
+      return { success: false, error: 'No contractor email found' };
+    }
+
+    const contractorNotificationData = {
+      paymentId: paymentId,
+      contractorEmail: paymentData.projectData.Contratista.ContactEmail,
+      contractorName: paymentData.projectData.Contratista.ContactName || 'Contratista',
+      contractorCompany: paymentData.projectData.Contratista.CompanyName || '',
+      mandanteCompany: paymentData.projectData.Owner?.CompanyName || '',
+      proyecto: paymentData.projectData.Name || '',
+      mes: paymentData.Mes || '',
+      año: paymentData.Año || new Date().getFullYear(),
+      amount: paymentData.Total || 0,
+      status: status,
+      rejectionReason: rejectionReason,
+      platformUrl: `${window.location.origin}/payment/${paymentId}`,
+    };
+
+    console.log(`📤 Invoking send-contractor-notification edge function with data:`, contractorNotificationData);
+    
+    try {
+      const { data: result, error } = await supabase.functions.invoke('send-contractor-notification', {
+        body: contractorNotificationData,
+      });
+
+      console.log('📡 Edge function response:', { result, error });
+
+      if (error) {
+        console.error('❌ Error calling send-contractor-notification:', error);
+        throw error;
+      }
+
+      if (!result.success) {
+        console.error('❌ Edge function returned error:', result.error);
+        throw new Error(result.error || 'Failed to send contractor notification');
+      }
+
+      console.log('✅ Contractor notification sent successfully:', result);
+      return { success: true, messageId: result.messageId };
+    } catch (error) {
+      console.error('❌ Error sending contractor notification:', error);
+      return { success: false, error: error.message };
     }
   };
 
@@ -116,23 +132,30 @@ export const usePaymentApproval = ({ paymentId, onStatusChange }: PaymentApprova
     try {
       console.log('🟢 Starting approval process for payment:', paymentId);
 
-      // Update payment status
+      // 1. Update payment status
       const approvalNotes = `Aprobado el ${new Date().toLocaleString('es-CL')}`;
       await updatePaymentStatus('Aprobado', approvalNotes);
 
-      // Fetch payment data for notification
+      // 2. Fetch payment data for notification
       const paymentData = await fetchPaymentDataForNotification();
 
-      // Send notification to contractor
-      await sendNotificationToContractor(paymentData, 'Aprobado');
+      // 3. Send notification to contractor
+      const notificationResult = await sendContractorNotification(paymentData, 'Aprobado');
 
-      // Show success message
-      toast({
-        title: "Estado de pago aprobado",
-        description: "El estado de pago ha sido aprobado exitosamente y se ha notificado al contratista.",
-      });
+      if (notificationResult.success) {
+        toast({
+          title: "Estado de pago aprobado",
+          description: "El estado de pago ha sido aprobado exitosamente y se ha notificado al contratista.",
+        });
+      } else {
+        toast({
+          title: "Estado de pago aprobado",
+          description: "El estado de pago ha sido aprobado, pero hubo un problema al enviar la notificación.",
+          variant: "destructive"
+        });
+      }
 
-      // Update UI after a delay to prevent loops
+      // 4. Update UI after a delay to prevent loops
       setTimeout(() => {
         onStatusChange?.();
       }, 2000);
@@ -171,25 +194,31 @@ export const usePaymentApproval = ({ paymentId, onStatusChange }: PaymentApprova
     setLoading(true);
     try {
       console.log('🔴 Starting rejection process for payment:', paymentId);
-      console.log('📝 Rejection reason:', rejectionReason);
 
-      // Update payment status with rejection notes
+      // 1. Update payment status with rejection notes
       const rejectionNotes = `Rechazado el ${new Date().toLocaleString('es-CL')}: ${rejectionReason}`;
       await updatePaymentStatus('Rechazado', rejectionNotes);
 
-      // Fetch payment data for notification
+      // 2. Fetch payment data for notification
       const paymentData = await fetchPaymentDataForNotification();
 
-      // Send rejection notification to contractor
-      await sendNotificationToContractor(paymentData, 'Rechazado', rejectionReason);
+      // 3. Send rejection notification to contractor
+      const notificationResult = await sendContractorNotification(paymentData, 'Rechazado', rejectionReason);
 
-      // Show success message
-      toast({
-        title: "Estado de pago rechazado",
-        description: "El estado de pago ha sido rechazado y se ha notificado al contratista.",
-      });
+      if (notificationResult.success) {
+        toast({
+          title: "Estado de pago rechazado",
+          description: "El estado de pago ha sido rechazado y se ha notificado al contratista.",
+        });
+      } else {
+        toast({
+          title: "Estado de pago rechazado",
+          description: "El estado de pago ha sido rechazado, pero hubo un problema al enviar la notificación.",
+          variant: "destructive"
+        });
+      }
 
-      // Update UI after a delay to prevent loops
+      // 4. Update UI after a delay to prevent loops
       setTimeout(() => {
         onStatusChange?.();
       }, 2000);

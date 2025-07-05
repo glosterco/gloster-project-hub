@@ -9,11 +9,11 @@ import { Progress } from '@/components/ui/progress';
 import { ArrowLeft, Calendar, ChevronRight, Search, Filter, Plus, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import PageHeader from '@/components/PageHeader';
-import PaymentStatusDebugger from '@/components/PaymentStatusDebugger';
-import { useProjectDetail } from '@/hooks/useProjectDetail';
+import PaymentStatusMonitor from '@/components/PaymentStatusMonitor';
+import { useProjectDetailSecure } from '@/hooks/useProjectDetailSecure';
 
 const ProjectDetail = () => {
-  console.log('🎨 ProjectDetail component rendering...');
+  console.log('🎨 ProjectDetail component rendering with SECURE MODE...');
   
   const { id } = useParams();
   const navigate = useNavigate();
@@ -24,7 +24,8 @@ const ProjectDetail = () => {
   
   console.log('📊 Project ID from params:', id);
   
-  const { project, loading } = useProjectDetail(id || '');
+  // USAR HOOK SEGURO EN LUGAR DEL ORIGINAL
+  const { project, loading } = useProjectDetailSecure(id || '');
 
   // Log project data whenever it changes
   React.useEffect(() => {
@@ -193,8 +194,8 @@ const ProjectDetail = () => {
     <div className="min-h-screen bg-slate-50 font-rubik">
       <PageHeader />
       
-      {/* Debugger component */}
-      <PaymentStatusDebugger projectId={id || ''} />
+      {/* MONITOR DE CAMBIOS EN LUGAR DEL DEBUGGER ANTERIOR */}
+      <PaymentStatusMonitor projectId={id || ''} />
 
       {/* Volver al Dashboard */}
       <div className="bg-slate-50 py-2">

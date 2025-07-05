@@ -111,43 +111,21 @@ export const useProjectDetailSecure = (projectId: string) => {
         return;
       }
 
-      // USAR FUNCIÓN SEGURA DE SOLO LECTURA
-      console.log('🔒 USING SECURE READ-ONLY FUNCTION');
+      // USAR CONSULTA DIRECTA PERO MUY ESPECÍFICA Y SEGURA
+      console.log('🔒 USING SECURE DIRECT QUERY (READ-ONLY)');
       
       const { data: paymentsData, error: paymentsError } = await supabase
-        .rpc('get_payment_states_readonly', { 
-          project_id_param: parseInt(projectId) 
-        });
-
-      if (paymentsError) {
-        console.error('❌ Error with secure function, falling back to direct query');
-        
-        // Fallback to direct query with extra precautions
-        const { data: fallbackData, error: fallbackError } = await supabase
-          .from('Estados de pago')
-          .select('id, Name, Status, Total, ExpiryDate, Completion, Mes, "Año"')
-          .eq('Project', parseInt(projectId))
-          .order('ExpiryDate', { ascending: true });
+        .from('Estados de pago')
+        .select('id, Name, Status, Total, ExpiryDate, Completion, Mes, "Año"')
+        .eq('Project', parseInt(projectId))
+        .order('ExpiryDate', { ascending: true });
           
-        if (fallbackError) {
-          console.error('❌ Fallback query also failed:', fallbackError);
-          return;
-        }
-        
-        // Create project object with fallback data
-        const projectWithDetails: ProjectDetail = {
-          ...projectData,
-          Contratista: projectData.Contratistas,
-          Owner: projectData.Mandantes,
-          EstadosPago: fallbackData || []
-        };
-
-        console.log('✅ SECURE MODE: Setting project state (fallback)');
-        setProject(projectWithDetails);
+      if (paymentsError) {
+        console.error('❌ Error fetching payments:', paymentsError);
         return;
       }
-
-      // Create project object with secure function data
+      
+      // Create project object
       const projectWithDetails: ProjectDetail = {
         ...projectData,
         Contratista: projectData.Contratistas,
@@ -155,7 +133,7 @@ export const useProjectDetailSecure = (projectId: string) => {
         EstadosPago: paymentsData || []
       };
 
-      console.log('✅ SECURE MODE: Setting project state (secure function)');
+      console.log('✅ SECURE MODE: Setting project state');
       setProject(projectWithDetails);
       
     } catch (error) {

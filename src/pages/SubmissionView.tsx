@@ -127,7 +127,7 @@ const SubmissionView = () => {
             useDirectDownload={true}
           />
 
-          {/* Mostrar botones de aprobación solo para mandantes */}
+          {/* SOLO mostrar PaymentApprovalSection para mandantes con estados pendientes */}
           {isMandante && payment.Status !== 'Aprobado' && payment.Status !== 'Rechazado' && (
             <PaymentApprovalSection
               paymentId={paymentId}

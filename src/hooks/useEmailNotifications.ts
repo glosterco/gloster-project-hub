@@ -76,20 +76,25 @@ export const useEmailNotifications = () => {
   };
 
   const sendContractorNotification = async (data: ContractorNotificationData) => {
+    console.log('🚀 sendContractorNotification called with data:', data);
     setLoading(true);
+    
     try {
-      console.log('Sending contractor notification:', data);
+      console.log('📡 Invoking send-contractor-notification edge function...');
 
       const { data: result, error } = await supabase.functions.invoke('send-contractor-notification', {
         body: data,
       });
 
+      console.log('📡 Edge function response:', { result, error });
+
       if (error) {
-        console.error('Error calling send-contractor-notification:', error);
+        console.error('❌ Error calling send-contractor-notification:', error);
         throw error;
       }
 
       if (!result.success) {
+        console.error('❌ Edge function returned error:', result.error);
         throw new Error(result.error || 'Failed to send contractor notification');
       }
 
@@ -102,7 +107,7 @@ export const useEmailNotifications = () => {
 
       return { success: true, messageId: result.messageId };
     } catch (error) {
-      console.error('Error sending contractor notification:', error);
+      console.error('❌ Error sending contractor notification:', error);
       toast({
         title: "Error al enviar notificación",
         description: "No se pudo enviar la notificación al contratista",

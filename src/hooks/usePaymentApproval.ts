@@ -15,6 +15,8 @@ export const usePaymentApproval = ({ paymentId, onStatusChange }: PaymentApprova
   const { sendContractorNotification } = useEmailNotifications();
 
   const updatePaymentStatus = async (status: 'Aprobado' | 'Rechazado', notes: string) => {
+    console.log('🔄 Updating payment status...', { paymentId, status, notes });
+    
     const { error: updateError } = await supabase
       .from('Estados de pago')
       .update({ 
@@ -32,6 +34,8 @@ export const usePaymentApproval = ({ paymentId, onStatusChange }: PaymentApprova
   };
 
   const fetchPaymentDataForNotification = async () => {
+    console.log('🔍 Fetching payment data for notification...', { paymentId });
+    
     const { data: paymentData, error: fetchError } = await supabase
       .from('Estados de pago')
       .select(`
@@ -58,10 +62,17 @@ export const usePaymentApproval = ({ paymentId, onStatusChange }: PaymentApprova
       throw new Error('Error al obtener datos para la notificación');
     }
 
+    console.log('✅ Payment data fetched for notification:', paymentData);
     return paymentData;
   };
 
   const sendNotificationToContractor = async (paymentData: any, status: 'Aprobado' | 'Rechazado', rejectionReason?: string) => {
+    console.log('📤 Preparing to send notification to contractor...', {
+      contractorEmail: paymentData.projectData?.Contratista?.ContactEmail,
+      status,
+      rejectionReason
+    });
+
     if (paymentData.projectData?.Contratista?.ContactEmail) {
       const contractorNotificationData = {
         paymentId: paymentId,
@@ -78,7 +89,7 @@ export const usePaymentApproval = ({ paymentId, onStatusChange }: PaymentApprova
         platformUrl: `${window.location.origin}/payment/${paymentId}`,
       };
 
-      console.log(`📤 Sending ${status.toLowerCase()} notification to contractor:`, contractorNotificationData.contractorEmail);
+      console.log(`📤 Sending ${status.toLowerCase()} notification to contractor:`, contractorNotificationData);
       
       const notificationResult = await sendContractorNotification(contractorNotificationData);
       
@@ -93,7 +104,9 @@ export const usePaymentApproval = ({ paymentId, onStatusChange }: PaymentApprova
   };
 
   const handleApprove = async () => {
+    console.log('🟢 handleApprove called with paymentId:', paymentId);
     setLoading(true);
+    
     try {
       console.log('🟢 Starting approval process for payment:', paymentId);
 
@@ -131,6 +144,8 @@ export const usePaymentApproval = ({ paymentId, onStatusChange }: PaymentApprova
   };
 
   const handleReject = async (rejectionReason: string) => {
+    console.log('🔴 handleReject called with:', { paymentId, rejectionReason });
+    
     if (!rejectionReason.trim()) {
       toast({
         title: "Motivo requerido",

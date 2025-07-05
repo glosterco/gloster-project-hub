@@ -1,7 +1,9 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, FileText, Calendar, MapPin, User, Mail, Phone, Building } from 'lucide-react';
 import { useEmailNotifications } from '@/hooks/useEmailNotifications';
+import { useDirectDriveDownload } from '@/hooks/useDirectDriveDownload';
 import { useToast } from '@/hooks/use-toast';
 
 interface PaymentState {
@@ -40,6 +42,7 @@ interface EmailTemplateProps {
   documents: Document[];
   hideActionButtons?: boolean;
   driveUrl?: string;
+  useDirectDownload?: boolean;
 }
 
 const EmailTemplate: React.FC<EmailTemplateProps> = ({
@@ -48,9 +51,11 @@ const EmailTemplate: React.FC<EmailTemplateProps> = ({
   project,
   documents,
   hideActionButtons = false,
-  driveUrl
+  driveUrl,
+  useDirectDownload = false
 }) => {
   const { getDriveFiles } = useEmailNotifications();
+  const { downloadDocument, loading: downloadLoading } = useDirectDriveDownload();
   const { toast } = useToast();
 
   const formatAmount = () => {
@@ -85,45 +90,51 @@ const EmailTemplate: React.FC<EmailTemplateProps> = ({
       return;
     }
 
-    try {
-      const result = await getDriveFiles(paymentId, documentName);
-      
-      if (result.success && result.files.length > 0) {
-        // If multiple files found, download the first one or open drive folder
-        const file = result.files[0];
-        if (file.downloadUrl) {
-          window.open(file.downloadUrl, '_blank');
-        } else if (driveUrl) {
-          window.open(driveUrl, '_blank');
-        }
+    if (useDirectDownload) {
+      // Usar descarga directa
+      await downloadDocument(paymentId, documentName);
+    } else {
+      // Usar método original (abrir Drive)
+      try {
+        const result = await getDriveFiles(paymentId, documentName);
         
-        toast({
-          title: "Descarga iniciada",
-          description: `Descargando ${documentName}`,
-        });
-      } else {
-        // Fallback to drive folder if specific file not found
-        if (driveUrl) {
-          window.open(driveUrl, '_blank');
+        if (result.success && result.files.length > 0) {
+          // If multiple files found, download the first one or open drive folder
+          const file = result.files[0];
+          if (file.downloadUrl) {
+            window.open(file.downloadUrl, '_blank');
+          } else if (driveUrl) {
+            window.open(driveUrl, '_blank');
+          }
+          
           toast({
-            title: "Abriendo carpeta",
-            description: "Se ha abierto la carpeta del Drive",
+            title: "Descarga iniciada",
+            description: `Descargando ${documentName}`,
           });
         } else {
-          toast({
-            title: "Archivo no encontrado",
-            description: `No se encontró el archivo ${documentName}`,
-            variant: "destructive"
-          });
+          // Fallback to drive folder if specific file not found
+          if (driveUrl) {
+            window.open(driveUrl, '_blank');
+            toast({
+              title: "Abriendo carpeta",
+              description: "Se ha abierto la carpeta del Drive",
+            });
+          } else {
+            toast({
+              title: "Archivo no encontrado",
+              description: `No se encontró el archivo ${documentName}`,
+              variant: "destructive"
+            });
+          }
         }
+      } catch (error) {
+        console.error('Error downloading document:', error);
+        toast({
+          title: "Error al descargar",
+          description: "No se pudo descargar el documento",
+          variant: "destructive"
+        });
       }
-    } catch (error) {
-      console.error('Error downloading document:', error);
-      toast({
-        title: "Error al descargar",
-        description: "No se pudo descargar el documento",
-        variant: "destructive"
-      });
     }
   };
 
@@ -236,10 +247,11 @@ const EmailTemplate: React.FC<EmailTemplateProps> = ({
                       size="sm"
                       variant="outline"
                       onClick={() => handleDownloadDocument(doc.name)}
+                      disabled={downloadLoading}
                       className="text-xs px-2 py-1 h-auto"
                     >
                       <Download className="w-3 h-3 mr-1" />
-                      Descargar
+                      {downloadLoading ? 'Descargando...' : 'Descargar'}
                     </Button>
                   </div>
                 </div>

@@ -206,11 +206,13 @@ const EmailPreview = () => {
       <div className="container mx-auto px-6 py-8">
         <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden email-template-container">
           <EmailTemplate 
+            paymentId={paymentId}
             paymentState={emailTemplateData.paymentState}
             project={emailTemplateData.project}
             documents={emailTemplateData.documents}
             hideActionButtons={true}
             driveUrl={payment?.URL}
+            useDirectDownload={true}
           />
         </div>
       </div>

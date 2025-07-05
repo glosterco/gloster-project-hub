@@ -10,6 +10,7 @@ import { useMandanteNotification } from '@/hooks/useMandanteNotification';
 import { useGoogleDriveIntegration } from '@/hooks/useGoogleDriveIntegration';
 import { supabase } from '@/integrations/supabase/client';
 import { useUniqueAccessUrl } from '@/hooks/useUniqueAccessUrl';
+import { useNavigationWarning } from '@/hooks/useNavigationWarning';
 
 const SubmissionPreview = () => {
   const navigate = useNavigate();
@@ -23,7 +24,14 @@ const SubmissionPreview = () => {
   const [userChecked, setUserChecked] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [documentsUploaded, setDocumentsUploaded] = useState(false);
+  const [notificationSent, setNotificationSent] = useState(false);
   const { ensureUniqueAccessUrl } = useUniqueAccessUrl();
+
+  // Hook para advertencia de navegación
+  const { handleNavigation } = useNavigationWarning({
+    shouldWarn: isProjectUser && !notificationSent,
+    message: "¿Estás seguro de que quieres salir? La notificación no ha sido enviada al mandante."
+  });
 
   const formatCurrency = (amount: number) => {
     if (!payment?.projectData?.Currency) {
@@ -187,6 +195,7 @@ const SubmissionPreview = () => {
       const result = await sendNotificationToMandante(notificationData);
       
       if (result.success) {
+        setNotificationSent(true);
         toast({
           title: "Notificación enviada exitosamente",
           description: "Se ha enviado la notificación al mandante y actualizado el estado",
@@ -206,6 +215,16 @@ const SubmissionPreview = () => {
     } finally {
       setIsUploading(false);
     }
+  };
+
+  const handleBackNavigation = () => {
+    handleNavigation(() => {
+      if (isProjectUser) {
+        navigate(`/payment/${payment.id}`);
+      } else {
+        navigate('/');
+      }
+    });
   };
 
   if (loading) {
@@ -296,7 +315,7 @@ const SubmissionPreview = () => {
       <div className="bg-slate-50 py-2">
         <div className="container mx-auto px-6">
           <button 
-            onClick={() => isProjectUser ? navigate(`/payment/${payment.id}`) : navigate('/')}
+            onClick={handleBackNavigation}
             className="text-gloster-gray hover:text-slate-800 text-sm font-rubik flex items-center"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />

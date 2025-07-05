@@ -1,58 +1,74 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import React from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { usePaymentDetail } from '@/hooks/usePaymentDetail';
-import { supabase } from '@/integrations/supabase/client';
+import { useAccessVerification } from '@/hooks/useAccessVerification';
+import SubmissionHeader from '@/components/submission/SubmissionHeader';
+import SubmissionContent from '@/components/submission/SubmissionContent';
+import { formatCurrency } from '@/utils/currencyUtils';
+import { documentsFromPayment } from '@/constants/documentTypes';
 
 const SubmissionView = () => {
   const navigate = useNavigate();
-  const { paymentId } = useParams<{ paymentId: string }>();
+  const [searchParams] = useSearchParams();
+  const paymentId = searchParams.get('paymentId') || '11';
 
-  const { payment, loading, error, refetch } = usePaymentDetail(paymentId || '', true);
+  const { payment, loading, error, refetch } = usePaymentDetail(paymentId, true);
   const { toast } = useToast();
+  const { hasAccess, checkingAccess, isMandante } = useAccessVerification(payment, paymentId);
 
-  const [isProjectUser, setIsProjectUser] = useState(false);
-  const [userChecked, setUserChecked] = useState(false);
+  const handleStatusChange = () => {
+    console.log('🔄 Status changed, refreshing payment data...');
+    refetch();
+  };
 
-  useEffect(() => {
-    const checkUser = async () => {
-      if (userChecked) return;
-
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-
-        setIsProjectUser(!!user);
-      } catch (err) {
-        console.error('Error checking user:', err);
-        setIsProjectUser(false);
-      } finally {
-        setUserChecked(true);
-      }
-    };
-
-    checkUser();
-  }, [userChecked]);
-
-  if (loading) {
+  if (checkingAccess) {
     return (
       <div className="min-h-screen bg-slate-50 font-rubik">
         <div className="container mx-auto px-6 py-8">
-          <div className="text-center">Cargando estado de pago...</div>
+          <div className="flex items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin mr-2" />
+            <span>Verificando acceso...</span>
+          </div>
         </div>
       </div>
     );
   }
 
-  if (!payment || !payment.projectData) {
+  if (!hasAccess) {
+    return (
+      <div className="min-h-screen bg-slate-50 font-rubik flex items-center justify-center">
+        <p className="text-gloster-gray">No tienes acceso a este estado de pago.</p>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 font-rubik">
+        <div className="container mx-auto px-6 py-8">
+          <div className="flex items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin mr-2" />
+            <span>Cargando datos del estado de pago...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !payment || !payment.projectData) {
     return (
       <div className="min-h-screen bg-slate-50 font-rubik">
         <div className="container mx-auto px-6 py-8">
           <div className="text-center">
-            <p className="text-gloster-gray mb-4">{error || 'Estado de pago no encontrado.'}</p>
+            <p className="text-gloster-gray mb-4">
+              {error || 'Estado de pago no encontrado.'}
+            </p>
+            <p className="text-sm text-gloster-gray mb-4">
+              ID solicitado: {paymentId}
+            </p>
             <Button onClick={() => navigate('/')} className="mt-4">
               Volver al Inicio
             </Button>
@@ -62,135 +78,49 @@ const SubmissionView = () => {
     );
   }
 
+  // DEBUG logs para ayudar a diagnosticar
+  console.log('🔍 SubmissionView - payment completo:', payment);
+  console.log('🔍 SubmissionView - projectData:', payment.projectData);
+  console.log('🔍 SubmissionView - Contratista:', payment.projectData?.Contratista);
+
+  // Construir emailTemplateData con validación para evitar undefined
+  const emailTemplateData = {
+    paymentState: {
+      month: `${payment.Mes || ''} ${payment.Año || ''}`,
+      amount: payment.Total || 0,
+      formattedAmount: formatCurrency(payment.Total || 0, payment.projectData?.Currency || 'CLP'),
+      dueDate: payment.ExpiryDate || '',
+      projectName: payment.projectData?.Name || '',
+      recipient: payment.projectData?.Owner?.ContactEmail || '',
+      currency: payment.projectData?.Currency || 'CLP',
+    },
+    project: {
+      name: payment.projectData?.Name || '',
+      client: payment.projectData?.Owner?.CompanyName || '',
+      contractor: payment.projectData?.Contratista?.CompanyName || '',
+      location: payment.projectData?.Location || '',
+      projectManager: payment.projectData?.Contratista?.ContactName || '',
+      contactEmail: payment.projectData?.Contratista?.ContactEmail || '',
+      contractorRUT: payment.projectData?.Contratista?.RUT || '',
+      contractorPhone: payment.projectData?.Contratista?.ContactPhone?.toString() || '',
+      contractorAddress: payment.projectData?.Contratista?.Adress || '',
+    },
+    documents: documentsFromPayment,
+  };
+
+  // Más logs para verificar emailTemplateData
+  console.log('📧 SubmissionView - emailTemplateData:', emailTemplateData);
+
   return (
     <div className="min-h-screen bg-slate-50 font-rubik">
-      <div className="bg-white border-b border-gloster-gray/20 shadow-sm">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => (isProjectUser ? navigate(`/project/${payment.Project}`) : navigate('/'))}
-            className="flex items-center text-gloster-gray hover:text-slate-800 text-sm font-rubik"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            {isProjectUser ? 'Volver al Proyecto' : 'Volver al Inicio'}
-          </Button>
+      <SubmissionHeader />
 
-          <h1 className="text-xl font-bold text-slate-800 font-rubik">Detalle Estado de Pago</h1>
-
-          <div /> {/* Placeholder para alinear el título en el centro */}
-        </div>
-      </div>
-
-      <main className="container mx-auto px-6 py-8 max-w-4xl">
-        <section className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold mb-4">Información General</h2>
-          <p>
-            <strong>Nombre:</strong> {payment.Name}
-          </p>
-          <p>
-            <strong>Mes:</strong> {payment.Mes} - <strong>Año:</strong> {payment.Año}
-          </p>
-          <p>
-            <strong>Total:</strong> {payment.Total.toLocaleString('es-CL', { style: 'currency', currency: payment.projectData.Currency || 'CLP' })}
-          </p>
-          <p>
-            <strong>Estado:</strong> {payment.Status}
-          </p>
-          <p>
-            <strong>Fecha de Vencimiento:</strong> {payment.ExpiryDate}
-          </p>
-          {payment.Notes && (
-            <p>
-              <strong>Notas:</strong> {payment.Notes}
-            </p>
-          )}
-        </section>
-
-        <section className="bg-white rounded-lg shadow p-6 mt-6">
-          <h2 className="text-lg font-semibold mb-4">Datos del Proyecto</h2>
-          <p>
-            <strong>Nombre del Proyecto:</strong> {payment.projectData.Name}
-          </p>
-          <p>
-            <strong>Ubicación:</strong> {payment.projectData.Location}
-          </p>
-          <p>
-            <strong>Presupuesto:</strong>{' '}
-            {payment.projectData.Budget
-              ? payment.projectData.Budget.toLocaleString('es-CL', { style: 'currency', currency: payment.projectData.Currency || 'CLP' })
-              : 'No disponible'}
-          </p>
-
-          <h3 className="mt-4 font-semibold">Mandante</h3>
-          {payment.projectData.Owner ? (
-            <>
-              <p>
-                <strong>Empresa:</strong> {payment.projectData.Owner.CompanyName}
-              </p>
-              <p>
-                <strong>Contacto:</strong> {payment.projectData.Owner.ContactName}
-              </p>
-              <p>
-                <strong>Email:</strong> {payment.projectData.Owner.ContactEmail}
-              </p>
-              {payment.projectData.Owner.ContactPhone && (
-                <p>
-                  <strong>Teléfono:</strong> {payment.projectData.Owner.ContactPhone}
-                </p>
-              )}
-            </>
-          ) : (
-            <p>No hay datos del mandante disponibles.</p>
-          )}
-
-          <h3 className="mt-4 font-semibold">Contratista</h3>
-          {payment.projectData.Contratista ? (
-            <>
-              <p>
-                <strong>Empresa:</strong> {payment.projectData.Contratista.CompanyName}
-              </p>
-              <p>
-                <strong>Contacto:</strong> {payment.projectData.Contratista.ContactName}
-              </p>
-              <p>
-                <strong>Email:</strong> {payment.projectData.Contratista.ContactEmail}
-              </p>
-              {payment.projectData.Contratista.RUT && (
-                <p>
-                  <strong>RUT:</strong> {payment.projectData.Contratista.RUT}
-                </p>
-              )}
-              {payment.projectData.Contratista.ContactPhone && (
-                <p>
-                  <strong>Teléfono:</strong> {payment.projectData.Contratista.ContactPhone}
-                </p>
-              )}
-              {payment.projectData.Contratista.Adress && (
-                <p>
-                  <strong>Dirección:</strong> {payment.projectData.Contratista.Adress}
-                </p>
-              )}
-            </>
-          ) : (
-            <p>No hay datos del contratista disponibles.</p>
-          )}
-        </section>
-
-        {payment.URL && (
-          <section className="bg-white rounded-lg shadow p-6 mt-6">
-            <h2 className="text-lg font-semibold mb-4">Documento del Estado de Pago</h2>
-            <a
-              href={payment.URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gloster-yellow hover:underline font-semibold"
-            >
-              Ver documento
-            </a>
-          </section>
-        )}
-      </main>
+      <SubmissionContent
+        paymentId={paymentId}
+        emailTemplateData={emailTemplateData}
+        isMandante={isMandante}
+        onStatusChange={handleStatusChange}
+      />
     </div>
   );
 };

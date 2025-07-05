@@ -105,6 +105,12 @@ export const usePaymentApproval = ({ paymentId, onStatusChange }: PaymentApprova
 
   const handleApprove = async () => {
     console.log('🟢 handleApprove called with paymentId:', paymentId);
+    
+    if (loading) {
+      console.log('⏳ Already processing, skipping...');
+      return;
+    }
+    
     setLoading(true);
     
     try {
@@ -126,8 +132,10 @@ export const usePaymentApproval = ({ paymentId, onStatusChange }: PaymentApprova
         description: "El estado de pago ha sido aprobado exitosamente y se ha notificado al contratista.",
       });
 
-      // Update UI
-      onStatusChange?.();
+      // Update UI after a delay to prevent loops
+      setTimeout(() => {
+        onStatusChange?.();
+      }, 2000);
       
       console.log('✅ Approval process completed successfully');
 
@@ -155,6 +163,11 @@ export const usePaymentApproval = ({ paymentId, onStatusChange }: PaymentApprova
       return;
     }
 
+    if (loading) {
+      console.log('⏳ Already processing, skipping...');
+      return;
+    }
+
     setLoading(true);
     try {
       console.log('🔴 Starting rejection process for payment:', paymentId);
@@ -176,8 +189,10 @@ export const usePaymentApproval = ({ paymentId, onStatusChange }: PaymentApprova
         description: "El estado de pago ha sido rechazado y se ha notificado al contratista.",
       });
 
-      // Update UI
-      onStatusChange?.();
+      // Update UI after a delay to prevent loops
+      setTimeout(() => {
+        onStatusChange?.();
+      }, 2000);
       
       console.log('✅ Rejection process completed successfully');
 

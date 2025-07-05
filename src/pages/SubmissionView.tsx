@@ -23,7 +23,10 @@ const SubmissionView = () => {
 
   const handleStatusChange = () => {
     console.log('🔄 Status changed, refreshing payment data...');
-    refetch();
+    // Usar un timeout para evitar loop infinito
+    setTimeout(() => {
+      refetch();
+    }, 1000);
   };
 
   if (checkingAccess) {
@@ -128,7 +131,7 @@ const SubmissionView = () => {
           />
 
           {/* SOLO mostrar PaymentApprovalSection para mandantes con estados pendientes */}
-          {isMandante && payment.Status !== 'Aprobado' && payment.Status !== 'Rechazado' && (
+          {isMandante && (payment.Status === 'Pendiente' || payment.Status === 'Enviado') && (
             <PaymentApprovalSection
               paymentId={paymentId}
               paymentState={{

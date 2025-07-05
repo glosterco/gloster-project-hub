@@ -24,27 +24,40 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
   const [showRejectionForm, setShowRejectionForm] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   
+  console.log('🏗️ PaymentApprovalSection rendering with paymentId:', paymentId);
+  
   const { loading, handleApprove, handleReject } = usePaymentApproval({
     paymentId,
     onStatusChange
   });
 
-  const onApprove = () => {
-    handleApprove();
+  const onApprove = async () => {
+    console.log('✅ PaymentApprovalSection onApprove clicked');
+    try {
+      await handleApprove();
+    } catch (error) {
+      console.error('❌ Error in onApprove:', error);
+    }
   };
 
   const onReject = () => {
+    console.log('❌ PaymentApprovalSection onReject clicked');
     setShowRejectionForm(true);
   };
 
-  const onConfirmReject = () => {
-    handleReject(rejectionReason).then(() => {
+  const onConfirmReject = async () => {
+    console.log('❌ PaymentApprovalSection onConfirmReject clicked with reason:', rejectionReason);
+    try {
+      await handleReject(rejectionReason);
       setShowRejectionForm(false);
       setRejectionReason('');
-    });
+    } catch (error) {
+      console.error('❌ Error in onConfirmReject:', error);
+    }
   };
 
   const onCancel = () => {
+    console.log('🚫 PaymentApprovalSection onCancel clicked');
     setShowRejectionForm(false);
     setRejectionReason('');
   };

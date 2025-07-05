@@ -5,6 +5,7 @@ import PaymentApprovalSection from '@/components/PaymentApprovalSection';
 
 interface SubmissionContentProps {
   paymentId: string;
+  payment?: any; // Agregar payment data
   emailTemplateData: {
     paymentState: {
       month: string;
@@ -40,6 +41,7 @@ interface SubmissionContentProps {
 
 const SubmissionContent: React.FC<SubmissionContentProps> = ({
   paymentId,
+  payment,
   emailTemplateData,
   isMandante,
   onStatusChange,
@@ -48,6 +50,7 @@ const SubmissionContent: React.FC<SubmissionContentProps> = ({
   // DEBUG: Log received data in SubmissionContent
   console.log('📦 SubmissionContent - Received emailTemplateData:', emailTemplateData);
   console.log('📦 SubmissionContent - Contractor info received:', {
+    contractorEmail: emailTemplateData.project.contactEmail,
     contractorRUT: emailTemplateData.project.contractorRUT,
     contractorPhone: emailTemplateData.project.contractorPhone,
     contractorAddress: emailTemplateData.project.contractorAddress
@@ -69,6 +72,7 @@ const SubmissionContent: React.FC<SubmissionContentProps> = ({
         {isMandante && (
           <PaymentApprovalSection
             paymentId={paymentId}
+            payment={payment}
             paymentState={emailTemplateData.paymentState}
             onStatusChange={onStatusChange}
           />

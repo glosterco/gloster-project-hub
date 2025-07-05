@@ -1,13 +1,15 @@
+
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 interface PaymentApprovalHookProps {
   paymentId: string;
+  payment?: any; // Recibir payment data directamente en lugar de hacer query separada
   onStatusChange?: () => void;
 }
 
-export const usePaymentApproval = ({ paymentId, onStatusChange }: PaymentApprovalHookProps) => {
+export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: PaymentApprovalHookProps) => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -30,67 +32,6 @@ export const usePaymentApproval = ({ paymentId, onStatusChange }: PaymentApprova
     console.log(`✅ Payment status updated to ${status}`);
   };
 
-  const fetchPaymentDataForNotification = async () => {
-    console.log('🔍 Fetching payment data for notification...', { paymentId });
-    
-    // Use EXACTLY the same query structure as usePaymentDetail - this is what works correctly
-    const { data: paymentData, error: paymentError } = await supabase
-      .from('Estados de pago')
-      .select(`
-        *,
-        projectData:Proyectos!Project (
-          id,
-          Name,
-          Location,
-          Budget,
-          Currency,
-          Owner:Mandantes!Owner (
-            id,
-            CompanyName,
-            ContactName,
-            ContactEmail,
-            ContactPhone
-          ),
-          Contratista:Contratistas!Contratista (
-            id,
-            CompanyName,
-            ContactName,
-            ContactEmail,
-            RUT,
-            ContactPhone,
-            Adress
-          )
-        )
-      `)
-      .eq('id', parseInt(paymentId))
-      .maybeSingle();
-
-    if (paymentError) {
-      console.error('❌ Error fetching payment with project data:', paymentError);
-      throw new Error(`Error al obtener datos del pago: ${paymentError.message}`);
-    }
-
-    if (!paymentData) {
-      console.error('❌ No payment found for ID:', paymentId);
-      throw new Error('No se encontró el estado de pago');
-    }
-
-    console.log('✅ Payment data with project:', paymentData);
-    console.log('📧 Contractor data structure:', {
-      hasProjectData: !!paymentData.projectData,
-      hasContratista: !!paymentData.projectData?.Contratista,
-      contractorEmail: paymentData.projectData?.Contratista?.ContactEmail,
-      contractorName: paymentData.projectData?.Contratista?.ContactName,
-      contractorCompany: paymentData.projectData?.Contratista?.CompanyName,
-      contractorRUT: paymentData.projectData?.Contratista?.RUT,
-      contractorPhone: paymentData.projectData?.Contratista?.ContactPhone,
-      contractorAddress: paymentData.projectData?.Contratista?.Adress
-    });
-    console.log('🏢 Mandante data:', paymentData.projectData?.Owner);
-
-    return paymentData;
-  };
-
   const sendContractorNotification = async (paymentData: any, status: 'Aprobado' | 'Rechazado', rejectionReason?: string) => {
     console.log('📤 Starting contractor notification process...', {
       paymentId,
@@ -100,22 +41,18 @@ export const usePaymentApproval = ({ paymentId, onStatusChange }: PaymentApprova
       hasContractor: !!paymentData.projectData?.Contratista
     });
 
-    // Validate contractor email exists
+    // Validar que existe el email del contratista usando los datos ya disponibles
     const contractorEmail = paymentData.projectData?.Contratista?.ContactEmail;
-    console.log('📧 Contractor email check:', {
+    console.log('📧 Contractor email validation:', {
       found: !!contractorEmail,
       email: contractorEmail,
       contractorData: paymentData.projectData?.Contratista
     });
 
     if (!contractorEmail) {
-      console.error('❌ No contractor email found');
-      console.log('🔍 Available data structure:', {
-        paymentKeys: Object.keys(paymentData),
-        projectDataKeys: paymentData.projectData ? Object.keys(paymentData.projectData) : 'No projectData',
-        contractorKeys: paymentData.projectData?.Contratista ? Object.keys(paymentData.projectData.Contratista) : 'No Contratista'
-      });
-      throw new Error('No se encontró email del contratista');
+      console.error('❌ No contractor email found in provided payment data');
+      console.log('🔍 Available contractor data:', paymentData.projectData?.Contratista);
+      throw new Error('No se encontró email del contratista en los datos del pago');
     }
 
     const contractorNotificationData = {
@@ -167,28 +104,36 @@ export const usePaymentApproval = ({ paymentId, onStatusChange }: PaymentApprova
       console.log('⏳ Already processing, skipping...');
       return;
     }
+
+    if (!payment || !payment.projectData) {
+      console.error('❌ No payment data available for approval');
+      toast({
+        title: "Error",
+        description: "No se pueden cargar los datos del estado de pago",
+        variant: "destructive"
+      });
+      return;
+    }
     
     setLoading(true);
     
     try {
       console.log('🟢 Starting approval process for payment:', paymentId);
+      console.log('🟢 Using payment data:', payment.projectData?.Contratista);
 
       // 1. Update payment status
       const approvalNotes = `Aprobado el ${new Date().toLocaleString('es-CL')}`;
       await updatePaymentStatus('Aprobado', approvalNotes);
 
-      // 2. Fetch payment data for notification
-      const paymentData = await fetchPaymentDataForNotification();
-
-      // 3. Send notification to contractor
-      await sendContractorNotification(paymentData, 'Aprobado');
+      // 2. Send notification using existing payment data (no additional query needed)
+      await sendContractorNotification(payment, 'Aprobado');
 
       toast({
         title: "Estado de pago aprobado",
         description: "El estado de pago ha sido aprobado exitosamente y se ha notificado al contratista.",
       });
 
-      // 4. Update UI after a delay to prevent loops
+      // 3. Update UI after a delay to prevent loops
       setTimeout(() => {
         onStatusChange?.();
       }, 2000);
@@ -224,6 +169,16 @@ export const usePaymentApproval = ({ paymentId, onStatusChange }: PaymentApprova
       return;
     }
 
+    if (!payment || !payment.projectData) {
+      console.error('❌ No payment data available for rejection');
+      toast({
+        title: "Error",
+        description: "No se pueden cargar los datos del estado de pago",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       console.log('🔴 Starting rejection process for payment:', paymentId);
@@ -232,18 +187,15 @@ export const usePaymentApproval = ({ paymentId, onStatusChange }: PaymentApprova
       const rejectionNotes = `Rechazado el ${new Date().toLocaleString('es-CL')}: ${rejectionReason}`;
       await updatePaymentStatus('Rechazado', rejectionNotes);
 
-      // 2. Fetch payment data for notification
-      const paymentData = await fetchPaymentDataForNotification();
-
-      // 3. Send rejection notification to contractor
-      await sendContractorNotification(paymentData, 'Rechazado', rejectionReason);
+      // 2. Send rejection notification using existing payment data
+      await sendContractorNotification(payment, 'Rechazado', rejectionReason);
 
       toast({
         title: "Estado de pago rechazado",
         description: "El estado de pago ha sido rechazado y se ha notificado al contratista.",
       });
 
-      // 4. Update UI after a delay to prevent loops
+      // 3. Update UI after a delay to prevent loops
       setTimeout(() => {
         onStatusChange?.();
       }, 2000);

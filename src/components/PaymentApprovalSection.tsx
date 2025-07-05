@@ -7,6 +7,7 @@ import RejectionForm from '@/components/approval/RejectionForm';
 
 interface PaymentApprovalSectionProps {
   paymentId: string;
+  payment?: any; // Agregar payment data para pasarlo al hook
   paymentState: {
     month: string;
     amount: number;
@@ -18,16 +19,18 @@ interface PaymentApprovalSectionProps {
 
 const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
   paymentId,
+  payment,
   paymentState,
   onStatusChange
 }) => {
   const [showRejectionForm, setShowRejectionForm] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   
-  console.log('🏗️ PaymentApprovalSection rendering with paymentId:', paymentId);
+  console.log('🏗️ PaymentApprovalSection rendering with:', { paymentId, hasPaymentData: !!payment });
   
   const { loading, handleApprove, handleReject } = usePaymentApproval({
     paymentId,
+    payment, // Pasar los datos del payment
     onStatusChange
   });
 

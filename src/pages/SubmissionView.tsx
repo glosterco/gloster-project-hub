@@ -9,8 +9,7 @@ import { useAccessVerification } from '@/hooks/useAccessVerification';
 import SubmissionHeader from '@/components/submission/SubmissionHeader';
 import SubmissionContent from '@/components/submission/SubmissionContent';
 import PaymentApprovalSection from '@/components/PaymentApprovalSection';
-import { formatCurrency } from '@/utils/currencyUtils';
-import { documentsFromPayment } from '@/constants/documentTypes';
+import { formatCurrency, getDocumentsFromPayment } from '@/utils/submissionPreviewUtils';
 
 const SubmissionView = () => {
   const navigate = useNavigate();
@@ -83,29 +82,31 @@ const SubmissionView = () => {
     );
   }
 
-  // DEBUG logs para ayudar a diagnosticar
+  // DEBUG logs para diagnosticar datos del contratista
   console.log('🔍 SubmissionView - payment completo:', payment);
   console.log('🔍 SubmissionView - projectData:', payment.projectData);
-  console.log('🔍 SubmissionView - Contratista completo:', payment.projectData?.Contratista);
-  console.log('🔍 SubmissionView - Contractor info detallado:', {
-    contractorEmail: payment.projectData?.Contratista?.ContactEmail,
-    contractorName: payment.projectData?.Contratista?.ContactName,
-    contractorCompany: payment.projectData?.Contratista?.CompanyName,
-    contractorRUT: payment.projectData?.Contratista?.RUT,
-    contractorPhone: payment.projectData?.Contratista?.ContactPhone,
-    contractorAddress: payment.projectData?.Contratista?.Adress
+  console.log('🔍 SubmissionView - Contractor data completo:', {
+    id: payment.projectData?.Contratista?.id,
+    companyName: payment.projectData?.Contratista?.CompanyName,
+    contactName: payment.projectData?.Contratista?.ContactName,
+    contactEmail: payment.projectData?.Contratista?.ContactEmail,
+    RUT: payment.projectData?.Contratista?.RUT,
+    contactPhone: payment.projectData?.Contratista?.ContactPhone,
+    address: payment.projectData?.Contratista?.Adress
   });
 
-  // Construir emailTemplateData exactamente como en SubmissionPreview que funciona
+  // Usar EXACTAMENTE la misma lógica que SubmissionPreview (que funciona correctamente)
+  const documentsFromPayment = getDocumentsFromPayment();
+
   const emailTemplateData = {
     paymentState: {
-      month: `${payment.Mes || ''} ${payment.Año || ''}`,
+      month: `${payment.Mes} ${payment.Año}`,
       amount: payment.Total || 0,
-      formattedAmount: formatCurrency(payment.Total || 0, payment.projectData?.Currency || 'CLP'),
-      dueDate: payment.ExpiryDate || '',
+      formattedAmount: formatCurrency(payment.Total || 0, payment),
+      dueDate: payment.ExpiryDate,
       projectName: payment.projectData?.Name || '',
       recipient: payment.projectData?.Owner?.ContactEmail || '',
-      currency: payment.projectData?.Currency || 'CLP',
+      currency: payment.projectData?.Currency || 'CLP'
     },
     project: {
       name: payment.projectData?.Name || '',
@@ -116,14 +117,14 @@ const SubmissionView = () => {
       contactEmail: payment.projectData?.Contratista?.ContactEmail || '',
       contractorRUT: payment.projectData?.Contratista?.RUT || '',
       contractorPhone: payment.projectData?.Contratista?.ContactPhone?.toString() || '',
-      contractorAddress: payment.projectData?.Contratista?.Adress || '',
+      contractorAddress: payment.projectData?.Contratista?.Adress || ''
     },
-    documents: documentsFromPayment,
+    documents: documentsFromPayment
   };
 
-  // Log para verificar que los datos del contractor se están pasando correctamente
-  console.log('📧 SubmissionView - emailTemplateData completo:', emailTemplateData);
-  console.log('📧 SubmissionView - project data being passed:', {
+  // Log para verificar que los datos están correctamente construidos
+  console.log('📧 SubmissionView - emailTemplateData construido:', emailTemplateData);
+  console.log('📧 SubmissionView - contractor info en emailTemplateData:', {
     contactEmail: emailTemplateData.project.contactEmail,
     contractorRUT: emailTemplateData.project.contractorRUT,
     contractorPhone: emailTemplateData.project.contractorPhone,
@@ -145,7 +146,6 @@ const SubmissionView = () => {
             onStatusChange={handleStatusChange}
             useDirectDownload={true}
           />
-
         </div>
       </div>
     </div>

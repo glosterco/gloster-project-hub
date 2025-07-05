@@ -37,18 +37,15 @@ const ProjectDetail = () => {
     return new Intl.NumberFormat('es-CL', config).format(amount);
   };
 
-  // STRICTLY READ-ONLY: Get payment status directly from database without any modifications
+  // PURE READ-ONLY: Return exact status from database without any modifications
   const getPaymentStatus = (payment: any) => {
-    const originalStatus = payment.Status;
-    console.log(`📋 READONLY: Payment "${payment.Name}" status is "${originalStatus}"`);
-    
-    // Return the exact status from the database without any fallback or modification logic
-    return originalStatus || 'Sin Estado';
+    const dbStatus = payment.Status;
+    console.log(`📋 DISPLAYING status for "${payment.Name}": "${dbStatus}" (pure database value)`);
+    return dbStatus || 'Sin Estado';
   };
 
   const getStatusColor = (status: string) => {
     const normalizedStatus = status.toLowerCase();
-    console.log(`🎨 Getting color for status: "${status}" (normalized: "${normalizedStatus}")`);
     
     switch (normalizedStatus) {
       case 'aprobado':
@@ -66,7 +63,6 @@ const ProjectDetail = () => {
       case 'sin estado':
         return 'bg-gray-100 text-gray-700';
       default:
-        console.log(`⚠️ Unknown status color for: "${status}"`);
         return 'bg-gray-100 text-gray-700';
     }
   };

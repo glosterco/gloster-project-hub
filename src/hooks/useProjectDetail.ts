@@ -49,7 +49,7 @@ export const useProjectDetail = (projectId: string) => {
     
     setLoading(true);
     try {
-      console.log('🔍 FETCHING PROJECT DETAIL - READONLY MODE');
+      console.log('🔍 FETCHING PROJECT DETAIL - STRICTLY READ-ONLY MODE');
       
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
@@ -59,7 +59,7 @@ export const useProjectDetail = (projectId: string) => {
         return;
       }
 
-      // Get contractor data for current user - use maybeSingle to handle no results
+      // Get contractor data for current user - READ ONLY
       const { data: contractorData, error: contractorError } = await supabase
         .from('Contratistas')
         .select('*')
@@ -83,7 +83,7 @@ export const useProjectDetail = (projectId: string) => {
 
       console.log('✅ Contractor found:', contractorData.CompanyName);
 
-      // Fetch project details with relationships - READONLY QUERY
+      // Fetch project details with relationships - STRICTLY READ-ONLY
       const { data: projectData, error: projectError } = await supabase
         .from('Proyectos')
         .select(`
@@ -127,11 +127,11 @@ export const useProjectDetail = (projectId: string) => {
 
       console.log('✅ Project found:', projectData.Name);
 
-      // Fetch payment states for this project - STRICTLY READONLY, NO MODIFICATIONS
-      console.log('🔍 Fetching payment states - READONLY MODE');
+      // Fetch payment states - STRICTLY READ-ONLY, NO MODIFICATIONS EVER
+      console.log('🔍 Fetching payment states - PURE READ-ONLY MODE');
       const { data: paymentsData, error: paymentsError } = await supabase
         .from('Estados de pago')
-        .select('*')
+        .select('id, Name, Status, Total, ExpiryDate, Completion, Mes, Año')
         .eq('Project', parseInt(projectId))
         .order('ExpiryDate', { ascending: true });
 
@@ -145,11 +145,11 @@ export const useProjectDetail = (projectId: string) => {
         return;
       }
 
-      console.log('✅ Payment states fetched (READONLY):', paymentsData?.length || 0, 'records');
+      console.log('✅ Payment states fetched (READ-ONLY):', paymentsData?.length || 0, 'records');
       
-      // LOG THE EXACT STATUS VALUES WE'RE READING (NOT MODIFYING)
+      // LOG EACH STATUS AS READ FROM DATABASE - NO MODIFICATIONS
       paymentsData?.forEach(payment => {
-        console.log(`📋 Payment "${payment.Name}" has status: "${payment.Status}" (READ ONLY)`);
+        console.log(`📋 READ-ONLY: Payment "${payment.Name}" status: "${payment.Status}" (from database)`);
       });
 
       const projectWithDetails = {
@@ -160,7 +160,7 @@ export const useProjectDetail = (projectId: string) => {
       };
 
       setProject(projectWithDetails);
-      console.log('✅ Project detail loaded successfully (READONLY)');
+      console.log('✅ Project detail loaded - ZERO MODIFICATIONS MADE');
       
     } catch (error) {
       console.error('❌ Unexpected error in fetchProjectDetail:', error);

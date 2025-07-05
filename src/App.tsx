@@ -5,7 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
-import GlobalPaymentMonitor from "@/components/GlobalPaymentMonitor";
+import DatabaseChangeMonitor from "@/components/DatabaseChangeMonitor";
 import Index from "./pages/Index";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
@@ -27,7 +27,7 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          <GlobalPaymentMonitor />
+          <DatabaseChangeMonitor />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/register" element={<Register />} />

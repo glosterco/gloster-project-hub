@@ -128,10 +128,11 @@ export const useProjectDetail = (projectId: string) => {
       console.log('✅ Project found:', projectData.Name);
 
       // Fetch payment states - STRICTLY READ-ONLY, NO MODIFICATIONS EVER
+      // Using proper table name with quotes to handle special characters
       console.log('🔍 Fetching payment states - PURE READ-ONLY MODE');
       const { data: paymentsData, error: paymentsError } = await supabase
         .from('Estados de pago')
-        .select('id, Name, Status, Total, ExpiryDate, Completion, Mes, Año')
+        .select('id, Name, Status, Total, ExpiryDate, Completion, Mes, "Año"')
         .eq('Project', parseInt(projectId))
         .order('ExpiryDate', { ascending: true });
 
@@ -148,11 +149,16 @@ export const useProjectDetail = (projectId: string) => {
       console.log('✅ Payment states fetched (READ-ONLY):', paymentsData?.length || 0, 'records');
       
       // LOG EACH STATUS AS READ FROM DATABASE - NO MODIFICATIONS
-      paymentsData?.forEach(payment => {
-        console.log(`📋 READ-ONLY: Payment "${payment.Name}" status: "${payment.Status}" (from database)`);
-      });
+      // Add safety check for paymentsData
+      if (paymentsData && Array.isArray(paymentsData)) {
+        paymentsData.forEach(payment => {
+          if (payment && typeof payment === 'object' && 'Name' in payment && 'Status' in payment) {
+            console.log(`📋 READ-ONLY: Payment "${payment.Name}" status: "${payment.Status}" (from database)`);
+          }
+        });
+      }
 
-      const projectWithDetails = {
+      const projectWithDetails: ProjectDetail = {
         ...projectData,
         Contratista: projectData.Contratistas,
         Owner: projectData.Mandantes,

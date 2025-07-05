@@ -8,6 +8,7 @@ import { usePaymentDetail } from '@/hooks/usePaymentDetail';
 import { useAccessVerification } from '@/hooks/useAccessVerification';
 import SubmissionHeader from '@/components/submission/SubmissionHeader';
 import SubmissionContent from '@/components/submission/SubmissionContent';
+import PaymentApprovalSection from '@/components/PaymentApprovalSection';
 import { formatCurrency } from '@/utils/currencyUtils';
 import { documentsFromPayment } from '@/constants/documentTypes';
 
@@ -116,13 +117,31 @@ const SubmissionView = () => {
     <div className="min-h-screen bg-slate-50 font-rubik">
       <SubmissionHeader />
 
-      <SubmissionContent
-        paymentId={paymentId}
-        emailTemplateData={emailTemplateData}
-        isMandante={isMandante}
-        onStatusChange={handleStatusChange}
-        useDirectDownload={true}
-      />
+      <div className="container mx-auto px-6 py-8">
+        <div className="space-y-8">
+          <SubmissionContent
+            paymentId={paymentId}
+            emailTemplateData={emailTemplateData}
+            isMandante={isMandante}
+            onStatusChange={handleStatusChange}
+            useDirectDownload={true}
+          />
+
+          {/* Mostrar botones de aprobación solo para mandantes */}
+          {isMandante && payment.Status !== 'Aprobado' && payment.Status !== 'Rechazado' && (
+            <PaymentApprovalSection
+              paymentId={paymentId}
+              paymentState={{
+                month: `${payment.Mes || ''} ${payment.Año || ''}`,
+                amount: payment.Total || 0,
+                formattedAmount: formatCurrency(payment.Total || 0, payment.projectData?.Currency || 'CLP'),
+                projectName: payment.projectData?.Name || '',
+              }}
+              onStatusChange={handleStatusChange}
+            />
+          )}
+        </div>
+      </div>
     </div>
   );
 };

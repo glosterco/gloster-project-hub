@@ -37,10 +37,10 @@ const ProjectDetail = () => {
     return new Intl.NumberFormat('es-CL', config).format(amount);
   };
 
-  // PURE READ-ONLY: Return exact status from database without any modifications
+  // CRITICAL: Pure function that returns exact status from database
   const getPaymentStatus = (payment: any) => {
     const dbStatus = payment.Status;
-    console.log(`📋 DISPLAYING status for "${payment.Name}": "${dbStatus}" (pure database value)`);
+    console.log(`📋 RENDER: getPaymentStatus for "${payment.Name}": "${dbStatus}" (PURE FROM DB)`);
     return dbStatus || 'Sin Estado';
   };
 
@@ -113,6 +113,16 @@ const ProjectDetail = () => {
     console.log(`👁️ View documents clicked for: "${payment.Name}"`);
     navigate(`/payment/${payment.id}`);
   };
+
+  // CRITICAL: Log payment states when component renders
+  React.useEffect(() => {
+    if (project?.EstadosPago) {
+      console.log('🎨 COMPONENT RENDER - Payment states analysis:');
+      project.EstadosPago.forEach((payment, index) => {
+        console.log(`📋 [${index}] RENDER STATUS: "${payment.Name}" = "${payment.Status}"`);
+      });
+    }
+  }, [project?.EstadosPago]);
 
   const filteredAndSortedPayments = project?.EstadosPago
     ? project.EstadosPago

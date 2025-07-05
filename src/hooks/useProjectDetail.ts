@@ -50,6 +50,7 @@ export const useProjectDetail = (projectId: string) => {
     setLoading(true);
     try {
       console.log('🔍 FETCHING PROJECT DETAIL - STRICTLY READ-ONLY MODE');
+      console.log('📊 DEBUG: Starting fetch for project ID:', projectId);
       
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
@@ -127,14 +128,19 @@ export const useProjectDetail = (projectId: string) => {
 
       console.log('✅ Project found:', projectData.Name);
 
-      // Fetch payment states - STRICTLY READ-ONLY, NO MODIFICATIONS EVER
-      // Using proper table name with quotes to handle special characters
-      console.log('🔍 Fetching payment states - PURE READ-ONLY MODE');
+      // CRITICAL: Log timestamp before DB query
+      console.log('🕐 TIMESTAMP BEFORE DB QUERY:', new Date().toISOString());
+      
+      // Fetch payment states - ABSOLUTELY NO MODIFICATIONS, PURE READ
+      console.log('🔍 Fetching payment states - ZERO MODIFICATION MODE');
       const { data: paymentsData, error: paymentsError } = await supabase
         .from('Estados de pago')
         .select('id, Name, Status, Total, ExpiryDate, Completion, Mes, "Año"')
         .eq('Project', parseInt(projectId))
         .order('ExpiryDate', { ascending: true });
+
+      // CRITICAL: Log timestamp after DB query
+      console.log('🕐 TIMESTAMP AFTER DB QUERY:', new Date().toISOString());
 
       if (paymentsError) {
         console.error('❌ Error fetching payment states:', paymentsError);
@@ -146,18 +152,20 @@ export const useProjectDetail = (projectId: string) => {
         return;
       }
 
-      console.log('✅ Payment states fetched (READ-ONLY):', paymentsData?.length || 0, 'records');
+      console.log('✅ Payment states fetched (PURE READ):', paymentsData?.length || 0, 'records');
       
-      // LOG EACH STATUS AS READ FROM DATABASE - NO MODIFICATIONS
-      // Add safety check for paymentsData
+      // CRITICAL: Log each status EXACTLY as received from database
       if (paymentsData && Array.isArray(paymentsData)) {
-        paymentsData.forEach(payment => {
+        console.log('🔍 DETAILED PAYMENT STATUS ANALYSIS:');
+        paymentsData.forEach((payment, index) => {
           if (payment && typeof payment === 'object' && 'Name' in payment && 'Status' in payment) {
-            console.log(`📋 READ-ONLY: Payment "${payment.Name}" status: "${payment.Status}" (from database)`);
+            console.log(`📋 [${index}] DIRECT FROM DB: Payment "${payment.Name}" status: "${payment.Status}" (RAW VALUE)`);
+            console.log(`📋 [${index}] FULL OBJECT:`, JSON.stringify(payment, null, 2));
           }
         });
       }
 
+      // CRITICAL: Create project object WITHOUT any modifications
       const projectWithDetails: ProjectDetail = {
         ...projectData,
         Contratista: projectData.Contratistas,
@@ -165,8 +173,15 @@ export const useProjectDetail = (projectId: string) => {
         EstadosPago: paymentsData || []
       };
 
+      // CRITICAL: Final verification before setting state
+      console.log('🔍 FINAL VERIFICATION - EstadosPago before setState:');
+      projectWithDetails.EstadosPago.forEach((payment, index) => {
+        console.log(`📋 [${index}] FINAL CHECK: "${payment.Name}" status: "${payment.Status}"`);
+      });
+
       setProject(projectWithDetails);
-      console.log('✅ Project detail loaded - ZERO MODIFICATIONS MADE');
+      console.log('✅ Project detail loaded - ZERO MODIFICATIONS CONFIRMED');
+      console.log('🕐 FINAL TIMESTAMP:', new Date().toISOString());
       
     } catch (error) {
       console.error('❌ Unexpected error in fetchProjectDetail:', error);
@@ -182,6 +197,7 @@ export const useProjectDetail = (projectId: string) => {
 
   useEffect(() => {
     console.log('🔄 useProjectDetail effect triggered for projectId:', projectId);
+    console.log('🕐 EFFECT START TIMESTAMP:', new Date().toISOString());
     fetchProjectDetail();
   }, [projectId]);
 

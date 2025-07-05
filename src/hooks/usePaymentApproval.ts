@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -34,47 +33,62 @@ export const usePaymentApproval = ({ paymentId, onStatusChange }: PaymentApprova
   const fetchPaymentDataForNotification = async () => {
     console.log('🔍 Fetching payment data for notification...', { paymentId });
     
-    // Fetch payment data with proper joins to get contractor information
-    const { data: paymentData, error: fetchError } = await supabase
+    // First, get the payment data
+    const { data: paymentData, error: paymentError } = await supabase
       .from('Estados de pago')
-      .select(`
-        *,
-        Proyectos!Project (
-          id,
-          Name,
-          Currency,
-          Mandantes!Owner (
-            id,
-            CompanyName,
-            ContactName,
-            ContactEmail
-          ),
-          Contratistas!Contratista (
-            id,
-            CompanyName,
-            ContactName,
-            ContactEmail
-          )
-        )
-      `)
+      .select('*')
       .eq('id', parseInt(paymentId))
       .single();
 
-    if (fetchError) {
-      console.error('❌ Error fetching payment data for notification:', fetchError);
-      throw new Error('Error al obtener datos para la notificación');
+    if (paymentError || !paymentData) {
+      console.error('❌ Error fetching payment:', paymentError);
+      throw new Error('No se encontró el estado de pago');
     }
 
-    if (!paymentData) {
-      console.error('❌ No payment data found');
-      throw new Error('No se encontraron datos del estado de pago');
+    console.log('✅ Payment data:', paymentData);
+
+    // Then get the project with contractor and mandante info
+    const { data: projectData, error: projectError } = await supabase
+      .from('Proyectos')
+      .select(`
+        *,
+        Mandantes!Owner (
+          id,
+          CompanyName,
+          ContactName,
+          ContactEmail
+        ),
+        Contratistas!Contratista (
+          id,
+          CompanyName,
+          ContactName,
+          ContactEmail
+        )
+      `)
+      .eq('id', paymentData.Project)
+      .single();
+
+    if (projectError || !projectData) {
+      console.error('❌ Error fetching project data:', projectError);
+      throw new Error('No se encontraron datos del proyecto');
     }
 
-    console.log('✅ Payment data fetched for notification:', paymentData);
-    console.log('🔍 Project data:', paymentData.Proyectos);
-    console.log('🔍 Contractor data:', paymentData.Proyectos?.Contratistas);
-    
-    return paymentData;
+    console.log('✅ Project data fetched:', projectData);
+    console.log('📧 Contractor info:', projectData.Contratistas);
+    console.log('🏢 Mandante info:', projectData.Mandantes);
+
+    // Combine the data
+    const combinedData = {
+      ...paymentData,
+      projectData: {
+        ...projectData,
+        Contratista: projectData.Contratistas,
+        Owner: projectData.Mandantes
+      }
+    };
+
+    console.log('🔗 Combined data structure:', combinedData);
+    return combinedData;
   };
 
   const sendContractorNotification = async (paymentData: any, status: 'Aprobado' | 'Rechazado', rejectionReason?: string) => {
@@ -82,26 +96,35 @@ export const usePaymentApproval = ({ paymentId, onStatusChange }: PaymentApprova
       paymentId,
       status,
       rejectionReason,
-      paymentData: paymentData
+      hasProjectData: !!paymentData.projectData,
+      hasContractor: !!paymentData.projectData?.Contratista
     });
 
     // Validate contractor email exists
-    const contractorEmail = paymentData.Proyectos?.Contratistas?.ContactEmail;
-    console.log('📧 Contractor email found:', contractorEmail);
+    const contractorEmail = paymentData.projectData?.Contratista?.ContactEmail;
+    console.log('📧 Contractor email check:', {
+      found: !!contractorEmail,
+      email: contractorEmail,
+      contractorData: paymentData.projectData?.Contratista
+    });
 
     if (!contractorEmail) {
-      console.error('❌ No contractor email found in data structure');
-      console.log('🔍 Full payment data structure:', JSON.stringify(paymentData, null, 2));
+      console.error('❌ No contractor email found');
+      console.log('🔍 Available data structure:', {
+        paymentKeys: Object.keys(paymentData),
+        projectDataKeys: paymentData.projectData ? Object.keys(paymentData.projectData) : 'No projectData',
+        contractorKeys: paymentData.projectData?.Contratista ? Object.keys(paymentData.projectData.Contratista) : 'No Contratista'
+      });
       throw new Error('No se encontró email del contratista');
     }
 
     const contractorNotificationData = {
       paymentId: paymentId,
       contractorEmail: contractorEmail,
-      contractorName: paymentData.Proyectos?.Contratistas?.ContactName || 'Contratista',
-      contractorCompany: paymentData.Proyectos?.Contratistas?.CompanyName || '',
-      mandanteCompany: paymentData.Proyectos?.Mandantes?.CompanyName || '',
-      proyecto: paymentData.Proyectos?.Name || '',
+      contractorName: paymentData.projectData.Contratista.ContactName || 'Contratista',
+      contractorCompany: paymentData.projectData.Contratista.CompanyName || '',
+      mandanteCompany: paymentData.projectData.Owner?.CompanyName || '',
+      proyecto: paymentData.projectData.Name || '',
       mes: paymentData.Mes || '',
       año: paymentData.Año || new Date().getFullYear(),
       amount: paymentData.Total || 0,

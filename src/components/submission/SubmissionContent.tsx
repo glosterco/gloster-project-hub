@@ -35,13 +35,15 @@ interface SubmissionContentProps {
   };
   isMandante: boolean;
   onStatusChange: () => void;
+  useDirectDownload?: boolean;
 }
 
 const SubmissionContent: React.FC<SubmissionContentProps> = ({
   paymentId,
   emailTemplateData,
   isMandante,
-  onStatusChange
+  onStatusChange,
+  useDirectDownload = false
 }) => {
   // DEBUG: Log received data in SubmissionContent
   console.log('📦 SubmissionContent - Received emailTemplateData:', emailTemplateData);
@@ -60,6 +62,7 @@ const SubmissionContent: React.FC<SubmissionContentProps> = ({
             paymentState={emailTemplateData.paymentState}
             project={emailTemplateData.project}
             documents={emailTemplateData.documents}
+            useDirectDownload={useDirectDownload}
           />
         </div>
 

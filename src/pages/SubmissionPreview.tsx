@@ -1,7 +1,8 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Download, Send } from 'lucide-react';
+import { ArrowLeft, Send } from 'lucide-react';
 import EmailTemplate from '@/components/EmailTemplate';
 import { useToast } from '@/hooks/use-toast';
 import { usePaymentDetail } from '@/hooks/usePaymentDetail';
@@ -120,77 +121,6 @@ const SubmissionPreview = () => {
       uploaded: true
     }
   ];
-
-  const handlePrint = () => {
-    const printStyles = `
-      <style>
-        @media print {
-          body * { visibility: hidden; }
-          .email-template-container, .email-template-container * { visibility: visible; }
-          .email-template-container { 
-            position: absolute; 
-            left: 0; 
-            top: 0; 
-            width: 100%; 
-            transform: scale(0.65);
-            transform-origin: top left;
-          }
-          .print\\:hidden { display: none !important; }
-          @page { margin: 0.3in; size: A4; }
-        }
-      </style>
-    `;
-    
-    const originalHead = document.head.innerHTML;
-    document.head.innerHTML += printStyles;
-    
-    setTimeout(() => {
-      window.print();
-      document.head.innerHTML = originalHead;
-    }, 100);
-  };
-
-  const handleDownloadFile = async (fileName: string) => {
-    if (!payment?.URL) {
-      toast({
-        title: "Error",
-        description: "No se encontró la URL del archivo",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    try {
-      const fileId = payment.URL.split("/d/")[1]?.split("/")[0];  // Extracting the file ID from the URL
-      if (!fileId) {
-        throw new Error("Archivo no encontrado en la URL");
-      }
-
-      // Direct download link
-      const downloadLink = `https://drive.google.com/uc?export=download&id=${fileId}`;
-
-      // Trigger download
-      const link = document.createElement("a");
-      link.href = downloadLink;
-      link.target = "_blank";  // Open in a new tab (optional)
-      link.download = fileName;  // Suggested download file name
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      toast({
-        title: "Descarga iniciada",
-        description: `Se está descargando el archivo: ${fileName}`,
-      });
-    } catch (error) {
-      console.error('Error downloading file:', error);
-      toast({
-        title: "Error al descargar",
-        description: "No se pudo acceder al archivo",
-        variant: "destructive"
-      });
-    }
-  };
 
   const handleSendEmail = async () => {
     if (!payment || !payment.projectData) {
@@ -346,25 +276,6 @@ const SubmissionPreview = () => {
             </div>
             
             <div className="flex items-center space-x-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handlePrint}
-                className="font-rubik"
-              >
-                Imprimir
-              </Button>
-              {payment?.URL && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleDownloadFile('Documentos')}
-                  className="font-rubik"
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Descargar Archivos
-                </Button>
-              )}
               {isProjectUser && (
                 <Button
                   size="sm"

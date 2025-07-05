@@ -185,8 +185,6 @@ const EmailPreview = () => {
               />
               <h1 className="text-xl font-bold text-slate-800 font-rubik">Vista previa del Email</h1>
             </div>
-            
-            {/* Removed all download buttons */}
           </div>
         </div>
       </div>

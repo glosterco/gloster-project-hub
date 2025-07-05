@@ -9,6 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import { ArrowLeft, Calendar, ChevronRight, Search, Filter, Plus, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import PageHeader from '@/components/PageHeader';
+import PaymentStatusDebugger from '@/components/PaymentStatusDebugger';
 import { useProjectDetail } from '@/hooks/useProjectDetail';
 
 const ProjectDetail = () => {
@@ -186,6 +187,9 @@ const ProjectDetail = () => {
   return (
     <div className="min-h-screen bg-slate-50 font-rubik">
       <PageHeader />
+      
+      {/* Add the debugger component */}
+      <PaymentStatusDebugger projectId={id || ''} />
 
       {/* Volver al Dashboard */}
       <div className="bg-slate-50 py-2">

@@ -332,7 +332,7 @@ const SubmissionPreview = () => {
             project={emailTemplateData.project}
             documents={emailTemplateData.documents}
             hideActionButtons={true}
-            driveUrl={payment?.URL}
+            useDirectDownload={true}
           />
         </div>
       </div>

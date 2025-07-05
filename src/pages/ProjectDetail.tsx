@@ -13,6 +13,8 @@ import PaymentStatusDebugger from '@/components/PaymentStatusDebugger';
 import { useProjectDetail } from '@/hooks/useProjectDetail';
 
 const ProjectDetail = () => {
+  console.log('🎨 ProjectDetail component rendering...');
+  
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -20,7 +22,19 @@ const ProjectDetail = () => {
   const [sortBy, setSortBy] = useState('month');
   const [filterBy, setFilterBy] = useState('all');
   
+  console.log('📊 Project ID from params:', id);
+  
   const { project, loading } = useProjectDetail(id || '');
+
+  // Log project data whenever it changes
+  React.useEffect(() => {
+    console.log('🔄 Project data changed:', project?.EstadosPago?.length || 0, 'payment states');
+    if (project?.EstadosPago) {
+      project.EstadosPago.forEach((payment, index) => {
+        console.log(`📋 [${index}] "${payment.Name}" status: "${payment.Status}"`);
+      });
+    }
+  }, [project]);
 
   const formatCurrency = (amount: number, currency: string = 'CLP') => {
     const currencyMap: { [key: string]: Intl.NumberFormatOptions } = {
@@ -38,10 +52,9 @@ const ProjectDetail = () => {
     return new Intl.NumberFormat('es-CL', config).format(amount);
   };
 
-  // CRITICAL: Pure function that returns exact status from database
   const getPaymentStatus = (payment: any) => {
     const dbStatus = payment.Status;
-    console.log(`📋 RENDER: getPaymentStatus for "${payment.Name}": "${dbStatus}" (PURE FROM DB)`);
+    console.log(`📋 getPaymentStatus for "${payment.Name}": "${dbStatus}"`);
     return dbStatus || 'Sin Estado';
   };
 
@@ -115,16 +128,6 @@ const ProjectDetail = () => {
     navigate(`/payment/${payment.id}`);
   };
 
-  // CRITICAL: Log payment states when component renders
-  React.useEffect(() => {
-    if (project?.EstadosPago) {
-      console.log('🎨 COMPONENT RENDER - Payment states analysis:');
-      project.EstadosPago.forEach((payment, index) => {
-        console.log(`📋 [${index}] RENDER STATUS: "${payment.Name}" = "${payment.Status}"`);
-      });
-    }
-  }, [project?.EstadosPago]);
-
   const filteredAndSortedPayments = project?.EstadosPago
     ? project.EstadosPago
         .filter(payment => {
@@ -153,6 +156,7 @@ const ProjectDetail = () => {
     : [];
 
   if (loading) {
+    console.log('⏳ Component is loading...');
     return (
       <div className="min-h-screen bg-slate-50 font-rubik">
         <PageHeader />
@@ -164,6 +168,7 @@ const ProjectDetail = () => {
   }
 
   if (!project) {
+    console.log('❌ No project data available');
     return (
       <div className="min-h-screen bg-slate-50 font-rubik">
         <PageHeader />
@@ -188,7 +193,7 @@ const ProjectDetail = () => {
     <div className="min-h-screen bg-slate-50 font-rubik">
       <PageHeader />
       
-      {/* Add the debugger component */}
+      {/* Debugger component */}
       <PaymentStatusDebugger projectId={id || ''} />
 
       {/* Volver al Dashboard */}

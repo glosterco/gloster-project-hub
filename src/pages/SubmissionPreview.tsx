@@ -1,13 +1,12 @@
-
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useBeforeUnload } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Send } from 'lucide-react';
+import { ArrowLeft, Send, Download } from 'lucide-react';
 import EmailTemplate from '@/components/EmailTemplate';
 import { useToast } from '@/hooks/use-toast';
 import { usePaymentDetail } from '@/hooks/usePaymentDetail';
 import { useMandanteNotification } from '@/hooks/useMandanteNotification';
-import { useGoogleDriveIntegration } from '@/hooks/useGoogleDriveIntegration';
+import { useDirectDriveDownload } from '@/hooks/useDirectDriveDownload';
 import { supabase } from '@/integrations/supabase/client';
 import { useUniqueAccessUrl } from '@/hooks/useUniqueAccessUrl';
 
@@ -17,13 +16,23 @@ const SubmissionPreview = () => {
   const paymentId = searchParams.get('paymentId') || '11';
   const { payment, loading, error } = usePaymentDetail(paymentId, true);
   const { sendNotificationToMandante, loading: notificationLoading } = useMandanteNotification();
-  const { uploadDocumentsToDrive, loading: driveLoading } = useGoogleDriveIntegration();
+  const { downloadDocument, loading: downloadLoading } = useDirectDriveDownload();
   const { toast } = useToast();
   const [isProjectUser, setIsProjectUser] = useState(false);
   const [userChecked, setUserChecked] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [documentsUploaded, setDocumentsUploaded] = useState(false);
+  const [notificationSent, setNotificationSent] = useState(false);
   const { ensureUniqueAccessUrl } = useUniqueAccessUrl();
+
+  // Advertencia antes de salir si no se ha enviado la notificación
+  useBeforeUnload(
+    React.useCallback(() => {
+      if (isProjectUser && !notificationSent) {
+        return 'Vas a salir sin enviar la notificación al mandante. ¿Estás seguro?';
+      }
+    }, [isProjectUser, notificationSent])
+  );
 
   const formatCurrency = (amount: number) => {
     if (!payment?.projectData?.Currency) {
@@ -122,6 +131,10 @@ const SubmissionPreview = () => {
     }
   ];
 
+  const handleDownloadDocument = async (documentName: string) => {
+    await downloadDocument(paymentId, documentName);
+  };
+
   const handleSendEmail = async () => {
     if (!payment || !payment.projectData) {
       toast({
@@ -136,7 +149,6 @@ const SubmissionPreview = () => {
     console.log('🚀 Starting notification process...');
 
     try {
-      // Usar el sistema de enlace único
       const accessUrl = await ensureUniqueAccessUrl(payment.id);
       if (!accessUrl) {
         throw new Error('No se pudo generar el enlace de acceso');
@@ -187,6 +199,7 @@ const SubmissionPreview = () => {
       const result = await sendNotificationToMandante(notificationData);
       
       if (result.success) {
+        setNotificationSent(true);
         toast({
           title: "Notificación enviada exitosamente",
           description: "Se ha enviado la notificación al mandante y actualizado el estado",
@@ -205,6 +218,19 @@ const SubmissionPreview = () => {
       });
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handleGoBack = () => {
+    if (isProjectUser && !notificationSent) {
+      const confirmLeave = window.confirm('Vas a salir sin enviar la notificación al mandante. ¿Estás seguro?');
+      if (!confirmLeave) return;
+    }
+    
+    if (isProjectUser) {
+      navigate(`/payment/${payment.id}`);
+    } else {
+      navigate('/');
     }
   };
 
@@ -259,7 +285,10 @@ const SubmissionPreview = () => {
       contractorPhone: payment.projectData.Contratista?.ContactPhone?.toString() || '',
       contractorAddress: payment.projectData.Contratista?.Adress || ''
     },
-    documents: documentsFromPayment
+    documents: documentsFromPayment.map(doc => ({
+      ...doc,
+      onDownload: () => handleDownloadDocument(doc.name)
+    }))
   };
 
   return (
@@ -296,7 +325,7 @@ const SubmissionPreview = () => {
       <div className="bg-slate-50 py-2">
         <div className="container mx-auto px-6">
           <button 
-            onClick={() => isProjectUser ? navigate(`/payment/${payment.id}`) : navigate('/')}
+            onClick={handleGoBack}
             className="text-gloster-gray hover:text-slate-800 text-sm font-rubik flex items-center"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />

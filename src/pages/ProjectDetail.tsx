@@ -9,7 +9,6 @@ import { Progress } from '@/components/ui/progress';
 import { ArrowLeft, Calendar, ChevronRight, Search, Filter, Plus, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import PageHeader from '@/components/PageHeader';
-import PaymentStatusMonitor from '@/components/PaymentStatusMonitor';
 import { useProjectDetailSecure } from '@/hooks/useProjectDetailSecure';
 
 const ProjectDetail = () => {
@@ -193,9 +192,6 @@ const ProjectDetail = () => {
   return (
     <div className="min-h-screen bg-slate-50 font-rubik">
       <PageHeader />
-      
-      {/* MONITOR DE CAMBIOS EN LUGAR DEL DEBUGGER ANTERIOR */}
-      <PaymentStatusMonitor projectId={id || ''} />
 
       {/* Volver al Dashboard */}
       <div className="bg-slate-50 py-2">

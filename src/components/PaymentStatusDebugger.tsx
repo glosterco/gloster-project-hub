@@ -16,7 +16,7 @@ const PaymentStatusDebugger: React.FC<PaymentStatusDebuggerProps> = ({ projectId
       try {
         const { data, error } = await supabase
           .from('Estados de pago')
-          .select('id, Name, Status, updated_at')
+          .select('id, Name, Status')
           .eq('Project', parseInt(projectId))
           .order('id');
 
@@ -28,6 +28,8 @@ const PaymentStatusDebugger: React.FC<PaymentStatusDebuggerProps> = ({ projectId
             timestamp,
             data: data.map(p => ({ id: p.id, name: p.Name, status: p.Status }))
           }]);
+        } else if (error) {
+          console.error('❌ Monitor DB error:', error);
         }
       } catch (error) {
         console.error('❌ Monitor error:', error);

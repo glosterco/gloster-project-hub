@@ -144,25 +144,31 @@ export const useProjectsWithDetails = () => {
         const hasInProgress = projectPayments.some(p => p.Status === 'En Progreso');
         
         if (!hasInProgress && projectPayments.length > 0) {
-          // Find the closest future payment
-          const futurePayments = projectPayments.filter(p => new Date(p.ExpiryDate) >= today);
-          if (futurePayments.length > 0) {
-            futurePayments.sort((a, b) => new Date(a.ExpiryDate).getTime() - new Date(b.ExpiryDate).getTime());
-            const targetPayment = futurePayments[0];
-            
-            // Update this payment to "En Progreso"
+        const futurePayments = projectPayments
+          .filter(p => new Date(p.ExpiryDate) >= today && p.Status === 'Programado');
+      
+        if (futurePayments.length > 0) {
+          // Ordenar por cercanía de fecha
+          futurePayments.sort((a, b) => new Date(a.ExpiryDate).getTime() - new Date(b.ExpiryDate).getTime());
+          const targetPayment = futurePayments[0];
+      
+          // Verificar que queden al menos 14 días para el vencimiento
+          const expiryDate = new Date(targetPayment.ExpiryDate);
+          const daysUntilExpiry = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      
+          if (daysUntilExpiry >= 14) {
             await supabase
               .from('Estados de pago')
               .update({ Status: 'En Progreso' })
               .eq('id', targetPayment.id);
-            
-            // Update local data
+      
             const paymentIndex = updatedPayments.findIndex(p => p.id === targetPayment.id);
             if (paymentIndex !== -1) {
               updatedPayments[paymentIndex].Status = 'En Progreso';
             }
           }
         }
+      }
       }
 
       // Combine projects with their payment states

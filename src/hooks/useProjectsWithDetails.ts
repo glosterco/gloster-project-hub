@@ -141,22 +141,27 @@ export const useProjectsWithDetails = () => {
       // For each project, ensure there's at least one "Pendiente" payment
       for (const projectId of projectIds) {
         const projectPayments = updatedPayments.filter(p => p.Project === projectId);
-        const hasInProgress = projectPayments.some(p => p.Status === 'Pendiente');
-        
-        if (!hasInProgress && projectPayments.length > 0) {
-          // Find the closest future payment
-          const futurePayments = projectPayments.filter(p => new Date(p.ExpiryDate) >= today);
+        const hasPending = projectPayments.some(p => p.Status === 'Pendiente');
+      
+        if (!hasPending && projectPayments.length > 0) {
+          // Filtrar pagos futuros que estén en estado Programado
+          const futurePayments = projectPayments.filter(p =>
+            new Date(p.ExpiryDate) >= today && p.Status === 'Programado'
+          );
+      
           if (futurePayments.length > 0) {
-            futurePayments.sort((a, b) => new Date(a.ExpiryDate).getTime() - new Date(b.ExpiryDate).getTime());
+            futurePayments.sort((a, b) =>
+              new Date(a.ExpiryDate).getTime() - new Date(b.ExpiryDate).getTime()
+            );
+      
             const targetPayment = futurePayments[0];
-            
-            // Update this payment to "Pendiente"
+      
             await supabase
               .from('Estados de pago')
               .update({ Status: 'Pendiente' })
               .eq('id', targetPayment.id);
-            
-            // Update local data
+      
+            // Actualizar el estado local
             const paymentIndex = updatedPayments.findIndex(p => p.id === targetPayment.id);
             if (paymentIndex !== -1) {
               updatedPayments[paymentIndex].Status = 'Pendiente';

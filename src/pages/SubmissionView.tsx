@@ -18,7 +18,7 @@ const SubmissionView = () => {
 
   const { payment, loading, error, refetch } = usePaymentDetail(paymentId, true);
   const { toast } = useToast();
-  const { hasAccess, chexckingAccess, isMandante } = useAccessVerification(payment, paymentId);
+  const { hasAccess, checkingAccess, isMandante } = useAccessVerification(payment, paymentId);
 
   const handleStatusChange = () => {
     console.log('🔄 Status changed, refreshing payment data...');

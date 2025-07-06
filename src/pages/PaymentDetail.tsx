@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
@@ -199,7 +198,7 @@ const PaymentDetail = () => {
     }
   ];
 
-  // Filter documents based on project requirements - CORRECTED LOGIC
+  // Filter documents based on project requirements - FIXED LOGIC
   const documents = React.useMemo(() => {
     if (!payment?.projectData?.Requierment || !Array.isArray(payment.projectData.Requierment)) {
       return allDocuments.filter(doc => doc.required);
@@ -212,11 +211,13 @@ const PaymentDetail = () => {
       // Always include 'planilla' as it's always required
       if (doc.id === 'planilla') return true;
       
-      // Filter based on project requirements - COMPARE WITH NAME FIELD
+      // Include if document is marked as required OR if it's in project requirements
+      const isRequiredByDefault = doc.required;
       const isRequiredByProject = projectRequirements.includes(doc.name);
-      console.log(`📄 Document "${doc.name}" (${doc.id}): ${isRequiredByProject ? 'INCLUDED' : 'EXCLUDED'}`);
       
-      return isRequiredByProject;
+      console.log(`📄 Document "${doc.name}" (${doc.id}): required=${isRequiredByDefault}, inProject=${isRequiredByProject}, INCLUDED=${isRequiredByDefault || isRequiredByProject}`);
+      
+      return isRequiredByDefault || isRequiredByProject;
     });
   }, [payment?.projectData?.Requierment]);
 

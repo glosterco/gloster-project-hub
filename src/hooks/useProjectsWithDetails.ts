@@ -134,41 +134,35 @@ export const useProjectsWithDetails = () => {
         return;
       }
 
-      // Update payment statuses to ensure at least one is "En Progreso"
+      // Update payment statuses to ensure at least one is "Pendiente"
       const today = new Date();
       const updatedPayments = paymentsData || [];
       
-      // For each project, ensure there's at least one "En Progreso" payment
+      // For each project, ensure there's at least one "Pendiente" payment
       for (const projectId of projectIds) {
         const projectPayments = updatedPayments.filter(p => p.Project === projectId);
-        const hasInProgress = projectPayments.some(p => p.Status === 'En Progreso');
+        const hasInProgress = projectPayments.some(p => p.Status === 'Pendiente');
         
         if (!hasInProgress && projectPayments.length > 0) {
-        const futurePayments = projectPayments
-          .filter(p => new Date(p.ExpiryDate) >= today && p.Status === 'Programado');
-      
-        if (futurePayments.length > 0) {
-          // Ordenar por cercanía de fecha
-          futurePayments.sort((a, b) => new Date(a.ExpiryDate).getTime() - new Date(b.ExpiryDate).getTime());
-          const targetPayment = futurePayments[0];
-      
-          // Verificar que queden al menos 14 días para el vencimiento
-          const expiryDate = new Date(targetPayment.ExpiryDate);
-          const daysUntilExpiry = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-      
-          if (daysUntilExpiry >= 14) {
+          // Find the closest future payment
+          const futurePayments = projectPayments.filter(p => new Date(p.ExpiryDate) >= today);
+          if (futurePayments.length > 0) {
+            futurePayments.sort((a, b) => new Date(a.ExpiryDate).getTime() - new Date(b.ExpiryDate).getTime());
+            const targetPayment = futurePayments[0];
+            
+            // Update this payment to "Pendiente"
             await supabase
               .from('Estados de pago')
-              .update({ Status: 'En Progreso' })
+              .update({ Status: 'Pendiente' })
               .eq('id', targetPayment.id);
-      
+            
+            // Update local data
             const paymentIndex = updatedPayments.findIndex(p => p.id === targetPayment.id);
             if (paymentIndex !== -1) {
-              updatedPayments[paymentIndex].Status = 'En Progreso';
+              updatedPayments[paymentIndex].Status = 'Pendiente';
             }
           }
         }
-      }
       }
 
       // Combine projects with their payment states

@@ -122,7 +122,7 @@ const PaymentDetail = () => {
   const allDocuments = [
     {
       id: 'eepp',
-      name: 'Carátula EEPP (resumen)',
+      name: 'Carátula EEPP',
       description: 'Presentación y resumen del estado de pago',
       downloadUrl: null,
       uploaded: false,

@@ -369,7 +369,7 @@ const ProjectDetail = () => {
                       </div>
 
                       <div className="pt-4 mt-auto">
-                        {(status === 'Pendiente' || status === 'En Progreso') && (
+                        {(status === 'Pendiente') && (
                           <Button
                             onClick={() => handlePaymentClick(payment)}
                             className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold font-rubik"

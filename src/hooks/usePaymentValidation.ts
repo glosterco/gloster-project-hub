@@ -1,10 +1,6 @@
 
 import { useState, useEffect } from 'react';
-
-// Define the DocumentStatus type to match what's being used
-type DocumentStatus = {
-  [key: string]: boolean;
-};
+import { DocumentStatus } from './useDocumentUpload';
 
 export const usePaymentValidation = (
   editableAmount: string,
@@ -41,7 +37,7 @@ export const usePaymentValidation = (
 
   // Track when files are uploaded but not sent
   useEffect(() => {
-    const hasFiles = Object.keys(documentStatus).some(docId => documentStatus[docId as keyof typeof documentStatus]);
+    const hasFiles = Object.keys(documentStatus).some(docId => documentStatus[docId as keyof DocumentStatus]);
     const isSentStatus = paymentStatus === 'Enviado' || paymentStatus === 'Aprobado' || paymentStatus === 'Rechazado';
     setHasUnsavedFiles(hasFiles && !isSentStatus);
   }, [documentStatus, paymentStatus]);

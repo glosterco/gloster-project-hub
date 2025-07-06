@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,8 +12,8 @@ interface PaymentInfoCardProps {
   editablePercentage: string;
   isSaving: boolean;
   shouldShowDriveFiles: boolean;
-  isAmountValid: () => boolean;
-  isProgressValid: () => boolean;
+  isAmountValid: boolean;
+  isProgressValid: boolean;
   onAmountChange: (value: string) => void;
   onPercentageChange: (value: string) => void;
   onSaveAmount: () => void;
@@ -80,7 +79,7 @@ const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
                   value={editableAmount}
                   onChange={(e) => onAmountChange(e.target.value)}
                   placeholder="Ingrese monto"
-                  className={`w-40 ${!isAmountValid() ? 'border-orange-500 focus:border-orange-500' : ''}`}
+                  className={`w-40 ${!isAmountValid ? 'border-orange-500 focus:border-orange-500' : ''}`}
                 />
                 <Button
                   size="sm"
@@ -109,7 +108,7 @@ const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
                   value={editablePercentage}
                   onChange={(e) => onPercentageChange(e.target.value)}
                   placeholder="0"
-                  className={`w-20 ${!isProgressValid() ? 'border-orange-500 focus:border-orange-500' : ''}`}
+                  className={`w-20 ${!isProgressValid ? 'border-orange-500 focus:border-orange-500' : ''}`}
                 />
                 <span className="text-sm text-gloster-gray">%</span>
               </div>

@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect, useBeforeUnload } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -91,14 +90,22 @@ const PaymentDetail = () => {
     }
   }, [payment]);
 
-  // Prevent navigation if files are uploaded but not sent
-  useBeforeUnload(
-    React.useCallback(() => {
+  // Replace useBeforeUnload with proper useEffect implementation
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
       if (hasUnsavedFiles) {
-        return 'Tienes archivos cargados que aún no han sido respaldados. Si sales de la página se perderá el progreso. ¿Estás seguro de que quieres continuar?';
+        const message = 'Tienes archivos cargados que aún no han sido respaldados. Si sales de la página se perderá el progreso. ¿Estás seguro de que quieres continuar?';
+        event.preventDefault();
+        event.returnValue = message;
+        return message;
       }
-    }, [hasUnsavedFiles])
-  );
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [hasUnsavedFiles]);
 
   const { ensureUniqueAccessUrl } = useUniqueAccessUrl();
 
@@ -551,8 +558,8 @@ const PaymentDetail = () => {
                   editablePercentage={editablePercentage}
                   isSaving={isSaving}
                   shouldShowDriveFiles={shouldShowDriveFiles()}
-                  isAmountValid={isAmountValid}
-                  isProgressValid={isProgressValid}
+                  isAmountValid={isAmountValid()}
+                  isProgressValid={isProgressValid()}
                   onAmountChange={(value) => handleAmountChange(value, setEditableAmount, setEditablePercentage)}
                   onPercentageChange={(value) => handlePercentageChange(value, setEditableAmount, setEditablePercentage)}
                   onSaveAmount={handleSaveAmount}
@@ -567,7 +574,7 @@ const PaymentDetail = () => {
                 documentStatus={documentStatus}
                 completedDocumentsCount={getCompletedDocumentsCount()}
                 areAllRequiredDocumentsUploaded={areAllRequiredDocumentsUploaded()}
-                areFieldsValidForActions={areFieldsValidForActions}
+                areFieldsValidForActions={areFieldsValidForActions()}
                 getValidationMessage={getValidationMessage}
                 isUploadingOrPreviewing={isUploadingOrPreviewing}
                 onPreviewEmail={handlePreviewEmail}
@@ -617,7 +624,7 @@ const PaymentDetail = () => {
           {!shouldShowDriveFiles() && (
             <SendDocumentsBanner
               areAllRequiredDocumentsUploaded={areAllRequiredDocumentsUploaded()}
-              areFieldsValidForActions={areFieldsValidForActions}
+              areFieldsValidForActions={areFieldsValidForActions()}
               getValidationMessage={getValidationMessage}
               isUploadingOrPreviewing={isUploadingOrPreviewing}
               isUploading={isUploading}

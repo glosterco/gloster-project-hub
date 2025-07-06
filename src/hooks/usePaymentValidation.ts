@@ -1,10 +1,15 @@
 
 import { useState, useEffect } from 'react';
 
+// Define the DocumentStatus type to match what's being used
+type DocumentStatus = {
+  [key: string]: boolean;
+};
+
 export const usePaymentValidation = (
   editableAmount: string,
   editablePercentage: string,
-  documentStatus: Record<string, boolean>,
+  documentStatus: DocumentStatus,
   paymentStatus?: string
 ) => {
   const [hasUnsavedFiles, setHasUnsavedFiles] = useState(false);

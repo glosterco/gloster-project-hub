@@ -7,7 +7,7 @@ CREATE OR REPLACE FUNCTION public.update_payment_states_weekly()
 AS $function$
 BEGIN
   -- SOLO actualizar estados de 'Programado' a 'Pendiente' 2 semanas antes del vencimiento
-  -- NO tocar ningún otro estado (Enviado, Aprobado, Rechazado, En Progreso)
+  -- NO tocar ningún otro estado (Enviado, Aprobado, Rechazado)
   UPDATE "Estados de pago"
   SET "Status" = 'Pendiente'
   WHERE "Status" = 'Programado'

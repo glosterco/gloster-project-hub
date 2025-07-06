@@ -72,7 +72,7 @@ const ProjectDetail = () => {
         return 'bg-orange-100 text-orange-700';
       case 'rechazado':
         return 'bg-red-100 text-red-700';
-      case 'en progreso':
+      case 'pendiente':
         return 'bg-gloster-yellow/20 text-gloster-gray';
       case 'sin estado':
         return 'bg-gray-100 text-gray-700';
@@ -301,7 +301,7 @@ const ProjectDetail = () => {
                   <SelectItem value="programado">Programado</SelectItem>
                   <SelectItem value="enviado">Enviado</SelectItem>
                   <SelectItem value="rechazado">Rechazado</SelectItem>
-                  <SelectItem value="en progreso">En Progreso</SelectItem>
+                  <SelectItem value="en progreso">Pendiente</SelectItem>
                 </SelectContent>
               </Select>
 

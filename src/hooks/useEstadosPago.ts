@@ -21,6 +21,27 @@ export const useEstadosPago = () => {
     try {
       console.log('Creando estados de pago con parámetros:', { projectId, firstPaymentDate, expiryRate, duration });
       
+      // IMPORTANTE: Verificar primero si ya existen estados de pago para este proyecto
+      const { data: existingStates, error: checkError } = await supabase
+        .from('Estados de pago')
+        .select('id, Name')
+        .eq('Project', projectId);
+
+      if (checkError) {
+        console.error('Error checking existing payment states:', checkError);
+        throw new Error('Error al verificar estados de pago existentes');
+      }
+
+      if (existingStates && existingStates.length > 0) {
+        console.log('Estados de pago ya existen para este proyecto:', existingStates);
+        toast({
+          title: "Estados de pago ya existen",
+          description: "Este proyecto ya tiene estados de pago creados.",
+          variant: "destructive"
+        });
+        return { data: existingStates, error: null };
+      }
+
       // Get project data to access Google Drive folder ID
       const { data: projectData, error: projectError } = await supabase
         .from('Proyectos')
@@ -76,24 +97,18 @@ export const useEstadosPago = () => {
           'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
         ];
 
-        // Determine status based on expiry date vs today
-        let status = 'Programado';
+        // CAMBIO CRÍTICO: Estados iniciales más conservadores, sin recálculo automático
+        // Solo definir el estado inicial basado en fecha, pero NO sobrescribir estados existentes
+        let initialStatus = 'Programado';
         if (expiryDate < today) {
-          status = 'Pendiente';
-        } else {
-          // Find the closest future date to set as "En Progreso"
-          const timeDiff = expiryDate.getTime() - today.getTime();
-          if (timeDiff > 0) {
-            // This will be handled after creating all payments
-            status = 'Programado';
-          }
+          initialStatus = 'Pendiente';
         }
 
         estadosPago.push({
           Name: `EP${i + 1}`,
           Project: projectId,
           ExpiryDate: format(expiryDate, 'yyyy-MM-dd'),
-          Status: status,
+          Status: initialStatus, // Solo asignar estado inicial, nunca recalcular
           Completion: false,
           Mes: monthNames[assignedMonth - 1],
           Año: assignedYear,
@@ -102,10 +117,10 @@ export const useEstadosPago = () => {
         });
       }
 
-      // Find the closest future payment to set as "En Progreso"
+      // CAMBIO: Solo establecer "En Progreso" al estado más próximo al momento de CREACIÓN
+      // NO cuando se navega por la aplicación
       const futurePayments = estadosPago.filter(payment => new Date(payment.ExpiryDate) >= today);
       if (futurePayments.length > 0) {
-        // Sort by expiry date and set the first one as "En Progreso"
         futurePayments.sort((a, b) => new Date(a.ExpiryDate).getTime() - new Date(b.ExpiryDate).getTime());
         const closestPaymentIndex = estadosPago.findIndex(payment => payment.ExpiryDate === futurePayments[0].ExpiryDate);
         if (closestPaymentIndex !== -1) {
@@ -113,7 +128,7 @@ export const useEstadosPago = () => {
         }
       }
 
-      console.log('Estados de pago a insertar:', estadosPago);
+      console.log('Estados de pago a insertar (SOLO CREACIÓN INICIAL):', estadosPago);
 
       const { data, error } = await supabase
         .from('Estados de pago')
@@ -130,7 +145,7 @@ export const useEstadosPago = () => {
         return { data: null, error: new Error('No data returned') };
       }
 
-      console.log('Estados de pago creados exitosamente en BD:', data);
+      console.log('Estados de pago creados exitosamente en BD (SOLO CREACIÓN INICIAL):', data);
 
       // Create Google Drive folders for each payment state if project has Google Drive integration
       if (projectGoogleDriveFolderId) {

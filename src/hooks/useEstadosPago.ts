@@ -117,7 +117,7 @@ export const useEstadosPago = () => {
         });
       }
 
-      // CAMBIO: Solo establecer "En Progreso" al estado más próximo al momento de CREACIÓN
+     // CAMBIO: Solo establecer "En Progreso" al estado más próximo al momento de CREACIÓN
       // NO cuando se navega por la aplicación
       // Filtrar pagos futuros que estén "Programado" y a menos de 14 días para vencimiento
       const futureProgramadoPayments = estadosPago.filter(payment => {

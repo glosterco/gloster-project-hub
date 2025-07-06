@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
@@ -121,7 +122,7 @@ const PaymentDetail = () => {
   const allDocuments = [
     {
       id: 'eepp',
-      name: 'Carátula EEPP',
+      name: 'Carátula EEPP (resumen)',
       description: 'Presentación y resumen del estado de pago',
       downloadUrl: null,
       uploaded: false,
@@ -131,7 +132,7 @@ const PaymentDetail = () => {
     },
     {
       id: 'planilla',
-      name: 'Avance Periódico',
+      name: 'Avance del período',
       description: 'Planilla detallada del avance de obras del período',
       downloadUrl: null,
       uploaded: false,
@@ -141,7 +142,7 @@ const PaymentDetail = () => {
     },
     {
       id: 'cotizaciones',
-      name: 'Certificado de Pago de Cotizaciones Previsionales',
+      name: 'Certificado de pago de cotizaciones',
       description: 'Certificado de cumplimiento de obligaciones previsionales',
       downloadUrl: 'https://www.previred.com/wPortal/login/login.jsp',
       uploaded: false,
@@ -168,7 +169,7 @@ const PaymentDetail = () => {
     },
     {
       id: 'examenes',
-      name: 'Exámenes Preocupacionales',
+      name: 'Exámenes preocupacionales',
       description: 'Certificado de examenes preventivos para trabajos en faena de cada trabajador que corresponda',
       downloadUrl: null,
       uploaded: false,
@@ -198,7 +199,7 @@ const PaymentDetail = () => {
     }
   ];
 
-  // Filter documents based on project requirements
+  // Filter documents based on project requirements - CORRECTED LOGIC
   const documents = React.useMemo(() => {
     if (!payment?.projectData?.Requierment || !Array.isArray(payment.projectData.Requierment)) {
       return allDocuments.filter(doc => doc.required);
@@ -211,8 +212,8 @@ const PaymentDetail = () => {
       // Always include 'planilla' as it's always required
       if (doc.id === 'planilla') return true;
       
-      // Filter based on project requirements
-      const isRequiredByProject = projectRequirements.includes(doc.id);
+      // Filter based on project requirements - COMPARE WITH NAME FIELD
+      const isRequiredByProject = projectRequirements.includes(doc.name);
       console.log(`📄 Document "${doc.name}" (${doc.id}): ${isRequiredByProject ? 'INCLUDED' : 'EXCLUDED'}`);
       
       return isRequiredByProject;

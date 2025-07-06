@@ -31,7 +31,7 @@ const Register = () => {
 
   // Required documents list
   const documentsList = [
-    'Carátula EEPP (resumen)',
+    'Carátula EEPP',
     'Avance del período',
     'Certificado de pago de cotizaciones',
     'Certificado F30',

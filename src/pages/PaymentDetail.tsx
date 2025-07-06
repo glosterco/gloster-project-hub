@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useBeforeUnload } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -254,7 +255,7 @@ const PaymentDetail = () => {
   };
 
   // Document definitions
-  const documents = [
+  const allDocuments = [
     {
       id: 'eepp',
       name: 'Carátula EEPP',
@@ -333,6 +334,29 @@ const PaymentDetail = () => {
       helpText: 'Accede al portal del SII con tu RUT y clave, dirígete a "Facturación electrónica" y emite la factura correspondiente al período de trabajo.'
     }
   ];
+
+  // NEW: Filter documents based on project requirements
+  const documents = React.useMemo(() => {
+    if (!payment?.projectData?.Requierment || !Array.isArray(payment.projectData.Requierment)) {
+      return allDocuments.filter(doc => doc.required);
+    }
+
+    const projectRequirements = payment.projectData.Requierment;
+    console.log('🔍 Project requirements:', projectRequirements);
+    
+    return allDocuments.filter(doc => {
+      // Always include 'planilla' as it's always required
+      if (doc.id === 'planilla') return true;
+      
+      // Filter based on project requirements
+      const isRequiredByProject = projectRequirements.includes(doc.id);
+      console.log(`📄 Document "${doc.name}" (${doc.id}): ${isRequiredByProject ? 'INCLUDED' : 'EXCLUDED'}`);
+      
+      return isRequiredByProject;
+    });
+  }, [payment?.projectData?.Requierment]);
+
+  console.log('📋 Final filtered documents:', documents.map(d => d.name));
 
   const getExamenesUrl = () => {
     switch (achsSelection) {
@@ -552,6 +576,7 @@ const PaymentDetail = () => {
     navigate(`/submission-preview?paymentId=${payment.id}`);
   };
 
+  // NEW: Updated to count filtered documents
   const getCompletedDocumentsCount = () => {
     return documents.filter(doc => documentStatus[doc.id as keyof typeof documentStatus]).length;
   };

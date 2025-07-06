@@ -119,10 +119,20 @@ export const useEstadosPago = () => {
 
       // CAMBIO: Solo establecer "En Progreso" al estado más próximo al momento de CREACIÓN
       // NO cuando se navega por la aplicación
-      const futurePayments = estadosPago.filter(payment => new Date(payment.ExpiryDate) >= today);
-      if (futurePayments.length > 0) {
-        futurePayments.sort((a, b) => new Date(a.ExpiryDate).getTime() - new Date(b.ExpiryDate).getTime());
-        const closestPaymentIndex = estadosPago.findIndex(payment => payment.ExpiryDate === futurePayments[0].ExpiryDate);
+      // Filtrar solo pagos futuros que estén "Programado"
+      const futureProgramadoPayments = estadosPago.filter(payment => {
+        const expiry = new Date(payment.ExpiryDate);
+        const daysToExpiry = (expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24);
+        return expiry >= today && payment.Status === 'Programado' && daysToExpiry <= 14;
+      });
+      
+      if (futureProgramadoPayments.length > 0) {
+        // Ordenar para obtener el pago más próximo dentro del rango de 14 días
+        futureProgramadoPayments.sort((a, b) => new Date(a.ExpiryDate).getTime() - new Date(b.ExpiryDate).getTime());
+      
+        const closestPayment = futureProgramadoPayments[0];
+        const closestPaymentIndex = estadosPago.findIndex(payment => payment.ExpiryDate === closestPayment.ExpiryDate);
+      
         if (closestPaymentIndex !== -1) {
           estadosPago[closestPaymentIndex].Status = 'En Progreso';
         }

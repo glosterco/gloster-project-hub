@@ -18,7 +18,7 @@ const SubmissionView = () => {
 
   const { payment, loading, error, refetch } = usePaymentDetail(paymentId, true);
   const { toast } = useToast();
-  const { hasAccess, checkingAccess, isMandante } = useAccessVerification(payment, paymentId);
+  const { hasAccess, chexckingAccess, isMandante } = useAccessVerification(payment, paymentId);
 
   const handleStatusChange = () => {
     console.log('🔄 Status changed, refreshing payment data...');
@@ -145,6 +145,12 @@ const SubmissionView = () => {
             isMandante={isMandante}
             onStatusChange={handleStatusChange}
             useDirectDownload={true}
+          />
+          <PaymentApprovalSection 
+            paymentId={paymentId}
+            payment={null}
+            paymentState={emailTemplateData.paymentState}
+            onStatusChange={handleStatusChange}
           />
         </div>
       </div>

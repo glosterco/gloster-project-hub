@@ -162,7 +162,7 @@ export const useEstadosPago = () => {
               // Update the payment state with the Google Drive folder ID
               await supabase
                 .from('Estados de pago')
-                .update({ URL: driveResult.folderId })
+                .update({URL: `https://drive.google.com/drive/u/2/folders/${driveResult.folderId}`})
                 .eq('id', estado.id);
             }
           }

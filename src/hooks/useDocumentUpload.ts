@@ -10,6 +10,7 @@ export interface DocumentStatus {
   examenes: boolean;
   finiquito: boolean;
   factura: boolean;
+  [key: string]: boolean; // Add index signature for compatibility
 }
 
 export interface UploadedFiles {

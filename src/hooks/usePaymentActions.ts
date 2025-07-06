@@ -1,139 +1,117 @@
 
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { PaymentDetail } from '@/hooks/usePaymentDetail';
 
-export const usePaymentActions = () => {
-  const [loading, setLoading] = useState(false);
+export const usePaymentActions = (
+  payment: PaymentDetail | null,
+  editableAmount: string,
+  editablePercentage: string,
+  refetch: () => void
+) => {
+  const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
-  const approvePayment = async (paymentId: string) => {
-    setLoading(true);
-    try {
-      console.log('🟢 Attempting to approve payment:', paymentId);
-      
-      // CORRIGIENDO: Intentar actualizar con usuario autenticado primero
-      const { data: { user } } = await supabase.auth.getUser();
-      console.log('Current user:', user?.id);
+  const formatCurrency = (amount: number) => {
+    if (!payment?.projectData?.Currency) {
+      return new Intl.NumberFormat('es-CL', {
+        style: 'currency',
+        currency: 'CLP',
+        minimumFractionDigits: 0,
+      }).format(amount);
+    }
 
-      const { error } = await supabase
-        .from('Estados de pago')
-        .update({ Status: 'Aprobado' })
-        .eq('id', parseInt(paymentId));
-
-      if (error) {
-        console.error('❌ Error updating payment status:', error);
-        throw new Error('Error al aprobar el estado de pago');
-      }
-
-      console.log('✅ Payment status updated successfully');
-
-      // Enviar notificación al contratista
-      const webhookData = {
-        type: 'payment_approved',
-        paymentId,
-        timestamp: new Date().toISOString()
-      };
-
-      try {
-        await fetch('https://hook.us2.make.com/vomlhkl0es487ui7dfphtyv5hdoymbek', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(webhookData),
-        });
-        console.log('✅ Notification webhook sent');
-      } catch (webhookError) {
-        console.error('⚠️ Webhook error (non-critical):', webhookError);
-      }
-
-      toast({
-        title: "Estado de pago aprobado",
-        description: "Se ha notificado al contratista que el estado de pago fue aprobado",
-      });
-
-      return { success: true };
-    } catch (error) {
-      console.error('❌ Error approving payment:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo aprobar el estado de pago",
-        variant: "destructive"
-      });
-      return { success: false };
-    } finally {
-      setLoading(false);
+    if (payment.projectData.Currency === 'UF') {
+      return `${amount.toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} UF`;
+    } else if (payment.projectData.Currency === 'USD') {
+      return new Intl.NumberFormat('es-CL', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 0,
+      }).format(amount);
+    } else {
+      return new Intl.NumberFormat('es-CL', {
+        style: 'currency',
+        currency: 'CLP',
+        minimumFractionDigits: 0,
+      }).format(amount);
     }
   };
 
-  const rejectPayment = async (paymentId: string, comments: string) => {
-    setLoading(true);
+  const handleAmountChange = (value: string, setEditableAmount: (value: string) => void, setEditablePercentage: (value: string) => void) => {
+    setEditableAmount(value);
+    if (value && payment?.projectData?.Budget) {
+      const percentage = (parseFloat(value) / payment.projectData.Budget) * 100;
+      setEditablePercentage(percentage.toFixed(2));
+    }
+  };
+
+  const handlePercentageChange = (value: string, setEditableAmount: (value: string) => void, setEditablePercentage: (value: string) => void) => {
+    setEditablePercentage(value);
+    if (value && payment?.projectData?.Budget) {
+      const amount = (parseFloat(value) / 100) * payment.projectData.Budget;
+      setEditableAmount(amount.toString());
+    }
+  };
+
+  const handleSaveAmount = async () => {
+    if (!payment?.id || !editableAmount) return;
+    
+    setIsSaving(true);
     try {
-      console.log('🔴 Attempting to reject payment:', paymentId, 'with comments:', comments);
-      
-      // CORRIGIENDO: Intentar actualizar con usuario autenticado primero
-      const { data: { user } } = await supabase.auth.getUser();
-      console.log('Current user:', user?.id);
+      const amount = parseFloat(editableAmount);
+      const percentage = editablePercentage ? parseFloat(editablePercentage) : 
+        (payment?.projectData?.Budget ? (amount / payment.projectData.Budget) * 100 : 0);
 
       const { error } = await supabase
         .from('Estados de pago')
         .update({ 
-          Status: 'Rechazado',
-          Notes: comments 
+          Total: amount,
+          Progress: Math.round(percentage)
         })
-        .eq('id', parseInt(paymentId));
+        .eq('id', payment.id);
 
-      if (error) {
-        console.error('❌ Error updating payment status:', error);
-        throw new Error('Error al rechazar el estado de pago');
-      }
-
-      console.log('✅ Payment status and notes updated successfully');
-
-      // Enviar notificación al contratista con comentarios
-      const webhookData = {
-        type: 'payment_rejected',
-        paymentId,
-        comments,
-        timestamp: new Date().toISOString()
-      };
-
-      try {
-        await fetch('https://hook.us2.make.com/vomlhkl0es487ui7dfphtyv5hdoymbek', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(webhookData),
-        });
-        console.log('✅ Rejection notification webhook sent');
-      } catch (webhookError) {
-        console.error('⚠️ Webhook error (non-critical):', webhookError);
-      }
+      if (error) throw error;
 
       toast({
-        title: "Estado de pago rechazado",
-        description: "Se ha notificado al contratista con los comentarios ingresados",
+        title: "Datos actualizados",
+        description: "El monto y porcentaje del estado de pago se han actualizado correctamente",
       });
-
-      return { success: true };
+      
+      refetch();
     } catch (error) {
-      console.error('❌ Error rejecting payment:', error);
+      console.error('Error updating amount and progress:', error);
       toast({
         title: "Error",
-        description: "No se pudo rechazar el estado de pago",
+        description: "No se pudo actualizar la información",
         variant: "destructive"
       });
-      return { success: false };
     } finally {
-      setLoading(false);
+      setIsSaving(false);
     }
   };
 
+  const handleNavigation = (targetPath: string, hasUnsavedFiles: boolean) => {
+    if (hasUnsavedFiles) {
+      const confirmed = window.confirm(
+        'Tienes archivos cargados que aún no han sido respaldados y enviados. Si sales de la página se perderá el progreso.\n\nDebes enviar la solicitud o ver la previsualización para que se respalde la información.\n\n¿Estás seguro de que quieres continuar?'
+      );
+      if (!confirmed) {
+        return;
+      }
+    }
+    navigate(targetPath);
+  };
+
   return {
-    approvePayment,
-    rejectPayment,
-    loading
+    isSaving,
+    formatCurrency,
+    handleAmountChange,
+    handlePercentageChange,
+    handleSaveAmount,
+    handleNavigation
   };
 };

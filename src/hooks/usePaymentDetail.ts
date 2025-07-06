@@ -22,6 +22,7 @@ export interface PaymentDetail {
     Location: string;
     Budget?: number;
     Currency?: string;
+    Requierment?: string[];
     Owner?: {
       id: number;
       CompanyName: string;
@@ -62,6 +63,7 @@ export const usePaymentDetail = (paymentId: string, shouldRefetch = true) => {
             Location,
             Budget,
             Currency,
+            Requierment,
             Owner:Mandantes!Owner (
               id,
               CompanyName,
@@ -105,6 +107,7 @@ export const usePaymentDetail = (paymentId: string, shouldRefetch = true) => {
           Location: paymentData.projectData.Location || '',
           Budget: paymentData.projectData.Budget || undefined,
           Currency: paymentData.projectData.Currency || undefined,
+          Requierment: paymentData.projectData.Requierment || undefined,
           Owner: paymentData.projectData.Owner ? {
             id: paymentData.projectData.Owner.id,
             CompanyName: paymentData.projectData.Owner.CompanyName || '',
@@ -130,7 +133,8 @@ export const usePaymentDetail = (paymentId: string, shouldRefetch = true) => {
         contactEmail: processedPayment.projectData?.Contratista?.ContactEmail,
         RUT: processedPayment.projectData?.Contratista?.RUT,
         phone: processedPayment.projectData?.Contratista?.ContactPhone,
-        address: processedPayment.projectData?.Contratista?.Adress
+        address: processedPayment.projectData?.Contratista?.Adress,
+        requirements: processedPayment.projectData?.Requierment
       });
 
       setPayment(processedPayment);

@@ -119,7 +119,7 @@ export const useEstadosPago = () => {
 
       // CAMBIO: Solo establecer "En Progreso" al estado más próximo al momento de CREACIÓN
       // NO cuando se navega por la aplicación
-      // Filtrar solo pagos futuros que estén "Programado"
+      // Filtrar pagos futuros que estén "Programado" y a menos de 14 días para vencimiento
       const futureProgramadoPayments = estadosPago.filter(payment => {
         const expiry = new Date(payment.ExpiryDate);
         const daysToExpiry = (expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24);

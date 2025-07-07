@@ -12,7 +12,7 @@ import SubmissionContent from '@/components/submission/SubmissionContent';
 const SubmissionView = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const paymentId = searchParams.get('paymentId') || '11';
+  const paymentId = searchParams.get('paymentId') || '47';
 
   const { payment, loading, error, refetch } = usePaymentDetail(paymentId, true);
   const { toast } = useToast();

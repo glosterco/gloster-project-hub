@@ -34,6 +34,11 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
     onStatusChange
   });
 
+  // Verificar si el pago ya fue procesado
+  const isProcessed = payment?.Status === 'Aprobado' || payment?.Status === 'Rechazado';
+  const currentStatus = payment?.Status;
+  const statusNotes = payment?.Notes;
+
   const onApprove = async () => {
     console.log('✅ PaymentApprovalSection onApprove clicked');
     try {
@@ -73,20 +78,56 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
         formattedAmount={paymentState.formattedAmount || ''}
       />
 
-      {!showRejectionForm ? (
-        <ApprovalButtons
-          loading={loading}
-          onApprove={onApprove}
-          onReject={onReject}
-        />
+      {isProcessed ? (
+        <div className="space-y-4">
+          <div className={`p-4 rounded-lg border-l-4 ${
+            currentStatus === 'Aprobado' 
+              ? 'bg-green-50 border-green-500' 
+              : 'bg-red-50 border-red-500'
+          }`}>
+            <div className="flex items-center">
+              <div className={`h-4 w-4 rounded-full mr-3 ${
+                currentStatus === 'Aprobado' ? 'bg-green-500' : 'bg-red-500'
+              }`}></div>
+              <h3 className={`font-semibold ${
+                currentStatus === 'Aprobado' ? 'text-green-800' : 'text-red-800'
+              }`}>
+                Estado de Pago {currentStatus}
+              </h3>
+            </div>
+            {statusNotes && (
+              <p className={`mt-2 text-sm ${
+                currentStatus === 'Aprobado' ? 'text-green-700' : 'text-red-700'
+              }`}>
+                {statusNotes}
+              </p>
+            )}
+          </div>
+          <p className="text-sm text-gray-600">
+            {currentStatus === 'Aprobado' 
+              ? 'El estado de pago ha sido aprobado exitosamente.' 
+              : 'El estado de pago ha sido rechazado. El contratista ha sido notificado para realizar las correcciones necesarias.'
+            }
+          </p>
+        </div>
       ) : (
-        <RejectionForm
-          loading={loading}
-          rejectionReason={rejectionReason}
-          onReasonChange={setRejectionReason}
-          onConfirmReject={onConfirmReject}
-          onCancel={onCancel}
-        />
+        <>
+          {!showRejectionForm ? (
+            <ApprovalButtons
+              loading={loading}
+              onApprove={onApprove}
+              onReject={onReject}
+            />
+          ) : (
+            <RejectionForm
+              loading={loading}
+              rejectionReason={rejectionReason}
+              onReasonChange={setRejectionReason}
+              onConfirmReject={onConfirmReject}
+              onCancel={onCancel}
+            />
+          )}
+        </>
       )}
     </div>
   );

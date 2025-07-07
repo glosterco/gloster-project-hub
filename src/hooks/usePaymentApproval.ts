@@ -26,7 +26,7 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
 
     if (updateError) {
       console.error('❌ Error updating payment status:', updateError);
-      throw new Error('Error al actualizar el estado del pago');
+      throw new Error(`Error al actualizar el estado del pago: ${updateError.message}`);
     }
 
     console.log(`✅ Payment status updated to ${status}`);
@@ -133,10 +133,8 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
         description: "El estado de pago ha sido aprobado exitosamente y se ha notificado al contratista.",
       });
 
-      // 3. Update UI after a delay to prevent loops
-      setTimeout(() => {
-        onStatusChange?.();
-      }, 2000);
+      // 3. Update UI immediately
+      onStatusChange?.();
       
       console.log('✅ Approval process completed successfully');
 
@@ -195,10 +193,8 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
         description: "El estado de pago ha sido rechazado y se ha notificado al contratista.",
       });
 
-      // 3. Update UI after a delay to prevent loops
-      setTimeout(() => {
-        onStatusChange?.();
-      }, 2000);
+      // 3. Update UI immediately
+      onStatusChange?.();
       
       console.log('✅ Rejection process completed successfully');
 

@@ -1,39 +1,11 @@
-
 import React from 'react';
 import EmailTemplate from '@/components/EmailTemplate';
 import PaymentApprovalSection from '@/components/PaymentApprovalSection';
-import { formatCurrency, getDocumentsFromPayment } from '@/utils/submissionPreviewUtils';
+import { formatCurrency } from '@/utils/submissionPreviewUtils';
 
 interface SubmissionContentProps {
   paymentId: string;
-  emailTemplateData: {
-    paymentState: {
-      month: string;
-      amount: number;
-      formattedAmount: string;
-      dueDate: string;
-      projectName: string;
-      recipient: string;
-      currency: string;
-    };
-    project: {
-      name: string;
-      client: string;
-      contractor: string;
-      location: string;
-      projectManager: string;
-      contactEmail: string;
-      contractorRUT: string;
-      contractorPhone: string;
-      contractorAddress: string;
-    };
-    documents: Array<{
-      id: string;
-      name: string;
-      description: string;
-      uploaded: boolean;
-    }>;
-  };
+  payment: any; // Asegúrate de tiparlo correctamente si es posible
   isMandante: boolean;
   onStatusChange: () => void;
   useDirectDownload?: boolean;
@@ -41,11 +13,35 @@ interface SubmissionContentProps {
 
 const SubmissionContent: React.FC<SubmissionContentProps> = ({
   paymentId,
-  emailTemplateData,
+  payment,
   isMandante,
   onStatusChange,
   useDirectDownload = false
 }) => {
+  const emailTemplateData = {
+    paymentState: {
+      month: `${payment.Mes} ${payment.Año}`,
+      amount: payment.Total || 0,
+      formattedAmount: formatCurrency(payment.Total || 0, payment),
+      dueDate: payment.ExpiryDate,
+      projectName: payment.projectData?.Name || '',
+      recipient: payment.projectData?.Owner?.ContactEmail || '',
+      currency: payment.projectData?.Currency || 'CLP',
+    },
+    project: {
+      name: payment.projectData?.Name || '',
+      client: payment.projectData?.Owner?.CompanyName || '',
+      contractor: payment.projectData?.Contratista?.CompanyName || '',
+      location: payment.projectData?.Location || '',
+      projectManager: payment.projectData?.Contratista?.ContactName || '',
+      contactEmail: payment.projectData?.Contratista?.ContactEmail || '',
+      contractorRUT: payment.projectData?.Contratista?.RUT || '',
+      contractorPhone: payment.projectData?.Contratista?.ContactPhone?.toString() || '',
+      contractorAddress: payment.projectData?.Contratista?.Adress || ''
+    },
+    documents: payment.documents || []
+  };
+
   return (
     <div className="container mx-auto px-6 py-8">
       <div className="max-w-4xl mx-auto space-y-6">
@@ -62,7 +58,7 @@ const SubmissionContent: React.FC<SubmissionContentProps> = ({
         {isMandante && (
           <PaymentApprovalSection
             paymentId={paymentId}
-            payment={null}
+            payment={payment}
             paymentState={emailTemplateData.paymentState}
             onStatusChange={onStatusChange}
           />

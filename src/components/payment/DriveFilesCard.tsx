@@ -30,7 +30,7 @@ const DriveFilesCard: React.FC<DriveFilesCardProps> = ({
   return (
     <Card className="mb-8 border-l-4 border-l-blue-500">
       <CardHeader>
-        <CardTitle className="font-rubik text-lg text-slate-800">Documentos en Drive</CardTitle>
+        <CardTitle className="font-rubik text-lg text-slate-800">Documentos cargados</CardTitle>
         <CardDescription className="font-rubik">
           Los documentos se encuentran almacenados. Puedes actualizar cualquier documento si es necesario.
         </CardDescription>

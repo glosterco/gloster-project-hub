@@ -32,7 +32,7 @@ const DriveFilesCard: React.FC<DriveFilesCardProps> = ({
       <CardHeader>
         <CardTitle className="font-rubik text-lg text-slate-800">Documentos en Drive</CardTitle>
         <CardDescription className="font-rubik">
-          Los documentos se encuentran almacenados en Google Drive. Puedes actualizar cualquier documento si es necesario.
+          Los documentos se encuentran almacenados. Puedes actualizar cualquier documento si es necesario.
         </CardDescription>
       </CardHeader>
       <CardContent>

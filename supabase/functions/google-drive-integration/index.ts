@@ -54,7 +54,7 @@ async function createGoogleDriveFolder(
   folderName: string,
   parentFolderId?: string
 ): Promise<string> {
-  console.log('📁 Creating Google Drive folder:', folderName, parentFolderId ? `in parent: ${parentFolderId}` : 'in root');
+  console.log('📁 Creating folder:', folderName, parentFolderId ? `in parent: ${parentFolderId}` : 'in root');
   
   const metadata = {
     name: folderName,
@@ -77,7 +77,7 @@ async function createGoogleDriveFolder(
     throw new Error(`Failed to create folder: ${data.error?.message || 'Unknown error'}`);
   }
 
-  console.log('✅ Google Drive folder created successfully:', data.id);
+  console.log('✅ Folder created successfully:', data.id);
   return data.id;
 }
 
@@ -87,7 +87,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🚀 Google Drive integration function called');
+    console.log('🚀 Integration function called');
     const body: CreateFolderRequest = await req.json();
     console.log('📋 Request body:', body);
     
@@ -96,12 +96,12 @@ serve(async (req) => {
     const googleClientSecret = Deno.env.get('GOOGLE_DRIVE_CLIENT_SECRET');
     const googleRefreshToken = Deno.env.get('GOOGLE_DRIVE_REFRESH_TOKEN');
 
-    console.log('🔍 Checking Google Drive credentials...');
+    console.log('🔍 Checking credentials...');
     if (!googleClientId || !googleClientSecret || !googleRefreshToken) {
-      console.error('❌ Google Drive credentials not configured');
-      throw new Error('Google Drive credentials not configured');
+      console.error('❌ Credentials not configured');
+      throw new Error('Credentials not configured');
     }
-    console.log('✅ Google Drive credentials found');
+    console.log('✅ Credentials found');
 
     const credentials: GoogleDriveCredentials = {
       client_id: googleClientId,
@@ -133,7 +133,7 @@ serve(async (req) => {
       console.log(`🔗 Full URL: ${fullUrl}`);
 
       // Update project with Google Drive URL using service role client
-      console.log('💾 Updating project with Google Drive URL...');
+      console.log('💾 Updating project with URL...');
       const { error: updateProjectError } = await supabase
         .from('Proyectos')
         .update({ URL: fullUrl })
@@ -143,7 +143,7 @@ serve(async (req) => {
         console.error('❌ Error updating project URL:', updateProjectError);
         // Don't throw error here, just log it as the folder was created successfully
       } else {
-        console.log('✅ Project updated with Google Drive URL');
+        console.log('✅ Project updated with URL');
       }
 
     } else if (body.type === 'payment_state') {
@@ -157,7 +157,7 @@ serve(async (req) => {
       console.log(`🔗 Full URL: ${fullUrl}`);
 
       // Update the payment state record with the complete URL using service role client
-      console.log('💾 Updating payment state with Google Drive URL...');
+      console.log('💾 Updating payment state with URL...');
       const { error: updateError } = await supabase
         .from('Estados de pago')
         .update({ URL: fullUrl })
@@ -169,7 +169,7 @@ serve(async (req) => {
         console.error('❌ Error updating payment state URL:', updateError);
         // Don't throw error here, just log it as the folder was created successfully
       } else {
-        console.log('✅ Payment state updated with Google Drive URL');
+        console.log('✅ Payment state updated with URL');
       }
       
     } else {
@@ -211,7 +211,7 @@ serve(async (req) => {
       }
     }
 
-    console.log('🎉 Google Drive integration completed successfully');
+    console.log('🎉 Integration completed successfully');
     return new Response(
       JSON.stringify({ 
         success: true, 
@@ -225,7 +225,7 @@ serve(async (req) => {
       }
     )
   } catch (error) {
-    console.error('❌ Error in Google Drive integration:', error);
+    console.error('❌ Error in integration:', error);
     return new Response(
       JSON.stringify({ 
         error: error.message,

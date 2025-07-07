@@ -176,9 +176,9 @@ export const useEstadosPago = () => {
                 .eq('id', estado.id);
             }
           }
-          console.log('Google Drive folders created for payment states');
+          console.log('Folders created for payment states');
         } catch (driveError) {
-          console.warn('Failed to create some Google Drive folders for payment states:', driveError);
+          console.warn('Failed to create some folders for payment states:', driveError);
           // Don't fail the entire operation if Google Drive fails
         }
       }

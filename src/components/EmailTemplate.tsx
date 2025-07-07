@@ -117,7 +117,7 @@ const EmailTemplate: React.FC<EmailTemplateProps> = ({
             window.open(driveUrl, '_blank');
             toast({
               title: "Abriendo carpeta",
-              description: "Se ha abierto la carpeta del Drive",
+              description: "Se ha abierto la carpeta del respaldo",
             });
           } else {
             toast({

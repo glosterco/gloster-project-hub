@@ -12,7 +12,7 @@ interface LoadingModalProps {
 const LoadingModal: React.FC<LoadingModalProps> = ({ 
   isOpen, 
   title = "Cargando archivos...", 
-  description = "Por favor espera mientras se suben los documentos a Google Drive" 
+  description = "Por favor espera mientras se carga la documentación" 
 }) => {
   if (!isOpen) return null;
 

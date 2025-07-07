@@ -92,7 +92,7 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const { paymentId, documentName, downloadContent = false }: GetFilesRequest = await req.json();
-    console.log("Getting drive files for:", { paymentId, documentName, downloadContent });
+    console.log("Getting files for:", { paymentId, documentName, downloadContent });
 
     // Get payment data from Supabase to find the drive URL
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -115,14 +115,14 @@ const handler = async (req: Request): Promise<Response> => {
 
     const paymentData = await paymentResponse.json();
     if (!paymentData.length || !paymentData[0].URL) {
-      throw new Error("No drive URL found for this payment");
+      throw new Error("No URL found for this payment");
     }
 
     const driveUrl = paymentData[0].URL;
     const folderId = getFolderIdFromUrl(driveUrl);
 
     if (!folderId) {
-      throw new Error("Invalid drive URL format");
+      throw new Error("Invalid URL format");
     }
 
     const accessToken = await getAccessToken();
@@ -169,7 +169,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
     );
   } catch (error) {
-    console.error("Error getting drive files:", error);
+    console.error("Error getting files:", error);
     return new Response(
       JSON.stringify({ 
         success: false, 

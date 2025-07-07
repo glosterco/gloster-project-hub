@@ -333,10 +333,10 @@ const PaymentDetail = () => {
       );
 
       if (!uploadResult.success) {
-        throw new Error("Error al subir documentos a Google Drive");
+        throw new Error("Error al subir documentos");
       }
 
-      console.log('✅ Documents uploaded successfully to Google Drive');
+      console.log('✅ Documents uploaded successfully');
 
       // Usar el sistema de enlace único
       const accessUrl = await ensureUniqueAccessUrl(payment.id);
@@ -398,7 +398,7 @@ const PaymentDetail = () => {
       if (result.success) {
         toast({
           title: "Documentos enviados exitosamente",
-          description: "Los documentos se han subido a Google Drive y se ha enviado la notificación al mandante",
+          description: "Los documentos se han subido y se ha notificado al mandante",
         });
         
         setTimeout(() => {
@@ -409,7 +409,7 @@ const PaymentDetail = () => {
       console.error('❌ Error in upload process:', error);
       toast({
         title: "Error al enviar documentos",
-        description: error.message || "Error al subir documentos a Google Drive",
+        description: error.message || "Error al subir documentos",
         variant: "destructive"
       });
     } finally {
@@ -456,21 +456,21 @@ const PaymentDetail = () => {
         );
 
         if (!uploadResult.success) {
-          throw new Error("Error al subir documentos a Google Drive");
+          throw new Error("Error al subir documentos");
         }
 
         console.log('✅ Documents uploaded successfully before preview');
         
         toast({
           title: "Documentos subidos",
-          description: "Los documentos se han subido correctamente al Drive",
+          description: "Los documentos se han subido correctamente",
         });
 
       } catch (error) {
         console.error('❌ Error uploading documents for preview:', error);
         toast({
           title: "Error al subir documentos",
-          description: error.message || "Error al subir documentos a Google Drive",
+          description: error.message || "Error al subir documentos",
           variant: "destructive"
         });
         setIsPreviewUploading(false);
@@ -509,7 +509,7 @@ const PaymentDetail = () => {
         <LoadingModal 
           isOpen={isUploadingOrPreviewing}
           title={isPreviewUploading ? "Subiendo documentos para vista previa..." : "Subiendo documentos..."}
-          description={isPreviewUploading ? "Por favor espera mientras se suben los documentos al Drive antes de mostrar la vista previa" : "Por favor espera mientras se procesa la información y se envía la notificación al mandante"}
+          description={isPreviewUploading ? "Por favor espera mientras se suben los documentos antes de mostrar la vista previa" : "Por favor espera mientras se procesa la información y se envía la notificación al mandante"}
         />
 
         {/* Hidden file inputs */}

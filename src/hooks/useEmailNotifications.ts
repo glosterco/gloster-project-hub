@@ -121,7 +121,7 @@ export const useEmailNotifications = () => {
 
   const getDriveFiles = async (paymentId: string, documentName: string) => {
     try {
-      console.log('Getting drive files:', { paymentId, documentName });
+      console.log('Getting files:', { paymentId, documentName });
 
       const { data: result, error } = await supabase.functions.invoke('get-drive-files', {
         body: { paymentId, documentName },
@@ -133,16 +133,16 @@ export const useEmailNotifications = () => {
       }
 
       if (!result.success) {
-        throw new Error(result.error || 'Failed to get drive files');
+        throw new Error(result.error || 'Failed to get files');
       }
 
-      console.log('✅ Drive files retrieved successfully:', result);
+      console.log('✅ files retrieved successfully:', result);
       return { success: true, files: result.files };
     } catch (error) {
-      console.error('Error getting drive files:', error);
+      console.error('Error getting files:', error);
       toast({
         title: "Error al obtener archivos",
-        description: "No se pudieron obtener los archivos del Drive",
+        description: "No se pudieron obtener los archivos",
         variant: "destructive",
       });
       return { success: false, error: error.message, files: [] };

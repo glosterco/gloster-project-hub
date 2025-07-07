@@ -63,7 +63,7 @@ serve(async (req) => {
     }
 
     if (!targetFolderId) {
-      console.error('❌ No valid Google Drive folder ID found in database URL:', paymentData.URL);
+      console.error('❌ No valid folder ID found in database URL:', paymentData.URL);
       return Response.json(
         { success: false, error: 'No Google Drive folder configured for this payment state. URL field: ' + paymentData.URL },
         { status: 400, headers: corsHeaders }
@@ -76,15 +76,15 @@ serve(async (req) => {
     const refreshToken = Deno.env.get('GOOGLE_DRIVE_REFRESH_TOKEN');
 
     if (!clientId || !clientSecret || !refreshToken) {
-      console.error('❌ Missing Google Drive credentials');
+      console.error('❌ Missing credentials');
       return Response.json(
-        { success: false, error: 'Missing Google Drive credentials' },
+        { success: false, error: 'Missing credentials' },
         { status: 500, headers: corsHeaders }
       );
     }
 
     // Get access token
-    console.log('🔑 Getting Google Drive access token...');
+    console.log('🔑 Getting access token...');
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: {
@@ -101,7 +101,7 @@ serve(async (req) => {
     if (!tokenResponse.ok) {
       console.error('❌ Failed to get access token:', await tokenResponse.text());
       return Response.json(
-        { success: false, error: 'Failed to authenticate with Google Drive' },
+        { success: false, error: 'Failed to authenticate' },
         { status: 500, headers: corsHeaders }
       );
     }

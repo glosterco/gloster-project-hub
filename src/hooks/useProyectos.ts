@@ -74,7 +74,7 @@ export const useProyectos = () => {
       try {
         const driveResult = await createProjectFolder(data.id, data.Name);
         if (driveResult.success) {
-          console.log('Google Drive folder created successfully');
+          console.log('Folder created successfully');
           
           // Optionally update the project with the Google Drive folder ID
           await supabase
@@ -83,7 +83,7 @@ export const useProyectos = () => {
             .eq('id', data.id);
         }
       } catch (driveError) {
-        console.warn('Failed to create Google Drive folder, but project was created:', driveError);
+        console.warn('Failed to create folder, but project was created:', driveError);
         // Don't fail the entire operation if Google Drive fails
       }
 

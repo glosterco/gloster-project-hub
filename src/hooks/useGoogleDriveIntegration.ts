@@ -10,7 +10,7 @@ export const useGoogleDriveIntegration = () => {
   const createProjectFolder = async (projectId: number, projectName: string) => {
     setLoading(true);
     try {
-      console.log('Creating Google Drive folder for project:', { projectId, projectName });
+      console.log('Creating folder for project:', { projectId, projectName });
 
       const { data, error } = await supabase.functions.invoke('google-drive-integration', {
         body: {
@@ -21,21 +21,21 @@ export const useGoogleDriveIntegration = () => {
       });
 
       if (error) {
-        console.error('Error calling Google Drive function:', error);
+        console.error('Error calling function:', error);
         throw error;
       }
 
       if (!data.success) {
-        throw new Error(data.error || 'Failed to create Google Drive folder');
+        throw new Error(data.error || 'Failed to create folder');
       }
 
-      console.log('✅ Google Drive project folder created:', data);
+      console.log('✅ Project folder created:', data);
       return { success: true, folderId: data.folderId, folderName: data.folderName, fullUrl: data.fullUrl };
     } catch (error) {
-      console.error('Error creating Google Drive project folder:', error);
+      console.error('Error creating project folder:', error);
       toast({
-        title: "Error al crear carpeta en Google Drive",
-        description: "No se pudo crear la carpeta del proyecto en Google Drive",
+        title: "Error al crear carpeta de respaldo",
+        description: "No se pudo crear la carpeta del proyecto",
         variant: "destructive",
       });
       return { success: false, error: error.message };
@@ -52,7 +52,7 @@ export const useGoogleDriveIntegration = () => {
   ) => {
     setLoading(true);
     try {
-      console.log('Creating Google Drive folder for payment state:', { 
+      console.log('Creating folder for payment state:', { 
         paymentStateName, 
         month, 
         year, 
@@ -70,21 +70,21 @@ export const useGoogleDriveIntegration = () => {
       });
 
       if (error) {
-        console.error('Error calling Google Drive function:', error);
+        console.error('Error calling function:', error);
         throw error;
       }
 
       if (!data.success) {
-        throw new Error(data.error || 'Failed to create Google Drive folder');
+        throw new Error(data.error || 'Failed to create folder');
       }
 
-      console.log('✅ Google Drive payment state folder created:', data);
+      console.log('✅ Payment state folder created:', data);
       return { success: true, folderId: data.folderId, folderName: data.folderName, fullUrl: data.fullUrl };
     } catch (error) {
-      console.error('Error creating Google Drive payment state folder:', error);
+      console.error('Error creating payment state folder:', error);
       toast({
-        title: "Error al crear carpeta en Google Drive",
-        description: "No se pudo crear la carpeta del estado de pago en Google Drive",
+        title: "Error al crear carpeta de respaldo",
+        description: "No se pudo crear la carpeta del estado de pago",
         variant: "destructive",
       });
       return { success: false, error: error.message };
@@ -96,7 +96,7 @@ export const useGoogleDriveIntegration = () => {
   const uploadDocumentsToDrive = async (paymentId: number, uploadedFiles: any, documentStatus: any, fileObjects: {[key: string]: File[]}) => {
     setLoading(true);
     try {
-      console.log('🚀 Starting document upload to Google Drive:', { paymentId });
+      console.log('🚀 Starting document upload:', { paymentId });
 
       // Document name mapping
       const documentNames = {
@@ -184,15 +184,15 @@ export const useGoogleDriveIntegration = () => {
       }
 
       if (!data.success) {
-        throw new Error(data.error || 'Falló la subida de documentos a Google Drive');
+        throw new Error(data.error || 'Falló la subida de documentos');
       }
 
-      console.log('✅ Documents uploaded to Google Drive successfully:', data);
+      console.log('✅ Documents uploaded successfully:', data);
       
       // CORRIGIENDO: Asegurar que las URLs de Google Drive tengan el formato correcto
       if (data.driveUrl && !data.driveUrl.startsWith('https://drive.google.com/drive/u/2/folders/')) {
         const correctedUrl = `https://drive.google.com/drive/u/2/folders/${data.driveUrl.replace(/^.*\//, '')}`;
-        console.log('🔧 Correcting Drive URL format:', correctedUrl);
+        console.log('🔧 Correcting URL format:', correctedUrl);
         
         // Actualizar la URL en la base de datos con el formato correcto
         const { error: updateError } = await supabase
@@ -209,7 +209,7 @@ export const useGoogleDriveIntegration = () => {
       
       return { success: true, uploadResults: data.uploadResults };
     } catch (error) {
-      console.error('❌ Error uploading documents to Google Drive:', error);
+      console.error('❌ Error uploading documents:', error);
       throw error; // Re-throw para que sea manejado por el componente padre
     } finally {
       setLoading(false);

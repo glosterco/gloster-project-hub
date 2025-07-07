@@ -91,82 +91,181 @@ const createEmailHtml = (data: NotificationRequest): string => {
     <html>
     <head>
       <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Estado de Pago - ${data.proyecto}</title>
       <style>
-        body { font-family: 'Arial', sans-serif; line-height: 1.6; margin: 0; padding: 0; }
-        .container { max-width: 600px; margin: 0 auto; background: #ffffff; }
-        .header { background: #F5DF4D; padding: 20px; text-align: center; }
-        .logo { width: 32px; height: 32px; vertical-align: middle; margin-right: 10px; }
-        .title { color: #1e293b; font-size: 24px; font-weight: bold; margin: 0; }
-        .content { padding: 30px 20px; }
-        .highlight-box { background: #f8fafc; border-left: 4px solid #F5DF4D; padding: 20px; margin: 20px 0; }
-        .info-grid { display: grid; gap: 15px; margin: 20px 0; }
-        .info-item { display: flex; align-items: center; }
-        .info-label { font-weight: 600; color: #64748b; margin-right: 10px; }
-        .info-value { font-weight: 700; color: #1e293b; }
-        .amount { color: #059669; font-size: 18px; }
+        body { 
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+          line-height: 1.6; 
+          margin: 0; 
+          padding: 0; 
+          background-color: #f5f5f5;
+        }
+        .container { 
+          max-width: 600px; 
+          margin: 20px auto; 
+          background: #ffffff; 
+          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+          border-radius: 8px;
+          overflow: hidden;
+        }
+        .header { 
+          background: #F5DF4D; 
+          padding: 25px 20px; 
+          text-align: center; 
+        }
+        .title { 
+          color: #1e293b; 
+          font-size: 22px; 
+          font-weight: bold; 
+          margin: 0; 
+        }
+        .content { 
+          padding: 30px 25px; 
+        }
+        .greeting {
+          font-size: 16px;
+          color: #1e293b;
+          margin-bottom: 20px;
+        }
+        .highlight-box { 
+          background: #f8fafc; 
+          border: 1px solid #e2e8f0;
+          border-left: 4px solid #F5DF4D; 
+          padding: 20px; 
+          margin: 25px 0; 
+          border-radius: 4px;
+        }
+        .section-title {
+          color: #1e293b;
+          font-size: 18px;
+          font-weight: 600;
+          margin: 0 0 15px 0;
+        }
+        .info-table { 
+          width: 100%;
+          border-collapse: collapse;
+          margin: 15px 0;
+        }
+        .info-table td {
+          padding: 8px 12px;
+          border-bottom: 1px solid #e2e8f0;
+        }
+        .info-label { 
+          font-weight: 600; 
+          color: #64748b; 
+          width: 30%;
+        }
+        .info-value { 
+          font-weight: 500; 
+          color: #1e293b; 
+        }
+        .amount { 
+          color: #059669; 
+          font-size: 16px; 
+          font-weight: 700;
+        }
+        .cta-section {
+          text-align: center;
+          margin: 30px 0;
+          padding: 20px;
+          background: #f8fafc;
+          border-radius: 6px;
+        }
         .cta-button { 
           display: inline-block; 
           background: #F5DF4D; 
           color: #1e293b; 
-          padding: 15px 30px; 
+          padding: 14px 28px; 
           text-decoration: none; 
-          border-radius: 8px; 
+          border-radius: 6px; 
           font-weight: 600; 
-          margin: 20px 0; 
+          margin: 15px 0;
+          border: 2px solid #F5DF4D;
         }
-        .footer { background: #f8fafc; padding: 20px; text-align: center; color: #64748b; font-size: 12px; }
+        .cta-button:hover {
+          background: #f0d935;
+        }
+        .important-note {
+          background: #fef3c7;
+          border: 1px solid #f59e0b;
+          padding: 15px;
+          border-radius: 4px;
+          margin: 20px 0;
+          font-size: 14px;
+        }
+        .footer { 
+          background: #f8fafc; 
+          padding: 25px 20px; 
+          text-align: center; 
+          color: #64748b; 
+          font-size: 13px;
+          border-top: 1px solid #e2e8f0;
+        }
+        .footer-title {
+          font-weight: 600;
+          color: #1e293b;
+          margin-bottom: 5px;
+        }
       </style>
     </head>
     <body>
       <div class="container">
         <div class="header">
-          <h1 class="title">🏢 Nuevo Estado de Pago - Gloster</h1>
+          <h1 class="title">Estado de Pago - Gloster</h1>
+          <p style="margin: 5px 0 0 0; color: #64748b; font-size: 14px;">Sistema de Gestión de Proyectos</p>
         </div>
         
         <div class="content">
-          <p>Estimado equipo de <strong>${data.mandanteCompany}</strong>,</p>
+          <div class="greeting">
+            Estimado equipo de <strong>${data.mandanteCompany}</strong>,
+          </div>
           
-          <p>Se ha enviado un nuevo estado de pago que requiere su revisión y aprobación:</p>
+          <p>Se ha registrado un nuevo estado de pago que requiere su revisión y aprobación. A continuación se detallan los datos correspondientes:</p>
           
           <div class="highlight-box">
-            <h3 style="margin-top: 0; color: #1e293b;">📋 Detalles del Estado de Pago</h3>
-            <div class="info-grid">
-              <div class="info-item">
-                <span class="info-label">📁 Proyecto:</span>
-                <span class="info-value">${data.proyecto}</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">🏢 Contratista:</span>
-                <span class="info-value">${data.contractorCompany}</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">📅 Período:</span>
-                <span class="info-value">${data.mes} ${data.año}</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">💰 Monto:</span>
-                <span class="info-value amount">${formatCurrency(data.amount, data.currency)}</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">⏰ Vencimiento:</span>
-                <span class="info-value">${data.dueDate}</span>
-              </div>
-            </div>
+            <h3 class="section-title">Información del Estado de Pago</h3>
+            <table class="info-table">
+              <tr>
+                <td class="info-label">Proyecto:</td>
+                <td class="info-value">${data.proyecto}</td>
+              </tr>
+              <tr>
+                <td class="info-label">Empresa Contratista:</td>
+                <td class="info-value">${data.contractorCompany}</td>
+              </tr>
+              <tr>
+                <td class="info-label">Período de Facturación:</td>
+                <td class="info-value">${data.mes} ${data.año}</td>
+              </tr>
+              <tr>
+                <td class="info-label">Monto Solicitado:</td>
+                <td class="info-value amount">${formatCurrency(data.amount, data.currency)}</td>
+              </tr>
+              <tr>
+                <td class="info-label">Fecha de Vencimiento:</td>
+                <td class="info-value">${data.dueDate}</td>
+              </tr>
+            </table>
           </div>
           
-          <div style="text-align: center;">
-            <p>Para revisar el estado de pago y la documentación adjunta:</p>
-            <a href="${data.accessUrl}" class="cta-button">📋 Revisar Estado de Pago</a>
+          <div class="cta-section">
+            <p style="margin: 0 0 10px 0; font-weight: 500;">Para proceder con la revisión de la documentación:</p>
+            <a href="${data.accessUrl}" class="cta-button">Acceder al Estado de Pago</a>
           </div>
           
-          <p style="color: #64748b; font-size: 14px;">
-            ⚠️ <strong>Importante:</strong> Este enlace le permitirá acceder de forma segura al estado de pago para su revisión y aprobación.
+          <div class="important-note">
+            <strong>Nota Importante:</strong> Este enlace le dará acceso directo y seguro al estado de pago donde podrá revisar toda la documentación adjunta y proceder con la aprobación o solicitar modificaciones según corresponda.
+          </div>
+          
+          <p style="color: #64748b; font-size: 14px; margin-top: 25px;">
+            Este es un mensaje automático del sistema de gestión de proyectos Gloster. Si tiene alguna consulta técnica, puede contactarnos a través del correo de soporte.
           </p>
         </div>
         
         <div class="footer">
-          <p><strong>Gloster - Gestión de Proyectos</strong></p>
-          <p>Para consultas técnicas: soporte.gloster@gmail.com</p>
+          <div class="footer-title">Gloster - Sistema de Gestión de Proyectos</div>
+          <p style="margin: 5px 0;">Consultas técnicas: soporte.gloster@gmail.com</p>
         </div>
       </div>
     </body>
@@ -190,10 +289,14 @@ const handler = async (req: Request): Promise<Response> => {
     
     const emailData = {
       raw: encodeBase64UTF8(
-        `From: Gloster <${fromEmail}>
+        `From: Gloster Gestión de Proyectos <${fromEmail}>
 To: ${data.mandanteEmail}
-Subject: Nuevo Estado de Pago - ${data.proyecto} (${data.mes} ${data.año})
+Subject: Estado de Pago ${data.mes} ${data.año} - ${data.proyecto}
+Reply-To: soporte.gloster@gmail.com
 Content-Type: text/html; charset=utf-8
+MIME-Version: 1.0
+X-Mailer: Gloster Project Management System
+Message-ID: <payment-${data.paymentId}-${Date.now()}@gloster.com>
 
 ${emailHtml}`
       ),

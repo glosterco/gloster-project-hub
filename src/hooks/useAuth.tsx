@@ -10,6 +10,7 @@ interface AuthContextType {
   signUp: (email: string, password: string) => Promise<{ data: any; error: any }>;
   signIn: (email: string, password: string) => Promise<{ data: any; error: any }>;
   signOut: () => Promise<{ error: any }>;
+  resetPassword: (email: string) => Promise<{ error: any }>;
   loading: boolean;
 }
 
@@ -174,6 +175,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const resetPassword = async (email: string) => {
+    setLoading(true);
+    try {
+      const redirectUrl = `${window.location.origin}/`;
+      
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: redirectUrl
+      });
+
+      if (error) {
+        console.error('Password reset error:', error);
+        toast({
+          title: "Error al enviar email de recuperación",
+          description: error.message || "No se pudo enviar el email de recuperación",
+          variant: "destructive"
+        });
+        return { error };
+      }
+
+      toast({
+        title: "Email enviado",
+        description: "Revisa tu correo para restablecer tu contraseña",
+      });
+      return { error: null };
+    } catch (error: any) {
+      console.error('Unexpected password reset error:', error);
+      toast({
+        title: "Error inesperado",
+        description: "Ocurrió un error inesperado. Intenta nuevamente.",
+        variant: "destructive"
+      });
+      return { error };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const signOut = async () => {
     setLoading(true);
     try {
@@ -208,6 +246,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signUp,
     signIn,
     signOut,
+    resetPassword,
     loading
   };
 

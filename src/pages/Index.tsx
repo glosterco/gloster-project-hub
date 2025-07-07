@@ -70,12 +70,21 @@ const Index = () => {
               />
               <h1 className="text-xl font-bold text-slate-800 font-rubik">Gloster</h1>
             </div>
-            <Button 
-              onClick={() => navigate('/register')}
-              className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
-            >
-              Crear Cuenta
-            </Button>
+            <div className="flex items-center space-x-3">
+              <Button 
+                onClick={() => navigate('/')}
+                variant="outline"
+                className="border-gloster-yellow text-gloster-gray hover:bg-gloster-yellow/10 font-rubik"
+              >
+                Iniciar Sesión
+              </Button>
+              <Button 
+                onClick={() => navigate('/register')}
+                className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
+              >
+                Crear Cuenta
+              </Button>
+            </div>
           </div>
         </div>
       </header>

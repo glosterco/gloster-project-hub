@@ -15,6 +15,7 @@ import SubmissionPreview from "./pages/SubmissionPreview";
 import EmailAccess from "./pages/EmailAccess";
 import EmailPreview from "./pages/EmailPreview";
 import DataViewer from "./pages/DataViewer";
+import ContractorAccess from "./pages/ContractorAccess";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,6 +40,7 @@ const App = () => (
             <Route path="/email-access" element={<EmailAccess />} />
             <Route path="/email/:id" element={<EmailPreview />} />
             <Route path="/data-viewer" element={<DataViewer />} />
+            <Route path="/contractor-access/:paymentId" element={<ContractorAccess />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </TooltipProvider>

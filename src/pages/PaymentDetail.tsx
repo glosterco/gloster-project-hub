@@ -257,9 +257,9 @@ const PaymentDetail = () => {
     }
   };
 
-  // CORRIGIENDO: Función para mostrar archivos del Drive si el status es "Enviado", "Aprobado" o "Rechazado"
+  // CORRIGIENDO: Función para mostrar archivos del Drive solo si el status es "Enviado" o "Aprobado" (NO "Rechazado")
   const shouldShowDriveFiles = () => {
-    return payment?.Status === 'Enviado' || payment?.Status === 'Aprobado' || payment?.Status === 'Rechazado';
+    return payment?.Status === 'Enviado' || payment?.Status === 'Aprobado';
   };
 
   // Check if documents were updated (for enabling send button in sent states)

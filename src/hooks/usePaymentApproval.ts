@@ -67,7 +67,7 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
       amount: paymentData.Total || 0,
       status: status,
       rejectionReason: rejectionReason || '',
-      platformUrl: `${window.location.origin}/payment/${paymentId}`,
+      platformUrl: `${window.location.origin}/contractor-access/${paymentId}`,
     };
 
     console.log('📤 Invoking send-contractor-notification with data:', contractorNotificationData);

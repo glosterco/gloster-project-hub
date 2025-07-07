@@ -200,7 +200,7 @@ const PaymentDetail = () => {
   ];
 
   // Filter documents based on project requirements - CORRECTED LOGIC
-  const allDocuments = React.useMemo(() => {
+  const documents = React.useMemo(() => {
     if (!payment?.projectData?.Requierment || !Array.isArray(payment.projectData.Requierment)) {
       return allDocuments.filter(doc => doc.required);
     }

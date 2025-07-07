@@ -11,6 +11,7 @@ import { useDirectDriveDownload } from '@/hooks/useDirectDriveDownload';
 import { useUniqueAccessUrl } from '@/hooks/useUniqueAccessUrl';
 import { usePaymentValidation } from '@/hooks/usePaymentValidation';
 import { usePaymentActions } from '@/hooks/usePaymentActions';
+import { useContractorResubmission } from '@/hooks/useContractorResubmission';
 import { supabase } from '@/integrations/supabase/client';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import PageHeader from '@/components/PageHeader';
@@ -32,6 +33,7 @@ const PaymentDetail = () => {
   const { sendNotificationToMandante, loading: notificationLoading } = useMandanteNotification();
   const { uploadDocumentsToDrive, loading: driveLoading } = useGoogleDriveIntegration();
   const { downloadDocument, loading: downloadLoading } = useDirectDriveDownload();
+  const { handleResubmission, loading: resubmissionLoading } = useContractorResubmission();
 
   // Use the document upload hook
   const {
@@ -286,7 +288,11 @@ const PaymentDetail = () => {
   const handleSendDocuments = async () => {
     // Validate fields before sending
     if (!areFieldsValidForActions()) {
-      showFieldValidationAlert();
+      toast({
+        title: "Campos obligatorios",
+        description: getValidationMessage(),
+        variant: "destructive"
+      });
       return;
     }
 
@@ -334,16 +340,8 @@ const PaymentDetail = () => {
         throw new Error('No se pudo generar el enlace de acceso');
       }
 
-      // Cambiar status a "Enviado"
-      const { error: statusError } = await supabase
-        .from('Estados de pago')
-        .update({ Status: 'Enviado' })
-        .eq('id', payment.id);
-
-      if (statusError) {
-        console.error('Error updating status:', statusError);
-        throw new Error('Error al actualizar el estado');
-      }
+      // Cambiar status a "Enviado" automáticamente (primera vez o reenvío después de correcciones)
+      await handleResubmission(payment.id.toString());
 
       // Get the payment state data to fetch the URL
       const { data: paymentStateData, error: paymentStateError } = await supabase
@@ -418,7 +416,11 @@ const PaymentDetail = () => {
   const handlePreviewEmail = async () => {
     // Validate fields before preview
     if (!areFieldsValidForActions()) {
-      showFieldValidationAlert();
+      toast({
+        title: "Campos obligatorios",
+        description: getValidationMessage(),
+        variant: "destructive"
+      });
       return;
     }
 
@@ -533,13 +535,7 @@ const PaymentDetail = () => {
         <div className="container mx-auto px-6 py-8">
           <h3 className="text-xl md:text-2xl font-bold text-slate-800 mb-6 font-rubik">Estado de Pago y Documentación</h3>
           
-          {/* Validation Warning Card - Show when fields are incomplete */}
-          {!areFieldsValidForActions() && !shouldShowDriveFiles() && (
-            <ValidationWarningCard 
-              type="validation"
-              message={getValidationMessage()}
-            />
-          )}
+          {/* Validation Warning Card - Show only when trying to send/preview without required fields */}
 
           {/* Unsaved Files Warning Card */}
           {hasUnsavedFiles && (

@@ -20,9 +20,7 @@ const SubmissionView = () => {
 
   const handleStatusChange = () => {
     console.log('🔄 Status changed, refreshing payment data...');
-    setTimeout(() => {
-      refetch();
-    }, 1000);
+    refetch();
   };
 
   if (checkingAccess) {

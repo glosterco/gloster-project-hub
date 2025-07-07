@@ -1,1 +1,26 @@
-project_id = "mqzuvqwsaeguphqjwvap"
+project_id = "mzuvqwsaeguphqjwvap"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[functions.get-drive-files]
+verify_jwt = false
+
+[functions.google-drive-integration]
+verify_jwt = false
+
+[functions.send-mandante-notification]
+verify_jwt = false
+
+[functions.send-contractor-notification]
+verify_jwt = false
+
+[functions.upload-documents-to-drive]
+verify_jwt = false
+
+[functions.payment-status-automation]
+verify_jwt = false

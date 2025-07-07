@@ -8,8 +8,6 @@ import { usePaymentDetail } from '@/hooks/usePaymentDetail';
 import { useAccessVerification } from '@/hooks/useAccessVerification';
 import SubmissionHeader from '@/components/submission/SubmissionHeader';
 import SubmissionContent from '@/components/submission/SubmissionContent';
-import PaymentApprovalSection from '@/components/PaymentApprovalSection';
-import { formatCurrency, getDocumentsFromPayment } from '@/utils/submissionPreviewUtils';
 
 const SubmissionView = () => {
   const navigate = useNavigate();
@@ -22,7 +20,6 @@ const SubmissionView = () => {
 
   const handleStatusChange = () => {
     console.log('🔄 Status changed, refreshing payment data...');
-    // Usar un timeout para evitar loop infinito
     setTimeout(() => {
       refetch();
     }, 1000);
@@ -82,7 +79,6 @@ const SubmissionView = () => {
     );
   }
 
-  // DEBUG logs para diagnosticar datos del contratista
   console.log('🔍 SubmissionView - payment completo:', payment);
   console.log('🔍 SubmissionView - projectData:', payment.projectData);
   console.log('🔍 SubmissionView - Contractor data completo:', {
@@ -95,67 +91,17 @@ const SubmissionView = () => {
     address: payment.projectData?.Contratista?.Adress
   });
 
-  // Usar EXACTAMENTE la misma lógica que SubmissionPreview (que funciona correctamente)
-  const documentsFromPayment = getDocumentsFromPayment();
-
-  const emailTemplateData = {
-    paymentState: {
-      month: `${payment.Mes} ${payment.Año}`,
-      amount: payment.Total || 0,
-      formattedAmount: formatCurrency(payment.Total || 0, payment),
-      dueDate: payment.ExpiryDate,
-      projectName: payment.projectData?.Name || '',
-      recipient: payment.projectData?.Owner?.ContactEmail || '',
-      currency: payment.projectData?.Currency || 'CLP'
-    },
-    project: {
-      name: payment.projectData?.Name || '',
-      client: payment.projectData?.Owner?.CompanyName || '',
-      contractor: payment.projectData?.Contratista?.CompanyName || '',
-      location: payment.projectData?.Location || '',
-      projectManager: payment.projectData?.Contratista?.ContactName || '',
-      contactEmail: payment.projectData?.Contratista?.ContactEmail || '',
-      contractorRUT: payment.projectData?.Contratista?.RUT || '',
-      contractorPhone: payment.projectData?.Contratista?.ContactPhone?.toString() || '',
-      contractorAddress: payment.projectData?.Contratista?.Adress || ''
-    },
-    documents: documentsFromPayment
-  };
-
-  // Log para verificar que los datos están correctamente construidos
-  console.log('📧 SubmissionView - emailTemplateData construido:', emailTemplateData);
-  console.log('📧 SubmissionView - contractor info en emailTemplateData:', {
-    contactEmail: emailTemplateData.project.contactEmail,
-    contractorRUT: emailTemplateData.project.contractorRUT,
-    contractorPhone: emailTemplateData.project.contractorPhone,
-    contractorAddress: emailTemplateData.project.contractorAddress,
-    projectManager: emailTemplateData.project.projectManager,
-    contractor: emailTemplateData.project.contractor
-  });
-
   return (
     <div className="min-h-screen bg-slate-50 font-rubik">
       <SubmissionHeader />
 
-      <div className="container mx-auto px-6 py-8">
-        <div className="space-y-8">
-          <SubmissionContent
-            paymentId={paymentId}
-            emailTemplateData={emailTemplateData}
-            isMandante={isMandante}
-            onStatusChange={handleStatusChange}
-            useDirectDownload={true}
-          />
-          {isMandante && (
-            <PaymentApprovalSection 
-              paymentId={paymentId}
-              payment={null}
-              paymentState={emailTemplateData.paymentState}
-              onStatusChange={handleStatusChange}
-            />
-          )}
-        </div>
-      </div>
+      <SubmissionContent
+        paymentId={paymentId}
+        payment={payment}
+        isMandante={isMandante}
+        onStatusChange={handleStatusChange}
+        useDirectDownload={true}
+      />
     </div>
   );
 };

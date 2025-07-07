@@ -68,15 +68,6 @@ const SubmissionContent: React.FC<SubmissionContentProps> = ({
             useDirectDownload={useDirectDownload}
           />
         </div>
-
-        {isMandante && (
-          <PaymentApprovalSection
-            paymentId={paymentId}
-            payment={payment}
-            paymentState={emailTemplateData.paymentState}
-            onStatusChange={onStatusChange}
-          />
-        )}
       </div>
     </div>
   );

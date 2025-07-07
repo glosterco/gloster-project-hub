@@ -72,7 +72,12 @@ const Index = () => {
             </div>
             <div className="flex items-center space-x-3">
               <Button 
-                onClick={() => navigate('/')}
+                onClick={() => {
+                  const loginSection = document.getElementById('login-section');
+                  if (loginSection) {
+                    loginSection.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}
                 variant="outline"
                 className="border-gloster-yellow text-gloster-gray hover:bg-gloster-yellow/10 font-rubik"
               >
@@ -170,7 +175,7 @@ const Index = () => {
             </ul>
           </div>
 
-          <div className="max-w-md mx-auto w-full">
+          <div id="login-section" className="max-w-md mx-auto w-full">
             <LoginForm onSuccess={handleLoginSuccess} />
             
             <div className="mt-6 text-center">

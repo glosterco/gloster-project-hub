@@ -43,6 +43,8 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
     console.log('✅ PaymentApprovalSection onApprove clicked');
     try {
       await handleApprove();
+      // Force immediate UI update by updating local state
+      payment.Status = 'Aprobado';
     } catch (error) {
       console.error('❌ Error in onApprove:', error);
     }
@@ -59,6 +61,8 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
       await handleReject(rejectionReason);
       setShowRejectionForm(false);
       setRejectionReason('');
+      // Force immediate UI update by updating local state
+      payment.Status = 'Rechazado';
     } catch (error) {
       console.error('❌ Error in onConfirmReject:', error);
     }

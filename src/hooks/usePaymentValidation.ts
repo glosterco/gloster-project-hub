@@ -6,7 +6,8 @@ export const usePaymentValidation = (
   editableAmount: string,
   editablePercentage: string,
   documentStatus: DocumentStatus,
-  paymentStatus?: string
+  paymentStatus?: string,
+  isAttemptingAction?: boolean
 ) => {
   const [hasUnsavedFiles, setHasUnsavedFiles] = useState(false);
 
@@ -20,6 +21,10 @@ export const usePaymentValidation = (
 
   const areFieldsValidForActions = () => {
     return isAmountValid() && isProgressValid();
+  };
+
+  const shouldShowValidationErrors = () => {
+    return isAttemptingAction && !areFieldsValidForActions();
   };
 
   const getValidationMessage = () => {
@@ -47,6 +52,7 @@ export const usePaymentValidation = (
     isProgressValid,
     areFieldsValidForActions,
     getValidationMessage,
-    hasUnsavedFiles
+    hasUnsavedFiles,
+    shouldShowValidationErrors
   };
 };

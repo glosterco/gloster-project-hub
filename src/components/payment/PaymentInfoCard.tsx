@@ -67,7 +67,7 @@ const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div className="sm:col-span-2 lg:col-span-1">
             <p className="text-gloster-gray text-sm font-rubik mb-2">Monto del Estado</p>
-            {shouldShowDriveFiles ? (
+            {shouldShowDriveFiles || payment.Status === 'Aprobado' ? (
               <p className="font-bold text-lg md:text-xl text-slate-800 font-rubik break-words">
                 {formatCurrency(paymentState.amount)}
               </p>
@@ -79,7 +79,7 @@ const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
                   value={editableAmount}
                   onChange={(e) => onAmountChange(e.target.value)}
                   placeholder="Ingrese monto"
-                  className={`w-40 ${!isAmountValid ? 'border-orange-500 focus:border-orange-500' : ''}`}
+                  className="w-40"
                 />
                 <Button
                   size="sm"
@@ -94,7 +94,7 @@ const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
           </div>
           <div>
             <p className="text-gloster-gray text-sm font-rubik mb-2">% Avance Financiero</p>
-            {shouldShowDriveFiles ? (
+            {shouldShowDriveFiles || payment.Status === 'Aprobado' ? (
               <p className="font-semibold text-slate-800 font-rubik">
                 {payment?.projectData?.Budget ? 
                   ((paymentState.amount / payment.projectData.Budget) * 100).toFixed(2) + '%' : 
@@ -108,7 +108,7 @@ const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
                   value={editablePercentage}
                   onChange={(e) => onPercentageChange(e.target.value)}
                   placeholder="0"
-                  className={`w-20 ${!isProgressValid ? 'border-orange-500 focus:border-orange-500' : ''}`}
+                  className="w-20"
                 />
                 <span className="text-sm text-gloster-gray">%</span>
               </div>

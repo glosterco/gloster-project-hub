@@ -17,13 +17,15 @@ interface DriveFilesCardProps {
   downloadLoading: boolean;
   onDownloadFile: (fileName: string) => void;
   onDocumentUpload: (docId: string) => void;
+  paymentStatus?: string;
 }
 
 const DriveFilesCard: React.FC<DriveFilesCardProps> = ({
   documents,
   downloadLoading,
   onDownloadFile,
-  onDocumentUpload
+  onDocumentUpload,
+  paymentStatus
 }) => {
   return (
     <Card className="mb-8 border-l-4 border-l-blue-500">
@@ -64,14 +66,16 @@ const DriveFilesCard: React.FC<DriveFilesCardProps> = ({
                       <span className="text-xs">Visitar</span>
                     </Button>
                   )}
-                  <Button
-                    size="sm"
-                    onClick={() => onDocumentUpload(doc.id)}
-                    className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black flex-1"
-                  >
-                    <Upload className="h-4 w-4 mr-1" />
-                    <span className="text-xs">Actualizar</span>
-                  </Button>
+                  {paymentStatus !== 'Aprobado' && (
+                    <Button
+                      size="sm"
+                      onClick={() => onDocumentUpload(doc.id)}
+                      className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black flex-1"
+                    >
+                      <Upload className="h-4 w-4 mr-1" />
+                      <span className="text-xs">Actualizar</span>
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>

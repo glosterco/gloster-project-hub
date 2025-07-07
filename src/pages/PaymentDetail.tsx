@@ -53,6 +53,7 @@ const PaymentDetail = () => {
   const [achsSelection, setAchsSelection] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [isPreviewUploading, setIsPreviewUploading] = useState(false);
+  const [isAttemptingAction, setIsAttemptingAction] = useState(false);
   
   // Estados para los campos editables - Initialize with database values
   const [editableAmount, setEditableAmount] = useState('');
@@ -64,8 +65,9 @@ const PaymentDetail = () => {
     isProgressValid,
     areFieldsValidForActions,
     getValidationMessage,
-    hasUnsavedFiles
-  } = usePaymentValidation(editableAmount, editablePercentage, documentStatus, payment?.Status);
+    hasUnsavedFiles,
+    shouldShowValidationErrors
+  } = usePaymentValidation(editableAmount, editablePercentage, documentStatus, payment?.Status, isAttemptingAction);
 
   // Use payment actions hook
   const {
@@ -286,6 +288,7 @@ const PaymentDetail = () => {
   };
 
   const handleSendDocuments = async () => {
+    setIsAttemptingAction(true);
     // Validate fields before sending
     if (!areFieldsValidForActions()) {
       toast({
@@ -293,6 +296,7 @@ const PaymentDetail = () => {
         description: getValidationMessage(),
         variant: "destructive"
       });
+      setIsAttemptingAction(false);
       return;
     }
 
@@ -414,6 +418,7 @@ const PaymentDetail = () => {
   };
 
   const handlePreviewEmail = async () => {
+    setIsAttemptingAction(true);
     // Validate fields before preview
     if (!areFieldsValidForActions()) {
       toast({
@@ -421,6 +426,7 @@ const PaymentDetail = () => {
         description: getValidationMessage(),
         variant: "destructive"
       });
+      setIsAttemptingAction(false);
       return;
     }
 
@@ -557,8 +563,14 @@ const PaymentDetail = () => {
                   shouldShowDriveFiles={shouldShowDriveFiles()}
                   isAmountValid={isAmountValid()}
                   isProgressValid={isProgressValid()}
-                  onAmountChange={(value) => handleAmountChange(value, setEditableAmount, setEditablePercentage)}
-                  onPercentageChange={(value) => handlePercentageChange(value, setEditableAmount, setEditablePercentage)}
+                  onAmountChange={(value) => {
+                    handleAmountChange(value, setEditableAmount, setEditablePercentage);
+                    setIsAttemptingAction(false);
+                  }}
+                  onPercentageChange={(value) => {
+                    handlePercentageChange(value, setEditableAmount, setEditablePercentage);
+                    setIsAttemptingAction(false);
+                  }}
                   onSaveAmount={handleSaveAmount}
                   formatCurrency={formatCurrency}
                 />
@@ -587,6 +599,7 @@ const PaymentDetail = () => {
               downloadLoading={downloadLoading}
               onDownloadFile={handleDownloadFile}
               onDocumentUpload={handleDocumentUpload}
+              paymentStatus={payment?.Status}
             />
           )}
 

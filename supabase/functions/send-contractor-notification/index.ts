@@ -189,15 +189,19 @@ const handler = async (req: Request): Promise<Response> => {
     const emailHtml = createEmailHtml(data);
     const subject = `Estado de Pago ${data.status} - ${data.proyecto} (${data.mes} ${data.año})`;
     
-    const emailData = {
-      raw: btoa(
-        `From: Gloster <${fromEmail}>
+    // Use TextEncoder to handle UTF-8 characters properly
+    const emailContent = `From: Gloster <${fromEmail}>
 To: ${data.contractorEmail}
 Subject: ${subject}
 Content-Type: text/html; charset=utf-8
 
-${emailHtml}`
-      ).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''),
+${emailHtml}`;
+    
+    const uint8Array = new TextEncoder().encode(emailContent);
+    const base64String = btoa(String.fromCharCode(...uint8Array));
+    
+    const emailData = {
+      raw: base64String.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''),
     };
 
     const response = await fetch(

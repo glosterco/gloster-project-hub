@@ -13,7 +13,7 @@ const SubmissionPreviewContent: React.FC<SubmissionPreviewContentProps> = ({
   payment,
   paymentId
 }) => {
-  const documentsFromPayment = getDocumentsFromPayment();
+  const documentsFromPayment = getDocumentsFromPayment(payment.projectData?.Requierment);
 
   const emailTemplateData = {
     paymentState: {

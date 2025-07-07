@@ -42,7 +42,7 @@ const SubmissionContent: React.FC<SubmissionContentProps> = ({
     contractorAddress: payment.projectData?.Contratista?.Adress || ''
   };
 
-  const documents = getDocumentsFromPayment();
+  const documents = getDocumentsFromPayment(payment.projectData?.Requierment);
 
   return (
     <div className="container mx-auto px-6 py-8">

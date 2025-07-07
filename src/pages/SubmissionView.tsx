@@ -141,17 +141,19 @@ const SubmissionView = () => {
         <div className="space-y-8">
           <SubmissionContent
             paymentId={paymentId}
-            payment={payment}
+            emailTemplateData={emailTemplateData}
             isMandante={isMandante}
             onStatusChange={handleStatusChange}
             useDirectDownload={true}
           />
-          <PaymentApprovalSection 
-            paymentId={paymentId}
-            payment={null}
-            paymentState={emailTemplateData.paymentState}
-            onStatusChange={handleStatusChange}
-          />
+          {isMandante && (
+            <PaymentApprovalSection 
+              paymentId={paymentId}
+              payment={null}
+              paymentState={emailTemplateData.paymentState}
+              onStatusChange={handleStatusChange}
+            />
+          )}
         </div>
       </div>
     </div>

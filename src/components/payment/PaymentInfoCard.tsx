@@ -18,6 +18,7 @@ interface PaymentInfoCardProps {
   onPercentageChange: (value: string) => void;
   onSaveAmount: () => void;
   formatCurrency: (amount: number) => string;
+  shouldShowValidationErrors: boolean;
 }
 
 const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
@@ -31,7 +32,8 @@ const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
   onAmountChange,
   onPercentageChange,
   onSaveAmount,
-  formatCurrency
+  formatCurrency,
+  shouldShowValidationErrors
 }) => {
   const paymentState = {
     id: payment.id,
@@ -79,7 +81,7 @@ const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
                   value={editableAmount}
                   onChange={(e) => onAmountChange(e.target.value)}
                   placeholder="Ingrese monto"
-                  className="w-40"
+                  className={`w-40 ${shouldShowValidationErrors && !isAmountValid ? 'border-orange-500 focus:border-orange-500' : ''}`}
                 />
                 <Button
                   size="sm"
@@ -108,7 +110,7 @@ const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
                   value={editablePercentage}
                   onChange={(e) => onPercentageChange(e.target.value)}
                   placeholder="0"
-                  className="w-20"
+                  className={`w-20 ${shouldShowValidationErrors && !isProgressValid ? 'border-orange-500 focus:border-orange-500' : ''}`}
                 />
                 <span className="text-sm text-gloster-gray">%</span>
               </div>

@@ -563,6 +563,7 @@ const PaymentDetail = () => {
                   shouldShowDriveFiles={shouldShowDriveFiles()}
                   isAmountValid={isAmountValid()}
                   isProgressValid={isProgressValid()}
+                  shouldShowValidationErrors={shouldShowValidationErrors()}
                   onAmountChange={(value) => {
                     handleAmountChange(value, setEditableAmount, setEditablePercentage);
                     setIsAttemptingAction(false);

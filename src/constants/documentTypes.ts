@@ -8,7 +8,7 @@ export const documentsFromPayment = [
   },
   {
     id: 'planilla',
-    name: 'Avance Periódico',
+    name: 'Avance del período',
     description: 'Planilla detallada del avance de obras del período',
     uploaded: true
   },

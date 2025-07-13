@@ -754,10 +754,12 @@ const PaymentDetail = () => {
             </div>
           )}
 
-          {/* Documents List - Solo mostrar si no es "Enviado", "Aprobado" o "Rechazado" */}
-          {!shouldShowDriveFiles() && !canUploadDocuments() && (
+          {/* Documents List - Mostrar siempre cuando no es "Enviado" o "Aprobado" */}
+          {!shouldShowDriveFiles() && (
             <div className="space-y-4 mb-8">
-              <h3 className="text-lg md:text-xl font-bold text-slate-800 font-rubik">Documentación Requerida</h3>
+              <h3 className="text-lg md:text-xl font-bold text-slate-800 font-rubik">
+                {canUploadDocuments() ? 'Cargar Correcciones' : 'Documentación Requerida'}
+              </h3>
               
               <div className="space-y-4">
                 {documents.map((doc) => doc.required ? (
@@ -781,31 +783,8 @@ const PaymentDetail = () => {
             </div>
           )}
 
-          {/* Send Documents Banner para correcciones después de rechazo */}
-          {canUploadDocuments() && wereDocumentsUpdated() && (
-            <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-l-orange-500 mb-8">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-bold text-slate-800 font-rubik mb-2">
-                    Reenviar Correcciones
-                  </h3>
-                  <p className="text-slate-600 font-rubik text-sm">
-                    Se han cargado las correcciones. Puedes reenviar al mandante para nueva revisión.
-                  </p>
-                </div>
-                <Button
-                  onClick={handleResubmissionAfterRejection}
-                  disabled={isUploadingOrPreviewing}
-                  className="bg-orange-600 hover:bg-orange-700 text-white font-rubik"
-                >
-                  Reenviar Correcciones
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Send Documents Banner - Solo mostrar si no es "Enviado", "Aprobado" o "Rechazado" */}
-          {!shouldShowDriveFiles() && !canUploadDocuments() && (
+          {/* Send Documents Banner - Mostrar cuando hay documentos cargados y no es "Enviado" o "Aprobado" */}
+          {!shouldShowDriveFiles() && (areAllRequiredDocumentsUploaded() || (canUploadDocuments() && hasDocumentsToUpload())) && (
             <SendDocumentsBanner
               areAllRequiredDocumentsUploaded={areAllRequiredDocumentsUploaded()}
               areFieldsValidForActions={areFieldsValidForActions()}
@@ -814,7 +793,7 @@ const PaymentDetail = () => {
               isUploading={isUploading}
               isPreviewUploading={isPreviewUploading}
               onPreviewEmail={handlePreviewEmail}
-              onSendDocuments={handleSendDocuments}
+              onSendDocuments={canUploadDocuments() ? handleResubmissionAfterRejection : handleSendDocuments}
             />
           )}
         </div>

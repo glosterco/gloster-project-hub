@@ -722,44 +722,19 @@ const PaymentDetail = () => {
             />
           )}
 
-          {/* Documents List para status "Rechazado" - permitir cargar correcciones */}
-          {canUploadDocuments() && (
-            <div className="space-y-4 mb-8">
-              <h3 className="text-lg md:text-xl font-bold text-slate-800 font-rubik">Cargar Correcciones</h3>
-              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
-                <p className="text-yellow-800 font-rubik text-sm">
-                  Tu estado de pago fue rechazado. Puedes cargar las correcciones necesarias y reenviar para nueva revisión.
-                </p>
-              </div>
-              
-              <div className="space-y-4">
-                {documents.map((doc) => doc.required ? (
-                  <DocumentUploadCard
-                    key={doc.id}
-                    doc={doc}
-                    documentStatus={documentStatus[doc.id as keyof typeof documentStatus]}
-                    uploadedFiles={uploadedFiles[doc.id as keyof typeof uploadedFiles]}
-                    dragState={dragStates[doc.id as keyof typeof dragStates]}
-                    achsSelection={achsSelection}
-                    setAchsSelection={setAchsSelection}
-                    onDragOver={(e) => handleDragOver(e, doc.id)}
-                    onDragLeave={(e) => handleDragLeave(e, doc.id)}
-                    onDrop={(e) => handleDrop(e, doc.id, doc.allowMultiple)}
-                    onDocumentUpload={() => handleDocumentUpload(doc.id)}
-                    onFileRemove={(fileIndex) => handleFileRemove(doc.id, fileIndex)}
-                    getExamenesUrl={getExamenesUrl}
-                  />) : null
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Documents List - Mostrar siempre cuando no es "Enviado" o "Aprobado" */}
+          {/* Documents List - Para todos los casos donde no es "Enviado" o "Aprobado" */}
           {!shouldShowDriveFiles() && (
             <div className="space-y-4 mb-8">
               <h3 className="text-lg md:text-xl font-bold text-slate-800 font-rubik">
-                {canUploadDocuments() ? 'Cargar Correcciones' : 'Documentación Requerida'}
+                Documentos Cargados
               </h3>
+              {canUploadDocuments() && (
+                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+                  <p className="text-yellow-800 font-rubik text-sm">
+                    Tu estado de pago fue rechazado. Puedes cargar las correcciones necesarias y reenviar para nueva revisión.
+                  </p>
+                </div>
+              )}
               
               <div className="space-y-4">
                 {documents.map((doc) => doc.required ? (
@@ -783,8 +758,11 @@ const PaymentDetail = () => {
             </div>
           )}
 
-          {/* Send Documents Banner - Mostrar cuando hay documentos cargados y no es "Enviado" o "Aprobado" */}
-          {!shouldShowDriveFiles() && (areAllRequiredDocumentsUploaded() || (canUploadDocuments() && hasDocumentsToUpload())) && (
+          {/* Send Documents Banner - Lógica corregida para estado "Rechazado" */}
+          {!shouldShowDriveFiles() && (
+            (canUploadDocuments() && hasDocumentsToUpload()) || 
+            (!canUploadDocuments() && areAllRequiredDocumentsUploaded())
+          ) && (
             <SendDocumentsBanner
               areAllRequiredDocumentsUploaded={areAllRequiredDocumentsUploaded()}
               areFieldsValidForActions={areFieldsValidForActions()}

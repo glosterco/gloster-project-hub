@@ -31,10 +31,10 @@ export const getDocumentsFromPayment = (projectRequirements?: string[]) => {
   // Mapeo completo de términos en requirements a nombres de documentos
   const documentMapping = [
     {
-      id: 'avance',
+      id: 'planilla',
       name: 'Avance del período',
       description: 'Planilla detallada del avance de obras del período',
-      keywords: ['avance del período', 'avance del periodo', 'avance', 'planilla de avance'],
+      keywords: ['avance del período', 'avance del periodo', 'avance', 'planilla de avance', 'planilla'],
       required: false
     },
     {

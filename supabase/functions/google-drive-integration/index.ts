@@ -7,12 +7,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-interface GoogleDriveCredentials {
-  client_id: string;
-  client_secret: string;
-  refresh_token: string;
-}
-
 interface CreateFolderRequest {
   type: 'project' | 'payment_state';
   projectId: number;
@@ -23,30 +17,27 @@ interface CreateFolderRequest {
   parentFolderId?: string;
 }
 
-async function getAccessToken(credentials: GoogleDriveCredentials): Promise<string> {
-  console.log('🔑 Getting Google Drive access token...');
+async function getAccessToken(): Promise<string> {
+  console.log('🔑 Getting Google Drive access token via token manager...');
   
-  const response = await fetch('https://oauth2.googleapis.com/token', {
+  const tokenManagerResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/google-drive-token-manager`, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`,
     },
-    body: new URLSearchParams({
-      client_id: credentials.client_id,
-      client_secret: credentials.client_secret,
-      refresh_token: credentials.refresh_token,
-      grant_type: 'refresh_token',
-    }),
+    body: JSON.stringify({ action: 'validate' }),
   });
 
-  const data = await response.json();
-  if (!response.ok) {
-    console.error('❌ Failed to get access token:', data);
-    throw new Error(`Failed to get access token: ${data.error_description || data.error}`);
+  const tokenResult = await tokenManagerResponse.json();
+
+  if (!tokenResult.valid) {
+    console.error('❌ Token validation failed:', tokenResult.error);
+    throw new Error(`Google Drive authentication failed: ${tokenResult.error}`);
   }
 
-  console.log('✅ Access token obtained successfully');
-  return data.access_token;
+  console.log('✅ Access token obtained and validated successfully');
+  return tokenResult.access_token;
 }
 
 async function createGoogleDriveFolder(
@@ -91,25 +82,7 @@ serve(async (req) => {
     const body: CreateFolderRequest = await req.json();
     console.log('📋 Request body:', body);
     
-    // Get Google Drive credentials from Supabase secrets
-    const googleClientId = Deno.env.get('GOOGLE_DRIVE_CLIENT_ID');
-    const googleClientSecret = Deno.env.get('GOOGLE_DRIVE_CLIENT_SECRET');
-    const googleRefreshToken = Deno.env.get('GOOGLE_DRIVE_REFRESH_TOKEN');
-
-    console.log('🔍 Checking credentials...');
-    if (!googleClientId || !googleClientSecret || !googleRefreshToken) {
-      console.error('❌ Credentials not configured');
-      throw new Error('Credentials not configured');
-    }
-    console.log('✅ Credentials found');
-
-    const credentials: GoogleDriveCredentials = {
-      client_id: googleClientId,
-      client_secret: googleClientSecret,
-      refresh_token: googleRefreshToken,
-    };
-
-    const accessToken = await getAccessToken(credentials);
+    const accessToken = await getAccessToken();
 
     // Initialize Supabase client with service role key for admin access
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;

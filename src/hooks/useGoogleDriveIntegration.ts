@@ -33,9 +33,18 @@ export const useGoogleDriveIntegration = () => {
       return { success: true, folderId: data.folderId, folderName: data.folderName, fullUrl: data.fullUrl };
     } catch (error) {
       console.error('Error creating project folder:', error);
+      
+      let errorMessage = "Error al crear carpeta de respaldo";
+      let errorDetails = "No se pudo crear la carpeta del proyecto";
+      
+      if (error.message?.includes('Google Drive authentication failed')) {
+        errorMessage = "Error de autenticación con Google Drive";
+        errorDetails = "No se pudo autenticar con Google Drive. Contacte al administrador.";
+      }
+      
       toast({
-        title: "Error al crear carpeta de respaldo",
-        description: "No se pudo crear la carpeta del proyecto",
+        title: errorMessage,
+        description: errorDetails,
         variant: "destructive",
       });
       return { success: false, error: error.message };
@@ -82,9 +91,18 @@ export const useGoogleDriveIntegration = () => {
       return { success: true, folderId: data.folderId, folderName: data.folderName, fullUrl: data.fullUrl };
     } catch (error) {
       console.error('Error creating payment state folder:', error);
+      
+      let errorMessage = "Error al crear carpeta de respaldo";
+      let errorDetails = "No se pudo crear la carpeta del estado de pago";
+      
+      if (error.message?.includes('Google Drive authentication failed')) {
+        errorMessage = "Error de autenticación con Google Drive";
+        errorDetails = "No se pudo autenticar con Google Drive. Contacte al administrador.";
+      }
+      
       toast({
-        title: "Error al crear carpeta de respaldo",
-        description: "No se pudo crear la carpeta del estado de pago",
+        title: errorMessage,
+        description: errorDetails,
         variant: "destructive",
       });
       return { success: false, error: error.message };
@@ -208,10 +226,32 @@ export const useGoogleDriveIntegration = () => {
       }
       
       return { success: true, uploadResults: data.uploadResults };
-    } catch (error) {
-      console.error('❌ Error uploading documents:', error);
-      throw error; // Re-throw para que sea manejado por el componente padre
-    } finally {
+      } catch (error) {
+        console.error('❌ Error uploading documents:', error);
+        
+        // Provide more specific error messages based on the error type
+        let errorMessage = "No se pudo subir los documentos";
+        let errorDetails = error.message;
+        
+        if (error.message?.includes('Google Drive authentication failed')) {
+          errorMessage = "Error de autenticación con Google Drive";
+          errorDetails = "Los tokens de acceso han expirado. Por favor, contacte al administrador para renovar la conexión con Google Drive.";
+        } else if (error.message?.includes('TOKEN_REFRESH_FAILED')) {
+          errorMessage = "Error de conexión con Google Drive";
+          errorDetails = "Es necesario renovar la autenticación con Google Drive. Contacte al administrador del sistema.";
+        } else if (error.message?.includes('REFRESH_TOKEN_EXPIRED')) {
+          errorMessage = "Autenticación con Google Drive expirada";
+          errorDetails = "La autorización para acceder a Google Drive ha expirado. Es necesario re-autorizar la aplicación.";
+        }
+        
+        toast({
+          title: errorMessage,
+          description: errorDetails,
+          variant: "destructive",
+        });
+        
+        throw error; // Re-throw para que sea manejado por el componente padre
+      } finally {
       setLoading(false);
     }
   };

@@ -83,31 +83,42 @@ serve(async (req) => {
       );
     }
 
-    // Get access token
-    console.log('🔑 Getting access token...');
-    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+    // Get access token using the token manager
+    console.log('🔑 Getting access token via token manager...');
+    const tokenManagerResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/google-drive-token-manager`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`,
       },
-      body: new URLSearchParams({
-        client_id: clientId,
-        client_secret: clientSecret,
-        refresh_token: refreshToken,
-        grant_type: 'refresh_token',
-      }),
+      body: JSON.stringify({ action: 'validate' }),
     });
 
-    if (!tokenResponse.ok) {
-      console.error('❌ Failed to get access token:', await tokenResponse.text());
+    const tokenResult = await tokenManagerResponse.json();
+
+    if (!tokenResult.valid) {
+      console.error('❌ Token validation failed:', tokenResult.error);
+      
+      if (tokenResult.refresh_needed) {
+        return Response.json(
+          { 
+            success: false, 
+            error: 'Google Drive authentication failed. Please check your credentials and try again.',
+            details: tokenResult.error,
+            error_code: tokenResult.error_code || 'TOKEN_REFRESH_FAILED'
+          },
+          { status: 401, headers: corsHeaders }
+        );
+      }
+      
       return Response.json(
-        { success: false, error: 'Failed to authenticate' },
+        { success: false, error: 'Failed to authenticate with Google Drive' },
         { status: 500, headers: corsHeaders }
       );
     }
 
-    const { access_token } = await tokenResponse.json();
-    console.log('✅ Access token obtained');
+    const access_token = tokenResult.access_token;
+    console.log('✅ Access token obtained and validated');
 
     // Check for existing files in the target folder
     const existingFilesResponse = await fetch(

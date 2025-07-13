@@ -19,6 +19,9 @@ verify_jwt = false
 [functions.send-contractor-notification]
 verify_jwt = false
 
+[functions.google-drive-token-manager]
+verify_jwt = false
+
 [functions.upload-documents-to-drive]
 verify_jwt = false
 

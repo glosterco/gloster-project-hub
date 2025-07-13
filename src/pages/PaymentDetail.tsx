@@ -251,6 +251,16 @@ const PaymentDetail = () => {
     return Object.keys(documentStatus).some(docId => documentStatus[docId as keyof typeof documentStatus]);
   };
 
+  // NEW: Función para verificar si se pueden activar los botones según el estado
+  const canActivateButtons = () => {
+    // Para estado "Rechazado": activar si hay al menos un documento cargado
+    if (payment?.Status === 'Rechazado') {
+      return hasDocumentsToUpload();
+    }
+    // Para otros estados: requerir todos los documentos
+    return areAllRequiredDocumentsUploaded();
+  };
+
   // Auto-guardar antes de vista previa si hay cambios sin guardar
   const handleAutoSaveBeforePreview = async () => {
     if (editableAmount && payment?.Total?.toString() !== editableAmount) {
@@ -697,7 +707,7 @@ const PaymentDetail = () => {
                 documents={documents}
                 documentStatus={documentStatus}
                 completedDocumentsCount={getCompletedDocumentsCount()}
-                areAllRequiredDocumentsUploaded={areAllRequiredDocumentsUploaded()}
+                areAllRequiredDocumentsUploaded={canActivateButtons()}
                 areFieldsValidForActions={areFieldsValidForActions()}
                 getValidationMessage={getValidationMessage}
                 isUploadingOrPreviewing={isUploadingOrPreviewing}

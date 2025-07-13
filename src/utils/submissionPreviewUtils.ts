@@ -34,14 +34,14 @@ export const getDocumentsFromPayment = (projectRequirements?: string[]) => {
       id: 'planilla',
       name: 'Avance del período',
       description: 'Planilla detallada del avance de obras del período',
-      keywords: ['avance del período', 'avance del periodo', 'avance', 'planilla de avance', 'planilla'],
+      keywords: ['avance del período', 'avance del periodo', 'avance', 'planilla de avance', 'planilla', 'avance periodico', 'avance periódico', 'avance del periodo', 'periodo'],
       required: false
     },
     {
       id: 'cotizaciones',
       name: 'Certificado de pago de cotizaciones',
       description: 'Certificado de cumplimiento de obligaciones previsionales',
-      keywords: ['certificado de pago de cotizaciones', 'pago de cotizaciones', 'cotizaciones', 'previsionales'],
+      keywords: ['certificado de pago de cotizaciones', 'pago de cotizaciones', 'cotizaciones', 'previsionales', 'certificado de pago de cotizaciones previsionales', 'cotizaciones previsionales'],
       required: false
     },
     {

@@ -41,9 +41,17 @@ export const useAccessVerification = (payment: PaymentDetail | null, paymentId: 
 
         // Verificar acceso del mandante desde sessionStorage
         const mandanteAccess = sessionStorage.getItem('mandanteAccess');
+        console.log('🔍 sessionStorage mandanteAccess:', mandanteAccess);
+        
         if (mandanteAccess) {
           try {
             const accessData = JSON.parse(mandanteAccess);
+            console.log('🔍 Parsed mandanteAccess data:', { 
+              storedPaymentId: accessData.paymentId, 
+              requestedPaymentId: paymentId, 
+              hasToken: !!accessData.token 
+            });
+            
             if (accessData.paymentId === paymentId && accessData.token) {
               console.log('✅ Mandante access granted');
               setHasAccess(true);
@@ -51,21 +59,27 @@ export const useAccessVerification = (payment: PaymentDetail | null, paymentId: 
               setAccessChecked(true);
               setCheckingAccess(false);
               return;
+            } else if (accessData.paymentId !== paymentId) {
+              console.log('❌ Payment ID mismatch in sessionStorage');
+            } else if (!accessData.token) {
+              console.log('❌ No token in sessionStorage');
             }
           } catch (parseError) {
             console.error('Error parsing mandanteAccess:', parseError);
           }
+        } else {
+          console.log('❌ No mandanteAccess found in sessionStorage');
         }
 
-        console.log('❌ Access denied, redirecting to email access');
+        console.log('❌ Access denied - no mandante access found');
+        setHasAccess(false);
         setAccessChecked(true);
         setCheckingAccess(false);
-        navigate(`/email-access?paymentId=${paymentId}`);
       } catch (error) {
         console.error('Error checking access:', error);
+        setHasAccess(false);
         setAccessChecked(true);
         setCheckingAccess(false);
-        navigate(`/email-access?paymentId=${paymentId}`);
       }
     };
 

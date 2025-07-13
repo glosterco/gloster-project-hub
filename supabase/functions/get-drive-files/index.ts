@@ -36,7 +36,17 @@ const getAccessToken = async (): Promise<string> => {
 };
 
 const searchFileInFolder = async (accessToken: string, folderId: string, fileName: string) => {
-  const query = `name contains '${fileName}' and parents in '${folderId}'`;
+  // Búsqueda más específica para evitar coincidencias parciales
+  let query = `name contains '${fileName}' and parents in '${folderId}'`;
+  
+  // Para certificados F30 vs F30-1, hacer búsqueda más específica
+  if (fileName === 'Certificado F30' || fileName === 'certificado F30') {
+    query = `(name contains 'F30' and not name contains 'F30-1' and not name contains 'F301') and parents in '${folderId}'`;
+  } else if (fileName === 'Certificado F30-1' || fileName === 'certificado F30-1') {
+    query = `(name contains 'F30-1' or name contains 'F301') and parents in '${folderId}'`;
+  }
+  
+  console.log(`🔍 Searching for "${fileName}" with query: ${query}`);
   
   const response = await fetch(
     `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name,mimeType,size,webViewLink,webContentLink)`,
@@ -52,6 +62,7 @@ const searchFileInFolder = async (accessToken: string, folderId: string, fileNam
   }
 
   const data = await response.json();
+  console.log(`📁 Found ${data.files?.length || 0} files for "${fileName}":`, data.files?.map(f => f.name));
   return data.files || [];
 };
 

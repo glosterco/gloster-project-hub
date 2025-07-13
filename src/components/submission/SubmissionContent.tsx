@@ -44,6 +44,14 @@ const SubmissionContent: React.FC<SubmissionContentProps> = ({
 
   const documents = getDocumentsFromPayment(payment.projectData?.Requierment);
 
+  console.log('🏗️ SubmissionContent rendering:', { 
+    paymentId, 
+    isMandante, 
+    paymentStatus: payment?.Status,
+    documentsCount: documents.length,
+    documents: documents.map(d => d.name)
+  });
+
   return (
     <div className="container mx-auto px-6 py-8">
       <div className="max-w-4xl mx-auto space-y-6">
@@ -64,6 +72,14 @@ const SubmissionContent: React.FC<SubmissionContentProps> = ({
             paymentState={paymentState}
             onStatusChange={onStatusChange}
           />
+        )}
+        
+        {!isMandante && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <p className="text-blue-800 text-sm">
+              💡 Los botones de aprobación solo están disponibles para el mandante del proyecto.
+            </p>
+          </div>
         )}
       </div>
     </div>

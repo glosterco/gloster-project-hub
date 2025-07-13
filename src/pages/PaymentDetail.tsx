@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { usePaymentDetail } from '@/hooks/usePaymentDetail';
 import { useMandanteNotification } from '@/hooks/useMandanteNotification';
@@ -260,6 +261,123 @@ const PaymentDetail = () => {
   // CORRIGIENDO: Función para mostrar archivos del Drive si el status es "Enviado", "Aprobado" o "Rechazado"
   const shouldShowDriveFiles = () => {
     return payment?.Status === 'Enviado' || payment?.Status === 'Aprobado' || payment?.Status === 'Rechazado';
+  };
+
+  // Función para verificar si se pueden cargar documentos (solo para status "Rechazado")
+  const canUploadDocuments = () => {
+    return payment?.Status === 'Rechazado';
+  };
+
+  // Función para manejar reenvío después de rechazo
+  const handleResubmissionAfterRejection = async () => {
+    if (!payment || !payment.projectData) {
+      toast({
+        title: "Error",
+        description: "No se pueden cargar los datos del estado de pago",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    console.log('🚀 Starting resubmission after rejection...');
+
+    try {
+      // Subir documentos actualizados
+      const uploadResult = await uploadDocumentsToDrive(
+        payment.id, 
+        uploadedFiles, 
+        documentStatus, 
+        fileObjects
+      );
+
+      if (!uploadResult.success) {
+        throw new Error("Error al subir documentos");
+      }
+
+      console.log('✅ Documents uploaded successfully for resubmission');
+
+      // Usar el sistema de enlace único
+      const accessUrl = await ensureUniqueAccessUrl(payment.id);
+      if (!accessUrl) {
+        throw new Error('No se pudo generar el enlace de acceso');
+      }
+
+      // Cambiar status a "Enviado" para permitir nueva revisión
+      await handleResubmission(payment.id.toString());
+
+      // Obtener datos actualizados del estado de pago
+      const { data: paymentStateData, error: paymentStateError } = await supabase
+        .from('Estados de pago')
+        .select('URL')
+        .eq('id', payment.id)
+        .single();
+
+      if (paymentStateError) {
+        console.error('Error fetching payment state URL:', paymentStateError);
+        toast({
+          title: "Error",
+          description: "No se pudo obtener la URL del estado de pago",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Preparar documentos cargados para notificación
+      const uploadedDocuments: string[] = [];
+      Object.entries(uploadedFiles).forEach(([docId, files]) => {
+        if (files && files.length > 0) {
+          files.forEach(file => {
+            if (typeof file === 'string') {
+              uploadedDocuments.push(file);
+            } else if (file && typeof file === 'object' && 'name' in file) {
+              uploadedDocuments.push(file.name);
+            }
+          });
+        }
+      });
+
+      // Enviar notificación al mandante sobre la corrección
+      const notificationData = {
+        paymentId: payment.id.toString(),
+        contratista: payment.projectData.Contratista?.ContactName || '',
+        mes: payment.Mes || '',
+        año: payment.Año || 0,
+        proyecto: payment.projectData.Name || '',
+        mandanteEmail: payment.projectData.Owner?.ContactEmail || '',
+        mandanteCompany: payment.projectData.Owner?.CompanyName || '',
+        contractorCompany: payment.projectData.Contratista?.CompanyName || '',
+        amount: payment.Total || 0,
+        dueDate: payment.ExpiryDate || '',
+        driveUrl: paymentStateData.URL || '',
+        uploadedDocuments: uploadedDocuments
+      };
+
+      const result = await sendNotificationToMandante(notificationData);
+      
+      if (result.success) {
+        toast({
+          title: "Documentos corregidos y reenviados",
+          description: "Las correcciones han sido enviadas al mandante para nueva revisión",
+        });
+        
+        // Refrescar datos para mostrar el nuevo estado
+        await refetch();
+        
+        setTimeout(() => {
+          navigate(`/project/${payment?.Project || 2}`);
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('❌ Error in resubmission process:', error);
+      toast({
+        title: "Error al reenviar correcciones",
+        description: error.message || "Error al procesar las correcciones",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   // Check if documents were updated (for enabling send button in sent states)
@@ -604,8 +722,40 @@ const PaymentDetail = () => {
             />
           )}
 
+          {/* Documents List para status "Rechazado" - permitir cargar correcciones */}
+          {canUploadDocuments() && (
+            <div className="space-y-4 mb-8">
+              <h3 className="text-lg md:text-xl font-bold text-slate-800 font-rubik">Cargar Correcciones</h3>
+              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+                <p className="text-yellow-800 font-rubik text-sm">
+                  Tu estado de pago fue rechazado. Puedes cargar las correcciones necesarias y reenviar para nueva revisión.
+                </p>
+              </div>
+              
+              <div className="space-y-4">
+                {documents.map((doc) => doc.required ? (
+                  <DocumentUploadCard
+                    key={doc.id}
+                    doc={doc}
+                    documentStatus={documentStatus[doc.id as keyof typeof documentStatus]}
+                    uploadedFiles={uploadedFiles[doc.id as keyof typeof uploadedFiles]}
+                    dragState={dragStates[doc.id as keyof typeof dragStates]}
+                    achsSelection={achsSelection}
+                    setAchsSelection={setAchsSelection}
+                    onDragOver={(e) => handleDragOver(e, doc.id)}
+                    onDragLeave={(e) => handleDragLeave(e, doc.id)}
+                    onDrop={(e) => handleDrop(e, doc.id, doc.allowMultiple)}
+                    onDocumentUpload={() => handleDocumentUpload(doc.id)}
+                    onFileRemove={(fileIndex) => handleFileRemove(doc.id, fileIndex)}
+                    getExamenesUrl={getExamenesUrl}
+                  />) : null
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Documents List - Solo mostrar si no es "Enviado", "Aprobado" o "Rechazado" */}
-          {!shouldShowDriveFiles() && (
+          {!shouldShowDriveFiles() && !canUploadDocuments() && (
             <div className="space-y-4 mb-8">
               <h3 className="text-lg md:text-xl font-bold text-slate-800 font-rubik">Documentación Requerida</h3>
               
@@ -631,8 +781,31 @@ const PaymentDetail = () => {
             </div>
           )}
 
+          {/* Send Documents Banner para correcciones después de rechazo */}
+          {canUploadDocuments() && wereDocumentsUpdated() && (
+            <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-l-orange-500 mb-8">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-800 font-rubik mb-2">
+                    Reenviar Correcciones
+                  </h3>
+                  <p className="text-slate-600 font-rubik text-sm">
+                    Se han cargado las correcciones. Puedes reenviar al mandante para nueva revisión.
+                  </p>
+                </div>
+                <Button
+                  onClick={handleResubmissionAfterRejection}
+                  disabled={isUploadingOrPreviewing}
+                  className="bg-orange-600 hover:bg-orange-700 text-white font-rubik"
+                >
+                  Reenviar Correcciones
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Send Documents Banner - Solo mostrar si no es "Enviado", "Aprobado" o "Rechazado" */}
-          {!shouldShowDriveFiles() && (
+          {!shouldShowDriveFiles() && !canUploadDocuments() && (
             <SendDocumentsBanner
               areAllRequiredDocumentsUploaded={areAllRequiredDocumentsUploaded()}
               areFieldsValidForActions={areFieldsValidForActions()}

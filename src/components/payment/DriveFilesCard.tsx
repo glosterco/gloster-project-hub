@@ -55,7 +55,7 @@ const DriveFilesCard: React.FC<DriveFilesCardProps> = ({
                     <Download className="h-4 w-4 mr-1" />
                     <span className="text-xs">{downloadLoading ? 'Descargando...' : 'Descargar'}</span>
                   </Button>
-                  {doc.downloadUrl && (
+                  {doc.downloadUrl && paymentStatus !== 'Enviado' && paymentStatus !== 'Aprobado' && (
                     <Button
                       size="sm"
                       variant="outline"
@@ -66,7 +66,7 @@ const DriveFilesCard: React.FC<DriveFilesCardProps> = ({
                       <span className="text-xs">Visitar</span>
                     </Button>
                   )}
-                  {paymentStatus !== 'Aprobado' && (
+                  {paymentStatus !== 'Enviado' && paymentStatus !== 'Aprobado' && (
                     <Button
                       size="sm"
                       onClick={() => onDocumentUpload(doc.id)}

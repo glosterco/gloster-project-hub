@@ -38,25 +38,26 @@ const encodeBase64UTF8 = (str: string): string => {
 };
 
 const getAccessToken = async (): Promise<string> => {
-  const clientId = Deno.env.get("GMAIL_CLIENT_ID");
-  const clientSecret = Deno.env.get("GMAIL_CLIENT_SECRET");
-  const refreshToken = Deno.env.get("GMAIL_REFRESH_TOKEN");
-
-  const response = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
+  console.log('📧 Getting Gmail access token via token manager...');
+  
+  const tokenManagerResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/gmail-token-manager`, {
+    method: 'POST',
     headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`,
     },
-    body: new URLSearchParams({
-      client_id: clientId!,
-      client_secret: clientSecret!,
-      refresh_token: refreshToken!,
-      grant_type: "refresh_token",
-    }),
+    body: JSON.stringify({ action: 'validate' }),
   });
 
-  const data = await response.json();
-  return data.access_token;
+  const tokenResult = await tokenManagerResponse.json();
+
+  if (!tokenResult.valid) {
+    console.error('❌ Gmail token validation failed:', tokenResult.error);
+    throw new Error(`Gmail authentication failed: ${tokenResult.error}`);
+  }
+
+  console.log('✅ Gmail access token obtained and validated successfully');
+  return tokenResult.access_token;
 };
 
 const formatCurrency = (amount: number, currency?: string): string => {

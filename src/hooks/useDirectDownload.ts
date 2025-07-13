@@ -26,8 +26,8 @@ export const useDirectDownload = () => {
       // Si no se especifican documentos, descargar todos los documentos comunes
       const defaultDocuments = documentNames.length > 0 ? documentNames : [
         'Carátula EEPP',
-        'Avance Periódico', 
-        'Certificado de Pago de Cotizaciones Previsionales',
+        'Avance del período', 
+        'Certificado de pago de cotizaciones',
         'Certificado F30',
         'Certificado F30-1',
         'Factura'

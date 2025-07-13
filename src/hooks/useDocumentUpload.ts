@@ -22,6 +22,7 @@ export interface UploadedFiles {
   examenes: string[];
   finiquito: string[];
   factura: string[];
+  [key: string]: string[]; // Add index signature for compatibility
 }
 
 export interface FileObjects {

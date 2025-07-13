@@ -330,8 +330,6 @@ const PaymentDetail = () => {
           files.forEach(file => {
             if (typeof file === 'string') {
               uploadedDocuments.push(file);
-            } else if (file && typeof file === 'object' && 'name' in file) {
-              uploadedDocuments.push(file.name);
             }
           });
         }
@@ -489,8 +487,6 @@ const PaymentDetail = () => {
           files.forEach(file => {
             if (typeof file === 'string') {
               uploadedDocuments.push(file);
-            } else if (file && typeof file === 'object' && 'name' in file) {
-              uploadedDocuments.push(file.name);
             }
           });
         }
@@ -719,6 +715,8 @@ const PaymentDetail = () => {
               onDownloadFile={handleDownloadFile}
               onDocumentUpload={handleDocumentUpload}
               paymentStatus={payment?.Status}
+              uploadedFiles={uploadedFiles}
+              onFileRemove={handleFileRemove}
             />
           )}
 
@@ -758,10 +756,11 @@ const PaymentDetail = () => {
             </div>
           )}
 
-          {/* Send Documents Banner - Lógica corregida para estado "Rechazado" */}
+          {/* Send Documents Banner - Activar cuando se sube al menos un documento para estado Rechazado */}
           {!shouldShowDriveFiles() && (
             (canUploadDocuments() && hasDocumentsToUpload()) || 
-            (!canUploadDocuments() && areAllRequiredDocumentsUploaded())
+            (!canUploadDocuments() && areAllRequiredDocumentsUploaded()) ||
+            (shouldShowDriveFiles() && payment?.Status === 'Rechazado' && hasDocumentsToUpload())
           ) && (
             <SendDocumentsBanner
               areAllRequiredDocumentsUploaded={areAllRequiredDocumentsUploaded()}

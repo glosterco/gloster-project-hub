@@ -14,7 +14,7 @@ export const documentsFromPayment = [
   },
   {
     id: 'cotizaciones',
-    name: 'Certificado de Pago de Cotizaciones Previsionales',
+    name: 'Certificado de pago de cotizaciones',
     description: 'Certificado de cumplimiento de obligaciones previsionales',
     uploaded: true
   },

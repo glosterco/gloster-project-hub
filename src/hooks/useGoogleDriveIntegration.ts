@@ -119,8 +119,8 @@ export const useGoogleDriveIntegration = () => {
       // Document name mapping
       const documentNames = {
         eepp: 'Carátula EEPP',
-        planilla: 'Avance Periódico',
-        cotizaciones: 'Certificado de Pago de Cotizaciones Previsionales',
+        planilla: 'Avance del período',
+        cotizaciones: 'Certificado de pago de cotizaciones',
         f30: 'Certificado F30',
         f30_1: 'Certificado F30-1',
         examenes: 'Exámenes Preocupacionales',

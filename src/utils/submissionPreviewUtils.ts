@@ -28,41 +28,48 @@ export const formatCurrency = (amount: number, payment: PaymentDetail | null) =>
 };
 
 export const getDocumentsFromPayment = (projectRequirements?: string[]) => {
-  // Mapeo de términos comunes en requirements a nombres de documentos
+  // Mapeo completo de términos en requirements a nombres de documentos
   const documentMapping = [
-    {
-      id: 'eepp',
-      name: 'Carátula EEPP',
-      description: 'Presentación y resumen del estado de pago',
-      keywords: ['caratula', 'eepp', 'presentacion'],
-      required: true // Siempre incluido
-    },
     {
       id: 'avance',
       name: 'Avance del período',
       description: 'Planilla detallada del avance de obras del período',
-      keywords: ['avance', 'periodo', 'periodico', 'planilla'],
+      keywords: ['avance del período', 'avance del periodo', 'avance', 'planilla de avance'],
       required: false
     },
     {
       id: 'cotizaciones',
       name: 'Certificado de pago de cotizaciones',
       description: 'Certificado de cumplimiento de obligaciones previsionales',
-      keywords: ['cotizaciones', 'previsionales', 'pago'],
+      keywords: ['certificado de pago de cotizaciones', 'pago de cotizaciones', 'cotizaciones', 'previsionales'],
       required: false
     },
     {
       id: 'f30',
       name: 'Certificado F30',
       description: 'Certificado de antecedentes laborales y previsionales',
-      keywords: ['f30', 'certificado f30', 'antecedentes'],
+      keywords: ['certificado f30', 'f30', 'antecedentes laborales'],
       required: false
     },
     {
       id: 'f30_1',
       name: 'Certificado F30-1',
       description: 'Certificado de cumplimiento de obligaciones laborales y previsionales',
-      keywords: ['f30-1', 'f301', 'certificado f30-1'],
+      keywords: ['certificado f30-1', 'f30-1', 'f301'],
+      required: false
+    },
+    {
+      id: 'finiquitos',
+      name: 'Finiquitos',
+      description: 'Documentos de finiquito de trabajadores',
+      keywords: ['finiquitos', 'finiquito'],
+      required: false
+    },
+    {
+      id: 'examenes',
+      name: 'Exámenes preocupacionales',
+      description: 'Exámenes médicos preocupacionales de trabajadores',
+      keywords: ['examenes preocupacionales', 'exámenes preocupacionales', 'examenes medicos', 'exámenes médicos'],
       required: false
     },
     {
@@ -71,30 +78,39 @@ export const getDocumentsFromPayment = (projectRequirements?: string[]) => {
       description: 'Factura del período correspondiente',
       keywords: ['factura', 'boleta'],
       required: false
+    },
+    {
+      id: 'eepp',
+      name: 'Carátula EEPP',
+      description: 'Presentación y resumen del estado de pago',
+      keywords: ['caratula eepp', 'carátula eepp', 'eepp', 'presentacion'],
+      required: false
     }
   ];
 
   const normalizeText = (text: string) => text.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, ' ').trim();
 
-  const requiredDocuments = documentMapping.filter(doc => {
-    // Documentos que son requeridos por defecto siempre se incluyen
-    if (doc.required) return true;
-    
-    // Si no hay requirements del proyecto, no incluir documentos opcionales
-    if (!projectRequirements || projectRequirements.length === 0) {
-      return false;
-    }
+  // Si no hay requirements, no mostrar ningún documento
+  if (!projectRequirements || projectRequirements.length === 0) {
+    return [];
+  }
 
-    // Verificar si algún requirement coincide con las keywords del documento
+  console.log('🔍 Project requirements:', projectRequirements);
+
+  const requiredDocuments = documentMapping.filter(doc => {
+    // Verificar si algún requirement coincide exactamente con las keywords del documento
     return projectRequirements.some(requirement => {
       const reqNormalized = normalizeText(requirement);
       
       return doc.keywords.some(keyword => {
         const keywordNormalized = normalizeText(keyword);
-        return reqNormalized.includes(keywordNormalized) || keywordNormalized.includes(reqNormalized);
+        // Coincidencia exacta o contiene el término completo
+        return reqNormalized === keywordNormalized || reqNormalized.includes(keywordNormalized);
       });
     });
   });
+
+  console.log('🔍 Required documents found:', requiredDocuments.map(d => d.name));
 
   // Marcar todos los documentos encontrados como uploaded: true para la vista
   return requiredDocuments.map(doc => ({

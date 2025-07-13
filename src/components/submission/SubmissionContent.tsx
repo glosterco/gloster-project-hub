@@ -65,22 +65,12 @@ const SubmissionContent: React.FC<SubmissionContentProps> = ({
           />
         </div>
 
-        {isMandante && (
-          <PaymentApprovalSection
-            paymentId={paymentId}
-            payment={payment}
-            paymentState={paymentState}
-            onStatusChange={onStatusChange}
-          />
-        )}
-        
-        {!isMandante && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-blue-800 text-sm">
-              💡 Los botones de aprobación solo están disponibles para el mandante del proyecto.
-            </p>
-          </div>
-        )}
+        <PaymentApprovalSection
+          paymentId={paymentId}
+          payment={payment}
+          paymentState={paymentState}
+          onStatusChange={onStatusChange}
+        />
       </div>
     </div>
   );

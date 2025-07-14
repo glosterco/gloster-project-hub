@@ -74,7 +74,7 @@ const PaymentSummaryCard: React.FC<PaymentSummaryCardProps> = ({
                   variant="outline"
                   className="border-gloster-gray/30 hover:bg-gloster-gray/10 font-rubik w-full"
                   size="sm"
-                  disabled={isUploadingOrPreviewing || (!areAllRequiredDocumentsUploaded) || !areFieldsValidForActions}
+                  disabled={isUploadingOrPreviewing || !areAllRequiredDocumentsUploaded || !areFieldsValidForActions}
                 >
                   <Eye className="h-4 w-4 mr-1" />
                   Vista Previa
@@ -92,11 +92,7 @@ const PaymentSummaryCard: React.FC<PaymentSummaryCardProps> = ({
               <div>
                 <Button
                   onClick={onSendDocuments}
-                  disabled={
-                    !documents.filter(d => d.required).every(d => documentStatus[d.id]) || 
-                    isUploadingOrPreviewing || 
-                    !areFieldsValidForActions
-                  }
+                  disabled={!areAllRequiredDocumentsUploaded || isUploadingOrPreviewing || !areFieldsValidForActions}
                   className="bg-green-600 hover:bg-green-700 text-white disabled:bg-slate-300 font-rubik w-full"
                   size="sm"
                 >

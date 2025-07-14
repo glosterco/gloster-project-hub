@@ -7,15 +7,27 @@ export const usePaymentValidation = (
   editablePercentage: string,
   documentStatus: DocumentStatus,
   paymentStatus?: string,
-  isAttemptingAction?: boolean
+  isAttemptingAction?: boolean,
+  originalAmount?: number,
+  originalProgress?: number
 ) => {
   const [hasUnsavedFiles, setHasUnsavedFiles] = useState(false);
 
   const isAmountValid = () => {
+    // Para estado rechazado, usar valor original si no hay edición local
+    if (paymentStatus === 'Rechazado') {
+      const currentAmount = editableAmount && editableAmount.trim() !== '' ? editableAmount : (originalAmount?.toString() || '');
+      return currentAmount && currentAmount.trim() !== '' && parseFloat(currentAmount) > 0;
+    }
     return editableAmount && editableAmount.trim() !== '' && parseFloat(editableAmount) > 0;
   };
 
   const isProgressValid = () => {
+    // Para estado rechazado, usar valor original si no hay edición local  
+    if (paymentStatus === 'Rechazado') {
+      const currentProgress = editablePercentage && editablePercentage.trim() !== '' ? editablePercentage : (originalProgress?.toString() || '');
+      return currentProgress && currentProgress.trim() !== '' && parseFloat(currentProgress) >= 0;
+    }
     return editablePercentage && editablePercentage.trim() !== '' && parseFloat(editablePercentage) >= 0;
   };
 

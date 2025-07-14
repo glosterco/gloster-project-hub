@@ -426,15 +426,18 @@ const PaymentDetail = () => {
       return;
     }
 
-    const requiredDocuments = documents.filter(doc => doc.required);
-    const allRequiredUploaded = requiredDocuments.every(doc => documentStatus[doc.id as keyof typeof documentStatus]);
-    
-    if (!allRequiredUploaded) {
+    // Usar la lógica de canActivateButtons que considera el estado del pago
+    if (!canActivateButtons()) {
+      const errorMessage = payment?.Status === 'Rechazado' 
+        ? "Por favor, carga al menos un documento antes de enviar"
+        : "Por favor, carga todos los documentos requeridos antes de enviar";
+      
       toast({
         title: "Documentos incompletos",
-        description: "Por favor, carga todos los documentos requeridos antes de enviar",
+        description: errorMessage,
         variant: "destructive"
       });
+      setIsAttemptingAction(false);
       return;
     }
 

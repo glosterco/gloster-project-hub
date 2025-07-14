@@ -773,7 +773,7 @@ const PaymentDetail = () => {
             (shouldShowDriveFiles() && payment?.Status === 'Rechazado' && hasDocumentsToUpload())
           ) && (
             <SendDocumentsBanner
-              areAllRequiredDocumentsUploaded={areAllRequiredDocumentsUploaded()}
+              areAllRequiredDocumentsUploaded={canActivateButtons()}
               areFieldsValidForActions={areFieldsValidForActions()}
               getValidationMessage={getValidationMessage}
               isUploadingOrPreviewing={isUploadingOrPreviewing}

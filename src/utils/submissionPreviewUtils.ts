@@ -34,7 +34,23 @@ export const getDocumentsFromPayment = (projectRequirements?: string[]) => {
       id: 'planilla',
       name: 'Avance del período',
       description: 'Planilla detallada del avance de obras del período',
-      keywords: ['avance del período', 'avance del periodo', 'avance', 'planilla de avance', 'planilla', 'avance periodico', 'avance periódico', 'avance del periodo', 'periodo'],
+      keywords: [
+        'avance del período', 
+        'avance del periodo', 
+        'avance', 
+        'planilla de avance', 
+        'planilla', 
+        'avance periodico', 
+        'avance periódico', 
+        'avance del periodo', 
+        'periodo',
+        'planilla del periodo',
+        'planilla del período',
+        'avance periodo',
+        'avance período',
+        'del periodo',
+        'del período'
+      ],
       required: false
     },
     {
@@ -99,15 +115,32 @@ export const getDocumentsFromPayment = (projectRequirements?: string[]) => {
 
   const requiredDocuments = documentMapping.filter(doc => {
     // Verificar si algún requirement coincide exactamente con las keywords del documento
-    return projectRequirements.some(requirement => {
+    const isRequired = projectRequirements.some(requirement => {
       const reqNormalized = normalizeText(requirement);
       
-      return doc.keywords.some(keyword => {
+      const matches = doc.keywords.some(keyword => {
         const keywordNormalized = normalizeText(keyword);
         // Coincidencia exacta o contiene el término completo
-        return reqNormalized === keywordNormalized || reqNormalized.includes(keywordNormalized);
+        const exactMatch = reqNormalized === keywordNormalized;
+        const containsMatch = reqNormalized.includes(keywordNormalized);
+        const reverseContainsMatch = keywordNormalized.includes(reqNormalized);
+        
+        if (exactMatch || containsMatch || reverseContainsMatch) {
+          console.log(`🔍 Document match found: "${requirement}" matches "${keyword}" for ${doc.name}`);
+          console.log(`🔍 Match type: exact=${exactMatch}, contains=${containsMatch}, reverse=${reverseContainsMatch}`);
+          return true;
+        }
+        return false;
       });
+      
+      return matches;
     });
+    
+    if (isRequired) {
+      console.log(`✅ Document "${doc.name}" is required for this project`);
+    }
+    
+    return isRequired;
   });
 
   console.log('🔍 Required documents found:', requiredDocuments.map(d => d.name));

@@ -61,28 +61,33 @@ const getAccessToken = async (): Promise<string> => {
 };
 
 const formatCurrency = (amount: number, currency?: string): string => {
-  if (!currency) {
-    return new Intl.NumberFormat('es-CL', {
-      style: 'currency',
-      currency: 'CLP',
-      minimumFractionDigits: 0,
-    }).format(amount);
-  }
+  console.log('💰 formatCurrency called with amount:', amount, 'currency:', currency);
+  
+  // Normalizar currency - manejar casos null, undefined, o vacío
+  const normalizedCurrency = currency?.trim()?.toUpperCase() || 'CLP';
+  console.log('💰 Normalized currency:', normalizedCurrency);
 
-  if (currency === 'UF') {
-    return `${amount.toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} UF`;
-  } else if (currency === 'USD') {
-    return new Intl.NumberFormat('es-CL', {
+  if (normalizedCurrency === 'UF') {
+    const formatted = `${amount.toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} UF`;
+    console.log('💰 UF formatted result:', formatted);
+    return formatted;
+  } else if (normalizedCurrency === 'USD') {
+    const formatted = new Intl.NumberFormat('es-CL', {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 0,
     }).format(amount);
+    console.log('💰 USD formatted result:', formatted);
+    return formatted;
   } else {
-    return new Intl.NumberFormat('es-CL', {
+    // Default to CLP for any other case (including null, undefined, empty, or 'CLP')
+    const formatted = new Intl.NumberFormat('es-CL', {
       style: 'currency',
       currency: 'CLP',
       minimumFractionDigits: 0,
     }).format(amount);
+    console.log('💰 CLP formatted result:', formatted);
+    return formatted;
   }
 };
 
@@ -281,7 +286,8 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const data: NotificationRequest = await req.json();
-    console.log("Sending mandante notification:", data);
+    console.log("📧 Sending mandante notification with full data:", data);
+    console.log("💰 Currency value received:", data.currency, "type:", typeof data.currency);
 
     const accessToken = await getAccessToken();
     const fromEmail = Deno.env.get("GMAIL_FROM_EMAIL");

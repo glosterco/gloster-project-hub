@@ -31,6 +31,21 @@ export const useRegistrationData = () => {
                             formData.paymentPeriod === 'quincenal' ? '15' : 
                             formData.customPeriod || '30';
 
+    // Ensure "Avance del período" is always included in requirements
+    let finalRequiredDocuments = [...formData.requiredDocuments];
+    if (!finalRequiredDocuments.includes('Avance del período')) {
+      finalRequiredDocuments.push('Avance del período');
+      console.log('🔧 Auto-adding "Avance del período" to project requirements');
+    }
+
+    // Add other documents if specified
+    if (formData.otherDocuments && formData.otherDocuments.trim()) {
+      const otherDocs = formData.otherDocuments.split(',').map((doc: string) => doc.trim()).filter((doc: string) => doc);
+      finalRequiredDocuments = [...finalRequiredDocuments, ...otherDocs];
+    }
+
+    console.log('📋 Final project requirements:', finalRequiredDocuments);
+
     return {
       Name: formData.projectName,
       Description: formData.projectDescription,
@@ -43,7 +58,7 @@ export const useRegistrationData = () => {
       Owner: mandanteId,
       FirstPayment: formData.firstPaymentDate,
       ExpiryRate: expiryRateString,
-      Requierment: formData.requiredDocuments,
+      Requierment: finalRequiredDocuments,
     };
   };
 

@@ -32,7 +32,7 @@ const Register = () => {
   // Required documents list
   const documentsList = [
     'Carátula EEPP',
-    'Avance del período',
+    'Avance del período', // Always required - will be auto-added if not selected
     'Certificado de pago de cotizaciones',
     'Certificado F30',
     'Certificado F30-1',

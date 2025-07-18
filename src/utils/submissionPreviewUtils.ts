@@ -145,8 +145,43 @@ export const getDocumentsFromPayment = (projectRequirements?: string[]) => {
 
   console.log('🔍 Required documents found:', requiredDocuments.map(d => d.name));
 
+  // Identificar documentos "otros" que no coinciden con los predefinidos
+  const matchedRequirements = new Set();
+  requiredDocuments.forEach(doc => {
+    projectRequirements.forEach(requirement => {
+      const reqNormalized = normalizeText(requirement);
+      const hasMatch = doc.keywords.some(keyword => {
+        const keywordNormalized = normalizeText(keyword);
+        return reqNormalized === keywordNormalized || 
+               reqNormalized.includes(keywordNormalized) || 
+               keywordNormalized.includes(reqNormalized);
+      });
+      if (hasMatch) {
+        matchedRequirements.add(requirement);
+      }
+    });
+  });
+
+  // Agregar documentos "otros" que no coincidieron con los predefinidos
+  const otherDocuments = projectRequirements.filter(req => 
+    !matchedRequirements.has(req) && req.trim()
+  ).map((req, index) => ({
+    id: `other_${index}`,
+    name: req,
+    description: 'Documento requerido específico del proyecto',
+    keywords: [req.toLowerCase()],
+    required: false,
+    uploaded: true,
+    isOtherDocument: true
+  }));
+
+  console.log('🔍 Other documents found:', otherDocuments.map(d => d.name));
+
+  // Combinar todos los documentos
+  const allDocuments = [...requiredDocuments, ...otherDocuments];
+
   // Marcar todos los documentos encontrados como uploaded: true para la vista
-  return requiredDocuments.map(doc => ({
+  return allDocuments.map(doc => ({
     ...doc,
     uploaded: true
   }));

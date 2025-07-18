@@ -39,8 +39,10 @@ export const useRegistrationData = () => {
     }
 
     // Add other documents if specified
-    if (formData.otherDocuments && formData.otherDocuments.trim()) {
-      const otherDocs = formData.otherDocuments.split(',').map((doc: string) => doc.trim()).filter((doc: string) => doc);
+    if (formData.otherDocuments && Array.isArray(formData.otherDocuments)) {
+      const otherDocs = formData.otherDocuments
+        .filter((doc: string) => doc && doc.trim())
+        .map((doc: string) => doc.trim());
       finalRequiredDocuments = [...finalRequiredDocuments, ...otherDocs];
     }
 

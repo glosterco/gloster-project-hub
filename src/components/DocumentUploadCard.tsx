@@ -119,8 +119,8 @@ const DocumentUploadCard: React.FC<DocumentUploadCardProps> = ({
           </div>
           
           <div className="flex flex-col sm:flex-row lg:flex-col gap-2 lg:min-w-max">
-            {/* Botón de descarga/visitar sitio - Mostrar siempre para documentos con dropdown o downloadUrl */}
-            {(doc.downloadUrl || doc.hasDropdown) && (
+            {/* Botón de descarga/visitar sitio - NO mostrar para documentos "otros" */}
+            {(doc.downloadUrl || doc.hasDropdown) && !(doc as any).isOtherDocument && (
               <Button
                 onClick={() => {
                   const url = doc.hasDropdown ? getExamenesUrl() : doc.downloadUrl;

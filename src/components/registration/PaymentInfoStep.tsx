@@ -7,7 +7,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar as CalendarIcon } from 'lucide-react';
+import { Calendar as CalendarIcon, Plus, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -20,8 +20,8 @@ interface PaymentInfoStepProps {
   setCustomPeriod: (value: string) => void;
   requiredDocuments: string[];
   setRequiredDocuments: (documents: string[]) => void;
-  otherDocuments: string;
-  setOtherDocuments: (value: string) => void;
+  otherDocuments: string[];
+  setOtherDocuments: (value: string[]) => void;
   documentsList: string[];
 }
 
@@ -43,6 +43,23 @@ const PaymentInfoStep: React.FC<PaymentInfoStepProps> = ({
       setRequiredDocuments([...requiredDocuments, document]);
     } else {
       setRequiredDocuments(requiredDocuments.filter(doc => doc !== document));
+    }
+  };
+
+  const handleOtherDocumentChange = (index: number, value: string) => {
+    const newOtherDocuments = [...otherDocuments];
+    newOtherDocuments[index] = value;
+    setOtherDocuments(newOtherDocuments);
+  };
+
+  const addOtherDocument = () => {
+    setOtherDocuments([...otherDocuments, '']);
+  };
+
+  const removeOtherDocument = (index: number) => {
+    if (otherDocuments.length > 1) {
+      const newOtherDocuments = otherDocuments.filter((_, i) => i !== index);
+      setOtherDocuments(newOtherDocuments);
     }
   };
 
@@ -113,15 +130,41 @@ const PaymentInfoStep: React.FC<PaymentInfoStepProps> = ({
               <Label htmlFor={doc} className="text-sm font-rubik">{doc}</Label>
             </div>
           ))}
-          <div className="space-y-2">
-            <Label htmlFor="otherDocuments">Otros</Label>
-            <Input
-              id="otherDocuments"
-              value={otherDocuments}
-              onChange={(e) => setOtherDocuments(e.target.value)}
-              placeholder="Especifica otros documentos"
-              className="font-rubik"
-            />
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label>Otros Documentos Requeridos</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addOtherDocument}
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Agregar
+              </Button>
+            </div>
+            {otherDocuments.map((doc, index) => (
+              <div key={index} className="flex items-center gap-2">
+                <Input
+                  value={doc}
+                  onChange={(e) => handleOtherDocumentChange(index, e.target.value)}
+                  placeholder={`Documento requerido ${index + 1}`}
+                  className="font-rubik flex-1"
+                />
+                {otherDocuments.length > 1 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => removeOtherDocument(index)}
+                    className="flex items-center justify-center w-10 h-10"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       </div>

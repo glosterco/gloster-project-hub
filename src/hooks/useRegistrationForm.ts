@@ -38,7 +38,7 @@ export const useRegistrationForm = () => {
   const [paymentPeriod, setPaymentPeriod] = useState('');
   const [customPeriod, setCustomPeriod] = useState('');
   const [requiredDocuments, setRequiredDocuments] = useState<string[]>([]);
-  const [otherDocuments, setOtherDocuments] = useState('');
+  const [otherDocuments, setOtherDocuments] = useState<string[]>(['']);
 
   return {
     // Company Information

@@ -213,7 +213,8 @@ const PaymentDetail = () => {
     const projectRequirements = payment.projectData.Requierment;
     console.log('🔍 Project requirements:', projectRequirements);
     
-    return allDocuments.filter(doc => {
+    // Filter predefined documents that match requirements
+    const matchedDocuments = allDocuments.filter(doc => {
       // Always include 'planilla' as it's always required
       if (doc.id === 'planilla') return true;
       
@@ -223,6 +224,27 @@ const PaymentDetail = () => {
       
       return isRequiredByProject;
     });
+
+    // Identify "other" documents that don't match predefined ones
+    const predefinedNames = allDocuments.map(doc => doc.name);
+    const otherDocuments = projectRequirements
+      .filter(req => !predefinedNames.includes(req) && req.trim() && req !== 'Avance del período')
+      .map((req, index) => ({
+        id: `other_${index}`,
+        name: req,
+        description: 'Documento requerido específico del proyecto',
+        downloadUrl: null,
+        uploaded: false,
+        required: true,
+        isUploadOnly: true,
+        allowMultiple: false,
+        helpText: 'Este documento ha sido especificado como requerimiento específico del proyecto.',
+        isOtherDocument: true
+      }));
+
+    console.log('📄 Other documents found:', otherDocuments.map(d => d.name));
+
+    return [...matchedDocuments, ...otherDocuments];
   }, [payment?.projectData?.Requierment]);
 
   console.log('📋 Final filtered documents:', documents.map(d => d.name));

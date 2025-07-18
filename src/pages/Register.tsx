@@ -117,10 +117,6 @@ const Register = () => {
             setCustomSpecialty={formData.setCustomSpecialty}
             experience={formData.experience}
             setExperience={formData.setExperience}
-            address={formData.address}
-            setAddress={formData.setAddress}
-            city={formData.city}
-            setCity={formData.setCity}
             errors={errors}
           />
         );

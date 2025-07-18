@@ -8,8 +8,6 @@ export const useRegistrationForm = () => {
   const [specialties, setSpecialties] = useState<string[]>([]);
   const [customSpecialty, setCustomSpecialty] = useState('');
   const [experience, setExperience] = useState('');
-  const [address, setAddress] = useState('');
-  const [city, setCity] = useState('');
 
   // Contact Information
   const [contactName, setContactName] = useState('');
@@ -47,8 +45,6 @@ export const useRegistrationForm = () => {
     specialties, setSpecialties,
     customSpecialty, setCustomSpecialty,
     experience, setExperience,
-    address, setAddress,
-    city, setCity,
     
     // Contact Information
     contactName, setContactName,

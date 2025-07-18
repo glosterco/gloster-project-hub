@@ -153,6 +153,11 @@ serve(async (req) => {
         subfolderName = 'Finiquitos';
       }
       
+      // For "other" documents, use the actual document name from requirements
+      if (docType.startsWith('other_')) {
+        subfolderName = docData.documentName; // This should already contain the custom name
+      }
+      
       // Handle multiple files (create subfolder)
       if (docData.files.length > 1) {
         // Check if subfolder already exists

@@ -219,7 +219,7 @@ const createEmailHtml = (data: NotificationRequest): string => {
       <div class="container">
         <div class="header">
           <h1 class="title">Estado de Pago - Gloster</h1>
-          <p style="margin: 5px 0 0 0; color: #64748b; font-size: 14px;">Sistema de Gestión de Proyectos</p>
+          <p style="margin: 5px 0 0 0; color: #64748b; font-size: 14px;">Sistema de Gestion de Proyectos</p>
         </div>
         
         <div class="content">
@@ -265,12 +265,12 @@ const createEmailHtml = (data: NotificationRequest): string => {
           </div>
           
           <p style="color: #64748b; font-size: 14px; margin-top: 25px;">
-            Este es un mensaje automático del sistema de gestión de proyectos Gloster. Si tiene alguna consulta técnica, puede contactarnos a través del correo de soporte.
+            Este es un mensaje automático del sistema de gestion de proyectos Gloster. Si tiene alguna consulta técnica, puede contactarnos a través del correo de soporte.
           </p>
         </div>
         
         <div class="footer">
-          <div class="footer-title">Gloster - Sistema de Gestión de Proyectos</div>
+          <div class="footer-title">Gloster - Sistema de Gestion de Proyectos</div>
           <p style="margin: 5px 0;">Consultas técnicas: soporte.gloster@gmail.com</p>
         </div>
       </div>
@@ -296,7 +296,7 @@ const handler = async (req: Request): Promise<Response> => {
     
     const emailData = {
       raw: encodeBase64UTF8(
-        `From: Gloster Gestión de Proyectos <${fromEmail}>
+        `From: Gloster Gestion de Proyectos <${fromEmail}>
 To: ${data.mandanteEmail}
 Subject: Estado de Pago ${data.mes} ${data.año} - ${data.proyecto}
 Reply-To: soporte.gloster@gmail.com

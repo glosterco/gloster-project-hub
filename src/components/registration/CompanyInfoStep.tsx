@@ -15,10 +15,6 @@ interface CompanyInfoStepProps {
   setCustomSpecialty: (value: string) => void;
   experience: string;
   setExperience: (value: string) => void;
-  address: string;
-  setAddress: (value: string) => void;
-  city: string;
-  setCity: (value: string) => void;
   errors: {[key: string]: string};
 }
 
@@ -33,10 +29,6 @@ const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
   setCustomSpecialty,
   experience,
   setExperience,
-  address,
-  setAddress,
-  city,
-  setCity,
   errors,
 }) => {
   const specialtyOptions = [
@@ -160,28 +152,6 @@ const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
         </Select>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="address">Dirección</Label>
-          <Input
-            id="address"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            placeholder="Ej: Av. Providencia 1234"
-            className="font-rubik"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="city">Ciudad</Label>
-          <Input
-            id="city"
-            value={city}
-            onChange={(e) => setCity(e.target.value)}
-            placeholder="Ej: Santiago"
-            className="font-rubik"
-          />
-        </div>
-      </div>
     </div>
   );
 };

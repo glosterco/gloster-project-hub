@@ -16,6 +16,7 @@ interface ContractorNotificationRequest {
   mes: string;
   año: number;
   amount: number;
+  currency?: string;
   status: 'Aprobado' | 'Rechazado';
   rejectionReason?: string;
   platformUrl: string;
@@ -44,12 +45,22 @@ const getAccessToken = async (): Promise<string> => {
   return tokenResult.access_token;
 };
 
-const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat('es-CL', {
-    style: 'currency',
-    currency: 'CLP',
-    minimumFractionDigits: 0,
-  }).format(amount);
+const formatCurrency = (amount: number, currency?: string): string => {
+  if (currency === 'UF') {
+    return `${amount.toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} UF`;
+  } else if (currency === 'USD') {
+    return new Intl.NumberFormat('es-CL', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+    }).format(amount);
+  } else {
+    return new Intl.NumberFormat('es-CL', {
+      style: 'currency',
+      currency: 'CLP',
+      minimumFractionDigits: 0,
+    }).format(amount);
+  }
 };
 
 const createEmailHtml = (data: ContractorNotificationRequest): string => {
@@ -136,7 +147,7 @@ const createEmailHtml = (data: ContractorNotificationRequest): string => {
               </div>
               <div class="info-item">
                 <span class="info-label">💰 Monto:</span>
-                <span class="info-value amount">${formatCurrency(data.amount)}</span>
+                <span class="info-value amount">${formatCurrency(data.amount, data.currency)}</span>
               </div>
             </div>
           </div>

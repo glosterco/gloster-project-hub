@@ -92,6 +92,52 @@ const downloadFileContent = async (accessToken: string, fileId: string): Promise
   return btoa(binary);
 };
 
+const downloadFolderAsZip = async (accessToken: string, folderId: string, folderName: string): Promise<string> => {
+  // Obtener todos los archivos de la carpeta
+  const response = await fetch(
+    `https://www.googleapis.com/drive/v3/files?q='${folderId}' in parents and trashed=false&fields=files(id,name,mimeType)`,
+    {
+      headers: {
+        "Authorization": `Bearer ${accessToken}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch folder files: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const files = data.files || [];
+
+  if (files.length === 0) {
+    throw new Error('No files found in folder');
+  }
+
+  // Crear un ZIP con todos los archivos
+  const JSZip = (await import('https://esm.sh/jszip@3.10.1')).default;
+  const zip = new JSZip();
+
+  for (const file of files) {
+    if (file.mimeType !== 'application/vnd.google-apps.folder') {
+      try {
+        const fileContent = await downloadFileContent(accessToken, file.id);
+        const binaryString = atob(fileContent);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        zip.file(file.name, bytes);
+      } catch (error) {
+        console.warn(`Failed to download file ${file.name}:`, error);
+      }
+    }
+  }
+
+  const zipContent = await zip.generateAsync({ type: 'base64' });
+  return zipContent;
+};
+
 const getFolderIdFromUrl = (driveUrl: string): string | null => {
   const match = driveUrl.match(/\/folders\/([a-zA-Z0-9-_]+)/);
   return match ? match[1] : null;
@@ -141,6 +187,36 @@ const handler = async (req: Request): Promise<Response> => {
     const files = await searchFileInFolder(accessToken, folderId, documentName);
 
     console.log("Found files:", files.length);
+
+    // Si hay múltiples archivos en una carpeta, buscar si es una subcarpeta
+    if (files.length === 1 && files[0].mimeType === 'application/vnd.google-apps.folder') {
+      console.log(`📁 Found folder: ${files[0].name}, downloading as ZIP`);
+      if (downloadContent) {
+        try {
+          const zipContent = await downloadFolderAsZip(accessToken, files[0].id, files[0].name);
+          return new Response(
+            JSON.stringify({ 
+              success: true, 
+              files: [{
+                id: files[0].id,
+                name: `${files[0].name}.zip`,
+                mimeType: 'application/zip',
+                content: zipContent,
+                isFolder: true
+              }],
+              totalFiles: 1
+            }),
+            {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+              status: 200,
+            }
+          );
+        } catch (error) {
+          console.error(`❌ Error creating ZIP for folder ${files[0].name}:`, error);
+          throw error;
+        }
+      }
+    }
 
     // Si se solicita contenido, descargarlo
     const filesWithContent = [];

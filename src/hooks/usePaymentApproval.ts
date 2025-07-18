@@ -65,6 +65,7 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
       mes: paymentData.Mes || '',
       año: paymentData.Año || new Date().getFullYear(),
       amount: paymentData.Total || 0,
+      currency: paymentData.projectData.Currency || 'CLP',
       status: status,
       rejectionReason: rejectionReason || '',
       platformUrl: `${window.location.origin}/contractor-access/${paymentId}`,

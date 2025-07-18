@@ -143,11 +143,18 @@ serve(async (req) => {
     for (const [docType, docData] of Object.entries(documents)) {
       console.log(`📤 Processing ${docType} with ${docData.files.length} files`);
       
-      // Handle multiple files for examenes and finiquitos (create subfolder)
-      if ((docType === 'examenes' || docType === 'finiquito') && docData.files.length > 1) {
-        // Create subfolder
-        const subfolderName = docType === 'examenes' ? 'Exámenes Preocupacionales' : 'Finiquitos';
-        
+      // Determine proper folder name based on document type
+      let subfolderName = docData.documentName;
+      
+      // Handle specific known document types
+      if (docType === 'examenes') {
+        subfolderName = 'Exámenes Preocupacionales';
+      } else if (docType === 'finiquito') {
+        subfolderName = 'Finiquitos';
+      }
+      
+      // Handle multiple files (create subfolder)
+      if (docData.files.length > 1) {
         // Check if subfolder already exists
         const subfolderSearchResponse = await fetch(
           `https://www.googleapis.com/drive/v3/files?q=name='${encodeURIComponent(subfolderName)}' and '${targetFolderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false&fields=files(id,name)`,
@@ -189,7 +196,7 @@ serve(async (req) => {
         // Upload files to subfolder
         for (let i = 0; i < docData.files.length; i++) {
           const file = docData.files[i];
-          const fileName = `${docData.documentName}_${i + 1}.${file.name.split('.').pop()}`;
+          const fileName = `${subfolderName}_${i + 1}.${file.name.split('.').pop()}`;
           
           const uploadResult = await uploadFileToFolder(file, fileName, subFolderId, access_token);
           uploadResults.push({
@@ -200,9 +207,9 @@ serve(async (req) => {
           });
         }
       } else {
-        // Single file or first file (upload directly to main folder)
+        // Single file (upload directly to main folder)
         const file = docData.files[0];
-        const fileName = `${docData.documentName}.${file.name.split('.').pop()}`;
+        const fileName = `${subfolderName}.${file.name.split('.').pop()}`;
         
         const uploadResult = await uploadFileToFolder(file, fileName, targetFolderId, access_token);
         uploadResults.push({

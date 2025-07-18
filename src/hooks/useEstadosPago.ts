@@ -134,7 +134,7 @@ export const useEstadosPago = () => {
         const closestPaymentIndex = estadosPago.findIndex(payment => payment.ExpiryDate === closestPayment.ExpiryDate);
       
         if (closestPaymentIndex !== -1) {
-          estadosPago[closestPaymentIndex].Status = 'En Progreso';
+          estadosPago[closestPaymentIndex].Status = 'Pendiente';
         }
       }
 

@@ -213,6 +213,7 @@ const PaymentDetail = () => {
     const projectRequirements = payment.projectData.Requierment;
     console.log('🔍 Project requirements:', projectRequirements);
     
+    
     // Filter predefined documents that match requirements
     const matchedDocuments = allDocuments.filter(doc => {
       // Always include 'planilla' as it's always required
@@ -320,7 +321,8 @@ const PaymentDetail = () => {
         payment.id, 
         uploadedFiles, 
         documentStatus, 
-        fileObjects
+        fileObjects,
+        payment.projectData.Requierment || []
       );
 
       if (!uploadResult.success) {
@@ -480,7 +482,8 @@ const PaymentDetail = () => {
         payment.id, 
         uploadedFiles, 
         documentStatus, 
-        fileObjects
+        fileObjects,
+        payment.projectData.Requierment || []
       );
 
       if (!uploadResult.success) {
@@ -601,7 +604,8 @@ const PaymentDetail = () => {
           payment.id, 
           uploadedFiles, 
           documentStatus, 
-          fileObjects
+          fileObjects,
+          payment.projectData.Requierment || []
         );
 
         if (!uploadResult.success) {

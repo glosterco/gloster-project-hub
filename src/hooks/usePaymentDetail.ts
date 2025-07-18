@@ -37,7 +37,6 @@ export interface PaymentDetail {
       ContactEmail: string;
       RUT?: string;
       ContactPhone?: number;
-      Adress?: string;
     };
   };
 }
@@ -77,8 +76,7 @@ export const usePaymentDetail = (paymentId: string, shouldRefetch = true) => {
               ContactName,
               ContactEmail,
               RUT,
-              ContactPhone,
-              Adress
+              ContactPhone
             )
           )
         `)
@@ -121,8 +119,7 @@ export const usePaymentDetail = (paymentId: string, shouldRefetch = true) => {
             ContactName: paymentData.projectData.Contratista.ContactName || '',
             ContactEmail: paymentData.projectData.Contratista.ContactEmail || '',
             RUT: paymentData.projectData.Contratista.RUT || '',
-            ContactPhone: paymentData.projectData.Contratista.ContactPhone || undefined,
-            Adress: paymentData.projectData.Contratista.Adress || ''
+            ContactPhone: paymentData.projectData.Contratista.ContactPhone || undefined
           } : undefined
         } : undefined
       };
@@ -133,7 +130,6 @@ export const usePaymentDetail = (paymentId: string, shouldRefetch = true) => {
         contactEmail: processedPayment.projectData?.Contratista?.ContactEmail,
         RUT: processedPayment.projectData?.Contratista?.RUT,
         phone: processedPayment.projectData?.Contratista?.ContactPhone,
-        address: processedPayment.projectData?.Contratista?.Adress,
         requirements: processedPayment.projectData?.Requierment
       });
 

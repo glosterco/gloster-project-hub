@@ -111,12 +111,12 @@ export const useGoogleDriveIntegration = () => {
     }
   };
 
-  const uploadDocumentsToDrive = async (paymentId: number, uploadedFiles: any, documentStatus: any, fileObjects: {[key: string]: File[]}) => {
+  const uploadDocumentsToDrive = async (paymentId: number, uploadedFiles: any, documentStatus: any, fileObjects: {[key: string]: File[]}, projectRequirements: string[] = []) => {
     setLoading(true);
     try {
       console.log('🚀 Starting document upload:', { paymentId });
 
-      // Document name mapping
+      // Document name mapping for predefined documents
       const documentNames = {
         eepp: 'Carátula EEPP',
         planilla: 'Avance del período',
@@ -127,6 +127,19 @@ export const useGoogleDriveIntegration = () => {
         finiquito: 'Finiquitos',
         factura: 'Factura'
       };
+
+      // Create dynamic mapping for "other" documents based on project requirements
+      const predefinedNames = Object.values(documentNames);
+      const otherRequirements = projectRequirements.filter(req => 
+        !predefinedNames.includes(req) && req.trim() && req !== 'Avance del período'
+      );
+      
+      // Add dynamic mappings for other documents
+      otherRequirements.forEach((req, index) => {
+        documentNames[`other_${index}`] = req;
+      });
+
+      console.log('📋 Document name mappings:', documentNames);
 
       // Prepare documents data with real file content
       const documents = {};

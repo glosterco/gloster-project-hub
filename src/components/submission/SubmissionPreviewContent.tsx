@@ -34,7 +34,7 @@ const SubmissionPreviewContent: React.FC<SubmissionPreviewContentProps> = ({
       contactEmail: payment.projectData?.Contratista?.ContactEmail || '',
       contractorRUT: payment.projectData?.Contratista?.RUT || '',
       contractorPhone: payment.projectData?.Contratista?.ContactPhone?.toString() || '',
-      contractorAddress: payment.projectData?.Contratista?.Adress || ''
+      contractorAddress: ''
     },
     documents: documentsFromPayment
   };

@@ -57,6 +57,7 @@ export const useContratistas = () => {
 
       console.log('Inserting contratista data:', contratistaData);
       console.log('💾 Fields being sent to DB:', Object.keys(contratistaData));
+      console.log('🔍 DEBUGGING: Exact data structure:', JSON.stringify(contratistaData, null, 2));
 
       const { data: result, error } = await supabase
         .from('Contratistas')
@@ -64,7 +65,12 @@ export const useContratistas = () => {
         .select();
 
       if (error) {
-        console.error('Error creating contratista:', error);
+        console.error('❌ FULL ERROR DETAILS:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
         toast({
           title: "Error al crear contratista",
           description: `Error: ${error.message}. Código: ${error.code}`,

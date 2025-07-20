@@ -39,7 +39,7 @@ const SubmissionContent: React.FC<SubmissionContentProps> = ({
     contactEmail: payment.projectData?.Contratista?.ContactEmail || '',
     contractorRUT: payment.projectData?.Contratista?.RUT || '',
     contractorPhone: payment.projectData?.Contratista?.ContactPhone?.toString() || '',
-    contractorAddress: payment.projectData?.Contratista?.Adress || ''
+    contractorAddress: ''
   };
 
   const documents = getDocumentsFromPayment(payment.projectData?.Requierment);

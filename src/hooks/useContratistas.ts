@@ -8,8 +8,6 @@ export interface ContratistaData {
   RUT: string;
   Specialization: string;
   Experience: string;
-  Adress: string;
-  City: string;
   ContactName: string;
   ContactEmail: string;
   ContactPhone: number;
@@ -48,8 +46,6 @@ export const useContratistas = () => {
         RUT: data.RUT,
         Specialization: data.Specialization,
         Experience: data.Experience,
-        Adress: data.Adress,
-        City: data.City,
         ContactName: data.ContactName,
         ContactEmail: data.ContactEmail,
         ContactPhone: data.ContactPhone,

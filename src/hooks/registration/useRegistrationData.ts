@@ -7,8 +7,6 @@ export const useRegistrationData = () => {
       ? formData.customSpecialty 
       : formData.specialties.join(', '),
     Experience: formData.experience,
-    Adress: '', // Campo removido del formulario pero requerido en BD
-    City: '', // Campo removido del formulario pero requerido en BD
     ContactName: formData.contactName,
     ContactEmail: formData.email,
     ContactPhone: parseInt(formData.phone.replace('+56', '')),

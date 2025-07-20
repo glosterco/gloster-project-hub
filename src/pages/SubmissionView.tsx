@@ -86,7 +86,7 @@ const SubmissionView = () => {
     contactEmail: payment.projectData?.Contratista?.ContactEmail,
     RUT: payment.projectData?.Contratista?.RUT,
     contactPhone: payment.projectData?.Contratista?.ContactPhone,
-    address: ''
+    
   });
 
   return (

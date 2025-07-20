@@ -56,6 +56,7 @@ export const useContratistas = () => {
       };
 
       console.log('Inserting contratista data:', contratistaData);
+      console.log('💾 Fields being sent to DB:', Object.keys(contratistaData));
 
       const { data: result, error } = await supabase
         .from('Contratistas')

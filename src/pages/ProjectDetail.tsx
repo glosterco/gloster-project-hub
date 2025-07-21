@@ -82,21 +82,22 @@ const ProjectDetail = () => {
   };
 
   const getProjectProgress = () => {
-    if (!project?.EstadosPago || project.EstadosPago.length === 0) return 0;
+    if (!project?.EstadosPago || project.EstadosPago.length === 0 || !project.Budget) return 0;
     
-    const totalPayments = project.EstadosPago.length;
-    const completedPayments = project.EstadosPago.filter(payment => 
-      payment.Completion === true
-    ).length;
+    // Calcular el monto total aprobado
+    const approvedAmount = project.EstadosPago
+      .filter(payment => payment.Status === 'Aprobado')
+      .reduce((sum, payment) => sum + (payment.Total || 0), 0);
     
-    return Math.round((completedPayments / totalPayments) * 100);
+    // Calcular progreso basado en monto aprobado vs presupuesto total
+    return Math.round((approvedAmount / project.Budget) * 100);
   };
 
-  const getPaidValue = () => {
+  const getApprovedValue = () => {
     if (!project?.EstadosPago || project.EstadosPago.length === 0) return 0;
     
     return project.EstadosPago
-      .filter(payment => payment.Completion === true)
+      .filter(payment => payment.Status === 'Aprobado')
       .reduce((sum, payment) => sum + (payment.Total || 0), 0);
   };
 
@@ -185,7 +186,7 @@ const ProjectDetail = () => {
   }
 
   const progress = getProjectProgress();
-  const paidValue = getPaidValue();
+  const approvedValue = getApprovedValue();
 
   console.log('🏗️ Rendering ProjectDetail with', project.EstadosPago?.length || 0, 'payment states');
 
@@ -253,8 +254,8 @@ const ProjectDetail = () => {
                   </div>
                 </div>
                 <div>
-                  <p className="text-gloster-gray text-sm font-rubik">Total Pagado</p>
-                  <p className="font-semibold text-green-600 font-rubik">{formatCurrency(paidValue, project.Currency || 'CLP')}</p>
+                  <p className="text-gloster-gray text-sm font-rubik">Total Aprobado</p>
+                  <p className="font-semibold text-green-600 font-rubik">{formatCurrency(approvedValue, project.Currency || 'CLP')}</p>
                 </div>
               </div>
             </div>

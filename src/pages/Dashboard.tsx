@@ -52,17 +52,16 @@ const Dashboard = () => {
   };
 
   const getProjectProgress = (project: any) => {
-    if (!project.EstadosPago || project.EstadosPago.length === 0) return 0;
+    if (!project.EstadosPago || project.EstadosPago.length === 0 || !project.Budget) return 0;
     
-    const totalPayments = project.EstadosPago.length;
-    const completedPayments = project.EstadosPago.filter((payment: any) => 
-      payment.Status === 'Aprobado' || payment.Completion === true
-    ).length;
+    const approvedAmount = project.EstadosPago
+      .filter((payment: any) => payment.Status === 'Aprobado' || payment.Completion === true)
+      .reduce((sum: number, payment: any) => sum + (payment.Total || 0), 0);
     
-    return Math.round((completedPayments / totalPayments) * 100);
+    return Math.round((approvedAmount / project.Budget) * 100);
   };
 
-  const getProjectPaidValue = (project: any) => {
+  const getProjectApprovedValue = (project: any) => {
     if (!project.EstadosPago || project.EstadosPago.length === 0) return 0;
     
     return project.EstadosPago
@@ -70,15 +69,14 @@ const Dashboard = () => {
       .reduce((sum: number, payment: any) => sum + (payment.Total || 0), 0);
   };
 
-  // Calculate total paid value for summary
-  const totalPaidValue = projects.reduce((sum, project) => {
-    let value = getProjectPaidValue(project);
-    if (project.Currency === 'USD') {
-      value = value * 900;
-    } else if (project.Currency === 'UF') {
-      value = value * 36000;
+  // Calculate total approved value in UF for summary
+  const totalApprovedValueUF = projects.reduce((sum, project) => {
+    const approvedValue = getProjectApprovedValue(project);
+    if (project.Currency === 'UF') {
+      return sum + approvedValue;
     }
-    return sum + value;
+    // No convertimos otras monedas a UF aquí, solo sumamos valores ya en UF
+    return sum;
   }, 0);
 
   if (loading) {
@@ -172,7 +170,7 @@ const Dashboard = () => {
           <Card className="border-gloster-gray/20">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-gloster-gray font-rubik">
-                Total Pagado
+                Total Aprobado
               </CardTitle>
               <div className="w-8 h-8 bg-gloster-yellow/20 rounded-lg flex items-center justify-center">
                 <FileText className="h-4 w-4 text-gloster-gray" />
@@ -180,7 +178,7 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-slate-800 font-rubik">
-                {formatCurrency(totalPaidValue, 'CLP')}
+                {formatCurrency(totalApprovedValueUF, 'UF')}
               </div>
             </CardContent>
           </Card>
@@ -197,7 +195,7 @@ const Dashboard = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {projects.map((project) => {
               const progress = getProjectProgress(project);
-              const paidValue = getProjectPaidValue(project);
+              const approvedValue = getProjectApprovedValue(project);
               
               return (
                 <Card 
@@ -244,15 +242,15 @@ const Dashboard = () => {
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gloster-gray font-rubik">Pagado:</span>
+                        <span className="text-gloster-gray font-rubik">Aprobado:</span>
                         <span className="font-semibold text-green-600 font-rubik">
-                          {formatCurrency(paidValue, project.Currency || 'CLP')}
+                          {formatCurrency(approvedValue, project.Currency || 'CLP')}
                         </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gloster-gray font-rubik">Pendiente:</span>
                         <span className="font-semibold text-red-600 font-rubik">
-                          {formatCurrency((project.Budget || 0) - paidValue, project.Currency || 'CLP')}
+                          {formatCurrency((project.Budget || 0) - approvedValue, project.Currency || 'CLP')}
                         </span>
                       </div>
                     </div>

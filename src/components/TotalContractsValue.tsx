@@ -62,65 +62,25 @@ const TotalContractsValue: React.FC<TotalContractsValueProps> = ({ projects }) =
   };
 
   return (
-    <Card className="border-l-4 border-l-gloster-yellow">
+    <Card className="border-gloster-gray/20">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium text-gloster-gray font-rubik">
           Valor Total Contratos
         </CardTitle>
-        <DollarSign className="h-4 w-4 text-gloster-gray" />
+        <div className="w-8 h-8 bg-gloster-yellow/20 rounded-lg flex items-center justify-center">
+          <DollarSign className="h-4 w-4 text-gloster-gray" />
+        </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-3">
-          {/* Display values by currency */}
-          {Object.entries(projectsByCurrency).map(([currency, amount]) => (
-            <div key={currency} className="space-y-1">
-              <div className="text-lg font-bold text-slate-800 font-rubik">
-                {formatCurrency(amount, currency)}
-              </div>
-              
-              {currency === 'UF' && !ufLoading && !ufError && ufValue && ufValue > 0 && (
-                <div className="text-sm text-slate-600 font-rubik">
-                  <div className="text-xs text-gloster-gray">
-                    ≈ {formatCurrency(convertToCLP(amount, currency))}
-                  </div>
-                </div>
-              )}
-              
-              {currency === 'USD' && (
-                <div className="text-sm text-slate-600 font-rubik">
-                  <div className="text-xs text-gloster-gray">
-                    ≈ {formatCurrency(convertToCLP(amount, currency))}
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-          
-          {/* Show total equivalent in CLP if there are multiple currencies */}
-          {Object.keys(projectsByCurrency).length > 1 && (
-            <div className="pt-2 border-t border-gloster-gray/20">
-              <div className="flex items-center space-x-2">
-                <TrendingUp className="h-4 w-4 text-green-600" />
-                <div className="text-sm text-slate-600 font-rubik">
-                  <div className="font-semibold">
-                    Total equivalente: {formatCurrency(totalInCLP)}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-          
-          {/* UF conversion info if UF projects exist */}
-          {projectsByCurrency.UF && getConversionText() && (
-            <div className="text-xs text-gloster-gray font-rubik">
-              {getConversionText()}
-            </div>
-          )}
-          
-          {!projectsByCurrency.UF && Object.keys(projectsByCurrency).length === 1 && Object.keys(projectsByCurrency)[0] === 'CLP' && (
-            <p className="text-xs text-gloster-gray font-rubik">
-              Valor en pesos chilenos
-            </p>
+        <div className="text-2xl font-bold text-slate-800 font-rubik">
+          {Object.entries(projectsByCurrency).length === 1 ? (
+            // Si solo hay una moneda, mostrar directamente
+            Object.entries(projectsByCurrency).map(([currency, amount]) => 
+              formatCurrency(amount, currency)
+            )[0]
+          ) : (
+            // Si hay múltiples monedas, mostrar total en CLP
+            formatCurrency(totalInCLP)
           )}
         </div>
       </CardContent>

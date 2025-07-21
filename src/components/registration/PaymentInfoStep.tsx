@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -7,9 +7,10 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar as CalendarIcon, Plus, X } from 'lucide-react';
+import { Calendar as CalendarIcon, Plus, X, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface PaymentInfoStepProps {
   firstPaymentDate: Date | undefined;
@@ -38,7 +39,27 @@ const PaymentInfoStep: React.FC<PaymentInfoStepProps> = ({
   setOtherDocuments,
   documentsList,
 }) => {
+  // Documento obligatorio que no se puede deseleccionar
+  const REQUIRED_DOCUMENT = "Avance del período";
+  
+  // Asegurar que el documento obligatorio esté seleccionado por defecto
+  useEffect(() => {
+    if (documentsList.includes(REQUIRED_DOCUMENT) && !requiredDocuments.includes(REQUIRED_DOCUMENT)) {
+      setRequiredDocuments([...requiredDocuments, REQUIRED_DOCUMENT]);
+    }
+  }, [documentsList, requiredDocuments, setRequiredDocuments]);
+
   const handleDocumentChange = (document: string, checked: boolean) => {
+    // Si se intenta deseleccionar el documento obligatorio, mostrar mensaje y no permitirlo
+    if (!checked && document === REQUIRED_DOCUMENT) {
+      toast.error("Documento obligatorio", {
+        description: "El avance de proyecto es obligatorio para todos los contratos y no puede ser removido.",
+        icon: <AlertCircle className="h-4 w-4" />,
+        duration: 4000,
+      });
+      return;
+    }
+    
     if (checked) {
       setRequiredDocuments([...requiredDocuments, document]);
     } else {
@@ -120,16 +141,36 @@ const PaymentInfoStep: React.FC<PaymentInfoStepProps> = ({
       <div className="space-y-4">
         <Label>Documentación Requerida</Label>
         <div className="space-y-3">
-          {documentsList.map((doc) => (
-            <div key={doc} className="flex items-center space-x-2">
-              <Checkbox
-                id={doc}
-                checked={requiredDocuments.includes(doc)}
-                onCheckedChange={(checked) => handleDocumentChange(doc, checked as boolean)}
-              />
-              <Label htmlFor={doc} className="text-sm font-rubik">{doc}</Label>
-            </div>
-          ))}
+          {documentsList.map((doc) => {
+            const isRequired = doc === REQUIRED_DOCUMENT;
+            return (
+              <div key={doc} className={cn(
+                "flex items-center space-x-2 p-2 rounded-lg",
+                isRequired && "bg-primary/5 border border-primary/20"
+              )}>
+                <Checkbox
+                  id={doc}
+                  checked={requiredDocuments.includes(doc)}
+                  onCheckedChange={(checked) => handleDocumentChange(doc, checked as boolean)}
+                  className={isRequired ? "border-primary" : ""}
+                />
+                <Label 
+                  htmlFor={doc} 
+                  className={cn(
+                    "text-sm font-rubik flex-1",
+                    isRequired && "font-medium text-primary"
+                  )}
+                >
+                  {doc}
+                  {isRequired && (
+                    <span className="ml-2 text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
+                      Obligatorio
+                    </span>
+                  )}
+                </Label>
+              </div>
+            );
+          })}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label>Otros Documentos Requeridos</Label>

@@ -30,12 +30,12 @@ export const useAccessVerification = (payment: PaymentDetail | null, paymentId: 
               storedPaymentId: accessData.paymentId, 
               requestedPaymentId: paymentId, 
               hasToken: !!accessData.token,
-              isRecentAccess: accessData.timestamp && (Date.now() - accessData.timestamp < 300000) // 5 minutos
+              isRecentAccess: accessData.timestamp && (Date.now() - accessData.timestamp < 3600000) // 1 hora
             });
             
             if (accessData.paymentId === paymentId && 
                 accessData.token === 'mandante_authenticated' &&
-                accessData.timestamp && (Date.now() - new Date(accessData.timestamp).getTime() < 300000)) {
+                accessData.timestamp && (Date.now() - accessData.timestamp < 3600000)) { // Aumentar a 1 hora
               console.log('✅ Mandante access granted from sessionStorage');
               setHasAccess(true);
               setIsMandante(true);

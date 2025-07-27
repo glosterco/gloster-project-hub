@@ -52,35 +52,17 @@ export const usePaymentDetail = (paymentId: string, shouldRefetch = true) => {
       setLoading(true);
       console.log('🔍 Fetching payment detail for ID:', paymentId);
 
+      // Verificar que paymentId sea válido
+      const numericPaymentId = parseInt(paymentId);
+      if (isNaN(numericPaymentId)) {
+        throw new Error('ID de pago inválido');
+      }
+
+      // STEP 1: Obtener estado de pago básico primero
       const { data: paymentData, error: paymentError } = await supabase
         .from('Estados de pago')
-        .select(`
-          *,
-          projectData:Proyectos!Project (
-            id,
-            Name,
-            Location,
-            Budget,
-            Currency,
-            Requierment,
-            Owner:Mandantes!Owner (
-              id,
-              CompanyName,
-              ContactName,
-              ContactEmail,
-              ContactPhone
-            ),
-            Contratista:Contratistas!Contratista (
-              id,
-              CompanyName,
-              ContactName,
-              ContactEmail,
-              RUT,
-              ContactPhone
-            )
-          )
-        `)
-        .eq('id', parseInt(paymentId))
+        .select('*')
+        .eq('id', numericPaymentId)
         .maybeSingle();
 
       if (paymentError) {
@@ -94,32 +76,79 @@ export const usePaymentDetail = (paymentId: string, shouldRefetch = true) => {
         return;
       }
 
-      console.log('✅ Payment data fetched successfully:', paymentData);
-      
-      // Ensure projectData is properly structured with proper contractor data mapping
+      console.log('✅ Payment data fetched:', paymentData);
+
+      // STEP 2: Obtener datos del proyecto por separado para evitar RLS issues
+      let projectData = null;
+      if (paymentData.Project) {
+        const { data: project, error: projectError } = await supabase
+          .from('Proyectos')
+          .select('*')
+          .eq('id', paymentData.Project)
+          .maybeSingle();
+
+        if (project && !projectError) {
+          projectData = project;
+          console.log('✅ Project data fetched:', projectData);
+        } else {
+          console.warn('⚠️ Could not fetch project data:', projectError);
+        }
+      }
+
+      // STEP 3: Obtener datos del mandante si hay proyecto
+      let ownerData = null;
+      if (projectData?.Owner) {
+        const { data: owner, error: ownerError } = await supabase
+          .from('Mandantes')
+          .select('*')
+          .eq('id', projectData.Owner)
+          .maybeSingle();
+
+        if (owner && !ownerError) {
+          ownerData = owner;
+          console.log('✅ Owner data fetched:', ownerData);
+        }
+      }
+
+      // STEP 4: Obtener datos del contratista si hay proyecto
+      let contratistaData = null;
+      if (projectData?.Contratista) {
+        const { data: contratista, error: contratistaError } = await supabase
+          .from('Contratistas')
+          .select('*')
+          .eq('id', projectData.Contratista)
+          .maybeSingle();
+
+        if (contratista && !contratistaError) {
+          contratistaData = contratista;
+          console.log('✅ Contratista data fetched:', contratistaData);
+        }
+      }
+
+      // STEP 5: Construir el objeto completo
       const processedPayment: PaymentDetail = {
         ...paymentData,
-        projectData: paymentData.projectData ? {
-          id: paymentData.projectData.id,
-          Name: paymentData.projectData.Name || '',
-          Location: paymentData.projectData.Location || '',
-          Budget: paymentData.projectData.Budget || undefined,
-          Currency: paymentData.projectData.Currency || undefined,
-          Requierment: paymentData.projectData.Requierment || undefined,
-          Owner: paymentData.projectData.Owner ? {
-            id: paymentData.projectData.Owner.id,
-            CompanyName: paymentData.projectData.Owner.CompanyName || '',
-            ContactName: paymentData.projectData.Owner.ContactName || '',
-            ContactEmail: paymentData.projectData.Owner.ContactEmail || '',
-            ContactPhone: paymentData.projectData.Owner.ContactPhone || undefined
+        projectData: projectData ? {
+          id: projectData.id,
+          Name: projectData.Name || '',
+          Location: projectData.Location || '',
+          Budget: projectData.Budget || undefined,
+          Currency: projectData.Currency || undefined,
+          Requierment: projectData.Requierment || undefined,
+          Owner: ownerData ? {
+            id: ownerData.id,
+            CompanyName: ownerData.CompanyName || '',
+            ContactName: ownerData.ContactName || '',
+            ContactEmail: ownerData.ContactEmail || '',
+            ContactPhone: ownerData.ContactPhone || undefined
           } : undefined,
-          Contratista: paymentData.projectData.Contratista ? {
-            id: paymentData.projectData.Contratista.id,
-            CompanyName: paymentData.projectData.Contratista.CompanyName || '',
-            ContactName: paymentData.projectData.Contratista.ContactName || '',
-            ContactEmail: paymentData.projectData.Contratista.ContactEmail || '',
-            RUT: paymentData.projectData.Contratista.RUT || '',
-            ContactPhone: paymentData.projectData.Contratista.ContactPhone || undefined
+          Contratista: contratistaData ? {
+            id: contratistaData.id,
+            CompanyName: contratistaData.CompanyName || '',
+            ContactName: contratistaData.ContactName || '',
+            ContactEmail: contratistaData.ContactEmail || '',
+            RUT: contratistaData.RUT || '',
+            ContactPhone: contratistaData.ContactPhone || undefined
           } : undefined
         } : undefined
       };

@@ -16,6 +16,8 @@ const SubmissionView = () => {
 
   const { payment, loading, error, refetch } = usePaymentDetail(paymentId, true);
   const { toast } = useToast();
+  
+  // Solo verificar acceso después de que el payment se haya cargado o fallado
   const { hasAccess, checkingAccess, isMandante } = useAccessVerification(payment, paymentId);
 
   const handleStatusChange = () => {
@@ -23,35 +25,29 @@ const SubmissionView = () => {
     refetch();
   };
 
-  if (checkingAccess) {
+  // Mostrar loading mientras se verifica acceso O se cargan datos
+  if (checkingAccess || loading) {
     return (
       <div className="min-h-screen bg-slate-50 font-rubik">
         <div className="container mx-auto px-6 py-8">
           <div className="flex items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin mr-2" />
-            <span>Verificando acceso...</span>
+            <span>{checkingAccess ? 'Verificando acceso...' : 'Cargando datos del estado de pago...'}</span>
           </div>
         </div>
       </div>
     );
   }
 
-  if (!hasAccess) {
+  // Mostrar error de acceso solo si no está cargando
+  if (!loading && !hasAccess) {
     return (
       <div className="min-h-screen bg-slate-50 font-rubik flex items-center justify-center">
-        <p className="text-gloster-gray">No tienes acceso a este estado de pago.</p>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-50 font-rubik">
-        <div className="container mx-auto px-6 py-8">
-          <div className="flex items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin mr-2" />
-            <span>Cargando datos del estado de pago...</span>
-          </div>
+        <div className="text-center">
+          <p className="text-gloster-gray mb-4">No tienes acceso a este estado de pago.</p>
+          <Button onClick={() => navigate('/')} className="mt-4">
+            Volver al Inicio
+          </Button>
         </div>
       </div>
     );

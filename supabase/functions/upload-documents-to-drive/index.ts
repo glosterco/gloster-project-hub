@@ -70,15 +70,26 @@ serve(async (req) => {
       );
     }
 
-    // Get Google Drive credentials
+    // Get Google Drive credentials with proper logging
+    console.log('🔍 Checking Google Drive credentials...');
     const clientId = Deno.env.get('GOOGLE_DRIVE_CLIENT_ID');
     const clientSecret = Deno.env.get('GOOGLE_DRIVE_CLIENT_SECRET');
     const refreshToken = Deno.env.get('GOOGLE_DRIVE_REFRESH_TOKEN');
 
+    console.log('🔑 GOOGLE_DRIVE_CLIENT_ID:', clientId ? '✅ found' : '❌ missing');
+    console.log('🔑 GOOGLE_DRIVE_CLIENT_SECRET:', clientSecret ? '✅ found' : '❌ missing');
+    console.log('🔑 GOOGLE_DRIVE_REFRESH_TOKEN:', refreshToken ? '✅ found' : '❌ missing');
+
     if (!clientId || !clientSecret || !refreshToken) {
-      console.error('❌ Missing credentials');
+      const missingCredentials = {
+        GOOGLE_DRIVE_CLIENT_ID: clientId ? '✅ found' : '❌ missing',
+        GOOGLE_DRIVE_CLIENT_SECRET: clientSecret ? '✅ found' : '❌ missing',
+        GOOGLE_DRIVE_REFRESH_TOKEN: refreshToken ? '✅ found' : '❌ missing'
+      };
+      console.error('❌ One or more credentials are missing:', missingCredentials);
+      console.error('❌ Missing credentials. Aborting.');
       return Response.json(
-        { success: false, error: 'Missing credentials' },
+        { success: false, error: 'Missing Google Drive credentials', details: missingCredentials },
         { status: 500, headers: corsHeaders }
       );
     }

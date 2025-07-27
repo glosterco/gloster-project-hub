@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,6 +11,8 @@ import { ArrowLeft, Calendar, ChevronRight, Search, Filter, Plus, Eye } from 'lu
 import { useToast } from '@/hooks/use-toast';
 import PageHeader from '@/components/PageHeader';
 import { useProjectDetailSecure } from '@/hooks/useProjectDetailSecure';
+import { useProjectDetailMandante } from '@/hooks/useProjectDetailMandante';
+import { useAuth } from '@/hooks/useAuth';
 
 const ProjectDetail = () => {
   console.log('🎨 ProjectDetail component rendering with SECURE MODE...');
@@ -23,8 +26,48 @@ const ProjectDetail = () => {
   
   console.log('📊 Project ID from params:', id);
   
-  // USAR HOOK SEGURO EN LUGAR DEL ORIGINAL
-  const { project, loading } = useProjectDetailSecure(id || '');
+  const { user } = useAuth();
+  
+  // Determinar si es mandante o contratista
+  const [userType, setUserType] = useState<'mandante' | 'contratista' | null>(null);
+  
+  useEffect(() => {
+    const determineUserType = async () => {
+      if (!user) return;
+      
+      // Verificar si es mandante
+      const { data: mandanteData } = await supabase
+        .from('Mandantes')
+        .select('id')
+        .eq('auth_user_id', user.id)
+        .maybeSingle();
+        
+      if (mandanteData) {
+        setUserType('mandante');
+        return;
+      }
+      
+      // Verificar si es contratista
+      const { data: contratistaData } = await supabase
+        .from('Contratistas')
+        .select('id')
+        .eq('auth_user_id', user.id)
+        .maybeSingle();
+        
+      if (contratistaData) {
+        setUserType('contratista');
+      }
+    };
+    
+    determineUserType();
+  }, [user]);
+  
+  // Usar el hook apropiado según el tipo de usuario
+  const contratistaHook = useProjectDetailSecure(userType === 'contratista' ? (id || '') : '');
+  const mandanteHook = useProjectDetailMandante(userType === 'mandante' ? (id || '') : '');
+  
+  const project = userType === 'mandante' ? mandanteHook.project : contratistaHook.project;
+  const loading = userType === 'mandante' ? mandanteHook.loading : contratistaHook.loading;
 
   // Log project data whenever it changes
   React.useEffect(() => {

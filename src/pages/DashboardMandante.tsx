@@ -63,6 +63,11 @@ const DashboardMandante: React.FC = () => {
     }
   };
 
+  const getDisplayStatus = (status: string) => {
+    // Para mandante: cambiar "Enviado" por "Recibido"
+    return status === 'Enviado' ? 'Recibido' : status;
+  };
+
   const handlePaymentClick = (paymentId: number) => {
     // Almacenar datos de acceso del mandante en sessionStorage para evitar verificación
     const accessData = {
@@ -79,7 +84,17 @@ const DashboardMandante: React.FC = () => {
   };
 
   const totalActiveProjects = projects.filter(p => p.Status).length;
-  const totalContractsValue = projects.reduce((sum, project) => sum + (project.Budget || 0), 0);
+  
+  // Calcular totales por moneda
+  const totalsByCurrency = projects.reduce((acc, project) => {
+    const currency = project.Currency || 'CLP';
+    if (!acc[currency]) {
+      acc[currency] = 0;
+    }
+    acc[currency] += project.Budget || 0;
+    return acc;
+  }, {} as Record<string, number>);
+
   const totalApprovedValue = projects.reduce((sum, project) => sum + getProjectApprovedValue(project), 0);
 
   if (loading) {
@@ -111,7 +126,7 @@ const DashboardMandante: React.FC = () => {
         </div>
 
         {/* Tarjetas de resumen */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Proyectos Activos</CardTitle>
@@ -125,20 +140,22 @@ const DashboardMandante: React.FC = () => {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Valor Total Contratos</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {formatCurrency(totalContractsValue, projects[0]?.Currency || 'CLP')}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Suma de todos los contratos
-              </p>
-            </CardContent>
-          </Card>
+          {Object.entries(totalsByCurrency).map(([currency, total]) => (
+            <Card key={currency}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Contratos {currency}</CardTitle>
+                <FileText className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {formatCurrency(total, currency)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Contratos en {currency}
+                </p>
+              </CardContent>
+            </Card>
+          ))}
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -171,12 +188,13 @@ const DashboardMandante: React.FC = () => {
               </CardContent>
             </Card>
           ) : (
-            projects.map((project) => {
-              const progress = getProjectProgress(project);
-              const approvedValue = getProjectApprovedValue(project);
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {projects.map((project) => {
+                const progress = getProjectProgress(project);
+                const approvedValue = getProjectApprovedValue(project);
 
-              return (
-                <Card key={project.id} className="overflow-hidden">
+                return (
+                  <Card key={project.id} className="overflow-hidden">
                   <CardHeader>
                     <div className="flex justify-between items-start">
                       <div>
@@ -233,24 +251,24 @@ const DashboardMandante: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Estados de pago pendientes para aprobación rápida */}
+                    {/* Estados recibidos para aprobación rápida */}
                     {project.EstadosPago && project.EstadosPago.length > 0 && (
                       <div className="space-y-2">
-                        <h4 className="text-sm font-medium">Estados Pendientes de Aprobación</h4>
+                        <h4 className="text-sm font-medium">Estados Recibidos para Aprobación</h4>
                         <div className="grid gap-2 max-h-32 overflow-y-auto">
                           {project.EstadosPago
-                            .filter(payment => payment.Status === 'Pendiente')
+                            .filter(payment => payment.Status === 'Enviado')
                             .map((payment) => (
                             <div 
                               key={payment.id} 
-                              className="flex items-center justify-between p-2 rounded border text-sm cursor-pointer hover:bg-yellow-50 border-yellow-200"
+                              className="flex items-center justify-between p-2 rounded border text-sm cursor-pointer hover:bg-blue-50 border-blue-200"
                               onClick={() => handlePaymentClick(payment.id)}
                             >
                               <div className="flex items-center gap-2">
                                 {getStatusIcon(payment.Status)}
                                 <span className="font-medium">{payment.Name}</span>
                                 <Badge className={`text-xs ${getStatusColor(payment.Status)}`}>
-                                  {payment.Status}
+                                  {getDisplayStatus(payment.Status)}
                                 </Badge>
                               </div>
                               <div className="text-right">
@@ -263,9 +281,9 @@ const DashboardMandante: React.FC = () => {
                               </div>
                             </div>
                           ))}
-                          {project.EstadosPago.filter(payment => payment.Status === 'Pendiente').length === 0 && (
+                          {project.EstadosPago.filter(payment => payment.Status === 'Enviado').length === 0 && (
                             <div className="text-sm text-gray-500 text-center py-2">
-                              No hay estados pendientes de aprobación
+                              No hay estados recibidos para aprobación
                             </div>
                           )}
                         </div>
@@ -284,8 +302,9 @@ const DashboardMandante: React.FC = () => {
                     </div>
                   </CardContent>
                 </Card>
-              );
-            })
+                );
+              })}
+            </div>
           )}
         </div>
       </div>

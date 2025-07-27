@@ -13,7 +13,9 @@ export const useAccessVerification = (payment: PaymentDetail | null, paymentId: 
 
   useEffect(() => {
     const checkAccess = async () => {
-      if (!payment || accessChecked) return;
+      if (!paymentId || accessChecked) {
+        return;
+      }
       
       try {
         console.log('🔍 Checking access for payment:', paymentId);
@@ -31,7 +33,9 @@ export const useAccessVerification = (payment: PaymentDetail | null, paymentId: 
               isRecentAccess: accessData.timestamp && (Date.now() - accessData.timestamp < 300000) // 5 minutos
             });
             
-            if (accessData.paymentId === paymentId && accessData.token === 'mandante_authenticated') {
+            if (accessData.paymentId === paymentId && 
+                accessData.token === 'mandante_authenticated' &&
+                accessData.timestamp && (Date.now() - accessData.timestamp < 300000)) {
               console.log('✅ Mandante access granted from sessionStorage');
               setHasAccess(true);
               setIsMandante(true);
@@ -44,25 +48,33 @@ export const useAccessVerification = (payment: PaymentDetail | null, paymentId: 
           }
         }
 
-        // Si no hay acceso de mandante, verificar autenticación de contratista
-        setCheckingAccess(true);
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (user && payment?.projectData) {
-          const { data: contractorData } = await supabase
-            .from('Contratistas')
-            .select('*')
-            .eq('auth_user_id', user.id)
-            .maybeSingle();
+        // Solo verificar autenticación de contratista si tenemos datos del payment
+        if (payment?.projectData) {
+          setCheckingAccess(true);
+          const { data: { user } } = await supabase.auth.getUser();
+          
+          if (user) {
+            const { data: contractorData } = await supabase
+              .from('Contratistas')
+              .select('*')
+              .eq('auth_user_id', user.id)
+              .maybeSingle();
 
-          if (contractorData && payment.projectData.Contratista?.id === contractorData.id) {
-            console.log('✅ Contractor access granted');
-            setHasAccess(true);
-            setIsMandante(false);
-            setAccessChecked(true);
-            setCheckingAccess(false);
-            return;
+            if (contractorData && payment.projectData.Contratista?.id === contractorData.id) {
+              console.log('✅ Contractor access granted');
+              setHasAccess(true);
+              setIsMandante(false);
+              setAccessChecked(true);
+              setCheckingAccess(false);
+              return;
+            }
           }
+        }
+
+        // Si llegamos aquí y tenemos acceso de mandante válido pero sin payment data aún, esperar
+        if (mandanteAccess && !payment) {
+          console.log('⏳ Waiting for payment data to load...');
+          return; // No marcar como fallido aún, esperar que cargue el payment
         }
 
         console.log('❌ Access denied - no valid access found');
@@ -77,10 +89,11 @@ export const useAccessVerification = (payment: PaymentDetail | null, paymentId: 
       }
     };
 
-    if (payment && !accessChecked) {
+    // Ejecutar verificación si tenemos paymentId y no hemos verificado aún
+    if (paymentId && !accessChecked) {
       checkAccess();
     }
-  }, [payment, paymentId, navigate, accessChecked]);
+  }, [payment, paymentId, accessChecked]);
 
   return {
     hasAccess,

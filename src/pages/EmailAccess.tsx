@@ -230,8 +230,11 @@ const EmailAccess = () => {
           paymentId: parsedPaymentId, 
           email: email.toLowerCase(), 
           code: password.trim(),
+          codeLength: password.trim().length,
+          codePattern: /^[A-Z0-9]{6}$/.test(password.trim()),
           found: !!tempCodeData,
-          error: tempCodeError 
+          error: tempCodeError,
+          isTemporaryAccess: isTemporaryAccess
         });
 
         if (tempCodeError || !tempCodeData) {

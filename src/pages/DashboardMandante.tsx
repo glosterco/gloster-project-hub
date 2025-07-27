@@ -80,7 +80,14 @@ const DashboardMandante: React.FC = () => {
   };
 
   const handleProjectDetails = (projectId: number) => {
-    navigate(`/project/${projectId}`);
+    // Almacenar datos de acceso del mandante en sessionStorage para evitar verificación
+    const accessData = {
+      projectId: projectId.toString(),
+      token: 'mandante_authenticated',
+      timestamp: Date.now()
+    };
+    sessionStorage.setItem('mandanteAccess', JSON.stringify(accessData));
+    navigate(`/project-mandante/${projectId}`);
   };
 
   const totalActiveProjects = projects.filter(p => p.Status).length;
@@ -95,7 +102,16 @@ const DashboardMandante: React.FC = () => {
     return acc;
   }, {} as Record<string, number>);
 
-  const totalApprovedValue = projects.reduce((sum, project) => sum + getProjectApprovedValue(project), 0);
+  // Calcular totales aprobados por moneda
+  const totalApprovedByCurrency = projects.reduce((acc, project) => {
+    const currency = project.Currency || 'CLP';
+    const approvedValue = getProjectApprovedValue(project);
+    if (!acc[currency]) {
+      acc[currency] = 0;
+    }
+    acc[currency] += approvedValue;
+    return acc;
+  }, {} as Record<string, number>);
 
   if (loading) {
     return (
@@ -126,7 +142,7 @@ const DashboardMandante: React.FC = () => {
         </div>
 
         {/* Tarjetas de resumen */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Proyectos Activos</CardTitle>
@@ -140,22 +156,24 @@ const DashboardMandante: React.FC = () => {
             </CardContent>
           </Card>
 
-          {Object.entries(totalsByCurrency).map(([currency, total]) => (
-            <Card key={currency}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Contratos {currency}</CardTitle>
-                <FileText className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {formatCurrency(total, currency)}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Contratos en {currency}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Contratos</CardTitle>
+              <FileText className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {Object.entries(totalsByCurrency).map(([currency, total]) => (
+                  <div key={currency} className="flex justify-between items-center">
+                    <span className="text-sm font-medium">{currency}:</span>
+                    <span className="text-lg font-bold">
+                      {formatCurrency(total, currency)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -163,12 +181,16 @@ const DashboardMandante: React.FC = () => {
               <CheckCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">
-                {formatCurrency(totalApprovedValue, projects[0]?.Currency || 'CLP')}
+              <div className="space-y-2">
+                {Object.entries(totalApprovedByCurrency).map(([currency, total]) => (
+                  <div key={currency} className="flex justify-between items-center">
+                    <span className="text-sm font-medium">{currency}:</span>
+                    <span className="text-lg font-bold text-green-600">
+                      {formatCurrency(total, currency)}
+                    </span>
+                  </div>
+                ))}
               </div>
-              <p className="text-xs text-muted-foreground">
-                Pagos aprobados totales
-              </p>
             </CardContent>
           </Card>
         </div>
@@ -236,7 +258,7 @@ const DashboardMandante: React.FC = () => {
                         <span className="text-sm font-medium">Progreso del Proyecto</span>
                         <span className="text-sm text-gray-600">{progress}%</span>
                       </div>
-                      <Progress value={progress} className="h-2" />
+                      <Progress value={progress} className="h-2 bg-gray-200 [&>div]:bg-gloster-yellow" />
                     </div>
 
                     {/* Información financiera */}

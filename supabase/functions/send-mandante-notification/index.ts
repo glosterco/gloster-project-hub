@@ -8,17 +8,21 @@ const corsHeaders = {
 
 interface NotificationRequest {
   paymentId: string;
-  contratista: string;
-  mes: string;
-  año: number;
-  proyecto: string;
+  contratista?: string;
+  mes?: string;
+  año?: number;
+  proyecto?: string;
   mandanteEmail: string;
-  mandanteCompany: string;
-  contractorCompany: string;
-  amount: number;
-  dueDate: string;
-  accessUrl: string;
+  mandanteCompany?: string;
+  contractorCompany?: string;
+  amount?: number;
+  dueDate?: string;
+  accessUrl?: string;
   currency?: string;
+  // Para códigos temporales
+  temporaryCode?: string;
+  isTemporaryAccess?: boolean;
+  expiresAt?: string;
 }
 
 // UTF-8 compatible base64 encoding function
@@ -89,6 +93,114 @@ const formatCurrency = (amount: number, currency?: string): string => {
     console.log('💰 CLP formatted result:', formatted);
     return formatted;
   }
+};
+
+const createTemporaryCodeEmailHtml = (data: NotificationRequest): string => {
+  const expirationDate = data.expiresAt ? new Date(data.expiresAt).toLocaleString('es-CL') : '24 horas';
+  
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Código de Acceso Temporal - Gloster</title>
+      <style>
+        body { 
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+          line-height: 1.6; 
+          margin: 0; 
+          padding: 0; 
+          background-color: #f5f5f5;
+        }
+        .container { 
+          max-width: 600px; 
+          margin: 20px auto; 
+          background: #ffffff; 
+          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+          border-radius: 8px;
+          overflow: hidden;
+        }
+        .header { 
+          background: #F5DF4D; 
+          padding: 25px 20px; 
+          text-align: center; 
+        }
+        .title { 
+          color: #1e293b; 
+          font-size: 22px; 
+          font-weight: bold; 
+          margin: 0; 
+        }
+        .content { 
+          padding: 30px 25px; 
+        }
+        .code-box {
+          background: #f8fafc;
+          border: 2px solid #F5DF4D;
+          padding: 25px;
+          text-align: center;
+          margin: 25px 0;
+          border-radius: 8px;
+        }
+        .code {
+          font-size: 32px;
+          font-weight: bold;
+          color: #1e293b;
+          letter-spacing: 4px;
+          margin: 10px 0;
+        }
+        .expiry-note {
+          background: #fef3c7;
+          border: 1px solid #f59e0b;
+          padding: 15px;
+          border-radius: 4px;
+          margin: 20px 0;
+          font-size: 14px;
+        }
+        .footer { 
+          background: #f8fafc; 
+          padding: 25px 20px; 
+          text-align: center; 
+          color: #64748b; 
+          font-size: 13px;
+          border-top: 1px solid #e2e8f0;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1 class="title">Código de Acceso Temporal</h1>
+          <p style="margin: 5px 0 0 0; color: #64748b; font-size: 14px;">Gloster - Sistema de Gestión</p>
+        </div>
+        
+        <div class="content">
+          <p>Has solicitado un código temporal para acceder al estado de pago. Usa este código como contraseña en el formulario de acceso:</p>
+          
+          <div class="code-box">
+            <p style="margin: 0; font-size: 16px; color: #64748b;">Tu código temporal es:</p>
+            <div class="code">${data.temporaryCode}</div>
+            <p style="margin: 10px 0 0 0; font-size: 14px; color: #64748b;">Ingresa este código en el campo de contraseña</p>
+          </div>
+          
+          <div class="expiry-note">
+            <strong>Importante:</strong> Este código expira el ${expirationDate}. Después de esa fecha necesitarás solicitar un nuevo código.
+          </div>
+          
+          <p style="color: #64748b; font-size: 14px; margin-top: 25px;">
+            Si no solicitaste este código, puedes ignorar este mensaje. El código expirará automáticamente.
+          </p>
+        </div>
+        
+        <div class="footer">
+          <div style="font-weight: 600; color: #1e293b; margin-bottom: 5px;">Gloster - Sistema de Gestión de Proyectos</div>
+          <p style="margin: 5px 0;">Consultas técnicas: soporte.gloster@gmail.com</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
 };
 
 const createEmailHtml = (data: NotificationRequest): string => {
@@ -286,24 +398,28 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const data: NotificationRequest = await req.json();
-    console.log("📧 Sending mandante notification with full data:", data);
-    console.log("💰 Currency value received:", data.currency, "type:", typeof data.currency);
+    console.log("📧 Sending notification with data:", data);
 
     const accessToken = await getAccessToken();
     const fromEmail = Deno.env.get("GMAIL_FROM_EMAIL");
 
-    const emailHtml = createEmailHtml(data);
+    // Determinar el tipo de email
+    const isTemporaryCode = data.isTemporaryAccess && data.temporaryCode;
+    const emailHtml = isTemporaryCode ? createTemporaryCodeEmailHtml(data) : createEmailHtml(data);
+    const subject = isTemporaryCode 
+      ? "Código de Acceso Temporal - Gloster" 
+      : `Estado de Pago ${data.mes} ${data.año} - ${data.proyecto}`;
     
     const emailData = {
       raw: encodeBase64UTF8(
         `From: Gloster Gestion de Proyectos <${fromEmail}>
 To: ${data.mandanteEmail}
-Subject: Estado de Pago ${data.mes} ${data.año} - ${data.proyecto}
+Subject: ${subject}
 Reply-To: soporte.gloster@gmail.com
 Content-Type: text/html; charset=utf-8
 MIME-Version: 1.0
 X-Mailer: Gloster Project Management System
-Message-ID: <payment-${data.paymentId}-${Date.now()}@gloster.com>
+Message-ID: <${isTemporaryCode ? 'temp-access' : 'payment'}-${data.paymentId}-${Date.now()}@gloster.com>
 
 ${emailHtml}`
       ),

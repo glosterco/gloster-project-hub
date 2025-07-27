@@ -11,9 +11,9 @@ interface TemporaryAccessRequest {
   email: string;
 }
 
-const generateTemporaryCode = () => {
-  // Generar código de 6 dígitos
-  return Math.floor(100000 + Math.random() * 900000).toString();
+const generateTemporaryCode = (): string => {
+  // Generar código alfanumérico de 6 caracteres para consistencia con send-mandante-notification
+  return Math.random().toString(36).substring(2, 8).toUpperCase();
 };
 
 const handler = async (req: Request): Promise<Response> => {
@@ -89,7 +89,8 @@ const handler = async (req: Request): Promise<Response> => {
       // Generar nuevo código temporal
       temporaryCode = generateTemporaryCode();
       expiresAt = new Date();
-      expiresAt.setHours(expiresAt.getHours() + 24); // Válido por 24 horas
+      // Establecer validez ilimitada (10 años)
+      expiresAt.setFullYear(expiresAt.getFullYear() + 10);
 
       // Guardar código en la base de datos
       const { error: insertError } = await supabase

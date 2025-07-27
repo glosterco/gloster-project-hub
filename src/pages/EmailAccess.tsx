@@ -134,20 +134,43 @@ const EmailAccess = () => {
     }
 
     try {
-      // Paso 2: Consulta a Supabase para obtener el estado de pago
+      // Paso 2: Consulta a Supabase para obtener el estado de pago con query simplificada
       const { data: paymentData, error: paymentError } = await supabase
         .from('Estados de pago')
         .select(`
           id,
-          URLMandante,
-          Proyectos!inner (
-            id,
-            Mandantes!inner (*)
-          )
+          Project,
+          URLMandante
         `)
-        .eq('id', parsedPaymentId);
+        .eq('id', parsedPaymentId)
+        .maybeSingle();
+
+      // Obtener datos del proyecto por separado para evitar problemas de join
+      let projectData = null;
+      if (paymentData) {
+        const { data: projectInfo } = await supabase
+          .from('Proyectos')
+          .select(`
+            id,
+            Owner,
+            Mandantes!Owner (
+              id,
+              CompanyName,
+              ContactEmail,
+              Password
+            )
+          `)
+          .eq('id', paymentData.Project)
+          .single();
+
+        
+        if (projectInfo) {
+          projectData = projectInfo;
+        }
+      }
 
       console.log("paymentData:", paymentData);
+      console.log("projectData:", projectData);
       console.log("paymentError:", paymentError);
 
       if (paymentError) {
@@ -157,18 +180,24 @@ const EmailAccess = () => {
         return;
       }
 
-      if (!paymentData || paymentData.length === 0) {
+      if (!paymentData) {
         console.log("Estado de pago no encontrado en la base de datos.");
         setPopupError('No se encontró el estado de pago con el ID proporcionado.');
         setPaymentDataLog({ paymentId: parsedPaymentId, error: "Estado de pago no encontrado" });
         return;
       }
 
-      console.log("Estado de pago encontrado:", paymentData[0]);
+      if (!projectData) {
+        console.log("Proyecto no encontrado.");
+        setPopupError('No se encontró información del proyecto.');
+        return;
+      }
+
+      console.log("Estado de pago encontrado:", paymentData);
 
       // Verificar el email y contraseña del mandante
-      const mandanteEmail = paymentData[0]?.Proyectos?.Mandantes?.ContactEmail;
-      const mandantePassword = paymentData[0]?.Proyectos?.Mandantes?.Password;
+      const mandanteEmail = projectData?.Mandantes?.ContactEmail;
+      const mandantePassword = projectData?.Mandantes?.Password;
 
       if (!mandanteEmail) {
         console.log("No se encontró el email del mandante.");
@@ -234,9 +263,9 @@ const EmailAccess = () => {
       // Paso 5: Verificación del token si está presente
       if (token) {
         const expectedUrl = `${window.location.origin}/email-access?paymentId=${paymentId}&token=${token}`;
-        console.log('Comprobando URL:', { esperado: expectedUrl, almacenado: paymentData[0]?.URLMandante });
+        console.log('Comprobando URL:', { esperado: expectedUrl, almacenado: paymentData?.URLMandante });
 
-        if (paymentData[0]?.URLMandante !== expectedUrl) {
+        if (paymentData?.URLMandante !== expectedUrl) {
           setPopupError('El enlace de acceso no es válido o ha expirado.');
           return;
         }
@@ -246,7 +275,7 @@ const EmailAccess = () => {
       const { data: relatedPayments, error: relatedPaymentsError } = await supabase
         .from('Estados de pago')
         .select('id')
-        .eq('Project', paymentData[0]?.Proyectos.id);
+        .eq('Project', projectData.id);
 
       console.log("Estados de pago relacionados (relatedPayments):", relatedPayments);
       console.log("Error al obtener estados de pago relacionados (relatedPaymentsError):", relatedPaymentsError);
@@ -269,7 +298,7 @@ const EmailAccess = () => {
           paymentId: paymentId,
           email: email,
           token: 'mandante_authenticated',
-          mandanteCompany: paymentData[0]?.Proyectos?.Mandantes?.CompanyName || '',
+          mandanteCompany: projectData?.Mandantes?.CompanyName || '',
           timestamp: Date.now()
         };
 
@@ -340,9 +369,16 @@ const EmailAccess = () => {
                   id="password"
                   type={isTemporaryAccess ? "text" : "password"}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    // Auto-detectar si el usuario está ingresando un código temporal
+                    const inputValue = e.target.value.trim();
+                    if (inputValue.length === 6 && /^[A-Z0-9]{6}$/.test(inputValue)) {
+                      setIsTemporaryAccess(true);
+                    }
+                  }}
                   onKeyPress={handleKeyPress}
-                  placeholder="Contraseña o código temporal"
+                  placeholder={isTemporaryAccess ? "Ingresa tu código de 6 caracteres" : "Contraseña o código temporal"}
                   className="pl-10 font-rubik"
                   disabled={loading}
                   maxLength={isTemporaryAccess ? 6 : undefined}
@@ -350,7 +386,7 @@ const EmailAccess = () => {
               </div>
               {isTemporaryAccess && (
                 <p className="text-xs text-gloster-gray font-rubik">
-                  Usa el código de 6 dígitos enviado a tu email
+                  Usa el código de 6 caracteres enviado a tu email (letras y números)
                 </p>
               )}
             </div>
@@ -372,7 +408,7 @@ const EmailAccess = () => {
                 <div className="flex items-center space-x-2">
                   <Clock className="w-4 h-4 text-gloster-yellow" />
                   <p className="text-sm font-medium text-slate-700 font-rubik">
-                    Código temporal enviado. Ingresa el código de 6 dígitos como contraseña.
+                    Código temporal detectado. Ingresa el código de 6 caracteres como contraseña.
                   </p>
                 </div>
               </div>

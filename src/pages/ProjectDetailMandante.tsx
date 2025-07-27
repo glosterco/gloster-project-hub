@@ -27,8 +27,20 @@ const ProjectDetailMandante = () => {
   };
 
   const getDisplayStatus = (status: string) => {
-    // Para mandante: cambiar "Enviado" por "Recibido"
-    return status === 'Enviado' ? 'Recibido' : status;
+    switch (status) {
+      case 'Enviado':
+        return 'Recibido';
+      case 'Aprobado':
+        return 'Aprobado';
+      case 'Rechazado':
+        return 'Rechazado';
+      case 'Pendiente':
+        return 'Programado';
+      case 'Programado':
+        return 'Programado';
+      default:
+        return status;
+    }
   };
 
   const getStatusColor = (status: string) => {

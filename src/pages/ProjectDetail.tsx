@@ -266,7 +266,7 @@ const ProjectDetail = () => {
       <div className="bg-slate-50 py-2">
         <div className="container mx-auto px-6">
           <button 
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate(userType === 'mandante' ? '/dashboard-mandante' : '/dashboard')}
             className="text-gloster-gray hover:text-slate-800 text-sm font-rubik flex items-center"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />

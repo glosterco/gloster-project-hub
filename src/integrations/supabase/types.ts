@@ -117,28 +117,37 @@ export type Database = {
       }
       Mandantes: {
         Row: {
+          auth_user_id: string | null
           CompanyName: string
           ContactEmail: string | null
           ContactName: string | null
           ContactPhone: number | null
           id: number
+          Password: string | null
           Status: boolean | null
+          Username: string | null
         }
         Insert: {
+          auth_user_id?: string | null
           CompanyName: string
           ContactEmail?: string | null
           ContactName?: string | null
           ContactPhone?: number | null
           id?: number
+          Password?: string | null
           Status?: boolean | null
+          Username?: string | null
         }
         Update: {
+          auth_user_id?: string | null
           CompanyName?: string
           ContactEmail?: string | null
           ContactName?: string | null
           ContactPhone?: number | null
           id?: number
+          Password?: string | null
           Status?: boolean | null
+          Username?: string | null
         }
         Relationships: []
       }
@@ -210,6 +219,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_roles: {
+        Row: {
+          auth_user_id: string
+          created_at: string | null
+          entity_id: number
+          id: number
+          role_type: string
+        }
+        Insert: {
+          auth_user_id: string
+          created_at?: string | null
+          entity_id: number
+          id?: never
+          role_type: string
+        }
+        Update: {
+          auth_user_id?: string
+          created_at?: string | null
+          entity_id?: number
+          id?: never
+          role_type?: string
+        }
+        Relationships: []
       }
     }
     Views: {

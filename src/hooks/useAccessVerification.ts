@@ -35,7 +35,7 @@ export const useAccessVerification = (payment: PaymentDetail | null, paymentId: 
             
             if (accessData.paymentId === paymentId && 
                 accessData.token === 'mandante_authenticated' &&
-                accessData.timestamp && (Date.now() - accessData.timestamp < 300000)) {
+                accessData.timestamp && (Date.now() - new Date(accessData.timestamp).getTime() < 300000)) {
               console.log('✅ Mandante access granted from sessionStorage');
               setHasAccess(true);
               setIsMandante(true);

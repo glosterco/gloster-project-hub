@@ -59,33 +59,53 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error('Email no autorizado para este estado de pago');
     }
 
-    // Invalidar códigos temporales anteriores para este payment y email
-    await supabase
+    // Verificar si ya existe un código temporal válido
+    const { data: existingCode } = await supabase
       .from('temporary_access_codes')
-      .update({ used: true })
+      .select('*')
       .eq('payment_id', parsedPaymentId)
       .eq('email', email.toLowerCase())
-      .eq('used', false);
+      .eq('used', false)
+      .gt('expires_at', new Date().toISOString())
+      .maybeSingle();
 
-    // Generar nuevo código temporal
-    const temporaryCode = generateTemporaryCode();
-    const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + 24); // Válido por 24 horas
+    let temporaryCode;
+    let expiresAt;
 
-    // Guardar código en la base de datos
-    const { error: insertError } = await supabase
-      .from('temporary_access_codes')
-      .insert({
-        payment_id: parsedPaymentId,
-        email: email.toLowerCase(),
-        code: temporaryCode,
-        expires_at: expiresAt.toISOString(),
-        used: false
-      });
+    if (existingCode) {
+      // Si ya existe un código válido, usarlo
+      console.log('⚡ Using existing valid temporary code');
+      temporaryCode = existingCode.code;
+      expiresAt = new Date(existingCode.expires_at);
+    } else {
+      // Invalidar códigos temporales anteriores para este payment y email
+      await supabase
+        .from('temporary_access_codes')
+        .update({ used: true })
+        .eq('payment_id', parsedPaymentId)
+        .eq('email', email.toLowerCase())
+        .eq('used', false);
 
-    if (insertError) {
-      console.error('Error saving temporary code:', insertError);
-      throw new Error('Error al generar código temporal');
+      // Generar nuevo código temporal
+      temporaryCode = generateTemporaryCode();
+      expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 24); // Válido por 24 horas
+
+      // Guardar código en la base de datos
+      const { error: insertError } = await supabase
+        .from('temporary_access_codes')
+        .insert({
+          payment_id: parsedPaymentId,
+          email: email.toLowerCase(),
+          code: temporaryCode,
+          expires_at: expiresAt.toISOString(),
+          used: false
+        });
+
+      if (insertError) {
+        console.error('Error saving temporary code:', insertError);
+        throw new Error('Error al generar código temporal');
+      }
     }
 
     // Preparar datos para el email

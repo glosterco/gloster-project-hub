@@ -193,21 +193,34 @@ const EmailAccess = () => {
           .select('*')
           .eq('payment_id', parsedPaymentId)
           .eq('email', email.toLowerCase())
-          .eq('code', password)
+          .eq('code', password.trim())
           .eq('used', false)
           .gt('expires_at', new Date().toISOString())
           .single();
 
+        console.log('🔍 Temporary code verification:', { 
+          paymentId: parsedPaymentId, 
+          email: email.toLowerCase(), 
+          code: password.trim(),
+          found: !!tempCodeData,
+          error: tempCodeError 
+        });
+
         if (tempCodeError || !tempCodeData) {
-          setPopupError('Código temporal inválido o expirado.');
+          console.error('❌ Temporary code verification failed:', tempCodeError);
+          setPopupError('Código temporal inválido o expirado. Verifica que el código sea correcto y no haya expirado.');
           return;
         }
 
         // Marcar código como usado
-        await supabase
+        const { error: updateError } = await supabase
           .from('temporary_access_codes')
           .update({ used: true })
           .eq('id', tempCodeData.id);
+
+        if (updateError) {
+          console.error('❌ Error marking code as used:', updateError);
+        }
 
         passwordValid = true;
       } else {
@@ -256,9 +269,9 @@ const EmailAccess = () => {
         const accessData = {
           paymentId: paymentId,
           email: email,
-          token: token || 'verified',
+          token: 'mandante_authenticated',
           mandanteCompany: paymentData[0]?.Proyectos?.Mandantes?.CompanyName || '',
-          timestamp: new Date().toISOString()
+          timestamp: Date.now()
         };
 
         sessionStorage.setItem('mandanteAccess', JSON.stringify(accessData));

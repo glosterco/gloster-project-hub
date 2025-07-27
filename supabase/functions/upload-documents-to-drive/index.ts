@@ -70,24 +70,8 @@ serve(async (req) => {
       );
     }
 
-    // Get Google Drive credentials and clean them of extra whitespace/newlines
-    console.log('🔍 Getting and cleaning Google Drive credentials...');
-    
-    const clientId = Deno.env.get('GOOGLE_DRIVE_CLIENT_ID')?.trim();
-    const clientSecret = Deno.env.get('GOOGLE_DRIVE_CLIENT_SECRET')?.trim();
-    const refreshToken = Deno.env.get('GOOGLE_DRIVE_REFRESH_TOKEN')?.trim();
-
-    console.log('🔑 GOOGLE_DRIVE_CLIENT_ID:', clientId ? '✅ found and cleaned' : '❌ missing');
-    console.log('🔑 GOOGLE_DRIVE_CLIENT_SECRET:', clientSecret ? '✅ found and cleaned' : '❌ missing');
-    console.log('🔑 GOOGLE_DRIVE_REFRESH_TOKEN:', refreshToken ? '✅ found and cleaned' : '❌ missing');
-
-    if (!clientId || !clientSecret || !refreshToken) {
-      console.error('❌ Missing Google Drive credentials after cleaning');
-      return Response.json(
-        { success: false, error: 'Missing Google Drive credentials' },
-        { status: 500, headers: corsHeaders }
-      );
-    }
+    // Eliminar verificación directa de credentials aquí - dejar que token-manager se encargue
+    console.log('🔍 Skipping direct credential check - delegating to token manager...');
 
     // Get access token using the token manager
     console.log('🔑 Getting access token via token manager...');

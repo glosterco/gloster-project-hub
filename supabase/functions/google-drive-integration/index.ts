@@ -29,6 +29,12 @@ async function getAccessToken(): Promise<string> {
     body: JSON.stringify({ action: 'validate' }),
   });
 
+  if (!tokenManagerResponse.ok) {
+    const errorText = await tokenManagerResponse.text();
+    console.error('❌ Token manager HTTP error:', tokenManagerResponse.status, errorText);
+    throw new Error(`Token manager request failed: ${tokenManagerResponse.status}`);
+  }
+
   const tokenResult = await tokenManagerResponse.json();
 
   if (!tokenResult.valid) {

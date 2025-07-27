@@ -191,7 +191,7 @@ const createTemporaryCodeEmailHtml = (data: NotificationRequest): string => {
           </div>
           
           <div class="expiry-note">
-            <strong>Importante:</strong> Este código expira el ${expirationDate}. Después de esa fecha necesitarás solicitar un nuevo código.
+            <strong>Importante:</strong> Este código tiene validez ilimitada y puede ser usado en cualquier momento para acceder al estado de pago correspondiente.
           </div>
           
           <p style="color: #64748b; font-size: 14px; margin-top: 25px;">

@@ -195,8 +195,7 @@ const EmailAccess = () => {
           .eq('email', email.toLowerCase())
           .eq('code', password.trim())
           .eq('used', false)
-          .gt('expires_at', new Date().toISOString())
-          .single();
+          .maybeSingle(); // Usar maybeSingle en lugar de single para evitar errores
 
         console.log('🔍 Temporary code verification:', { 
           paymentId: parsedPaymentId, 

@@ -65,20 +65,26 @@ export const useSubmissionPreviewLogic = (payment: PaymentDetail | null) => {
     console.log('🚀 Starting notification process...');
 
     try {
+      // CRÍTICO: Actualizar PRIMERO el Total y Progress en la base de datos antes de enviar
+      console.log('💾 Updating payment amount and progress...');
+      const { error: updateError } = await supabase
+        .from('Estados de pago')
+        .update({ 
+          Total: payment.Total || 0,
+          Progress: payment.Progress || 0,
+          Status: 'Enviado'
+        })
+        .eq('id', payment.id);
+
+      if (updateError) {
+        console.error('❌ Error updating payment data:', updateError);
+        throw new Error('Error al actualizar los datos del estado de pago');
+      }
+
       // Usar el sistema de enlace único
       const accessUrl = await ensureUniqueAccessUrl(payment.id);
       if (!accessUrl) {
         throw new Error('No se pudo generar el enlace de acceso');
-      }
-
-      const { error: statusError } = await supabase
-        .from('Estados de pago')
-        .update({ Status: 'Enviado' })
-        .eq('id', payment.id);
-
-      if (statusError) {
-        console.error('Error updating status:', statusError);
-        throw new Error('Error al actualizar el estado');
       }
 
       const { data: paymentStateData, error: paymentStateError } = await supabase

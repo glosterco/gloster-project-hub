@@ -65,7 +65,11 @@ const SubmissionHeader: React.FC<SubmissionHeaderProps> = ({ projectId }) => {
 
   const handleBackToProject = () => {
     if (projectId) {
-      navigate(`/project/${projectId}`);
+      if (userInfo.userType === 'mandante') {
+        navigate(`/project-mandante/${projectId}`);
+      } else {
+        navigate(`/project/${projectId}`);
+      }
     } else {
       navigate(userInfo.userType === 'mandante' ? '/dashboard-mandante' : '/dashboard');
     }

@@ -357,12 +357,12 @@ const EmailAccess = () => {
             </div>
             
             {/* Información sobre código temporal */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <div className="flex items-start gap-3">
                 <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
                 <div className="text-sm text-blue-800">
                   <p className="font-medium mb-1">Código de acceso temporal</p>
-                  <p>Si recibiste un código temporal por email, úsalo como contraseña para acceder y verificarte para aprobar el estado de pago.</p>
+                  <p>Si recibiste un código temporal por email, úsalo como contraseña para acceder y verificarte para aprobar el estado de pago. <strong>Los códigos temporales tienen validez ilimitada.</strong></p>
                 </div>
               </div>
             </div>
@@ -440,7 +440,7 @@ const EmailAccess = () => {
                         <h4 className="font-medium font-rubik text-slate-800">Acceso temporal</h4>
                       </div>
                       <p className="text-sm text-slate-600 font-rubik mb-4">
-                        Recibe un código temporal por email para acceder inmediatamente. El código es válido por 24 horas.
+                        Recibe un código temporal por email para acceder inmediatamente. El código tiene validez ilimitada.
                       </p>
                       
                       <div className="space-y-2 mb-4">

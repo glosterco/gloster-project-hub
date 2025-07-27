@@ -432,7 +432,7 @@ const handler = async (req: Request): Promise<Response> => {
       .from('Mandantes')
       .select('auth_user_id, CompanyName')
       .eq('ContactEmail', data.mandanteEmail)
-      .single();
+      .maybeSingle();
 
     if (mandanteError) {
       console.error('❌ Error fetching mandante:', mandanteError);
@@ -444,7 +444,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     let temporaryCode = null;
     
-    // Si no tiene auth_user_id, generar código temporal
+    // SOLO generar código temporal si NO tiene auth_user_id
     if (!hasAuthUser) {
       temporaryCode = generateTemporaryCode();
       console.log('🔑 Generated temporary code:', temporaryCode);
@@ -457,9 +457,10 @@ const handler = async (req: Request): Promise<Response> => {
         .eq('email', data.mandanteEmail)
         .eq('used', false);
       
-      // Guardar código temporal en la base de datos
+      // Guardar código temporal en la base de datos con validez ILIMITADA
+      // Establecer expiración en 10 años para simular validez ilimitada
       const expiresAt = new Date();
-      expiresAt.setHours(expiresAt.getHours() + 24); // Expira en 24 horas
+      expiresAt.setFullYear(expiresAt.getFullYear() + 10);
 
       const { error: insertError } = await supabase
         .from('temporary_access_codes')
@@ -475,7 +476,7 @@ const handler = async (req: Request): Promise<Response> => {
         throw new Error(`Failed to save temporary code: ${insertError.message}`);
       }
 
-      console.log('✅ Temporary code saved successfully');
+      console.log('✅ Temporary code saved successfully with unlimited validity');
     }
 
     const accessToken = await getAccessToken();

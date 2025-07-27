@@ -48,7 +48,7 @@ export const useAccessVerification = (payment: PaymentDetail | null, paymentId: 
           }
         }
 
-        // Solo verificar autenticación de contratista si tenemos datos del payment
+        // Verificar autenticación de contratista si tenemos datos del payment
         if (payment?.projectData) {
           setCheckingAccess(true);
           const { data: { user } } = await supabase.auth.getUser();
@@ -64,6 +64,23 @@ export const useAccessVerification = (payment: PaymentDetail | null, paymentId: 
               console.log('✅ Contractor access granted');
               setHasAccess(true);
               setIsMandante(false);
+              setAccessChecked(true);
+              setCheckingAccess(false);
+              return;
+            }
+
+            // Verificar si es un mandante autenticado
+            const { data: mandanteData } = await supabase
+              .from('Mandantes')
+              .select('*')
+              .eq('auth_user_id', user.id)
+              .eq('id', payment.projectData.Owner?.id)
+              .maybeSingle();
+
+            if (mandanteData) {
+              console.log('✅ Authenticated mandante access granted');
+              setHasAccess(true);
+              setIsMandante(true);
               setAccessChecked(true);
               setCheckingAccess(false);
               return;

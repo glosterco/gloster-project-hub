@@ -478,6 +478,12 @@ const PaymentDetail = () => {
     console.log('🚀 Starting document upload process...');
 
     try {
+      // CRÍTICO: Guardar monto y progreso ANTES de enviar
+      console.log('💾 Saving amount and progress before sending...');
+      await handleSaveAmount();
+      
+      // Refrescar datos para asegurar que tenemos los valores actualizados
+      await refetch();
       const uploadResult = await uploadDocumentsToDrive(
         payment.id, 
         uploadedFiles, 

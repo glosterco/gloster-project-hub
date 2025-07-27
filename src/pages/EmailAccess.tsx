@@ -33,6 +33,8 @@ const EmailAccess = () => {
   }, [paymentId, navigate]);
 
   const sendTemporaryCode = async () => {
+    console.log('🔄 sendTemporaryCode called with email:', email);
+    
     if (!email.trim()) {
       toast({
         title: "Email requerido",
@@ -42,7 +44,17 @@ const EmailAccess = () => {
       return;
     }
 
+    if (!paymentId) {
+      toast({
+        title: "Error",
+        description: "ID de pago no encontrado",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setTemporaryCodeLoading(true);
+    console.log('📧 Enviando código temporal...');
 
     try {
       const { data, error } = await supabase.functions.invoke('send-temporary-access-code', {
@@ -52,12 +64,15 @@ const EmailAccess = () => {
         },
       });
 
+      console.log('📧 Response:', { data, error });
+
       if (error) {
+        console.error('Error from function:', error);
         throw error;
       }
 
-      if (!data.success) {
-        throw new Error(data.error || 'Error al enviar código temporal');
+      if (!data || !data.success) {
+        throw new Error(data?.error || 'Error al enviar código temporal');
       }
 
       toast({
@@ -67,6 +82,10 @@ const EmailAccess = () => {
 
       setIsTemporaryAccess(true);
       setShowAccountDialog(false);
+      
+      // Limpiar la contraseña para que el usuario ingrese el código
+      setPassword('');
+      
     } catch (error) {
       console.error('Error sending temporary code:', error);
       toast({
@@ -324,60 +343,116 @@ const EmailAccess = () => {
               )}
             </div>
             
+            
+            {/* Mensaje de estado de acceso temporal */}
+            {isTemporaryAccess && (
+              <div className="bg-gloster-yellow/20 border border-gloster-yellow/40 p-3 rounded-lg mb-4">
+                <div className="flex items-center space-x-2">
+                  <Clock className="w-4 h-4 text-gloster-yellow" />
+                  <p className="text-sm font-medium text-slate-700 font-rubik">
+                    Código temporal enviado. Ingresa el código de 6 dígitos como contraseña.
+                  </p>
+                </div>
+              </div>
+            )}
+            
             <Button
               onClick={verifyEmailAccess}
               disabled={loading || !email.trim() || !password.trim()}
-              className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
+              className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik font-medium"
             >
               {loading ? 'Verificando...' : 'Verificar Acceso'}
             </Button>
             
-            <div className="text-center space-y-2">
+            {/* Separador visual */}
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-slate-200" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-slate-500 font-rubik">o</span>
+              </div>
+            </div>
+            
+            {/* Botón destacado para no tener cuenta */}
+            <div className="text-center space-y-3">
               <Dialog open={showAccountDialog} onOpenChange={setShowAccountDialog}>
                 <DialogTrigger asChild>
                   <Button
-                    variant="ghost"
-                    className="text-gloster-gray hover:text-slate-800 font-rubik"
+                    variant="outline"
+                    className="w-full border-2 border-gloster-yellow bg-gloster-yellow/10 hover:bg-gloster-yellow/20 text-slate-800 font-rubik font-medium transition-all duration-200 py-3"
                   >
-                    <HelpCircle className="w-4 h-4 mr-2" />
-                    ¿No tienes cuenta?
+                    <HelpCircle className="w-5 h-5 mr-2 text-gloster-yellow" />
+                    ¿No tienes cuenta? Obtén acceso aquí
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-md">
                   <DialogHeader>
-                    <DialogTitle className="font-rubik">Acceso sin cuenta</DialogTitle>
-                    <DialogDescription className="font-rubik">
+                    <DialogTitle className="font-rubik text-slate-800">Acceso sin cuenta</DialogTitle>
+                    <DialogDescription className="font-rubik text-slate-600">
                       Para revisar el estado de pago sin una cuenta en Gloster, puedes:
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
-                    <div className="p-4 border border-gloster-gray/20 rounded-lg">
+                    <div className="p-4 border border-slate-200 rounded-lg hover:border-gloster-yellow/40 transition-colors">
                       <div className="flex items-center space-x-3 mb-2">
-                        <UserPlus className="w-5 h-5 text-gloster-yellow" />
-                        <h4 className="font-medium font-rubik">Crear una cuenta</h4>
+                        <div className="p-2 bg-gloster-yellow/20 rounded-full">
+                          <UserPlus className="w-5 h-5 text-gloster-yellow" />
+                        </div>
+                        <h4 className="font-medium font-rubik text-slate-800">Crear una cuenta</h4>
                       </div>
                       <p className="text-sm text-slate-600 font-rubik mb-3">
                         Para obtener una cuenta asociada al proyecto, contacta a nuestro equipo de soporte.
                       </p>
                       <p className="text-sm font-medium text-gloster-gray font-rubik">
-                        Email: soporte@gloster.cl
+                        📧 Email: soporte@gloster.cl
                       </p>
                     </div>
                     
-                    <div className="p-4 border border-gloster-gray/20 rounded-lg">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <Clock className="w-5 h-5 text-gloster-yellow" />
-                        <h4 className="font-medium font-rubik">Acceso temporal</h4>
+                    <div className="p-4 border-2 border-gloster-yellow/30 bg-gloster-yellow/5 rounded-lg">
+                      <div className="flex items-center space-x-3 mb-3">
+                        <div className="p-2 bg-gloster-yellow/30 rounded-full">
+                          <Clock className="w-5 h-5 text-gloster-yellow" />
+                        </div>
+                        <h4 className="font-medium font-rubik text-slate-800">Acceso temporal</h4>
                       </div>
-                      <p className="text-sm text-slate-600 font-rubik mb-3">
-                        Recibe un código temporal por email para acceder ahora.
+                      <p className="text-sm text-slate-600 font-rubik mb-4">
+                        Recibe un código temporal por email para acceder inmediatamente. El código es válido por 24 horas.
                       </p>
+                      
+                      <div className="space-y-2 mb-4">
+                        <label className="text-sm font-medium text-slate-700 font-rubik">
+                          Email del mandante
+                        </label>
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gloster-gray" />
+                          <Input
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="mandante@empresa.com"
+                            className="pl-10 font-rubik"
+                            disabled={temporaryCodeLoading}
+                          />
+                        </div>
+                      </div>
+                      
                       <Button
                         onClick={sendTemporaryCode}
                         disabled={temporaryCodeLoading || !email.trim()}
-                        className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
+                        className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik font-medium"
                       >
-                        {temporaryCodeLoading ? 'Enviando...' : 'Enviar código temporal'}
+                        {temporaryCodeLoading ? (
+                          <div className="flex items-center space-x-2">
+                            <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin"></div>
+                            <span>Enviando...</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center space-x-2">
+                            <Mail className="w-4 h-4" />
+                            <span>Enviar código temporal</span>
+                          </div>
+                        )}
                       </Button>
                     </div>
                   </div>
@@ -387,7 +462,7 @@ const EmailAccess = () => {
               <Button
                 onClick={() => navigate('/')}
                 variant="ghost"
-                className="text-gloster-gray hover:text-slate-800 font-rubik"
+                className="text-slate-500 hover:text-slate-700 font-rubik text-sm"
               >
                 Volver al Inicio
               </Button>

@@ -16,6 +16,7 @@ const EmailAccess = () => {
   const { toast } = useToast();
   
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [popupError, setPopupError] = useState<string | null>(null);
   const [paymentDataLog, setPaymentDataLog] = useState<any>(null);
@@ -32,6 +33,15 @@ const EmailAccess = () => {
       toast({
         title: "Email requerido",
         description: "Por favor ingresa tu email para verificar el acceso",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!password.trim()) {
+      toast({
+        title: "Contraseña requerida",
+        description: "Por favor ingresa tu contraseña para verificar el acceso",
         variant: "destructive"
       });
       return;
@@ -86,8 +96,9 @@ const EmailAccess = () => {
 
       console.log("Estado de pago encontrado:", paymentData[0]);
 
-      // Verificar el email del mandante
+      // Verificar el email y contraseña del mandante
       const mandanteEmail = paymentData[0]?.Proyectos?.Mandantes?.ContactEmail;
+      const mandantePassword = paymentData[0]?.Proyectos?.Mandantes?.Password;
 
       if (!mandanteEmail) {
         console.log("No se encontró el email del mandante.");
@@ -99,6 +110,12 @@ const EmailAccess = () => {
 
       if (email.toLowerCase() !== mandanteEmail.toLowerCase()) {
         setPopupError('El email ingresado no coincide con el mandante autorizado para este proyecto.');
+        return;
+      }
+
+      // Verificar contraseña si está configurada
+      if (mandantePassword && password !== mandantePassword) {
+        setPopupError('La contraseña ingresada es incorrecta.');
         return;
       }
 
@@ -177,7 +194,7 @@ const EmailAccess = () => {
             Verificación de Acceso
           </CardTitle>
           <CardDescription className="font-rubik">
-            Ingresa tu email para acceder al estado de pago
+            Ingresa tu email y contraseña para acceder al estado de pago
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -200,10 +217,29 @@ const EmailAccess = () => {
                 />
               </div>
             </div>
+
+            <div className="space-y-2">
+              <label htmlFor="password" className="text-sm font-medium text-slate-700 font-rubik">
+                Contraseña del Mandante
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gloster-gray" />
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Contraseña"
+                  className="pl-10 font-rubik"
+                  disabled={loading}
+                />
+              </div>
+            </div>
             
             <Button
               onClick={verifyEmailAccess}
-              disabled={loading || !email.trim()}
+              disabled={loading || !email.trim() || !password.trim()}
               className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
             >
               {loading ? 'Verificando...' : 'Verificar Acceso'}

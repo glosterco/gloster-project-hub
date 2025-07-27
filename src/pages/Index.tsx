@@ -18,8 +18,8 @@ const Index = () => {
     const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        // Redirigir inmediatamente al dashboard si ya está autenticado
-        navigate('/dashboard');
+        // Redirigir inmediatamente a la selección de roles si ya está autenticado
+        navigate('/role-selection');
         return;
       }
       setLoading(false);
@@ -31,8 +31,8 @@ const Index = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (session?.user) {
-          // Redirigir al dashboard inmediatamente después del login exitoso
-          navigate('/dashboard');
+          // Redirigir a la selección de roles inmediatamente después del login exitoso
+          navigate('/role-selection');
         } else {
           setLoading(false);
         }

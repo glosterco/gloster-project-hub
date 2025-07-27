@@ -8,6 +8,8 @@ import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
+import DashboardMandante from "./pages/DashboardMandante";
+import RoleSelection from "./pages/RoleSelection";
 import ProjectDetail from "./pages/ProjectDetail";
 import PaymentDetail from "./pages/PaymentDetail";
 import SubmissionView from "./pages/SubmissionView";
@@ -30,7 +32,9 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/role-selection" element={<RoleSelection />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/dashboard-mandante" element={<DashboardMandante />} />
             <Route path="/project/:id" element={<ProjectDetail />} />
             <Route path="/payment/:id" element={<PaymentDetail />} />
             <Route path="/submission/:id" element={<SubmissionView />} />

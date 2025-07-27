@@ -91,7 +91,7 @@ const SubmissionView = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 font-rubik">
-      <SubmissionHeader />
+      <SubmissionHeader projectId={payment?.projectData?.id?.toString()} />
 
       <SubmissionContent
         paymentId={paymentId}

@@ -164,26 +164,37 @@ const ProjectDetail = () => {
       return;
     }
     
-    // Almacenar datos de acceso del mandante para evitar verificación
-    const accessData = {
-      paymentId: payment.id.toString(),
-      token: 'mandante_authenticated',
-      timestamp: Date.now()
-    };
-    sessionStorage.setItem('mandanteAccess', JSON.stringify(accessData));
-    navigate(`/submission/${payment.id}`);
+    // Para contratistas: ir a la página de payment
+    if (userType === 'contratista') {
+      navigate(`/payment/${payment.id}`);
+    } else {
+      // Para mandantes: ir a submission con token de acceso
+      const accessData = {
+        paymentId: payment.id.toString(),
+        token: 'mandante_authenticated',
+        timestamp: Date.now()
+      };
+      sessionStorage.setItem('mandanteAccess', JSON.stringify(accessData));
+      navigate(`/submission/${payment.id}`);
+    }
   };
 
   const handleViewDocuments = (payment: any) => {
     console.log(`👁️ View documents clicked for: "${payment.Name}"`);
-    // Almacenar datos de acceso del mandante para evitar verificación
-    const accessData = {
-      paymentId: payment.id.toString(),
-      token: 'mandante_authenticated',
-      timestamp: Date.now()
-    };
-    sessionStorage.setItem('mandanteAccess', JSON.stringify(accessData));
-    navigate(`/submission/${payment.id}`);
+    
+    // Para contratistas: ir a la página de payment
+    if (userType === 'contratista') {
+      navigate(`/payment/${payment.id}`);
+    } else {
+      // Para mandantes: ir a submission con token de acceso
+      const accessData = {
+        paymentId: payment.id.toString(),
+        token: 'mandante_authenticated',
+        timestamp: Date.now()
+      };
+      sessionStorage.setItem('mandanteAccess', JSON.stringify(accessData));
+      navigate(`/submission/${payment.id}`);
+    }
   };
 
   const filteredAndSortedPayments = project?.EstadosPago

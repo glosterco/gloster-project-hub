@@ -82,11 +82,13 @@ const ProjectDetailMandante = () => {
   };
 
   const canViewPayment = (status: string) => {
+    // Solo para estados aprobados y rechazados se muestra el botón "Ver"
     return status === 'Aprobado' || status === 'Rechazado';
   };
 
   const canManagePayment = (status: string) => {
-    return status === 'Enviado'; // En la vista mandante, "Enviado" se muestra como "Recibido"
+    // Solo para estados "Enviado" (que se muestran como "Recibido" al mandante) se muestra "Gestionar"
+    return status === 'Enviado';
   };
 
   const filteredAndSortedPayments = project?.EstadosPago

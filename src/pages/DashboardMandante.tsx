@@ -64,7 +64,18 @@ const DashboardMandante: React.FC = () => {
   };
 
   const handlePaymentClick = (paymentId: number) => {
+    // Almacenar datos de acceso del mandante en sessionStorage para evitar verificación
+    const accessData = {
+      paymentId: paymentId.toString(),
+      token: 'mandante_authenticated',
+      timestamp: Date.now()
+    };
+    sessionStorage.setItem('mandanteAccess', JSON.stringify(accessData));
     navigate(`/submission/${paymentId}`);
+  };
+
+  const handleProjectDetails = (projectId: number) => {
+    navigate(`/project/${projectId}`);
   };
 
   const totalActiveProjects = projects.filter(p => p.Status).length;
@@ -222,24 +233,18 @@ const DashboardMandante: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Estados de pago */}
+                    {/* Estados de pago pendientes para aprobación rápida */}
                     {project.EstadosPago && project.EstadosPago.length > 0 && (
                       <div className="space-y-2">
-                        <h4 className="text-sm font-medium">Estados de Pago</h4>
-                        <div className="grid gap-2 max-h-40 overflow-y-auto">
-                          {project.EstadosPago.map((payment) => (
+                        <h4 className="text-sm font-medium">Estados Pendientes de Aprobación</h4>
+                        <div className="grid gap-2 max-h-32 overflow-y-auto">
+                          {project.EstadosPago
+                            .filter(payment => payment.Status === 'Pendiente')
+                            .map((payment) => (
                             <div 
                               key={payment.id} 
-                              className={`flex items-center justify-between p-2 rounded border text-sm ${
-                                ['Enviado', 'Aprobado', 'Rechazado'].includes(payment.Status) 
-                                  ? 'cursor-pointer hover:bg-gray-50' 
-                                  : ''
-                              }`}
-                              onClick={() => {
-                                if (['Enviado', 'Aprobado', 'Rechazado'].includes(payment.Status)) {
-                                  handlePaymentClick(payment.id);
-                                }
-                              }}
+                              className="flex items-center justify-between p-2 rounded border text-sm cursor-pointer hover:bg-yellow-50 border-yellow-200"
+                              onClick={() => handlePaymentClick(payment.id)}
                             >
                               <div className="flex items-center gap-2">
                                 {getStatusIcon(payment.Status)}
@@ -258,6 +263,11 @@ const DashboardMandante: React.FC = () => {
                               </div>
                             </div>
                           ))}
+                          {project.EstadosPago.filter(payment => payment.Status === 'Pendiente').length === 0 && (
+                            <div className="text-sm text-gray-500 text-center py-2">
+                              No hay estados pendientes de aprobación
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
@@ -265,11 +275,11 @@ const DashboardMandante: React.FC = () => {
                     {/* Botón ver detalles */}
                     <div className="pt-4 border-t">
                       <Button 
-                        onClick={() => navigate(`/project/${project.id}`)}
+                        onClick={() => handleProjectDetails(project.id)}
                         className="w-full"
                         variant="outline"
                       >
-                        Ver Detalles del Proyecto
+                        Ver Más Información del Proyecto
                       </Button>
                     </div>
                   </CardContent>

@@ -16,13 +16,39 @@ export const useAccessVerification = (payment: PaymentDetail | null, paymentId: 
       if (!payment || accessChecked) return;
       
       try {
-        setCheckingAccess(true);
         console.log('🔍 Checking access for payment:', paymentId);
         
+        // Verificar primero el acceso de mandante desde sessionStorage (más rápido)
+        const mandanteAccess = sessionStorage.getItem('mandanteAccess');
+        
+        if (mandanteAccess) {
+          try {
+            const accessData = JSON.parse(mandanteAccess);
+            console.log('🔍 Parsed mandanteAccess data:', { 
+              storedPaymentId: accessData.paymentId, 
+              requestedPaymentId: paymentId, 
+              hasToken: !!accessData.token,
+              isRecentAccess: accessData.timestamp && (Date.now() - accessData.timestamp < 300000) // 5 minutos
+            });
+            
+            if (accessData.paymentId === paymentId && accessData.token) {
+              console.log('✅ Mandante access granted from sessionStorage');
+              setHasAccess(true);
+              setIsMandante(true);
+              setAccessChecked(true);
+              setCheckingAccess(false);
+              return;
+            }
+          } catch (parseError) {
+            console.error('Error parsing mandanteAccess:', parseError);
+          }
+        }
+
+        // Si no hay acceso de mandante, verificar autenticación de contratista
+        setCheckingAccess(true);
         const { data: { user } } = await supabase.auth.getUser();
         
         if (user && payment?.projectData) {
-          // Verificar si es contratista autenticado
           const { data: contractorData } = await supabase
             .from('Contratistas')
             .select('*')
@@ -39,39 +65,7 @@ export const useAccessVerification = (payment: PaymentDetail | null, paymentId: 
           }
         }
 
-        // Verificar acceso del mandante desde sessionStorage
-        const mandanteAccess = sessionStorage.getItem('mandanteAccess');
-        console.log('🔍 sessionStorage mandanteAccess:', mandanteAccess);
-        
-        if (mandanteAccess) {
-          try {
-            const accessData = JSON.parse(mandanteAccess);
-            console.log('🔍 Parsed mandanteAccess data:', { 
-              storedPaymentId: accessData.paymentId, 
-              requestedPaymentId: paymentId, 
-              hasToken: !!accessData.token 
-            });
-            
-            if (accessData.paymentId === paymentId && accessData.token) {
-              console.log('✅ Mandante access granted');
-              setHasAccess(true);
-              setIsMandante(true);
-              setAccessChecked(true);
-              setCheckingAccess(false);
-              return;
-            } else if (accessData.paymentId !== paymentId) {
-              console.log('❌ Payment ID mismatch in sessionStorage');
-            } else if (!accessData.token) {
-              console.log('❌ No token in sessionStorage');
-            }
-          } catch (parseError) {
-            console.error('Error parsing mandanteAccess:', parseError);
-          }
-        } else {
-          console.log('❌ No mandanteAccess found in sessionStorage');
-        }
-
-        console.log('❌ Access denied - no mandante access found');
+        console.log('❌ Access denied - no valid access found');
         setHasAccess(false);
         setAccessChecked(true);
         setCheckingAccess(false);

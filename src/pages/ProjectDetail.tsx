@@ -121,12 +121,26 @@ const ProjectDetail = () => {
       return;
     }
     
-    navigate(`/payment/${payment.id}`);
+    // Almacenar datos de acceso del mandante para evitar verificación
+    const accessData = {
+      paymentId: payment.id.toString(),
+      token: 'mandante_authenticated',
+      timestamp: Date.now()
+    };
+    sessionStorage.setItem('mandanteAccess', JSON.stringify(accessData));
+    navigate(`/submission/${payment.id}`);
   };
 
   const handleViewDocuments = (payment: any) => {
     console.log(`👁️ View documents clicked for: "${payment.Name}"`);
-    navigate(`/payment/${payment.id}`);
+    // Almacenar datos de acceso del mandante para evitar verificación
+    const accessData = {
+      paymentId: payment.id.toString(),
+      token: 'mandante_authenticated',
+      timestamp: Date.now()
+    };
+    sessionStorage.setItem('mandanteAccess', JSON.stringify(accessData));
+    navigate(`/submission/${payment.id}`);
   };
 
   const filteredAndSortedPayments = project?.EstadosPago

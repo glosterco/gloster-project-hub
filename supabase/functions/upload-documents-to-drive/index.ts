@@ -70,33 +70,21 @@ serve(async (req) => {
       );
     }
 
-    // Get Google Drive credentials with detailed logging
-    console.log('🔍 Checking Google Drive credentials...');
-    console.log('🔍 Environment variables available:', Object.keys(Deno.env.toObject()));
+    // Get Google Drive credentials and clean them of extra whitespace/newlines
+    console.log('🔍 Getting and cleaning Google Drive credentials...');
     
-    const clientId = Deno.env.get('GOOGLE_DRIVE_CLIENT_ID');
-    const clientSecret = Deno.env.get('GOOGLE_DRIVE_CLIENT_SECRET');
-    const refreshToken = Deno.env.get('GOOGLE_DRIVE_REFRESH_TOKEN');
+    const clientId = Deno.env.get('GOOGLE_DRIVE_CLIENT_ID')?.trim();
+    const clientSecret = Deno.env.get('GOOGLE_DRIVE_CLIENT_SECRET')?.trim();
+    const refreshToken = Deno.env.get('GOOGLE_DRIVE_REFRESH_TOKEN')?.trim();
 
-    console.log('🔑 GOOGLE_DRIVE_CLIENT_ID:', clientId ? '✅ found' : '❌ missing');
-    console.log('🔑 GOOGLE_DRIVE_CLIENT_SECRET:', clientSecret ? '✅ found' : '❌ missing');
-    console.log('🔑 GOOGLE_DRIVE_REFRESH_TOKEN:', refreshToken ? '✅ found' : '❌ missing');
-
-    // Also check the specific environment variables we need for Supabase
-    console.log('🔍 Supabase vars - URL:', Deno.env.get('SUPABASE_URL') ? '✅' : '❌');
-    console.log('🔍 Supabase vars - SERVICE_ROLE_KEY:', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ? '✅' : '❌');
-    console.log('🔍 Supabase vars - ANON_KEY:', Deno.env.get('SUPABASE_ANON_KEY') ? '✅' : '❌');
+    console.log('🔑 GOOGLE_DRIVE_CLIENT_ID:', clientId ? '✅ found and cleaned' : '❌ missing');
+    console.log('🔑 GOOGLE_DRIVE_CLIENT_SECRET:', clientSecret ? '✅ found and cleaned' : '❌ missing');
+    console.log('🔑 GOOGLE_DRIVE_REFRESH_TOKEN:', refreshToken ? '✅ found and cleaned' : '❌ missing');
 
     if (!clientId || !clientSecret || !refreshToken) {
-      const missingCredentials = {
-        GOOGLE_DRIVE_CLIENT_ID: clientId ? '✅ found' : '❌ missing',
-        GOOGLE_DRIVE_CLIENT_SECRET: clientSecret ? '✅ found' : '❌ missing',
-        GOOGLE_DRIVE_REFRESH_TOKEN: refreshToken ? '✅ found' : '❌ missing'
-      };
-      console.error('❌ One or more credentials are missing:', missingCredentials);
-      console.error('❌ Missing credentials. Aborting.');
+      console.error('❌ Missing Google Drive credentials after cleaning');
       return Response.json(
-        { success: false, error: 'Missing Google Drive credentials', details: missingCredentials },
+        { success: false, error: 'Missing Google Drive credentials' },
         { status: 500, headers: corsHeaders }
       );
     }

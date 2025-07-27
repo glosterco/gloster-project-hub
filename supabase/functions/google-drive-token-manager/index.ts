@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -31,10 +32,10 @@ serve(async (req) => {
     
     const { action } = await req.json();
     
-    // Get Google Drive credentials
-    const clientId = Deno.env.get('GOOGLE_DRIVE_CLIENT_ID');
-    const clientSecret = Deno.env.get('GOOGLE_DRIVE_CLIENT_SECRET');
-    const refreshToken = Deno.env.get('GOOGLE_DRIVE_REFRESH_TOKEN');
+    // Get Google Drive credentials and clean them
+    const clientId = Deno.env.get('GOOGLE_DRIVE_CLIENT_ID')?.trim();
+    const clientSecret = Deno.env.get('GOOGLE_DRIVE_CLIENT_SECRET')?.trim();
+    const refreshToken = Deno.env.get('GOOGLE_DRIVE_REFRESH_TOKEN')?.trim();
 
     if (!clientId || !clientSecret || !refreshToken) {
       console.error('❌ Missing Google Drive credentials');

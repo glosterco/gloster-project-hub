@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Mail, Lock, HelpCircle, UserPlus, Clock } from 'lucide-react';
+import { Mail, Lock, HelpCircle, UserPlus, Clock, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -330,7 +330,7 @@ const EmailAccess = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder={isTemporaryAccess ? "Código de 6 dígitos" : "Contraseña"}
+                  placeholder="Contraseña o código temporal"
                   className="pl-10 font-rubik"
                   disabled={loading}
                   maxLength={isTemporaryAccess ? 6 : undefined}
@@ -343,6 +343,16 @@ const EmailAccess = () => {
               )}
             </div>
             
+            {/* Información sobre código temporal */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div className="text-sm text-blue-800">
+                  <p className="font-medium mb-1">Código de acceso temporal</p>
+                  <p>Si recibiste un código temporal por email, úsalo como contraseña para acceder y verificarte para aprobar el estado de pago.</p>
+                </div>
+              </div>
+            </div>
             
             {/* Mensaje de estado de acceso temporal */}
             {isTemporaryAccess && (

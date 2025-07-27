@@ -1,10 +1,16 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+const supabase = createClient(
+  Deno.env.get('SUPABASE_URL') ?? '',
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+);
 
 interface NotificationRequest {
   paymentId: string;
@@ -204,6 +210,23 @@ const createTemporaryCodeEmailHtml = (data: NotificationRequest): string => {
 };
 
 const createEmailHtml = (data: NotificationRequest): string => {
+  const tempCodeSection = data.temporaryCode ? `
+              <tr>
+                <td class="info-label">Código de Acceso Temporal:</td>
+                <td class="info-value" style="background: #fef3c7; padding: 12px; border-radius: 4px; font-weight: 700; font-size: 18px; letter-spacing: 2px; color: #1e293b;">${data.temporaryCode}</td>
+              </tr>
+  ` : '';
+
+  const accessInstructions = data.temporaryCode ? `
+          <div class="important-note">
+            <strong>Código de Acceso Temporal:</strong> Use el código <strong>${data.temporaryCode}</strong> como contraseña para acceder y verificarse. Este código le permitirá revisar y aprobar el estado de pago. <strong>Ingrese este código en el campo de contraseña del formulario de acceso.</strong>
+          </div>
+  ` : `
+          <div class="important-note">
+            <strong>Nota Importante:</strong> Este enlace le dará acceso directo y seguro al estado de pago donde podrá revisar toda la documentación adjunta y proceder con la aprobación o solicitar modificaciones según corresponda.
+          </div>
+  `;
+
   return `
     <!DOCTYPE html>
     <html>
@@ -364,6 +387,7 @@ const createEmailHtml = (data: NotificationRequest): string => {
                 <td class="info-label">Fecha de Vencimiento:</td>
                 <td class="info-value">${data.dueDate}</td>
               </tr>
+              ${tempCodeSection}
             </table>
           </div>
           
@@ -372,9 +396,7 @@ const createEmailHtml = (data: NotificationRequest): string => {
             <a href="${data.accessUrl}" class="cta-button">Acceder al Estado de Pago</a>
           </div>
           
-          <div class="important-note">
-            <strong>Nota Importante:</strong> Este enlace le dará acceso directo y seguro al estado de pago donde podrá revisar toda la documentación adjunta y proceder con la aprobación o solicitar modificaciones según corresponda.
-          </div>
+          ${accessInstructions}
           
           <p style="color: #64748b; font-size: 14px; margin-top: 25px;">
             Este es un mensaje automático del sistema de gestion de proyectos Gloster. Si tiene alguna consulta técnica, puede contactarnos a través del correo de soporte.
@@ -391,6 +413,11 @@ const createEmailHtml = (data: NotificationRequest): string => {
   `;
 };
 
+// Función para generar código temporal
+const generateTemporaryCode = (): string => {
+  return Math.random().toString(36).substring(2, 8).toUpperCase();
+};
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -400,17 +427,67 @@ const handler = async (req: Request): Promise<Response> => {
     const data: NotificationRequest = await req.json();
     console.log("📧 Sending notification with data:", data);
 
+    // Verificar si el mandante tiene auth_user_id
+    const { data: mandanteData, error: mandanteError } = await supabase
+      .from('Mandantes')
+      .select('auth_user_id, CompanyName')
+      .eq('ContactEmail', data.mandanteEmail)
+      .single();
+
+    if (mandanteError) {
+      console.error('❌ Error fetching mandante:', mandanteError);
+      // Continuar con código temporal si no se encuentra el mandante
+    }
+
+    const hasAuthUser = mandanteData?.auth_user_id;
+    console.log('🔍 Mandante has auth_user_id:', hasAuthUser ? 'Yes' : 'No');
+
+    let temporaryCode = null;
+    
+    // Si no tiene auth_user_id, generar código temporal
+    if (!hasAuthUser) {
+      temporaryCode = generateTemporaryCode();
+      console.log('🔑 Generated temporary code:', temporaryCode);
+      
+      // Guardar código temporal en la base de datos
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 24); // Expira en 24 horas
+
+      const { error: insertError } = await supabase
+        .from('temporary_access_codes')
+        .insert({
+          payment_id: parseInt(data.paymentId),
+          email: data.mandanteEmail,
+          code: temporaryCode,
+          expires_at: expiresAt.toISOString()
+        });
+
+      if (insertError) {
+        console.error('❌ Error saving temporary code:', insertError);
+        throw new Error(`Failed to save temporary code: ${insertError.message}`);
+      }
+
+      console.log('✅ Temporary code saved successfully');
+    }
+
     const accessToken = await getAccessToken();
     const fromEmail = Deno.env.get("GMAIL_FROM_EMAIL");
 
-    // Determinar el tipo de email
+    // Determinar el tipo de email - solo usar template temporal si isTemporaryAccess está explícitamente activado
     const isTemporaryCode = data.isTemporaryAccess && data.temporaryCode;
-    const emailHtml = isTemporaryCode ? createTemporaryCodeEmailHtml(data) : createEmailHtml(data);
+    
+    // Para el email del mandante, usar el template normal pero con código temporal si aplica
+    const emailData = {
+      ...data,
+      temporaryCode: temporaryCode
+    };
+    
+    const emailHtml = isTemporaryCode ? createTemporaryCodeEmailHtml(emailData) : createEmailHtml(emailData);
     const subject = isTemporaryCode 
       ? "Código de Acceso Temporal - Gloster" 
       : `Estado de Pago ${data.mes} ${data.año} - ${data.proyecto}`;
     
-    const emailData = {
+    const emailPayload = {
       raw: encodeBase64UTF8(
         `From: Gloster Gestion de Proyectos <${fromEmail}>
 To: ${data.mandanteEmail}
@@ -433,7 +510,7 @@ ${emailHtml}`
           "Authorization": `Bearer ${accessToken}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(emailData),
+        body: JSON.stringify(emailPayload),
       }
     );
 

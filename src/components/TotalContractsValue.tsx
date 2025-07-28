@@ -72,15 +72,22 @@ const TotalContractsValue: React.FC<TotalContractsValueProps> = ({ projects }) =
         </div>
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold text-slate-800 font-rubik">
+        <div className="space-y-2">
           {Object.entries(projectsByCurrency).length === 1 ? (
-            // Si solo hay una moneda, mostrar directamente
-            Object.entries(projectsByCurrency).map(([currency, amount]) => 
-              formatCurrency(amount, currency)
-            )[0]
+            <div className="text-2xl font-bold text-slate-800 font-rubik">
+              {Object.entries(projectsByCurrency).map(([currency, amount]) => 
+                formatCurrency(amount, currency)
+              )[0]}
+            </div>
           ) : (
-            // Si hay múltiples monedas, mostrar total en CLP
-            formatCurrency(totalInCLP)
+            Object.entries(projectsByCurrency).map(([currency, amount]) => (
+              <div key={currency} className="flex justify-between items-center">
+                <span className="text-sm font-medium text-gloster-gray font-rubik">{currency}:</span>
+                <span className="text-lg font-bold text-slate-800 font-rubik">
+                  {formatCurrency(amount, currency)}
+                </span>
+              </div>
+            ))
           )}
         </div>
       </CardContent>

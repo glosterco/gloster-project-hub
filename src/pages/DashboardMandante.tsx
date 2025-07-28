@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Calendar, MapPin, Building2, User, Phone, Mail, FileText, CheckCircle, Clock, AlertCircle, XCircle, LogOut, DollarSign, FolderOpen, Search, Filter, ArrowUpDown, Plus, Folder, ChevronRight, ChevronDown } from 'lucide-react';
+import { Calendar, MapPin, Building2, User, Phone, Mail, FileText, CheckCircle, Clock, AlertCircle, XCircle, LogOut, DollarSign, FolderOpen, Search, Filter, ArrowUpDown, Plus, Folder, ChevronRight, ChevronDown, Edit2, Trash2 } from 'lucide-react';
 import { useProjectsWithDetailsMandante } from '@/hooks/useProjectsWithDetailsMandante';
 import { formatCurrency } from '@/utils/currencyUtils';
 import { useNavigate } from 'react-router-dom';
@@ -40,6 +40,8 @@ const DashboardMandante: React.FC = () => {
   const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [selectedProjectsForFolder, setSelectedProjectsForFolder] = useState<number[]>([]);
+  const [editingFolder, setEditingFolder] = useState<string | null>(null);
+  const [editFolderName, setEditFolderName] = useState('');
 
   useEffect(() => {
     const fetchMandanteInfo = async () => {
@@ -279,6 +281,42 @@ const DashboardMandante: React.FC = () => {
   // Función para obtener proyectos de una carpeta
   const getFolderProjects = (folder: ProjectFolder) => {
     return filteredAndSortedProjects.filter(project => folder.projectIds.includes(project.id));
+  };
+
+  // Función para editar carpeta
+  const handleEditFolder = (folderId: string, currentName: string) => {
+    setEditingFolder(folderId);
+    setEditFolderName(currentName);
+  };
+
+  // Función para guardar edición de carpeta
+  const handleSaveEditFolder = () => {
+    if (!editFolderName.trim() || !editingFolder) return;
+    
+    setFolders(prev => prev.map(folder => 
+      folder.id === editingFolder 
+        ? { ...folder, name: editFolderName.trim() }
+        : folder
+    ));
+    
+    setEditingFolder(null);
+    setEditFolderName('');
+  };
+
+  // Función para cancelar edición
+  const handleCancelEdit = () => {
+    setEditingFolder(null);
+    setEditFolderName('');
+  };
+
+  // Función para eliminar carpeta
+  const handleDeleteFolder = (folderId: string) => {
+    setFolders(prev => prev.filter(folder => folder.id !== folderId));
+    setExpandedFolders(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(folderId);
+      return newSet;
+    });
   };
 
   if (loading) {
@@ -542,22 +580,80 @@ const DashboardMandante: React.FC = () => {
                 return (
                   <Card key={folder.id} className="border-gloster-gray/20">
                     <CardHeader>
-                      <button
-                        onClick={() => toggleFolder(folder.id)}
-                        className="flex items-center justify-between w-full text-left"
-                      >
-                        <div className="flex items-center gap-2">
+                      <div className="flex items-center justify-between w-full">
+                        <button
+                          onClick={() => toggleFolder(folder.id)}
+                          className="flex items-center gap-2 hover:bg-slate-50 rounded-lg p-2 transition-colors"
+                        >
                           <Folder className="h-5 w-5 text-gloster-yellow" />
-                          <h3 className="text-lg font-semibold text-slate-800 font-rubik">{folder.name}</h3>
+                          {editingFolder === folder.id ? (
+                            <Input
+                              value={editFolderName}
+                              onChange={(e) => setEditFolderName(e.target.value)}
+                              className="text-lg font-semibold text-slate-800 font-rubik h-8 min-w-0"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  handleSaveEditFolder();
+                                } else if (e.key === 'Escape') {
+                                  handleCancelEdit();
+                                }
+                              }}
+                              autoFocus
+                            />
+                          ) : (
+                            <h3 className="text-lg font-semibold text-slate-800 font-rubik">{folder.name}</h3>
+                          )}
                           <Badge variant="secondary" className="bg-gloster-yellow/20 text-gloster-gray font-rubik">
                             {folderProjects.length} proyectos
                           </Badge>
+                          {expandedFolders.has(folder.id) ? 
+                            <ChevronDown className="h-5 w-5 text-gloster-gray" /> : 
+                            <ChevronRight className="h-5 w-5 text-gloster-gray" />
+                          }
+                        </button>
+                        
+                        <div className="flex items-center gap-2">
+                          {editingFolder === folder.id ? (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={handleSaveEditFolder}
+                                className="h-8 w-8 p-0"
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={handleCancelEdit}
+                                className="h-8 w-8 p-0"
+                              >
+                                <XCircle className="h-4 w-4" />
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleEditFolder(folder.id, folder.name)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Edit2 className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleDeleteFolder(folder.id)}
+                                className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
                         </div>
-                        {expandedFolders.has(folder.id) ? 
-                          <ChevronDown className="h-5 w-5 text-gloster-gray" /> : 
-                          <ChevronRight className="h-5 w-5 text-gloster-gray" />
-                        }
-                      </button>
+                      </div>
                     </CardHeader>
                     
                     {expandedFolders.has(folder.id) && (

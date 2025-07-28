@@ -243,15 +243,17 @@ const EmailAccess = () => {
           return;
         }
 
-        // Marcar código como usado
-        const { error: updateError } = await supabase
-          .from('temporary_access_codes')
-          .update({ used: true })
-          .eq('id', tempCodeData.id);
+        // NO marcar código como usado - permitir acceso múltiple
+        // const { error: updateError } = await supabase
+        //   .from('temporary_access_codes')
+        //   .update({ used: true })
+        //   .eq('id', tempCodeData.id);
 
-        if (updateError) {
-          console.error('❌ Error marking code as used:', updateError);
-        }
+        // if (updateError) {
+        //   console.error('❌ Error marking code as used:', updateError);
+        // }
+
+        console.log('✅ Temporary code verified successfully - allowing multiple access');
 
         passwordValid = true;
       } else {
@@ -400,7 +402,7 @@ const EmailAccess = () => {
                 <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
                 <div className="text-sm text-blue-800">
                   <p className="font-medium mb-1">Código de acceso temporal</p>
-                  <p>Si recibiste un código temporal por email, úsalo como contraseña para acceder y verificarte para aprobar el estado de pago. <strong>Los códigos temporales tienen validez ilimitada.</strong></p>
+                  <p>Si recibiste un código temporal por email, úsalo como contraseña para acceder y verificarte para aprobar el estado de pago. <strong>Los códigos temporales tienen validez ilimitada y pueden ser usados múltiples veces.</strong></p>
                 </div>
               </div>
             </div>
@@ -411,7 +413,7 @@ const EmailAccess = () => {
                 <div className="flex items-center space-x-2">
                   <Clock className="w-4 h-4 text-gloster-yellow" />
                   <p className="text-sm font-medium text-slate-700 font-rubik">
-                    Código temporal detectado. Ingresa el código de 6 caracteres como contraseña.
+                    Código temporal detectado. Ingresa el código de 6 caracteres como contraseña. Puedes usar el código múltiples veces.
                   </p>
                 </div>
               </div>
@@ -478,7 +480,7 @@ const EmailAccess = () => {
                         <h4 className="font-medium font-rubik text-slate-800">Acceso temporal</h4>
                       </div>
                       <p className="text-sm text-slate-600 font-rubik mb-4">
-                        Recibe un código temporal por email para acceder inmediatamente. El código tiene validez ilimitada.
+                        Recibe un código temporal por email para acceder inmediatamente. El código tiene validez ilimitada y puede ser usado múltiples veces.
                       </p>
                       
                       <div className="space-y-2 mb-4">

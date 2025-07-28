@@ -449,13 +449,15 @@ const handler = async (req: Request): Promise<Response> => {
       temporaryCode = generateTemporaryCode();
       console.log('🔑 Generated temporary code:', temporaryCode);
       
-      // Invalidar códigos temporales anteriores para este payment y email
-      await supabase
-        .from('temporary_access_codes')
-        .update({ used: true })
-        .eq('payment_id', parseInt(data.paymentId))
-        .eq('email', data.mandanteEmail)
-        .eq('used', false);
+      // NO invalidar códigos temporales anteriores - permitir múltiples códigos activos
+      // await supabase
+      //   .from('temporary_access_codes')
+      //   .update({ used: true })
+      //   .eq('payment_id', parseInt(data.paymentId))
+      //   .eq('email', data.mandanteEmail)
+      //   .eq('used', false);
+      
+      console.log('⚡ Allowing multiple active temporary codes for mandante');
       
       // Guardar código temporal en la base de datos con validez ILIMITADA
       // Establecer expiración en 10 años para simular validez ilimitada

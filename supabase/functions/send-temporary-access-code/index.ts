@@ -78,13 +78,15 @@ const handler = async (req: Request): Promise<Response> => {
       temporaryCode = existingCode.code;
       expiresAt = new Date(existingCode.expires_at);
     } else {
-      // Invalidar códigos temporales anteriores para este payment y email
-      await supabase
-        .from('temporary_access_codes')
-        .update({ used: true })
-        .eq('payment_id', parsedPaymentId)
-        .eq('email', email.toLowerCase())
-        .eq('used', false);
+      // NO invalidar códigos temporales anteriores - permitir múltiples códigos activos
+      // await supabase
+      //   .from('temporary_access_codes')
+      //   .update({ used: true })
+      //   .eq('payment_id', parsedPaymentId)
+      //   .eq('email', email.toLowerCase())
+      //   .eq('used', false);
+
+      console.log('⚡ Allowing multiple active temporary codes');
 
       // Generar nuevo código temporal
       temporaryCode = generateTemporaryCode();

@@ -20,20 +20,21 @@ export const useAccessVerification = (payment: PaymentDetail | null, paymentId: 
       try {
         console.log('🔍 Checking access for payment:', paymentId);
         
-        // Verificar primero el acceso de mandante desde sessionStorage
+        // PRIMERA PRIORIDAD: Verificar acceso de mandante desde sessionStorage (más prioritario)
         const mandanteAccess = sessionStorage.getItem('mandanteAccess');
         
         if (mandanteAccess) {
           try {
             const accessData = JSON.parse(mandanteAccess);
-            console.log('🔍 Checking mandante access from sessionStorage:', { 
+            console.log('🔍 Found mandante access in sessionStorage:', { 
               storedPaymentId: accessData.paymentId, 
               requestedPaymentId: paymentId, 
-              hasToken: !!accessData.token
+              hasToken: !!accessData.token,
+              email: accessData.email
             });
             
             if (accessData.paymentId === paymentId && accessData.token === 'mandante_authenticated') {
-              console.log('✅ Mandante access granted from sessionStorage');
+              console.log('✅ Mandante access granted from sessionStorage (priority over auth)');
               setHasAccess(true);
               setIsMandante(true);
               setAccessChecked(true);
@@ -45,50 +46,57 @@ export const useAccessVerification = (payment: PaymentDetail | null, paymentId: 
           }
         }
 
-        // Verificar autenticación de contratista si tenemos datos del payment
-        if (payment?.projectData) {
-          setCheckingAccess(true);
-          const { data: { user } } = await supabase.auth.getUser();
+        // SEGUNDA PRIORIDAD: Solo verificar autenticación si NO hay acceso de mandante en sessionStorage
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user && payment?.projectData) {
+          console.log('🔍 Checking authenticated user access for user:', user.email);
           
-          if (user) {
-            const { data: contractorData } = await supabase
-              .from('Contratistas')
-              .select('*')
-              .eq('auth_user_id', user.id)
-              .maybeSingle();
+          const { data: contractorData } = await supabase
+            .from('Contratistas')
+            .select('*')
+            .eq('auth_user_id', user.id)
+            .maybeSingle();
 
-            if (contractorData && payment.projectData.Contratista?.id === contractorData.id) {
-              console.log('✅ Contractor access granted');
-              setHasAccess(true);
-              setIsMandante(false);
-              setAccessChecked(true);
-              setCheckingAccess(false);
-              return;
-            }
-
-            // Verificar si es un mandante autenticado
-            const { data: mandanteData } = await supabase
-              .from('Mandantes')
-              .select('*')
-              .eq('auth_user_id', user.id)
-              .eq('id', payment.projectData.Owner?.id)
-              .maybeSingle();
-
-            if (mandanteData) {
-              console.log('✅ Authenticated mandante access granted');
-              setHasAccess(true);
-              setIsMandante(true);
-              setAccessChecked(true);
-              setCheckingAccess(false);
-              return;
-            }
+          if (contractorData && payment.projectData.Contratista?.id === contractorData.id) {
+            console.log('✅ Contractor access granted for user:', user.email);
+            setHasAccess(true);
+            setIsMandante(false);
+            setAccessChecked(true);
+            setCheckingAccess(false);
+            return;
           }
+
+          // Verificar si es un mandante autenticado
+          const { data: mandanteData } = await supabase
+            .from('Mandantes')
+            .select('*')
+            .eq('auth_user_id', user.id)
+            .eq('id', payment.projectData.Owner?.id)
+            .maybeSingle();
+
+          if (mandanteData) {
+            console.log('✅ Authenticated mandante access granted for user:', user.email);
+            setHasAccess(true);
+            setIsMandante(true);
+            setAccessChecked(true);
+            setCheckingAccess(false);
+            return;
+          }
+
+          console.log('❌ Authenticated user has no access to this payment');
         }
 
         // Si llegamos aquí y tenemos acceso de mandante válido pero sin payment data aún, esperar
         if (mandanteAccess && !payment) {
-          console.log('⏳ Waiting for payment data to load...');
+          console.log('⏳ Waiting for payment data to load for mandante access...');
           return; // No marcar como fallido aún, esperar que cargue el payment
+        }
+
+        // Si no hay payment data pero no hay mandanteAccess, fallar
+        if (!payment) {
+          console.log('⏳ Still waiting for payment data...');
+          return;
         }
 
         console.log('❌ Access denied - no valid access found');

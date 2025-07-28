@@ -115,6 +115,33 @@ export type Database = {
           },
         ]
       }
+      mandante_project_folders: {
+        Row: {
+          created_at: string
+          folder_name: string
+          id: string
+          mandante_id: number
+          project_ids: number[]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          folder_name: string
+          id?: string
+          mandante_id: number
+          project_ids?: number[]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          folder_name?: string
+          id?: string
+          mandante_id?: number
+          project_ids?: number[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       Mandantes: {
         Row: {
           auth_user_id: string | null

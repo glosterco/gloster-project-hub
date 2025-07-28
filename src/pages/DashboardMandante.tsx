@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { Calendar, MapPin, Building2, User, Phone, Mail, FileText, CheckCircle, Clock, AlertCircle, XCircle, LogOut, DollarSign, FolderOpen, Search, Filter, ArrowUpDown, Plus, Folder, ChevronRight, ChevronDown, Edit2, Trash2 } from 'lucide-react';
 import { useProjectsWithDetailsMandante } from '@/hooks/useProjectsWithDetailsMandante';
+import { useMandanteFolders } from '@/hooks/useMandanteFolders';
 import { formatCurrency } from '@/utils/currencyUtils';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -22,6 +23,7 @@ interface ProjectFolder {
 
 const DashboardMandante: React.FC = () => {
   const { projects, mandante, loading } = useProjectsWithDetailsMandante();
+  const { folders, createFolder, updateFolder, deleteFolder } = useMandanteFolders(mandante?.id || null);
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const [mandanteInfo, setMandanteInfo] = useState<{
@@ -35,7 +37,6 @@ const DashboardMandante: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'active', 'inactive'
   
   // Estados para carpetas
-  const [folders, setFolders] = useState<ProjectFolder[]>([]);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
@@ -244,24 +245,22 @@ const DashboardMandante: React.FC = () => {
   }, [projects, searchTerm, filterStatus, sortBy]);
 
   // Función para crear carpeta
-  const handleCreateFolder = () => {
+  const handleCreateFolder = async () => {
     if (!newFolderName.trim() || selectedProjectsForFolder.length === 0) return;
     
-    const newFolder: ProjectFolder = {
-      id: Date.now().toString(),
-      name: newFolderName.trim(),
-      projectIds: [...selectedProjectsForFolder]
-    };
-    
-    setFolders(prev => [...prev, newFolder]);
-    setNewFolderName('');
-    setSelectedProjectsForFolder([]);
-    setIsCreateFolderOpen(false);
+    try {
+      await createFolder(newFolderName.trim(), selectedProjectsForFolder);
+      setNewFolderName('');
+      setSelectedProjectsForFolder([]);
+      setIsCreateFolderOpen(false);
+    } catch (error) {
+      console.error('Error creating folder:', error);
+    }
   };
 
   // Función para obtener proyectos no asignados a carpetas
   const getUnassignedProjects = () => {
-    const assignedProjectIds = new Set(folders.flatMap(folder => folder.projectIds));
+    const assignedProjectIds = new Set(folders.flatMap(folder => folder.project_ids));
     return filteredAndSortedProjects.filter(project => !assignedProjectIds.has(project.id));
   };
 
@@ -279,8 +278,8 @@ const DashboardMandante: React.FC = () => {
   };
 
   // Función para obtener proyectos de una carpeta
-  const getFolderProjects = (folder: ProjectFolder) => {
-    return filteredAndSortedProjects.filter(project => folder.projectIds.includes(project.id));
+  const getFolderProjects = (folder: any) => {
+    return filteredAndSortedProjects.filter(project => folder.project_ids.includes(project.id));
   };
 
   // Función para editar carpeta
@@ -290,17 +289,16 @@ const DashboardMandante: React.FC = () => {
   };
 
   // Función para guardar edición de carpeta
-  const handleSaveEditFolder = () => {
+  const handleSaveEditFolder = async () => {
     if (!editFolderName.trim() || !editingFolder) return;
     
-    setFolders(prev => prev.map(folder => 
-      folder.id === editingFolder 
-        ? { ...folder, name: editFolderName.trim() }
-        : folder
-    ));
-    
-    setEditingFolder(null);
-    setEditFolderName('');
+    try {
+      await updateFolder(editingFolder, { folder_name: editFolderName.trim() });
+      setEditingFolder(null);
+      setEditFolderName('');
+    } catch (error) {
+      console.error('Error updating folder:', error);
+    }
   };
 
   // Función para cancelar edición
@@ -310,13 +308,17 @@ const DashboardMandante: React.FC = () => {
   };
 
   // Función para eliminar carpeta
-  const handleDeleteFolder = (folderId: string) => {
-    setFolders(prev => prev.filter(folder => folder.id !== folderId));
-    setExpandedFolders(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(folderId);
-      return newSet;
-    });
+  const handleDeleteFolder = async (folderId: string) => {
+    try {
+      await deleteFolder(folderId);
+      setExpandedFolders(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(folderId);
+        return newSet;
+      });
+    } catch (error) {
+      console.error('Error deleting folder:', error);
+    }
   };
 
   if (loading) {
@@ -601,7 +603,7 @@ const DashboardMandante: React.FC = () => {
                               autoFocus
                             />
                           ) : (
-                            <h3 className="text-lg font-semibold text-slate-800 font-rubik">{folder.name}</h3>
+                            <h3 className="text-lg font-semibold text-slate-800 font-rubik">{folder.folder_name}</h3>
                           )}
                           <Badge variant="secondary" className="bg-gloster-yellow/20 text-gloster-gray font-rubik">
                             {folderProjects.length} proyectos
@@ -637,7 +639,7 @@ const DashboardMandante: React.FC = () => {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => handleEditFolder(folder.id, folder.name)}
+                                onClick={() => handleEditFolder(folder.id, folder.folder_name)}
                                 className="h-8 w-8 p-0"
                               >
                                 <Edit2 className="h-4 w-4" />

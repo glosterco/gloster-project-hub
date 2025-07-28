@@ -10,6 +10,7 @@ import PageHeader from '@/components/PageHeader';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useProjectsWithDetails } from '@/hooks/useProjectsWithDetails';
 import TotalContractsValue from '@/components/TotalContractsValue';
+import TotalApprovedValue from '@/components/TotalApprovedValue';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -69,15 +70,7 @@ const Dashboard = () => {
       .reduce((sum: number, payment: any) => sum + (payment.Total || 0), 0);
   };
 
-  // Calculate total approved value in UF for summary
-  const totalApprovedValueUF = projects.reduce((sum, project) => {
-    const approvedValue = getProjectApprovedValue(project);
-    if (project.Currency === 'UF') {
-      return sum + approvedValue;
-    }
-    // No convertimos otras monedas a UF aquí, solo sumamos valores ya en UF
-    return sum;
-  }, 0);
+  // Remove totalApprovedValueUF calculation as it's now in TotalApprovedValue component
 
   if (loading) {
     return (
@@ -167,21 +160,7 @@ const Dashboard = () => {
 
           <TotalContractsValue projects={projects} />
 
-          <Card className="border-gloster-gray/20">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gloster-gray font-rubik">
-                Total Aprobado
-              </CardTitle>
-              <div className="w-8 h-8 bg-gloster-yellow/20 rounded-lg flex items-center justify-center">
-                <FileText className="h-4 w-4 text-gloster-gray" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-slate-800 font-rubik">
-                {formatCurrency(totalApprovedValueUF, 'UF')}
-              </div>
-            </CardContent>
-          </Card>
+          <TotalApprovedValue projects={projects} />
         </div>
 
         {/* Projects Mosaic Grid */}

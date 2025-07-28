@@ -50,7 +50,7 @@ const ProjectDetailMandante = () => {
       case 'aprobado':
         return 'bg-green-100 text-green-700';
       case 'pendiente':
-        return 'bg-gloster-yellow/20 text-gloster-gray';
+        return 'bg-blue-100 text-blue-700';
       case 'programado':
         return 'bg-blue-100 text-blue-700';
       case 'enviado':

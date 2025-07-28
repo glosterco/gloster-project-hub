@@ -220,7 +220,7 @@ const EmailAccess = () => {
 
         sessionStorage.setItem('mandanteAccess', JSON.stringify(accessData));
 
-        navigate(`/submission-view?paymentId=${paymentId}`);
+        navigate(`/submission/${paymentId}`);
       } else {
         setPopupError('El estado de pago no coincide con los estados de pago encontrados para el proyecto.');
       }

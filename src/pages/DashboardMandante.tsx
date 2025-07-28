@@ -43,6 +43,9 @@ const DashboardMandante: React.FC = () => {
   const [selectedProjectsForFolder, setSelectedProjectsForFolder] = useState<number[]>([]);
   const [editingFolder, setEditingFolder] = useState<string | null>(null);
   const [editFolderName, setEditFolderName] = useState('');
+  const [isEditFolderProjectsOpen, setIsEditFolderProjectsOpen] = useState(false);
+  const [editingFolderProjects, setEditingFolderProjects] = useState<string | null>(null);
+  const [selectedProjectsForEdit, setSelectedProjectsForEdit] = useState<number[]>([]);
 
   useEffect(() => {
     const fetchMandanteInfo = async () => {
@@ -321,6 +324,30 @@ const DashboardMandante: React.FC = () => {
     }
   };
 
+  // Función para editar proyectos de carpeta
+  const handleEditFolderProjects = (folderId: string) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (folder) {
+      setEditingFolderProjects(folderId);
+      setSelectedProjectsForEdit([...folder.project_ids]);
+      setIsEditFolderProjectsOpen(true);
+    }
+  };
+
+  // Función para guardar edición de proyectos
+  const handleSaveEditFolderProjects = async () => {
+    if (!editingFolderProjects) return;
+    
+    try {
+      await updateFolder(editingFolderProjects, { project_ids: selectedProjectsForEdit });
+      setEditingFolderProjects(null);
+      setSelectedProjectsForEdit([]);
+      setIsEditFolderProjectsOpen(false);
+    } catch (error) {
+      console.error('Error updating folder projects:', error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 font-rubik flex items-center justify-center">
@@ -471,7 +498,7 @@ const DashboardMandante: React.FC = () => {
                       id="folder-name"
                       value={newFolderName}
                       onChange={(e) => setNewFolderName(e.target.value)}
-                      placeholder="ej: Pocuro 347"
+                      placeholder="Nombre Obra/Nombre contratista"
                       className="font-rubik"
                     />
                   </div>
@@ -641,8 +668,18 @@ const DashboardMandante: React.FC = () => {
                                 variant="outline"
                                 onClick={() => handleEditFolder(folder.id, folder.folder_name)}
                                 className="h-8 w-8 p-0"
+                                title="Editar nombre"
                               >
                                 <Edit2 className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleEditFolderProjects(folder.id)}
+                                className="h-8 w-8 p-0"
+                                title="Editar proyectos"
+                              >
+                                <Plus className="h-4 w-4" />
                               </Button>
                               <Button
                                 size="sm"
@@ -957,6 +994,49 @@ const DashboardMandante: React.FC = () => {
           )}
         </div>
       </div>
+      
+      {/* Diálogo para editar proyectos de carpeta */}
+      <Dialog open={isEditFolderProjectsOpen} onOpenChange={setIsEditFolderProjectsOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-rubik">Editar Proyectos de Carpeta</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="font-rubik">Seleccionar proyectos</Label>
+              <div className="max-h-40 overflow-y-auto border rounded p-2 space-y-2">
+                {filteredAndSortedProjects.map((project) => (
+                  <div key={project.id} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id={`edit-project-${project.id}`}
+                      checked={selectedProjectsForEdit.includes(project.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedProjectsForEdit(prev => [...prev, project.id]);
+                        } else {
+                          setSelectedProjectsForEdit(prev => prev.filter(id => id !== project.id));
+                        }
+                      }}
+                    />
+                    <label htmlFor={`edit-project-${project.id}`} className="text-sm font-rubik cursor-pointer">
+                      {project.Name}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setIsEditFolderProjectsOpen(false)} className="font-rubik">
+                Cancelar
+              </Button>
+              <Button onClick={handleSaveEditFolderProjects} className="font-rubik">
+                Guardar Cambios
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

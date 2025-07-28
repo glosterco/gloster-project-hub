@@ -1,14 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Calendar, MapPin, Building2, User, Phone, Mail, FileText, CheckCircle, Clock, AlertCircle, XCircle, LogOut, DollarSign, FolderOpen } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Calendar, MapPin, Building2, User, Phone, Mail, FileText, CheckCircle, Clock, AlertCircle, XCircle, LogOut, DollarSign, FolderOpen, Search, Filter, ArrowUpDown, Plus, Folder, ChevronRight, ChevronDown } from 'lucide-react';
 import { useProjectsWithDetailsMandante } from '@/hooks/useProjectsWithDetailsMandante';
 import { formatCurrency } from '@/utils/currencyUtils';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+
+interface ProjectFolder {
+  id: string;
+  name: string;
+  projectIds: number[];
+}
 
 const DashboardMandante: React.FC = () => {
   const { projects, mandante, loading } = useProjectsWithDetailsMandante();
@@ -18,6 +28,18 @@ const DashboardMandante: React.FC = () => {
     ContactName: string;
     CompanyName: string;
   } | null>(null);
+  
+  // Estados para filtros y búsqueda
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState('recibidos'); // 'recibidos', 'name', 'date', 'budget'
+  const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'active', 'inactive'
+  
+  // Estados para carpetas
+  const [folders, setFolders] = useState<ProjectFolder[]>([]);
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+  const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [selectedProjectsForFolder, setSelectedProjectsForFolder] = useState<number[]>([]);
 
   useEffect(() => {
     const fetchMandanteInfo = async () => {
@@ -164,6 +186,101 @@ const DashboardMandante: React.FC = () => {
     return acc;
   }, {} as Record<string, number>);
 
+  // Función para verificar si un proyecto tiene estados "Recibido" (Enviado)
+  const hasReceivedPayments = (project: any) => {
+    return project.EstadosPago?.some(payment => payment.Status === 'Enviado') || false;
+  };
+
+  // Función para filtrar y ordenar proyectos
+  const filteredAndSortedProjects = useMemo(() => {
+    let filtered = [...projects];
+
+    // Aplicar filtro de búsqueda
+    if (searchTerm) {
+      filtered = filtered.filter(project => 
+        project.Name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        project.Description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        project.Location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        project.Contratista?.CompanyName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        project.Contratista?.ContactName?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Aplicar filtro de estado
+    if (filterStatus !== 'all') {
+      filtered = filtered.filter(project => 
+        filterStatus === 'active' ? project.Status : !project.Status
+      );
+    }
+
+    // Aplicar ordenamiento
+    switch (sortBy) {
+      case 'recibidos':
+        // Ordenar por proyectos con estados recibidos primero, luego por nombre
+        filtered.sort((a, b) => {
+          const aHasReceived = hasReceivedPayments(a);
+          const bHasReceived = hasReceivedPayments(b);
+          if (aHasReceived && !bHasReceived) return -1;
+          if (!aHasReceived && bHasReceived) return 1;
+          return (a.Name || '').localeCompare(b.Name || '');
+        });
+        break;
+      case 'name':
+        filtered.sort((a, b) => (a.Name || '').localeCompare(b.Name || ''));
+        break;
+      case 'date':
+        filtered.sort((a, b) => new Date(b.StartDate).getTime() - new Date(a.StartDate).getTime());
+        break;
+      case 'budget':
+        filtered.sort((a, b) => (b.Budget || 0) - (a.Budget || 0));
+        break;
+      default:
+        break;
+    }
+
+    return filtered;
+  }, [projects, searchTerm, filterStatus, sortBy]);
+
+  // Función para crear carpeta
+  const handleCreateFolder = () => {
+    if (!newFolderName.trim() || selectedProjectsForFolder.length === 0) return;
+    
+    const newFolder: ProjectFolder = {
+      id: Date.now().toString(),
+      name: newFolderName.trim(),
+      projectIds: [...selectedProjectsForFolder]
+    };
+    
+    setFolders(prev => [...prev, newFolder]);
+    setNewFolderName('');
+    setSelectedProjectsForFolder([]);
+    setIsCreateFolderOpen(false);
+  };
+
+  // Función para obtener proyectos no asignados a carpetas
+  const getUnassignedProjects = () => {
+    const assignedProjectIds = new Set(folders.flatMap(folder => folder.projectIds));
+    return filteredAndSortedProjects.filter(project => !assignedProjectIds.has(project.id));
+  };
+
+  // Función para alternar expansión de carpeta
+  const toggleFolder = (folderId: string) => {
+    setExpandedFolders(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(folderId)) {
+        newSet.delete(folderId);
+      } else {
+        newSet.add(folderId);
+      }
+      return newSet;
+    });
+  };
+
+  // Función para obtener proyectos de una carpeta
+  const getFolderProjects = (folder: ProjectFolder) => {
+    return filteredAndSortedProjects.filter(project => folder.projectIds.includes(project.id));
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 font-rubik flex items-center justify-center">
@@ -290,9 +407,120 @@ const DashboardMandante: React.FC = () => {
           </Card>
         </div>
 
-        {/* Lista de proyectos */}
+        {/* Lista de proyectos con filtros y búsqueda */}
         <div className="space-y-6">
-          <h2 className="text-xl font-semibold text-slate-800 font-rubik">Mis Proyectos</h2>
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-semibold text-slate-800 font-rubik">Mis Proyectos</h2>
+            
+            {/* Botón crear carpeta */}
+            <Dialog open={isCreateFolderOpen} onOpenChange={setIsCreateFolderOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="font-rubik">
+                  <Folder className="h-4 w-4 mr-2" />
+                  Crear Carpeta
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="font-rubik">Crear Nueva Carpeta</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="folder-name" className="font-rubik">Nombre de la carpeta</Label>
+                    <Input
+                      id="folder-name"
+                      value={newFolderName}
+                      onChange={(e) => setNewFolderName(e.target.value)}
+                      placeholder="ej: Pocuro 347"
+                      className="font-rubik"
+                    />
+                  </div>
+                  <div>
+                    <Label className="font-rubik">Seleccionar proyectos</Label>
+                    <div className="max-h-40 overflow-y-auto border rounded p-2 space-y-2">
+                      {filteredAndSortedProjects.map((project) => (
+                        <div key={project.id} className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id={`project-${project.id}`}
+                            checked={selectedProjectsForFolder.includes(project.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedProjectsForFolder(prev => [...prev, project.id]);
+                              } else {
+                                setSelectedProjectsForFolder(prev => prev.filter(id => id !== project.id));
+                              }
+                            }}
+                          />
+                          <label htmlFor={`project-${project.id}`} className="text-sm font-rubik cursor-pointer">
+                            {project.Name}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex justify-end space-x-2">
+                    <Button variant="outline" onClick={() => setIsCreateFolderOpen(false)} className="font-rubik">
+                      Cancelar
+                    </Button>
+                    <Button onClick={handleCreateFolder} className="font-rubik">
+                      Crear Carpeta
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          {/* Controles de búsqueda y filtros */}
+          <Card className="border-gloster-gray/20">
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {/* Barra de búsqueda */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gloster-gray h-4 w-4" />
+                  <Input
+                    placeholder="Buscar proyectos..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 font-rubik"
+                  />
+                </div>
+
+                {/* Ordenamiento */}
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="font-rubik">
+                    <ArrowUpDown className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Ordenar por" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="recibidos" className="font-rubik">Estados Recibidos Primero</SelectItem>
+                    <SelectItem value="name" className="font-rubik">Nombre A-Z</SelectItem>
+                    <SelectItem value="date" className="font-rubik">Fecha Más Reciente</SelectItem>
+                    <SelectItem value="budget" className="font-rubik">Presupuesto Mayor</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {/* Filtro por estado */}
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger className="font-rubik">
+                    <Filter className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Filtrar estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all" className="font-rubik">Todos los Proyectos</SelectItem>
+                    <SelectItem value="active" className="font-rubik">Solo Activos</SelectItem>
+                    <SelectItem value="inactive" className="font-rubik">Solo Inactivos</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {/* Contador de resultados */}
+                <div className="flex items-center justify-center text-sm text-gloster-gray font-rubik">
+                  {filteredAndSortedProjects.length} de {projects.length} proyectos
+                </div>
+              </div>
+            </CardContent>
+          </Card>
           
           {projects.length === 0 ? (
             <Card className="border-gloster-gray/20">
@@ -305,130 +533,328 @@ const DashboardMandante: React.FC = () => {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {projects.map((project) => {
-                const progress = getProjectProgress(project);
-                const approvedValue = getProjectApprovedValue(project);
+            <div className="space-y-6">
+              {/* Carpetas */}
+              {folders.map((folder) => {
+                const folderProjects = getFolderProjects(folder);
+                if (folderProjects.length === 0) return null;
 
                 return (
-                  <Card 
-                    key={project.id} 
-                    className="overflow-hidden border-gloster-gray/20 hover:shadow-xl transition-all duration-300 cursor-pointer hover:border-gloster-yellow/50"
-                  >
+                  <Card key={folder.id} className="border-gloster-gray/20">
                     <CardHeader>
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <CardTitle className="text-xl mb-2 text-slate-800 font-rubik">{project.Name}</CardTitle>
-                          <CardDescription className="text-sm text-gloster-gray font-rubik">
-                            {project.Description}
-                          </CardDescription>
+                      <button
+                        onClick={() => toggleFolder(folder.id)}
+                        className="flex items-center justify-between w-full text-left"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Folder className="h-5 w-5 text-gloster-yellow" />
+                          <h3 className="text-lg font-semibold text-slate-800 font-rubik">{folder.name}</h3>
+                          <Badge variant="secondary" className="bg-gloster-yellow/20 text-gloster-gray font-rubik">
+                            {folderProjects.length} proyectos
+                          </Badge>
                         </div>
-                        <Badge variant="secondary" className="bg-gloster-yellow/20 text-gloster-gray border-gloster-yellow/30 text-xs font-rubik">
-                          {project.Status ? "Activo" : "Inactivo"}
-                        </Badge>
-                      </div>
+                        {expandedFolders.has(folder.id) ? 
+                          <ChevronDown className="h-5 w-5 text-gloster-gray" /> : 
+                          <ChevronRight className="h-5 w-5 text-gloster-gray" />
+                        }
+                      </button>
                     </CardHeader>
+                    
+                    {expandedFolders.has(folder.id) && (
+                      <CardContent>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                          {folderProjects.map((project) => {
+                            const progress = getProjectProgress(project);
+                            const approvedValue = getProjectApprovedValue(project);
 
-                    <CardContent className="space-y-4">
-                      {/* Información del proyecto */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-                        <div className="flex items-center gap-2">
-                          <MapPin className="w-4 h-4 text-gloster-gray" />
-                          <span className="text-gloster-gray font-rubik">{project.Location}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-gloster-gray" />
-                          <span className="text-gloster-gray font-rubik">{new Date(project.StartDate).toLocaleDateString()}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Building2 className="w-4 h-4 text-gloster-gray" />
-                          <span className="text-gloster-gray font-rubik">{project.Contratista?.CompanyName}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <User className="w-4 h-4 text-gloster-gray" />
-                          <span className="text-gloster-gray font-rubik">{project.Contratista?.ContactName}</span>
-                        </div>
-                      </div>
-
-                      {/* Progreso del proyecto */}
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium text-gloster-gray font-rubik">Progreso del Proyecto</span>
-                          <span className="text-sm text-slate-800 font-rubik">{progress}%</span>
-                        </div>
-                        <div className="w-full bg-gloster-gray/20 rounded-full h-2">
-                          <div 
-                            className="bg-gloster-yellow h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${progress}%` }}
-                          ></div>
-                        </div>
-                      </div>
-
-                      {/* Información financiera */}
-                      <div className="flex justify-between items-center pt-2 border-t border-gloster-gray/20">
-                        <div>
-                          <p className="text-sm text-gloster-gray font-rubik">Presupuesto Total</p>
-                          <p className="font-semibold text-slate-800 font-rubik">{formatCurrency(project.Budget, project.Currency)}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gloster-gray font-rubik">Total Aprobado</p>
-                          <p className="font-semibold text-green-600 font-rubik">{formatCurrency(approvedValue, project.Currency)}</p>
-                        </div>
-                      </div>
-
-                      {/* Estados recibidos para aprobación rápida */}
-                      {project.EstadosPago && project.EstadosPago.length > 0 && (
-                        <div className="space-y-2">
-                          <h4 className="text-sm font-medium text-slate-800 font-rubik">Estados Recibidos para Aprobación</h4>
-                          <div className="grid gap-2 max-h-32 overflow-y-auto">
-                            {project.EstadosPago
-                              .filter(payment => payment.Status === 'Enviado')
-                              .map((payment) => (
-                              <div 
-                                key={payment.id} 
-                                className="flex items-center justify-between p-2 rounded border text-sm cursor-pointer hover:bg-blue-50 border-blue-200"
-                                onClick={() => handlePaymentClick(payment.id)}
+                            return (
+                              <Card 
+                                key={project.id} 
+                                className="overflow-hidden border-gloster-gray/20 hover:shadow-xl transition-all duration-300 cursor-pointer hover:border-gloster-yellow/50"
                               >
-                                <div className="flex items-center gap-2">
-                                  {getStatusIcon(payment.Status)}
-                                  <span className="font-medium text-slate-800 font-rubik">{payment.Name}</span>
-                                  <Badge className={`text-xs ${getStatusColor(payment.Status)} font-rubik`}>
-                                    {getDisplayStatus(payment.Status)}
-                                  </Badge>
-                                </div>
-                                <div className="text-right">
-                                  <div className="font-medium text-slate-800 font-rubik">
-                                    {formatCurrency(payment.Total, project.Currency)}
+                                <CardHeader>
+                                  <div className="flex justify-between items-start">
+                                    <div>
+                                      <CardTitle className="text-xl mb-2 text-slate-800 font-rubik">
+                                        {project.Name}
+                                        {hasReceivedPayments(project) && (
+                                          <Badge className="ml-2 bg-blue-100 text-blue-800 font-rubik">
+                                            Estados Recibidos
+                                          </Badge>
+                                        )}
+                                      </CardTitle>
+                                      <CardDescription className="text-sm text-gloster-gray font-rubik">
+                                        {project.Description}
+                                      </CardDescription>
+                                    </div>
+                                    <Badge variant="secondary" className="bg-gloster-yellow/20 text-gloster-gray border-gloster-yellow/30 text-xs font-rubik">
+                                      {project.Status ? "Activo" : "Inactivo"}
+                                    </Badge>
                                   </div>
-                                  <div className="text-xs text-gloster-gray font-rubik">
-                                    {payment.ExpiryDate}
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                            {project.EstadosPago.filter(payment => payment.Status === 'Enviado').length === 0 && (
-                              <div className="text-sm text-gloster-gray text-center py-2 font-rubik">
-                                No hay estados recibidos para aprobación
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
+                                </CardHeader>
 
-                      {/* Botón ver detalles */}
-                      <div className="pt-4 border-t border-gloster-gray/20">
-                        <Button 
-                          onClick={() => handleProjectDetails(project.id)}
-                          className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold font-rubik"
-                          size="sm"
-                        >
-                          Ver Más Información del Proyecto
-                        </Button>
-                      </div>
-                    </CardContent>
+                                <CardContent className="space-y-4">
+                                  {/* Información del proyecto */}
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                    <div className="flex items-center gap-2">
+                                      <MapPin className="w-4 h-4 text-gloster-gray" />
+                                      <span className="text-gloster-gray font-rubik">{project.Location}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Calendar className="w-4 h-4 text-gloster-gray" />
+                                      <span className="text-gloster-gray font-rubik">{new Date(project.StartDate).toLocaleDateString()}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Building2 className="w-4 h-4 text-gloster-gray" />
+                                      <span className="text-gloster-gray font-rubik">{project.Contratista?.CompanyName}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <User className="w-4 h-4 text-gloster-gray" />
+                                      <span className="text-gloster-gray font-rubik">{project.Contratista?.ContactName}</span>
+                                    </div>
+                                  </div>
+
+                                  {/* Progreso del proyecto */}
+                                  <div className="space-y-2">
+                                    <div className="flex justify-between items-center">
+                                      <span className="text-sm font-medium text-gloster-gray font-rubik">Progreso del Proyecto</span>
+                                      <span className="text-sm text-slate-800 font-rubik">{progress}%</span>
+                                    </div>
+                                    <div className="w-full bg-gloster-gray/20 rounded-full h-2">
+                                      <div 
+                                        className="bg-gloster-yellow h-2 rounded-full transition-all duration-300"
+                                        style={{ width: `${progress}%` }}
+                                      ></div>
+                                    </div>
+                                  </div>
+
+                                  {/* Información financiera */}
+                                  <div className="flex justify-between items-center pt-2 border-t border-gloster-gray/20">
+                                    <div>
+                                      <p className="text-sm text-gloster-gray font-rubik">Presupuesto Total</p>
+                                      <p className="font-semibold text-slate-800 font-rubik">{formatCurrency(project.Budget, project.Currency)}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-sm text-gloster-gray font-rubik">Total Aprobado</p>
+                                      <p className="font-semibold text-green-600 font-rubik">{formatCurrency(approvedValue, project.Currency)}</p>
+                                    </div>
+                                  </div>
+
+                                  {/* Estados recibidos para aprobación rápida */}
+                                  {project.EstadosPago && project.EstadosPago.length > 0 && (
+                                    <div className="space-y-2">
+                                      <h4 className="text-sm font-medium text-slate-800 font-rubik">Estados Recibidos para Aprobación</h4>
+                                      <div className="grid gap-2 max-h-32 overflow-y-auto">
+                                        {project.EstadosPago
+                                          .filter(payment => payment.Status === 'Enviado')
+                                          .map((payment) => (
+                                          <div 
+                                            key={payment.id} 
+                                            className="flex items-center justify-between p-2 rounded border text-sm cursor-pointer hover:bg-blue-50 border-blue-200"
+                                            onClick={() => handlePaymentClick(payment.id)}
+                                          >
+                                            <div className="flex items-center gap-2">
+                                              {getStatusIcon(payment.Status)}
+                                              <span className="font-medium text-slate-800 font-rubik">{payment.Name}</span>
+                                              <Badge className={`text-xs ${getStatusColor(payment.Status)} font-rubik`}>
+                                                {getDisplayStatus(payment.Status)}
+                                              </Badge>
+                                            </div>
+                                            <div className="text-right">
+                                              <div className="font-medium text-slate-800 font-rubik">
+                                                {formatCurrency(payment.Total, project.Currency)}
+                                              </div>
+                                              <div className="text-xs text-gloster-gray font-rubik">
+                                                {payment.ExpiryDate}
+                                              </div>
+                                            </div>
+                                          </div>
+                                        ))}
+                                        {project.EstadosPago.filter(payment => payment.Status === 'Enviado').length === 0 && (
+                                          <div className="text-sm text-gloster-gray text-center py-2 font-rubik">
+                                            No hay estados recibidos para aprobación
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Botón ver detalles */}
+                                  <div className="pt-4 border-t border-gloster-gray/20">
+                                    <Button 
+                                      onClick={() => handleProjectDetails(project.id)}
+                                      className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold font-rubik"
+                                      size="sm"
+                                    >
+                                      Ver Más Información del Proyecto
+                                    </Button>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            );
+                          })}
+                        </div>
+                      </CardContent>
+                    )}
                   </Card>
                 );
               })}
+
+              {/* Proyectos sin asignar a carpetas */}
+              {getUnassignedProjects().length > 0 && (
+                <div>
+                  {folders.length > 0 && (
+                    <h3 className="text-lg font-semibold text-slate-800 font-rubik mb-4">
+                      Proyectos Individuales
+                    </h3>
+                  )}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {getUnassignedProjects().map((project) => {
+                      const progress = getProjectProgress(project);
+                      const approvedValue = getProjectApprovedValue(project);
+
+                      return (
+                        <Card 
+                          key={project.id} 
+                          className="overflow-hidden border-gloster-gray/20 hover:shadow-xl transition-all duration-300 cursor-pointer hover:border-gloster-yellow/50"
+                        >
+                          <CardHeader>
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <CardTitle className="text-xl mb-2 text-slate-800 font-rubik">
+                                  {project.Name}
+                                  {hasReceivedPayments(project) && (
+                                    <Badge className="ml-2 bg-blue-100 text-blue-800 font-rubik">
+                                      Estados Recibidos
+                                    </Badge>
+                                  )}
+                                </CardTitle>
+                                <CardDescription className="text-sm text-gloster-gray font-rubik">
+                                  {project.Description}
+                                </CardDescription>
+                              </div>
+                              <Badge variant="secondary" className="bg-gloster-yellow/20 text-gloster-gray border-gloster-yellow/30 text-xs font-rubik">
+                                {project.Status ? "Activo" : "Inactivo"}
+                              </Badge>
+                            </div>
+                          </CardHeader>
+
+                          <CardContent className="space-y-4">
+                            {/* Información del proyecto */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                              <div className="flex items-center gap-2">
+                                <MapPin className="w-4 h-4 text-gloster-gray" />
+                                <span className="text-gloster-gray font-rubik">{project.Location}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Calendar className="w-4 h-4 text-gloster-gray" />
+                                <span className="text-gloster-gray font-rubik">{new Date(project.StartDate).toLocaleDateString()}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Building2 className="w-4 h-4 text-gloster-gray" />
+                                <span className="text-gloster-gray font-rubik">{project.Contratista?.CompanyName}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <User className="w-4 h-4 text-gloster-gray" />
+                                <span className="text-gloster-gray font-rubik">{project.Contratista?.ContactName}</span>
+                              </div>
+                            </div>
+
+                            {/* Progreso del proyecto */}
+                            <div className="space-y-2">
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm font-medium text-gloster-gray font-rubik">Progreso del Proyecto</span>
+                                <span className="text-sm text-slate-800 font-rubik">{progress}%</span>
+                              </div>
+                              <div className="w-full bg-gloster-gray/20 rounded-full h-2">
+                                <div 
+                                  className="bg-gloster-yellow h-2 rounded-full transition-all duration-300"
+                                  style={{ width: `${progress}%` }}
+                                ></div>
+                              </div>
+                            </div>
+
+                            {/* Información financiera */}
+                            <div className="flex justify-between items-center pt-2 border-t border-gloster-gray/20">
+                              <div>
+                                <p className="text-sm text-gloster-gray font-rubik">Presupuesto Total</p>
+                                <p className="font-semibold text-slate-800 font-rubik">{formatCurrency(project.Budget, project.Currency)}</p>
+                              </div>
+                              <div>
+                                <p className="text-sm text-gloster-gray font-rubik">Total Aprobado</p>
+                                <p className="font-semibold text-green-600 font-rubik">{formatCurrency(approvedValue, project.Currency)}</p>
+                              </div>
+                            </div>
+
+                            {/* Estados recibidos para aprobación rápida */}
+                            {project.EstadosPago && project.EstadosPago.length > 0 && (
+                              <div className="space-y-2">
+                                <h4 className="text-sm font-medium text-slate-800 font-rubik">Estados Recibidos para Aprobación</h4>
+                                <div className="grid gap-2 max-h-32 overflow-y-auto">
+                                  {project.EstadosPago
+                                    .filter(payment => payment.Status === 'Enviado')
+                                    .map((payment) => (
+                                    <div 
+                                      key={payment.id} 
+                                      className="flex items-center justify-between p-2 rounded border text-sm cursor-pointer hover:bg-blue-50 border-blue-200"
+                                      onClick={() => handlePaymentClick(payment.id)}
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        {getStatusIcon(payment.Status)}
+                                        <span className="font-medium text-slate-800 font-rubik">{payment.Name}</span>
+                                        <Badge className={`text-xs ${getStatusColor(payment.Status)} font-rubik`}>
+                                          {getDisplayStatus(payment.Status)}
+                                        </Badge>
+                                      </div>
+                                      <div className="text-right">
+                                        <div className="font-medium text-slate-800 font-rubik">
+                                          {formatCurrency(payment.Total, project.Currency)}
+                                        </div>
+                                        <div className="text-xs text-gloster-gray font-rubik">
+                                          {payment.ExpiryDate}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                  {project.EstadosPago.filter(payment => payment.Status === 'Enviado').length === 0 && (
+                                    <div className="text-sm text-gloster-gray text-center py-2 font-rubik">
+                                      No hay estados recibidos para aprobación
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Botón ver detalles */}
+                            <div className="pt-4 border-t border-gloster-gray/20">
+                              <Button 
+                                onClick={() => handleProjectDetails(project.id)}
+                                className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold font-rubik"
+                                size="sm"
+                              >
+                                Ver Más Información del Proyecto
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Mensaje cuando no hay proyectos filtrados */}
+              {filteredAndSortedProjects.length === 0 && projects.length > 0 && (
+                <Card className="border-gloster-gray/20">
+                  <CardContent className="flex flex-col items-center justify-center py-12">
+                    <Search className="h-12 w-12 text-gloster-gray mb-4" />
+                    <h3 className="text-lg font-medium text-slate-800 mb-2 font-rubik">No se encontraron proyectos</h3>
+                    <p className="text-gloster-gray text-center max-w-md font-rubik">
+                      No hay proyectos que coincidan con los filtros actuales. Intenta ajustar la búsqueda o los filtros.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           )}
         </div>

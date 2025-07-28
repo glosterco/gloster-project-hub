@@ -220,36 +220,6 @@ export type Database = {
           },
         ]
       }
-      temporary_access_codes: {
-        Row: {
-          code: string
-          created_at: string
-          email: string
-          expires_at: string
-          id: string
-          payment_id: number
-          used: boolean
-        }
-        Insert: {
-          code: string
-          created_at?: string
-          email: string
-          expires_at: string
-          id?: string
-          payment_id: number
-          used?: boolean
-        }
-        Update: {
-          code?: string
-          created_at?: string
-          email?: string
-          expires_at?: string
-          id?: string
-          payment_id?: number
-          used?: boolean
-        }
-        Relationships: []
-      }
       user_roles: {
         Row: {
           auth_user_id: string

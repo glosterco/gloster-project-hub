@@ -4,8 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Mail, Lock, HelpCircle, UserPlus, Clock, Info } from 'lucide-react';
+import { Mail, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -20,10 +19,7 @@ const EmailAccess = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [popupError, setPopupError] = useState<string | null>(null);
-  const [paymentDataLog, setPaymentDataLog] = useState<any>(null);
-  const [showAccountDialog, setShowAccountDialog] = useState(false);
-  const [temporaryCodeLoading, setTemporaryCodeLoading] = useState(false);
-  const [isTemporaryAccess, setIsTemporaryAccess] = useState(false);
+  const [needsPassword, setNeedsPassword] = useState(false);
 
   useEffect(() => {
     if (!paymentId) {
@@ -32,70 +28,22 @@ const EmailAccess = () => {
     }
   }, [paymentId, navigate]);
 
-  const sendTemporaryCode = async () => {
-    console.log('🔄 sendTemporaryCode called with email:', email);
-    
-    if (!email.trim()) {
-      toast({
-        title: "Email requerido",
-        description: "Por favor ingresa tu email para recibir el código temporal",
-        variant: "destructive"
-      });
-      return;
+  const checkMandanteAccount = async (email: string, projectData: any) => {
+    const mandanteEmail = projectData?.Mandantes?.ContactEmail;
+    const mandantePassword = projectData?.Mandantes?.Password;
+    const mandanteAuthUserId = projectData?.Mandantes?.auth_user_id;
+
+    if (!mandanteEmail || email.toLowerCase() !== mandanteEmail.toLowerCase()) {
+      return { hasAccess: false, error: 'El email ingresado no coincide con el mandante autorizado para este proyecto.' };
     }
 
-    if (!paymentId) {
-      toast({
-        title: "Error",
-        description: "ID de pago no encontrado",
-        variant: "destructive"
-      });
-      return;
+    // Si el mandante tiene auth_user_id, requiere contraseña
+    if (mandanteAuthUserId) {
+      return { hasAccess: true, needsPassword: true, mandantePassword };
     }
 
-    setTemporaryCodeLoading(true);
-    console.log('📧 Enviando código temporal...');
-
-    try {
-      const { data, error } = await supabase.functions.invoke('send-temporary-access-code', {
-        body: {
-          paymentId: paymentId,
-          email: email.trim()
-        },
-      });
-
-      console.log('📧 Response:', { data, error });
-
-      if (error) {
-        console.error('Error from function:', error);
-        throw error;
-      }
-
-      if (!data || !data.success) {
-        throw new Error(data?.error || 'Error al enviar código temporal');
-      }
-
-      toast({
-        title: "Código enviado",
-        description: "Se ha enviado un código temporal a tu email. Úsalo como contraseña para acceder.",
-      });
-
-      setIsTemporaryAccess(true);
-      setShowAccountDialog(false);
-      
-      // Limpiar la contraseña para que el usuario ingrese el código
-      setPassword('');
-      
-    } catch (error) {
-      console.error('Error sending temporary code:', error);
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo enviar el código temporal",
-        variant: "destructive"
-      });
-    } finally {
-      setTemporaryCodeLoading(false);
-    }
+    // Si no tiene auth_user_id, solo verificación por email
+    return { hasAccess: true, needsPassword: false };
   };
 
   const verifyEmailAccess = async () => {
@@ -108,10 +56,10 @@ const EmailAccess = () => {
       return;
     }
 
-    if (!password.trim()) {
+    if (needsPassword && !password.trim()) {
       toast({
-        title: isTemporaryAccess ? "Código temporal requerido" : "Contraseña requerida",
-        description: isTemporaryAccess ? "Por favor ingresa el código temporal enviado a tu email" : "Por favor ingresa tu contraseña para verificar el acceso",
+        title: "Contraseña requerida",
+        description: "Por favor ingresa tu contraseña para verificar el acceso",
         variant: "destructive"
       });
       return;
@@ -157,7 +105,8 @@ const EmailAccess = () => {
               id,
               CompanyName,
               ContactEmail,
-              Password
+              Password,
+              auth_user_id
             )
           `)
           .eq('id', paymentData.Project)
@@ -176,14 +125,12 @@ const EmailAccess = () => {
       if (paymentError) {
         console.error("Error en la consulta de Supabase:", paymentError);
         setPopupError('Error al verificar la información del estado de pago.');
-        setPaymentDataLog({ paymentId: parsedPaymentId, error: paymentError });
         return;
       }
 
       if (!paymentData) {
         console.log("Estado de pago no encontrado en la base de datos.");
         setPopupError('No se encontró el estado de pago con el ID proporcionado.');
-        setPaymentDataLog({ paymentId: parsedPaymentId, error: "Estado de pago no encontrado" });
         return;
       }
 
@@ -205,64 +152,28 @@ const EmailAccess = () => {
         return;
       }
 
-      console.log('Comparando emails:', { proporcionado: email.toLowerCase(), mandante: mandanteEmail.toLowerCase() });
-
-      if (email.toLowerCase() !== mandanteEmail.toLowerCase()) {
-        setPopupError('El email ingresado no coincide con el mandante autorizado para este proyecto.');
+      // Verificar acceso del mandante
+      const accessCheck = await checkMandanteAccount(email, projectData);
+      
+      if (!accessCheck.hasAccess) {
+        setPopupError(accessCheck.error);
         return;
       }
 
-      // Verificar contraseña o código temporal
-      let passwordValid = false;
-      
-      if (isTemporaryAccess) {
-        // Verificar código temporal
-        const { data: tempCodeData, error: tempCodeError } = await supabase
-          .from('temporary_access_codes')
-          .select('*')
-          .eq('payment_id', parsedPaymentId)
-          .eq('email', email.toLowerCase())
-          .eq('code', password.trim())
-          .eq('used', false)
-          .maybeSingle(); // Usar maybeSingle en lugar de single para evitar errores
-
-        console.log('🔍 Temporary code verification:', { 
-          paymentId: parsedPaymentId, 
-          email: email.toLowerCase(), 
-          code: password.trim(),
-          codeLength: password.trim().length,
-          codePattern: /^[A-Z0-9]{6}$/.test(password.trim()),
-          found: !!tempCodeData,
-          error: tempCodeError,
-          isTemporaryAccess: isTemporaryAccess
+      // Si el mandante necesita contraseña pero no la hemos verificado aún
+      if (accessCheck.needsPassword && !needsPassword) {
+        setNeedsPassword(true);
+        toast({
+          title: "Contraseña requerida",
+          description: "Este mandante tiene una cuenta. Por favor ingresa tu contraseña.",
         });
+        return;
+      }
 
-        if (tempCodeError || !tempCodeData) {
-          console.error('❌ Temporary code verification failed:', tempCodeError);
-          setPopupError('Código temporal inválido o expirado. Verifica que el código sea correcto y no haya expirado.');
-          return;
-        }
-
-        // NO marcar código como usado - permitir acceso múltiple
-        // const { error: updateError } = await supabase
-        //   .from('temporary_access_codes')
-        //   .update({ used: true })
-        //   .eq('id', tempCodeData.id);
-
-        // if (updateError) {
-        //   console.error('❌ Error marking code as used:', updateError);
-        // }
-
-        console.log('✅ Temporary code verified successfully - allowing multiple access');
-
-        passwordValid = true;
-      } else {
-        // Verificar contraseña normal
-        if (mandantePassword && password !== mandantePassword) {
-          setPopupError('La contraseña ingresada es incorrecta.');
-          return;
-        }
-        passwordValid = true;
+      // Verificar contraseña si es necesaria
+      if (accessCheck.needsPassword && password !== accessCheck.mandantePassword) {
+        setPopupError('La contraseña ingresada es incorrecta.');
+        return;
       }
 
       // Paso 5: Verificación del token si está presente
@@ -309,9 +220,7 @@ const EmailAccess = () => {
 
         sessionStorage.setItem('mandanteAccess', JSON.stringify(accessData));
 
-        setTimeout(() => {
-          navigate(`/submission-view?paymentId=${paymentId}`);
-        }, 1000);
+        navigate(`/submission-view?paymentId=${paymentId}`);
       } else {
         setPopupError('El estado de pago no coincide con los estados de pago encontrados para el proyecto.');
       }
@@ -340,7 +249,10 @@ const EmailAccess = () => {
             Verificación de Acceso
           </CardTitle>
           <CardDescription className="font-rubik">
-            Ingresa tu email y contraseña para acceder al estado de pago
+            {needsPassword ? 
+              'Ingresa tu email y contraseña para acceder' : 
+              'Ingresa tu email para verificar el acceso'
+            }
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -364,199 +276,43 @@ const EmailAccess = () => {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium text-slate-700 font-rubik">
-                {isTemporaryAccess ? 'Código Temporal' : 'Contraseña del Mandante'}
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gloster-gray" />
-                <Input
-                  id="password"
-                  type={isTemporaryAccess ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    // Auto-detectar si el usuario está ingresando un código temporal
-                    const inputValue = e.target.value.trim();
-                    if (inputValue.length === 6 && /^[A-Z0-9]{6}$/.test(inputValue)) {
-                      setIsTemporaryAccess(true);
-                    }
-                  }}
-                  onKeyPress={handleKeyPress}
-                  placeholder={isTemporaryAccess ? "Ingresa tu código de 6 caracteres" : "Contraseña o código temporal"}
-                  className="pl-10 font-rubik"
-                  disabled={loading}
-                  maxLength={isTemporaryAccess ? 6 : undefined}
-                />
-              </div>
-              {isTemporaryAccess && (
-                <p className="text-xs text-gloster-gray font-rubik">
-                  Usa el código de 6 caracteres enviado a tu email (letras y números)
-                </p>
-              )}
-            </div>
-            
-            {/* Información sobre código temporal */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-start gap-3">
-                <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                <div className="text-sm text-blue-800">
-                  <p className="font-medium mb-1">Código de acceso temporal</p>
-                  <p>Si recibiste un código temporal por email, úsalo como contraseña para acceder y verificarte para aprobar el estado de pago. <strong>Los códigos temporales tienen validez ilimitada y pueden ser usados múltiples veces.</strong></p>
-                </div>
-              </div>
-            </div>
-            
-            {/* Mensaje de estado de acceso temporal */}
-            {isTemporaryAccess && (
-              <div className="bg-gloster-yellow/20 border border-gloster-yellow/40 p-3 rounded-lg mb-4">
-                <div className="flex items-center space-x-2">
-                  <Clock className="w-4 h-4 text-gloster-yellow" />
-                  <p className="text-sm font-medium text-slate-700 font-rubik">
-                    Código temporal detectado. Ingresa el código de 6 caracteres como contraseña. Puedes usar el código múltiples veces.
-                  </p>
+            {needsPassword && (
+              <div className="space-y-2">
+                <label htmlFor="password" className="text-sm font-medium text-slate-700 font-rubik">
+                  Contraseña del Mandante
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gloster-gray" />
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="Contraseña"
+                    className="pl-10 font-rubik"
+                    disabled={loading}
+                  />
                 </div>
               </div>
             )}
             
             <Button
               onClick={verifyEmailAccess}
-              disabled={loading || !email.trim() || !password.trim()}
+              disabled={loading || !email.trim() || (needsPassword && !password.trim())}
               className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik font-medium"
             >
               {loading ? 'Verificando...' : 'Verificar Acceso'}
             </Button>
-            
-            {/* Separador visual */}
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-slate-200" />
+
+            {popupError && (
+              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-700 font-rubik">{popupError}</p>
               </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-slate-500 font-rubik">o</span>
-              </div>
-            </div>
-            
-            {/* Botón destacado para no tener cuenta */}
-            <div className="text-center space-y-3">
-              <Dialog open={showAccountDialog} onOpenChange={setShowAccountDialog}>
-                <DialogTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full border-2 border-gloster-yellow bg-gloster-yellow/10 hover:bg-gloster-yellow/20 text-slate-800 font-rubik font-medium transition-all duration-200 py-3"
-                  >
-                    <HelpCircle className="w-5 h-5 mr-2 text-gloster-yellow" />
-                    ¿No tienes cuenta? Obtén acceso aquí
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-md">
-                  <DialogHeader>
-                    <DialogTitle className="font-rubik text-slate-800">Acceso sin cuenta</DialogTitle>
-                    <DialogDescription className="font-rubik text-slate-600">
-                      Para revisar el estado de pago sin una cuenta en Gloster, puedes:
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div className="p-4 border border-slate-200 rounded-lg hover:border-gloster-yellow/40 transition-colors">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <div className="p-2 bg-gloster-yellow/20 rounded-full">
-                          <UserPlus className="w-5 h-5 text-gloster-yellow" />
-                        </div>
-                        <h4 className="font-medium font-rubik text-slate-800">Crear una cuenta</h4>
-                      </div>
-                      <p className="text-sm text-slate-600 font-rubik mb-3">
-                        Para obtener una cuenta asociada al proyecto, contacta a nuestro equipo de soporte.
-                      </p>
-                      <p className="text-sm font-medium text-gloster-gray font-rubik">
-                        📧 Email: soporte@gloster.cl
-                      </p>
-                    </div>
-                    
-                    <div className="p-4 border-2 border-gloster-yellow/30 bg-gloster-yellow/5 rounded-lg">
-                      <div className="flex items-center space-x-3 mb-3">
-                        <div className="p-2 bg-gloster-yellow/30 rounded-full">
-                          <Clock className="w-5 h-5 text-gloster-yellow" />
-                        </div>
-                        <h4 className="font-medium font-rubik text-slate-800">Acceso temporal</h4>
-                      </div>
-                      <p className="text-sm text-slate-600 font-rubik mb-4">
-                        Recibe un código temporal por email para acceder inmediatamente. El código tiene validez ilimitada y puede ser usado múltiples veces.
-                      </p>
-                      
-                      <div className="space-y-2 mb-4">
-                        <label className="text-sm font-medium text-slate-700 font-rubik">
-                          Email del mandante
-                        </label>
-                        <div className="relative">
-                          <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gloster-gray" />
-                          <Input
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder="mandante@empresa.com"
-                            className="pl-10 font-rubik"
-                            disabled={temporaryCodeLoading}
-                          />
-                        </div>
-                      </div>
-                      
-                      <Button
-                        onClick={sendTemporaryCode}
-                        disabled={temporaryCodeLoading || !email.trim()}
-                        className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik font-medium"
-                      >
-                        {temporaryCodeLoading ? (
-                          <div className="flex items-center space-x-2">
-                            <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin"></div>
-                            <span>Enviando...</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center space-x-2">
-                            <Mail className="w-4 h-4" />
-                            <span>Enviar código temporal</span>
-                          </div>
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
-              
-              <Button
-                onClick={() => navigate('/')}
-                variant="ghost"
-                className="text-slate-500 hover:text-slate-700 font-rubik text-sm"
-              >
-                Volver al Inicio
-              </Button>
-            </div>
+            )}
           </div>
         </CardContent>
       </Card>
-
-      {/* Pop-up de error o log */}
-      {popupError && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-lg font-semibold text-red-600 mb-4">Error de Verificación</h3>
-            <p className="text-gray-700 mb-4">{popupError}</p>
-            {paymentDataLog && (
-              <details className="mb-4">
-                <summary className="cursor-pointer text-sm text-gray-500">Ver detalles técnicos</summary>
-                <pre className="text-xs bg-gray-100 p-2 mt-2 rounded overflow-auto">
-                  {JSON.stringify(paymentDataLog, null, 2)}
-                </pre>
-              </details>
-            )}
-            <Button 
-              onClick={() => setPopupError(null)}
-              className="w-full"
-            >
-              Cerrar
-            </Button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

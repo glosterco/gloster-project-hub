@@ -25,10 +25,6 @@ interface NotificationRequest {
   dueDate?: string;
   accessUrl?: string;
   currency?: string;
-  // Para códigos temporales
-  temporaryCode?: string;
-  isTemporaryAccess?: boolean;
-  expiresAt?: string;
 }
 
 // UTF-8 compatible base64 encoding function
@@ -101,127 +97,9 @@ const formatCurrency = (amount: number, currency?: string): string => {
   }
 };
 
-const createTemporaryCodeEmailHtml = (data: NotificationRequest): string => {
-  const expirationDate = data.expiresAt ? new Date(data.expiresAt).toLocaleString('es-CL') : '24 horas';
-  
-  return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Código de Acceso Temporal - Gloster</title>
-      <style>
-        body { 
-          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-          line-height: 1.6; 
-          margin: 0; 
-          padding: 0; 
-          background-color: #f5f5f5;
-        }
-        .container { 
-          max-width: 600px; 
-          margin: 20px auto; 
-          background: #ffffff; 
-          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-          border-radius: 8px;
-          overflow: hidden;
-        }
-        .header { 
-          background: #F5DF4D; 
-          padding: 25px 20px; 
-          text-align: center; 
-        }
-        .title { 
-          color: #1e293b; 
-          font-size: 22px; 
-          font-weight: bold; 
-          margin: 0; 
-        }
-        .content { 
-          padding: 30px 25px; 
-        }
-        .code-box {
-          background: #f8fafc;
-          border: 2px solid #F5DF4D;
-          padding: 25px;
-          text-align: center;
-          margin: 25px 0;
-          border-radius: 8px;
-        }
-        .code {
-          font-size: 32px;
-          font-weight: bold;
-          color: #1e293b;
-          letter-spacing: 4px;
-          margin: 10px 0;
-        }
-        .expiry-note {
-          background: #fef3c7;
-          border: 1px solid #f59e0b;
-          padding: 15px;
-          border-radius: 4px;
-          margin: 20px 0;
-          font-size: 14px;
-        }
-        .footer { 
-          background: #f8fafc; 
-          padding: 25px 20px; 
-          text-align: center; 
-          color: #64748b; 
-          font-size: 13px;
-          border-top: 1px solid #e2e8f0;
-        }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <h1 class="title">Código de Acceso Temporal</h1>
-          <p style="margin: 5px 0 0 0; color: #64748b; font-size: 14px;">Gloster - Sistema de Gestión</p>
-        </div>
-        
-        <div class="content">
-          <p>Has solicitado un código temporal para acceder al estado de pago. Usa este código como contraseña en el formulario de acceso:</p>
-          
-          <div class="code-box">
-            <p style="margin: 0; font-size: 16px; color: #64748b;">Tu código temporal es:</p>
-            <div class="code">${data.temporaryCode}</div>
-            <p style="margin: 10px 0 0 0; font-size: 14px; color: #64748b;">Ingresa este código en el campo de contraseña</p>
-          </div>
-          
-          <div class="expiry-note">
-            <strong>Importante:</strong> Este código tiene validez ilimitada y puede ser usado en cualquier momento para acceder al estado de pago correspondiente.
-          </div>
-          
-          <p style="color: #64748b; font-size: 14px; margin-top: 25px;">
-            Si no solicitaste este código, puedes ignorar este mensaje. El código expirará automáticamente.
-          </p>
-        </div>
-        
-        <div class="footer">
-          <div style="font-weight: 600; color: #1e293b; margin-bottom: 5px;">Gloster - Sistema de Gestión de Proyectos</div>
-          <p style="margin: 5px 0;">Consultas técnicas: soporte.gloster@gmail.com</p>
-        </div>
-      </div>
-    </body>
-    </html>
-  `;
-};
 
 const createEmailHtml = (data: NotificationRequest): string => {
-  const tempCodeSection = data.temporaryCode ? `
-              <tr>
-                <td class="info-label">Código de Acceso Temporal:</td>
-                <td class="info-value" style="background: #fef3c7; padding: 12px; border-radius: 4px; font-weight: 700; font-size: 18px; letter-spacing: 2px; color: #1e293b;">${data.temporaryCode}</td>
-              </tr>
-  ` : '';
-
-  const accessInstructions = data.temporaryCode ? `
-          <div class="important-note">
-            <strong>Código de Acceso Temporal:</strong> Use el código <strong>${data.temporaryCode}</strong> como contraseña para acceder y verificarse. Este código le permitirá revisar y aprobar el estado de pago. <strong>Ingrese este código en el campo de contraseña del formulario de acceso.</strong>
-          </div>
-  ` : `
+  const accessInstructions = `
           <div class="important-note">
             <strong>Nota Importante:</strong> Este enlace le dará acceso directo y seguro al estado de pago donde podrá revisar toda la documentación adjunta y proceder con la aprobación o solicitar modificaciones según corresponda.
           </div>
@@ -387,7 +265,6 @@ const createEmailHtml = (data: NotificationRequest): string => {
                 <td class="info-label">Fecha de Vencimiento:</td>
                 <td class="info-value">${data.dueDate}</td>
               </tr>
-              ${tempCodeSection}
             </table>
           </div>
           
@@ -413,10 +290,6 @@ const createEmailHtml = (data: NotificationRequest): string => {
   `;
 };
 
-// Función para generar código temporal
-const generateTemporaryCode = (): string => {
-  return Math.random().toString(36).substring(2, 8).toUpperCase();
-};
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
@@ -427,76 +300,12 @@ const handler = async (req: Request): Promise<Response> => {
     const data: NotificationRequest = await req.json();
     console.log("📧 Sending notification with data:", data);
 
-    // Verificar si el mandante tiene auth_user_id
-    const { data: mandanteData, error: mandanteError } = await supabase
-      .from('Mandantes')
-      .select('auth_user_id, CompanyName')
-      .eq('ContactEmail', data.mandanteEmail)
-      .maybeSingle();
-
-    if (mandanteError) {
-      console.error('❌ Error fetching mandante:', mandanteError);
-      // Continuar con código temporal si no se encuentra el mandante
-    }
-
-    const hasAuthUser = mandanteData?.auth_user_id;
-    console.log('🔍 Mandante has auth_user_id:', hasAuthUser ? 'Yes' : 'No');
-
-    let temporaryCode = null;
-    
-    // SOLO generar código temporal si NO tiene auth_user_id
-    if (!hasAuthUser) {
-      temporaryCode = generateTemporaryCode();
-      console.log('🔑 Generated temporary code:', temporaryCode);
-      
-      // NO invalidar códigos temporales anteriores - permitir múltiples códigos activos
-      // await supabase
-      //   .from('temporary_access_codes')
-      //   .update({ used: true })
-      //   .eq('payment_id', parseInt(data.paymentId))
-      //   .eq('email', data.mandanteEmail)
-      //   .eq('used', false);
-      
-      console.log('⚡ Allowing multiple active temporary codes for mandante');
-      
-      // Guardar código temporal en la base de datos con validez ILIMITADA
-      // Establecer expiración en 10 años para simular validez ilimitada
-      const expiresAt = new Date();
-      expiresAt.setFullYear(expiresAt.getFullYear() + 10);
-
-      const { error: insertError } = await supabase
-        .from('temporary_access_codes')
-        .insert({
-          payment_id: parseInt(data.paymentId),
-          email: data.mandanteEmail,
-          code: temporaryCode,
-          expires_at: expiresAt.toISOString()
-        });
-
-      if (insertError) {
-        console.error('❌ Error saving temporary code:', insertError);
-        throw new Error(`Failed to save temporary code: ${insertError.message}`);
-      }
-
-      console.log('✅ Temporary code saved successfully with unlimited validity');
-    }
 
     const accessToken = await getAccessToken();
     const fromEmail = Deno.env.get("GMAIL_FROM_EMAIL");
 
-    // Determinar el tipo de email - solo usar template temporal si isTemporaryAccess está explícitamente activado
-    const isTemporaryCode = data.isTemporaryAccess && data.temporaryCode;
-    
-    // Para el email del mandante, usar el template normal pero con código temporal si aplica
-    const emailData = {
-      ...data,
-      temporaryCode: temporaryCode
-    };
-    
-    const emailHtml = isTemporaryCode ? createTemporaryCodeEmailHtml(emailData) : createEmailHtml(emailData);
-    const subject = isTemporaryCode 
-      ? "Código de Acceso Temporal - Gloster" 
-      : `Estado de Pago ${data.mes} ${data.año} - ${data.proyecto}`;
+    const emailHtml = createEmailHtml(data);
+    const subject = `Estado de Pago ${data.mes} ${data.año} - ${data.proyecto}`;
     
     const emailPayload = {
       raw: encodeBase64UTF8(
@@ -507,7 +316,7 @@ Reply-To: soporte.gloster@gmail.com
 Content-Type: text/html; charset=utf-8
 MIME-Version: 1.0
 X-Mailer: Gloster Project Management System
-Message-ID: <${isTemporaryCode ? 'temp-access' : 'payment'}-${data.paymentId}-${Date.now()}@gloster.com>
+Message-ID: <payment-${data.paymentId}-${Date.now()}@gloster.com>
 
 ${emailHtml}`
       ),

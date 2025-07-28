@@ -20,22 +20,19 @@ export const useAccessVerification = (payment: PaymentDetail | null, paymentId: 
       try {
         console.log('🔍 Checking access for payment:', paymentId);
         
-        // Verificar primero el acceso de mandante desde sessionStorage (más rápido)
+        // Verificar primero el acceso de mandante desde sessionStorage
         const mandanteAccess = sessionStorage.getItem('mandanteAccess');
         
         if (mandanteAccess) {
           try {
             const accessData = JSON.parse(mandanteAccess);
-            console.log('🔍 Parsed mandanteAccess data:', { 
+            console.log('🔍 Checking mandante access from sessionStorage:', { 
               storedPaymentId: accessData.paymentId, 
               requestedPaymentId: paymentId, 
-              hasToken: !!accessData.token,
-              isRecentAccess: accessData.timestamp && (Date.now() - accessData.timestamp < 3600000) // 1 hora
+              hasToken: !!accessData.token
             });
             
-            if (accessData.paymentId === paymentId && 
-                accessData.token === 'mandante_authenticated' &&
-                accessData.timestamp && (Date.now() - accessData.timestamp < 3600000)) { // Aumentar a 1 hora
+            if (accessData.paymentId === paymentId && accessData.token === 'mandante_authenticated') {
               console.log('✅ Mandante access granted from sessionStorage');
               setHasAccess(true);
               setIsMandante(true);

@@ -62,14 +62,19 @@ const DashboardMandante: React.FC = () => {
 
         if (!error && mandanteData) {
           setMandanteInfo(mandanteData);
+        } else if (!mandanteData) {
+          // Usuario no es mandante, redirigir al dashboard de contratista
+          navigate('/dashboard');
         }
       } catch (error) {
         console.error('Error fetching mandante info:', error);
+        // En caso de error, redirigir al dashboard principal
+        navigate('/dashboard');
       }
     };
 
     fetchMandanteInfo();
-  }, []);
+  }, [navigate]);
 
   const handleSignOut = async () => {
     const { error } = await signOut();
@@ -406,7 +411,7 @@ const DashboardMandante: React.FC = () => {
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h2 className="text-3xl font-bold text-slate-800 mb-2 font-rubik">
-              Mis Proyectos - {mandanteInfo?.CompanyName || 'Cargando...'}
+              Mis Proyectos{mandanteInfo?.CompanyName ? ` - ${mandanteInfo.CompanyName}` : ''}
             </h2>
             <p className="text-gloster-gray font-rubik">Gestiona tus proyectos activos y estados de pago</p>
           </div>
@@ -595,7 +600,7 @@ const DashboardMandante: React.FC = () => {
                 <Building2 className="h-12 w-12 text-gloster-gray mb-4" />
                 <h3 className="text-lg font-medium text-slate-800 mb-2 font-rubik">No hay proyectos</h3>
                 <p className="text-gloster-gray text-center max-w-md font-rubik">
-                  Aún no tienes proyectos asignados como mandante.
+                  No hay proyectos asignados.
                 </p>
               </CardContent>
             </Card>

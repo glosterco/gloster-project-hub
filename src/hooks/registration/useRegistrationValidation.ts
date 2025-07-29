@@ -43,7 +43,7 @@ export const useRegistrationValidation = () => {
     
     // Redirigir después de un breve retraso para mostrar el mensaje
     setTimeout(() => {
-      navigate('/');
+      navigate('/dashboard');
     }, 2000);
   };
 

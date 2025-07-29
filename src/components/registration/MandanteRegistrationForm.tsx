@@ -17,7 +17,7 @@ interface MandanteRegistrationFormProps {
 const MandanteRegistrationForm: React.FC<MandanteRegistrationFormProps> = ({ onBack }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { createMandante } = useMandantes();
+  const { createMandante, getMandanteByEmail } = useMandantes();
   const { createUserRole } = useCreateUserRole();
   
   const [formData, setFormData] = useState({
@@ -85,44 +85,89 @@ const MandanteRegistrationForm: React.FC<MandanteRegistrationFormProps> = ({ onB
     setLoading(true);
 
     try {
-      // Crear usuario en auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.contactEmail,
-        password: formData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`
-        }
-      });
-
-      if (authError) {
-        throw new Error(authError.message);
-      }
-
-      if (!authData.user) {
-        throw new Error('No se pudo crear el usuario');
-      }
-
-      // Crear mandante
-      const mandanteData = {
-        CompanyName: formData.companyName,
-        ContactName: formData.contactName,
-        ContactEmail: formData.contactEmail,
-        ContactPhone: parseInt(formData.contactPhone),
-        Status: true,
-        auth_user_id: authData.user.id
-      };
-
-      const { data: mandanteResult, error: mandanteError } = await createMandante(mandanteData);
-
-      if (mandanteError || !mandanteResult) {
-        throw new Error('No se pudo crear el mandante');
-      }
-
-      // Asignar rol de mandante
-      const roleResult = await createUserRole(authData.user.id, 'mandante', mandanteResult[0].id);
+      // Verificar si ya existe un mandante con este email
+      const { data: existingMandante } = await getMandanteByEmail(formData.contactEmail);
       
-      if (!roleResult.success) {
-        throw new Error('No se pudo asignar el rol');
+      if (existingMandante) {
+        // Si existe, crear usuario auth y actualizar el mandante existente
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: formData.contactEmail,
+          password: formData.password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/`
+          }
+        });
+
+        if (authError) {
+          throw new Error(authError.message);
+        }
+
+        if (!authData.user) {
+          throw new Error('No se pudo crear el usuario');
+        }
+
+        // Actualizar el mandante existente con el auth_user_id
+        const { error: updateError } = await supabase
+          .from('Mandantes')
+          .update({ 
+            auth_user_id: authData.user.id,
+            CompanyName: formData.companyName,
+            ContactName: formData.contactName,
+            ContactPhone: parseInt(formData.contactPhone),
+            Status: true
+          })
+          .eq('id', existingMandante.id);
+
+        if (updateError) {
+          throw new Error('No se pudo actualizar el mandante existente');
+        }
+
+        // Asignar rol de mandante
+        const roleResult = await createUserRole(authData.user.id, 'mandante', existingMandante.id);
+        
+        if (!roleResult.success) {
+          throw new Error('No se pudo asignar el rol');
+        }
+      } else {
+        // Si no existe, crear usuario auth y nuevo mandante
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: formData.contactEmail,
+          password: formData.password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/`
+          }
+        });
+
+        if (authError) {
+          throw new Error(authError.message);
+        }
+
+        if (!authData.user) {
+          throw new Error('No se pudo crear el usuario');
+        }
+
+        // Crear nuevo mandante
+        const mandanteData = {
+          CompanyName: formData.companyName,
+          ContactName: formData.contactName,
+          ContactEmail: formData.contactEmail,
+          ContactPhone: parseInt(formData.contactPhone),
+          Status: true,
+          auth_user_id: authData.user.id
+        };
+
+        const { data: mandanteResult, error: mandanteError } = await createMandante(mandanteData);
+
+        if (mandanteError || !mandanteResult) {
+          throw new Error('No se pudo crear el mandante');
+        }
+
+        // Asignar rol de mandante
+        const roleResult = await createUserRole(authData.user.id, 'mandante', mandanteResult[0].id);
+        
+        if (!roleResult.success) {
+          throw new Error('No se pudo asignar el rol');
+        }
       }
 
       setSuccess(true);

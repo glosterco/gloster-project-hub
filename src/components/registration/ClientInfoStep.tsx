@@ -49,16 +49,21 @@ const ClientInfoStep: React.FC<ClientInfoStepProps> = ({
 
   const handleCompanyBlur = async () => {
     // Solo buscar cuando se sale del campo y si hay contenido
-    if (clientCompany.length > 0) {
+    if (clientCompany.trim().length > 0) {
       setIsCheckingMandante(true);
       
-      const { data: existingMandante } = await getMandanteByIdOrName(clientCompany);
-      
-      if (existingMandante) {
-        // Autocompletar campos con datos del mandante existente
-        setClientContact(existingMandante.ContactName || '');
-        setClientEmail(existingMandante.ContactEmail || '');
-        setClientPhone(existingMandante.ContactPhone ? `+56${existingMandante.ContactPhone}` : '');
+      try {
+        const { data: existingMandante } = await getMandanteByIdOrName(clientCompany.trim());
+        
+        if (existingMandante) {
+          console.log('Found existing mandante for autocompletion:', existingMandante);
+          // Autocompletar campos con datos del mandante existente
+          setClientContact(existingMandante.ContactName || '');
+          setClientEmail(existingMandante.ContactEmail || '');
+          setClientPhone(existingMandante.ContactPhone ? `+56${existingMandante.ContactPhone}` : '');
+        }
+      } catch (error) {
+        console.error('Error searching mandante:', error);
       }
       
       setIsCheckingMandante(false);

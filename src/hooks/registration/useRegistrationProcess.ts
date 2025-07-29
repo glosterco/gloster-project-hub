@@ -79,8 +79,15 @@ export const useRegistrationProcess = () => {
         existingMandante.ContactName !== formData.clientContact;
       
       if (dataChanged) {
-        console.log('Contact data changed, creating new mandante with same company name...');
-        const mandanteData = prepareMandanteData(formData);
+        console.log('Contact data changed, creating new mandante with existing company name...');
+        // Usar el nombre real de la empresa del mandante existente, no el ID
+        const mandanteData = {
+          CompanyName: existingMandante.CompanyName, // Usar el nombre real de la empresa
+          ContactName: formData.clientContact,
+          ContactEmail: formData.clientEmail,
+          ContactPhone: parseInt(formData.clientPhone.replace('+56', '')),
+          Status: true
+        };
         
         const { data: mandanteResult, error: mandanteError } = await createMandante(mandanteData);
         

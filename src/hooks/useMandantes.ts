@@ -9,6 +9,9 @@ export interface MandanteData {
   ContactEmail: string;
   ContactPhone: number;
   Status?: boolean;
+  Username?: string;
+  Password?: string;
+  auth_user_id?: string;
 }
 
 export const useMandantes = () => {
@@ -27,6 +30,9 @@ export const useMandantes = () => {
           ContactName: data.ContactName,
           ContactEmail: data.ContactEmail,
           ContactPhone: data.ContactPhone,
+          Username: data.Username,
+          Password: data.Password,
+          auth_user_id: data.auth_user_id,
           Status: true
         }])
         .select()

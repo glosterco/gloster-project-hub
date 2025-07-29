@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
@@ -14,9 +14,12 @@ import { useFormValidation } from '@/hooks/useFormValidation';
 import { useRegistrationSteps } from '@/hooks/useRegistrationSteps';
 import { RegistrationProgressBar } from '@/components/registration/RegistrationProgressBar';
 import { RegistrationBreakPage } from '@/components/registration/RegistrationBreakPage';
+import RoleSelectionForm from '@/components/RoleSelectionForm';
+import MandanteRegistrationForm from '@/components/registration/MandanteRegistrationForm';
 
 const Register = () => {
   const navigate = useNavigate();
+  const [selectedRole, setSelectedRole] = useState<'contratista' | 'mandante' | null>(null);
   const formData = useRegistrationForm();
   const { errors, validateField } = useFormValidation();
   const { 
@@ -28,6 +31,24 @@ const Register = () => {
     contratistaLoading, 
     mandanteLoading 
   } = useRegistrationSteps({ formData, errors });
+
+  const handleRoleSelection = (role: 'contratista' | 'mandante') => {
+    setSelectedRole(role);
+  };
+
+  const handleBackToRoleSelection = () => {
+    setSelectedRole(null);
+  };
+
+  // Si no se ha seleccionado rol, mostrar selector
+  if (!selectedRole) {
+    return <RoleSelectionForm onSelectRole={handleRoleSelection} />;
+  }
+
+  // Si se seleccionó mandante, mostrar formulario de mandante
+  if (selectedRole === 'mandante') {
+    return <MandanteRegistrationForm onBack={handleBackToRoleSelection} />;
+  }
 
   // Required documents list
   const documentsList = [

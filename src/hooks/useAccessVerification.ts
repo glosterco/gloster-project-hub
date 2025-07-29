@@ -67,15 +67,14 @@ export const useAccessVerification = (payment: PaymentDetail | null, paymentId: 
             return;
           }
 
-          // Verificar si es un mandante autenticado
+          // Verificar si es un mandante autenticado - verificar cualquier mandante asociado al usuario
           const { data: mandanteData } = await supabase
             .from('Mandantes')
             .select('*')
             .eq('auth_user_id', user.id)
-            .eq('id', payment.projectData.Owner?.id)
             .maybeSingle();
 
-          if (mandanteData) {
+          if (mandanteData && payment.projectData.Owner?.id === mandanteData.id) {
             console.log('✅ Authenticated mandante access granted for user:', user.email);
             setHasAccess(true);
             setIsMandante(true);

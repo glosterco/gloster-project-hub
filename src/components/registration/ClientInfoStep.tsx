@@ -43,14 +43,16 @@ const ClientInfoStep: React.FC<ClientInfoStepProps> = ({
     return clientPhone.replace(/\D/g, '');
   };
 
-  const handleCompanyChange = async (value: string) => {
+  const handleCompanyChange = (value: string) => {
     setClientCompany(value);
-    
-    // Solo buscar si parece un ID o nombre completo
-    if (value.length > 2) {
+  };
+
+  const handleCompanyBlur = async () => {
+    // Solo buscar cuando se sale del campo y si hay contenido
+    if (clientCompany.length > 0) {
       setIsCheckingMandante(true);
       
-      const { data: existingMandante } = await getMandanteByIdOrName(value);
+      const { data: existingMandante } = await getMandanteByIdOrName(clientCompany);
       
       if (existingMandante) {
         // Autocompletar campos con datos del mandante existente
@@ -71,6 +73,7 @@ const ClientInfoStep: React.FC<ClientInfoStepProps> = ({
           id="clientCompany"
           value={clientCompany}
           onChange={(e) => handleCompanyChange(e.target.value)}
+          onBlur={handleCompanyBlur}
           placeholder="Nombre de la empresa o ID del mandante"
           className="font-rubik"
         />

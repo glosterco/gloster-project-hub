@@ -62,6 +62,12 @@ const TotalApprovedValue: React.FC<TotalApprovedValueProps> = ({ projects }) => 
     return acc;
   }, {} as Record<string, number>);
 
+  // Asegurar que se muestre la moneda correcta cuando solo hay un proyecto con valor 0
+  if (Object.keys(approvedByCurrency).length === 0 && projects.length > 0) {
+    const defaultCurrency = projects[0]?.Currency || 'CLP';
+    approvedByCurrency[defaultCurrency] = 0;
+  }
+
   // Calculate total in CLP for comparison
   const totalApprovedInCLP = Object.entries(approvedByCurrency).reduce((total, [currency, amount]) => {
     return total + convertToCLP(amount, currency);

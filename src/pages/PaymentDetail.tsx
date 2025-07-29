@@ -33,7 +33,7 @@ const PaymentDetail = () => {
   const { payment, loading, refetch } = usePaymentDetail(id || '');
   const { sendNotificationToMandante, loading: notificationLoading } = useMandanteNotification();
   const { uploadDocumentsToDrive, loading: driveLoading } = useGoogleDriveIntegration();
-  const { downloadDocument, loading: downloadLoading } = useDirectDriveDownload();
+  const { downloadDocument, isDocumentLoading } = useDirectDriveDownload();
   const { handleResubmission, loading: resubmissionLoading } = useContractorResubmission();
 
   // Use the document upload hook
@@ -756,7 +756,7 @@ const PaymentDetail = () => {
           {shouldShowDriveFiles() && (
             <DriveFilesCard
               documents={documents}
-              downloadLoading={downloadLoading}
+              isDocumentLoading={isDocumentLoading}
               onDownloadFile={handleDownloadFile}
               onDocumentUpload={handleDocumentUpload}
               paymentStatus={payment?.Status}

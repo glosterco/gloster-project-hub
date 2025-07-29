@@ -14,7 +14,8 @@ interface Document {
 
 interface DriveFilesCardProps {
   documents: Document[];
-  downloadLoading: boolean;
+  downloadLoading?: boolean; // Mantenido para compatibilidad
+  isDocumentLoading?: (docName: string) => boolean; // Nueva función para loading individual
   onDownloadFile: (fileName: string) => void;
   onDocumentUpload: (docId: string) => void;
   paymentStatus?: string;
@@ -24,7 +25,8 @@ interface DriveFilesCardProps {
 
 const DriveFilesCard: React.FC<DriveFilesCardProps> = ({
   documents,
-  downloadLoading,
+  downloadLoading = false,
+  isDocumentLoading,
   onDownloadFile,
   onDocumentUpload,
   paymentStatus,
@@ -74,11 +76,15 @@ const DriveFilesCard: React.FC<DriveFilesCardProps> = ({
                     size="sm"
                     variant="outline"
                     onClick={() => onDownloadFile(doc.name)}
-                    disabled={downloadLoading}
+                    disabled={isDocumentLoading ? isDocumentLoading(doc.name) : downloadLoading}
                     className="flex-1"
                   >
                     <Download className="h-4 w-4 mr-1" />
-                    <span className="text-xs">{downloadLoading ? 'Descargando...' : 'Descargar'}</span>
+                    <span className="text-xs">
+                      {(isDocumentLoading ? isDocumentLoading(doc.name) : downloadLoading) 
+                        ? 'Descargando...' 
+                        : 'Descargar'}
+                    </span>
                   </Button>
                   {doc.downloadUrl && paymentStatus !== 'Enviado' && paymentStatus !== 'Aprobado' && (
                     <Button

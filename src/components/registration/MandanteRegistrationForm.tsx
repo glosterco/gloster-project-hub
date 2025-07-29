@@ -177,6 +177,11 @@ const MandanteRegistrationForm: React.FC<MandanteRegistrationFormProps> = ({ onB
         description: "Tu cuenta de mandante ha sido creada",
       });
 
+      // Redirigir después de un breve retraso para mostrar el mensaje
+      setTimeout(() => {
+        navigate('/');
+      }, 2000);
+
     } catch (error: any) {
       console.error('Error creating mandante account:', error);
       toast({

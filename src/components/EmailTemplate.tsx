@@ -55,7 +55,7 @@ const EmailTemplate: React.FC<EmailTemplateProps> = ({
   useDirectDownload = false
 }) => {
   const { getDriveFiles } = useEmailNotifications();
-  const { downloadDocument, loading: downloadLoading } = useDirectDriveDownload();
+  const { downloadDocument, isDocumentLoading } = useDirectDriveDownload();
   const { toast } = useToast();
 
   const formatAmount = () => {
@@ -247,11 +247,11 @@ const EmailTemplate: React.FC<EmailTemplateProps> = ({
                       size="sm"
                       variant="outline"
                       onClick={() => handleDownloadDocument(doc.name)}
-                      disabled={downloadLoading}
+                      disabled={isDocumentLoading(doc.name)}
                       className="text-xs px-2 py-1 h-auto"
                     >
                       <Download className="w-3 h-3 mr-1" />
-                      {downloadLoading ? 'Descargando...' : 'Descargar'}
+                      {isDocumentLoading(doc.name) ? 'Descargando...' : 'Descargar'}
                     </Button>
                   </div>
                 </div>

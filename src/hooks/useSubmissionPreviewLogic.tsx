@@ -66,12 +66,14 @@ export const useSubmissionPreviewLogic = (payment: PaymentDetail | null) => {
 
     try {
       // CRÍTICO: Actualizar PRIMERO el Total y Progress en la base de datos antes de enviar
-      console.log('💾 Updating payment amount and progress...');
+      console.log('💾 Updating payment amount and progress with current values:', { Total: payment.Total, Progress: payment.Progress });
+      
+      // Asegurar que usamos los valores actuales del payment
       const { error: updateError } = await supabase
         .from('Estados de pago')
         .update({ 
-          Total: payment.Total || 0,
-          Progress: payment.Progress || 0,
+          Total: payment.Total,
+          Progress: payment.Progress,
           Status: 'Enviado'
         })
         .eq('id', payment.id);
@@ -79,6 +81,18 @@ export const useSubmissionPreviewLogic = (payment: PaymentDetail | null) => {
       if (updateError) {
         console.error('❌ Error updating payment data:', updateError);
         throw new Error('Error al actualizar los datos del estado de pago');
+      }
+
+      // Refrescar los datos del payment después de la actualización
+      const { data: updatedPayment, error: refreshError } = await supabase
+        .from('Estados de pago')
+        .select('*')
+        .eq('id', payment.id)
+        .single();
+
+      if (refreshError) {
+        console.error('❌ Error refreshing payment data:', refreshError);
+        throw new Error('Error al refrescar los datos del estado de pago');
       }
 
       // Usar el sistema de enlace único
@@ -112,7 +126,7 @@ export const useSubmissionPreviewLogic = (payment: PaymentDetail | null) => {
         mandanteEmail: payment.projectData.Owner?.ContactEmail || '',
         mandanteCompany: payment.projectData.Owner?.CompanyName || '',
         contractorCompany: payment.projectData.Contratista?.CompanyName || '',
-        amount: payment.Total || 0,
+        amount: updatedPayment.Total || payment.Total || 0, // Usar el valor actualizado
         dueDate: payment.ExpiryDate || '',
         driveUrl: paymentStateData.URL || '',
         uploadedDocuments: [],

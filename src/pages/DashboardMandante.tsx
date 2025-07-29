@@ -103,7 +103,7 @@ const DashboardMandante: React.FC = () => {
       case 'Aprobado':
         return <CheckCircle className="w-4 h-4 text-green-600" />;
       case 'Enviado':
-        return <Clock className="w-4 h-4 text-blue-600" />;
+        return <Clock className="w-4 h-4 text-purple-600" />;
       case 'Rechazado':
         return <XCircle className="w-4 h-4 text-red-600" />;
       case 'Pendiente':
@@ -118,7 +118,7 @@ const DashboardMandante: React.FC = () => {
       case 'Aprobado':
         return 'bg-green-100 text-green-800';
       case 'Enviado':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-purple-100 text-purple-800';
       case 'Rechazado':
         return 'bg-red-100 text-red-800';
       case 'Pendiente':

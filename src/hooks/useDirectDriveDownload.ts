@@ -4,11 +4,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 export const useDirectDriveDownload = () => {
-  const [loading, setLoading] = useState(false);
+  const [loadingDocuments, setLoadingDocuments] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
 
   const downloadDocument = async (paymentId: string, documentName: string) => {
-    setLoading(true);
+    setLoadingDocuments(prev => ({ ...prev, [documentName]: true }));
     
     try {
       console.log(`📥 Starting direct download for: ${documentName}`);
@@ -76,12 +76,17 @@ export const useDirectDriveDownload = () => {
       });
       return { success: false, error: error.message };
     } finally {
-      setLoading(false);
+      setLoadingDocuments(prev => ({ ...prev, [documentName]: false }));
     }
+  };
+
+  const isDocumentLoading = (documentName: string) => {
+    return loadingDocuments[documentName] || false;
   };
 
   return {
     downloadDocument,
-    loading
+    isDocumentLoading,
+    loading: Object.values(loadingDocuments).some(Boolean) // Para compatibilidad con código existente
   };
 };

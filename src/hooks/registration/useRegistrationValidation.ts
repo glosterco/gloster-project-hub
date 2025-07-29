@@ -1,8 +1,10 @@
 
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 
 export const useRegistrationValidation = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const validateCurrentStep = (currentStep: number, formData: any, errors: any) => {
     switch (currentStep) {
@@ -38,6 +40,11 @@ export const useRegistrationValidation = () => {
       title: "¡Registro exitoso!",
       description: "Tu cuenta ha sido creada exitosamente. Revisa tu email para confirmar tu cuenta.",
     });
+    
+    // Redirigir después de un breve retraso para mostrar el mensaje
+    setTimeout(() => {
+      navigate('/');
+    }, 2000);
   };
 
   const showError = (title: string, description: string) => {
@@ -52,6 +59,7 @@ export const useRegistrationValidation = () => {
     validateCurrentStep,
     showValidationError,
     showSuccessMessage,
-    showError
+    showError,
+    navigate
   };
 };

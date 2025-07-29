@@ -64,6 +64,7 @@ const DashboardMandante: React.FC = () => {
           setMandanteInfo(mandanteData);
         } else if (!mandanteData) {
           // Usuario no es mandante, redirigir al dashboard de contratista
+          console.log('User is not a mandante, redirecting to contractor dashboard');
           navigate('/dashboard');
         }
       } catch (error) {

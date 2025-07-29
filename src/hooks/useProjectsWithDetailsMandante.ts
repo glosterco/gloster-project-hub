@@ -65,11 +65,7 @@ export const useProjectsWithDetailsMandante = () => {
 
       if (mandanteError || !mandanteData) {
         console.error('Error fetching mandante or mandante not found:', mandanteError);
-        toast({
-          title: "Error",
-          description: "No se encontró información del mandante",
-          variant: "destructive"
-        });
+        // No mostrar toast de error, solo manejar silenciosamente
         setLoading(false);
         return;
       }

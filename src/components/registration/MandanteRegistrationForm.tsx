@@ -114,6 +114,8 @@ const MandanteRegistrationForm: React.FC<MandanteRegistrationFormProps> = ({ onB
             CompanyName: formData.companyName,
             ContactName: formData.contactName,
             ContactPhone: parseInt(formData.contactPhone),
+            Username: formData.contactEmail, // Agregar email como username
+            Password: formData.password, // Agregar password
             Status: true
           })
           .eq('id', existingMandante.id);
@@ -152,6 +154,8 @@ const MandanteRegistrationForm: React.FC<MandanteRegistrationFormProps> = ({ onB
           ContactName: formData.contactName,
           ContactEmail: formData.contactEmail,
           ContactPhone: parseInt(formData.contactPhone),
+          Username: formData.contactEmail, // Agregar email como username
+          Password: formData.password, // Agregar password
           Status: true,
           auth_user_id: authData.user.id
         };

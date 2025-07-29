@@ -1,7 +1,7 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useMandantes } from '@/hooks/useMandantes';
 
 interface ClientInfoStepProps {
   clientCompany: string;
@@ -26,6 +26,9 @@ const ClientInfoStep: React.FC<ClientInfoStepProps> = ({
   setClientPhone,
   errors,
 }) => {
+  const { getMandanteByIdOrName } = useMandantes();
+  const [isCheckingMandante, setIsCheckingMandante] = useState(false);
+
   const handleClientPhoneChange = (value: string) => {
     // Remove any non-numeric characters and ensure it starts with 9
     const cleanPhone = value.replace(/\D/g, '');
@@ -40,17 +43,43 @@ const ClientInfoStep: React.FC<ClientInfoStepProps> = ({
     return clientPhone.replace(/\D/g, '');
   };
 
+  const handleCompanyChange = async (value: string) => {
+    setClientCompany(value);
+    
+    // Solo buscar si parece un ID o nombre completo
+    if (value.length > 2) {
+      setIsCheckingMandante(true);
+      
+      const { data: existingMandante } = await getMandanteByIdOrName(value);
+      
+      if (existingMandante) {
+        // Autocompletar campos con datos del mandante existente
+        setClientContact(existingMandante.ContactName || '');
+        setClientEmail(existingMandante.ContactEmail || '');
+        setClientPhone(existingMandante.ContactPhone ? `+56${existingMandante.ContactPhone}` : '');
+      }
+      
+      setIsCheckingMandante(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <Label htmlFor="clientCompany">Empresa Mandante</Label>
+        <Label htmlFor="clientCompany">Nombre o ID del Mandante</Label>
         <Input
           id="clientCompany"
           value={clientCompany}
-          onChange={(e) => setClientCompany(e.target.value)}
-          placeholder="Nombre de la empresa mandante"
+          onChange={(e) => handleCompanyChange(e.target.value)}
+          placeholder="Nombre de la empresa o ID del mandante"
           className="font-rubik"
         />
+        {isCheckingMandante && (
+          <p className="text-xs text-blue-600">Buscando mandante...</p>
+        )}
+        <p className="text-xs text-gray-500 italic">
+          Si ingresas un ID o nombre existente, se autocompletarán los datos de contacto
+        </p>
       </div>
 
       <div className="space-y-2">

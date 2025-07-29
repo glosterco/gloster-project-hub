@@ -6,14 +6,16 @@ import { useProyectos } from '@/hooks/useProyectos';
 import { useEstadosPago } from '@/hooks/useEstadosPago';
 import { useRegistrationData } from './useRegistrationData';
 import { useRegistrationValidation } from './useRegistrationValidation';
+import { useCreateUserRole } from '@/hooks/useUserRoles';
 
 export const useRegistrationProcess = () => {
   const { createContratista } = useContratistas();
-  const { createMandante } = useMandantes();
+  const { createMandante, getMandanteByIdOrName } = useMandantes();
   const { createProyecto } = useProyectos();
   const { createEstadosPago } = useEstadosPago();
   const { prepareContratistaData, prepareMandanteData, prepareProyectoData, getExpiryRateNumeric } = useRegistrationData();
   const { showError, showSuccessMessage } = useRegistrationValidation();
+  const { createUserRole } = useCreateUserRole();
 
   const authenticateUser = async (email: string, password: string) => {
     console.log('Starting authentication process...');
@@ -61,27 +63,70 @@ export const useRegistrationProcess = () => {
     return { success: true, id: contratistaId };
   };
 
-  const createMandanteRecord = async (formData: any) => {
-    console.log('Creating mandante...');
-    const mandanteData = prepareMandanteData(formData);
+  const handleMandanteRecord = async (formData: any) => {
+    console.log('Processing mandante...');
     
-    const { data: mandanteResult, error: mandanteError } = await createMandante(mandanteData);
+    // Primero verificar si es un ID existente
+    const { data: existingMandante } = await getMandanteByIdOrName(formData.clientCompany);
     
-    if (mandanteError) {
-      console.error('Error creating mandante:', mandanteError);
-      showError("Error al crear mandante", mandanteError.message || "Error desconocido");
-      return { success: false };
-    }
+    if (existingMandante) {
+      console.log('Found existing mandante:', existingMandante.id);
+      
+      // Verificar si los datos de contacto son diferentes
+      const dataChanged = 
+        existingMandante.ContactEmail !== formData.clientEmail ||
+        existingMandante.ContactPhone !== parseInt(formData.clientPhone.replace('+56', '')) ||
+        existingMandante.ContactName !== formData.clientContact;
+      
+      if (dataChanged) {
+        console.log('Contact data changed, creating new mandante with same company name...');
+        const mandanteData = prepareMandanteData(formData);
+        
+        const { data: mandanteResult, error: mandanteError } = await createMandante(mandanteData);
+        
+        if (mandanteError) {
+          console.error('Error creating new mandante:', mandanteError);
+          showError("Error al crear mandante", mandanteError.message || "Error desconocido");
+          return { success: false };
+        }
 
-    if (!mandanteResult || mandanteResult.length === 0) {
-      console.error('No mandante result returned');
-      showError("Error al crear mandante", "No se pudo crear el mandante");
-      return { success: false };
-    }
+        if (!mandanteResult || mandanteResult.length === 0) {
+          console.error('No mandante result returned');
+          showError("Error al crear mandante", "No se pudo crear el mandante");
+          return { success: false };
+        }
 
-    const mandanteId = mandanteResult[0].id;
-    console.log('Mandante created successfully with ID:', mandanteId);
-    return { success: true, id: mandanteId };
+        const mandanteId = mandanteResult[0].id;
+        console.log('New mandante created successfully with ID:', mandanteId);
+        return { success: true, id: mandanteId };
+      } else {
+        // Usar el mandante existente
+        console.log('Using existing mandante with ID:', existingMandante.id);
+        return { success: true, id: existingMandante.id };
+      }
+    } else {
+      // Crear nuevo mandante
+      console.log('Creating new mandante...');
+      const mandanteData = prepareMandanteData(formData);
+      
+      const { data: mandanteResult, error: mandanteError } = await createMandante(mandanteData);
+      
+      if (mandanteError) {
+        console.error('Error creating mandante:', mandanteError);
+        showError("Error al crear mandante", mandanteError.message || "Error desconocido");
+        return { success: false };
+      }
+
+      if (!mandanteResult || mandanteResult.length === 0) {
+        console.error('No mandante result returned');
+        showError("Error al crear mandante", "No se pudo crear el mandante");
+        return { success: false };
+      }
+
+      const mandanteId = mandanteResult[0].id;
+      console.log('Mandante created successfully with ID:', mandanteId);
+      return { success: true, id: mandanteId };
+    }
   };
 
   const createProyectoRecord = async (formData: any, contratistaId: number, mandanteId: number) => {
@@ -129,15 +174,24 @@ export const useRegistrationProcess = () => {
       const contratistaResult = await createContratistaRecord(formData, authResult.user.id);
       if (!contratistaResult.success) return false;
 
-      // Paso 3: Crear mandante
-      const mandanteResult = await createMandanteRecord(formData);
+      // Paso 3: Asignar rol de contratista
+      console.log('Assigning contratista role...');
+      const roleResult = await createUserRole(authResult.user.id, 'contratista', contratistaResult.id);
+      if (!roleResult.success) {
+        console.error('Error assigning contratista role');
+        showError("Error al asignar rol", "No se pudo asignar el rol de contratista");
+        return false;
+      }
+
+      // Paso 4: Procesar mandante (existente o nuevo)
+      const mandanteResult = await handleMandanteRecord(formData);
       if (!mandanteResult.success) return false;
 
-      // Paso 4: Crear proyecto
+      // Paso 5: Crear proyecto
       const projectResult = await createProyectoRecord(formData, contratistaResult.id, mandanteResult.id);
       if (!projectResult.success) return false;
 
-      // Paso 5: Crear estados de pago
+      // Paso 6: Crear estados de pago
       await createPaymentStates(formData, projectResult.id);
 
       showSuccessMessage();

@@ -77,17 +77,52 @@ export const useMandantes = () => {
   };
 
   const getMandanteByEmail = async (email: string) => {
-    setLoading(true);
     try {
+      setLoading(true);
+      
       const { data, error } = await supabase
         .from('Mandantes')
         .select('*')
         .eq('ContactEmail', email)
         .eq('Status', true)
-        .single();
+        .maybeSingle();
 
       if (error) {
-        console.error('Error fetching mandante:', error);
+        console.error('Error fetching mandante by email:', error);
+        return { data: null, error };
+      }
+
+      return { data, error: null };
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      return { data: null, error };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getMandanteByIdOrName = async (idOrName: string) => {
+    try {
+      setLoading(true);
+      
+      // Verificar si es un ID numérico
+      const isNumericId = /^\d+$/.test(idOrName);
+      
+      let query = supabase
+        .from('Mandantes')
+        .select('*')
+        .eq('Status', true);
+      
+      if (isNumericId) {
+        query = query.eq('id', parseInt(idOrName));
+      } else {
+        query = query.eq('CompanyName', idOrName);
+      }
+      
+      const { data, error } = await query.maybeSingle();
+
+      if (error) {
+        console.error('Error fetching mandante by ID or name:', error);
         return { data: null, error };
       }
 
@@ -104,6 +139,7 @@ export const useMandantes = () => {
     createMandante,
     getMandantes,
     getMandanteByEmail,
+    getMandanteByIdOrName,
     loading
   };
 };

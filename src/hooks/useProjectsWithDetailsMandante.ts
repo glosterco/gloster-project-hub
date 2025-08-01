@@ -125,20 +125,33 @@ export const useProjectsWithDetailsMandante = () => {
               };
             }
 
-            // Asegurar que al menos un estado sea "Pendiente"
+            // Asegurar que al menos un estado sea "Pendiente" SOLO si hay pagos que vencen en 14 días o menos
             const hasAtLeastOnePendiente = paymentStatesData?.some(state => state.Status === 'Pendiente');
             
             if (!hasAtLeastOnePendiente && paymentStatesData && paymentStatesData.length > 0) {
-              // Actualizar el primer estado programado a pendiente
-              const firstProgramado = paymentStatesData.find(state => state.Status === 'Programado');
-              if (firstProgramado) {
+              const today = new Date();
+              // CORRECCIÓN: Encontrar pagos programados que vencen en 14 días o menos
+              const eligibleProgramados = paymentStatesData.filter(state => {
+                if (state.Status !== 'Programado') return false;
+                const expiry = new Date(state.ExpiryDate);
+                const daysToExpiry = (expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24);
+                return expiry >= today && daysToExpiry <= 14;
+              });
+
+              if (eligibleProgramados.length > 0) {
+                // Ordenar por fecha de vencimiento (más próximo primero)
+                eligibleProgramados.sort((a, b) =>
+                  new Date(a.ExpiryDate).getTime() - new Date(b.ExpiryDate).getTime()
+                );
+
+                const targetProgramado = eligibleProgramados[0];
                 const { error: updateError } = await supabase
                   .from('Estados de pago')
                   .update({ Status: 'Pendiente' })
-                  .eq('id', firstProgramado.id);
+                  .eq('id', targetProgramado.id);
 
                 if (!updateError) {
-                  firstProgramado.Status = 'Pendiente';
+                  targetProgramado.Status = 'Pendiente';
                 }
               }
             }

@@ -139,22 +139,26 @@ export const useProjectsWithDetails = () => {
       const updatedPayments = paymentsData || [];
       
       // For each project, ensure there's at least one "Pendiente" payment
+      // SOLO si no hay ningún pendiente Y hay pagos que vencen en 14 días o menos
       for (const projectId of projectIds) {
         const projectPayments = updatedPayments.filter(p => p.Project === projectId);
         const hasPending = projectPayments.some(p => p.Status === 'Pendiente');
       
         if (!hasPending && projectPayments.length > 0) {
-          // Filtrar pagos futuros que estén en estado Programado
-          const futurePayments = projectPayments.filter(p =>
-            new Date(p.ExpiryDate) >= today && p.Status === 'Programado'
-          );
+          // CORRECCIÓN: Filtrar pagos que estén "Programado" Y que vencen en 14 días o menos
+          const eligiblePayments = projectPayments.filter(p => {
+            const expiry = new Date(p.ExpiryDate);
+            const daysToExpiry = (expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24);
+            return expiry >= today && p.Status === 'Programado' && daysToExpiry <= 14;
+          });
       
-          if (futurePayments.length > 0) {
-            futurePayments.sort((a, b) =>
+          if (eligiblePayments.length > 0) {
+            // Ordenar por fecha de vencimiento (más próximo primero)
+            eligiblePayments.sort((a, b) =>
               new Date(a.ExpiryDate).getTime() - new Date(b.ExpiryDate).getTime()
             );
       
-            const targetPayment = futurePayments[0];
+            const targetPayment = eligiblePayments[0];
       
             await supabase
               .from('Estados de pago')

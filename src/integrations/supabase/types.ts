@@ -142,6 +142,41 @@ export type Database = {
         }
         Relationships: []
       }
+      mandante_users: {
+        Row: {
+          auth_user_id: string
+          created_at: string
+          id: string
+          mandante_id: number
+          permission_level: string
+          updated_at: string
+        }
+        Insert: {
+          auth_user_id: string
+          created_at?: string
+          id?: string
+          mandante_id: number
+          permission_level?: string
+          updated_at?: string
+        }
+        Update: {
+          auth_user_id?: string
+          created_at?: string
+          id?: string
+          mandante_id?: number
+          permission_level?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mandante_users_mandante_id_fkey"
+            columns: ["mandante_id"]
+            isOneToOne: false
+            referencedRelation: "Mandantes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       Mandantes: {
         Row: {
           auth_user_id: string | null
@@ -276,6 +311,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_user_mandante_ids: {
+        Args: { user_id: string }
+        Returns: number[]
+      }
       update_payment_states_weekly: {
         Args: Record<PropertyKey, never>
         Returns: undefined

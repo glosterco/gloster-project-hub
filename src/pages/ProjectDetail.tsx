@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ArrowLeft, Calendar, ChevronRight, Search, Filter, Plus, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import PageHeader from '@/components/PageHeader';
@@ -439,27 +440,45 @@ const ProjectDetail = () => {
 
                       <div className="pt-4 mt-auto">
                         {(status === 'Pendiente') && (
-                          <Button
-                            onClick={() => handlePaymentClick(payment)}
-                            className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold font-rubik"
-                            size="sm"
-                          >
-                            Gestionar Documentos
-                            <ChevronRight className="h-4 w-4 ml-2" />
-                          </Button>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  onClick={() => handlePaymentClick(payment)}
+                                  className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold font-rubik"
+                                  size="sm"
+                                >
+                                  Gestionar
+                                  <ChevronRight className="h-4 w-4 ml-2" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Gestionar documentos y completar estado de pago</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         )}
                         
                         {(status === 'Aprobado' || status === 'Enviado' || status === 'Rechazado') && (
-                          <Button
-                            variant="outline"
-                            onClick={() => handleViewDocuments(payment)}
-                            className="w-full border-gloster-gray/30 hover:bg-gloster-gray/10 font-rubik"
-                            size="sm"
-                          >
-                            <Eye className="h-4 w-4 mr-2" />
-                            Ver Documentos
-                            <ChevronRight className="h-4 w-4 ml-2" />
-                          </Button>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  onClick={() => handleViewDocuments(payment)}
+                                  className="w-full border-gloster-gray/30 hover:bg-gloster-gray/10 font-rubik"
+                                  size="sm"
+                                >
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  Ver
+                                  <ChevronRight className="h-4 w-4 ml-2" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Ver documentos y detalles del estado de pago</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         )}
                         
                         {status === 'Programado' && (

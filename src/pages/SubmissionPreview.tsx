@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { usePaymentDetail } from '@/hooks/usePaymentDetail';
@@ -13,6 +13,24 @@ const SubmissionPreview = () => {
   const [searchParams] = useSearchParams();
   const paymentId = searchParams.get('paymentId') || '11';
   const { payment, loading, error } = usePaymentDetail(paymentId, true);
+  
+  // Verificar tipo de acceso desde sessionStorage
+  const [accessData, setAccessData] = useState<any>(null);
+  const [isLimitedAccess, setIsLimitedAccess] = useState(false);
+
+  useEffect(() => {
+    const userAccess = sessionStorage.getItem('userAccess');
+    if (userAccess) {
+      const accessInfo = JSON.parse(userAccess);
+      setAccessData(accessInfo);
+      
+      // Determinar si es acceso limitado
+      if ((accessInfo.userType === 'contratista' && !accessInfo.isRegistered) ||
+          (accessInfo.userType === 'mandante' && !accessInfo.isRegistered)) {
+        setIsLimitedAccess(true);
+      }
+    }
+  }, []);
   
   const {
     isProjectUser,
@@ -30,7 +48,10 @@ const SubmissionPreview = () => {
 
   const handleBackNavigation = () => {
     handleNavigation(() => {
-      if (isProjectUser) {
+      if (isLimitedAccess) {
+        // Usuarios con acceso limitado solo pueden volver al payment detail
+        navigate(`/payment-detail/${payment?.id}`);
+      } else if (isProjectUser) {
         navigate(`/payment/${payment?.id}`);
       } else {
         navigate('/');

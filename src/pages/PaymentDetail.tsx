@@ -29,6 +29,23 @@ const PaymentDetail = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Verificar tipo de acceso desde sessionStorage
+  const [accessData, setAccessData] = useState<any>(null);
+  const [isLimitedAccess, setIsLimitedAccess] = useState(false);
+
+  useEffect(() => {
+    const userAccess = sessionStorage.getItem('userAccess');
+    if (userAccess) {
+      const accessInfo = JSON.parse(userAccess);
+      setAccessData(accessInfo);
+      
+      // Determinar si es acceso limitado (contratista no registrado)
+      if (accessInfo.userType === 'contratista' && !accessInfo.isRegistered) {
+        setIsLimitedAccess(true);
+      }
+    }
+  }, []);
+
   // Use real data from database
   const { payment, loading, refetch } = usePaymentDetail(id || '');
   const { sendNotificationToMandante, loading: notificationLoading } = useMandanteNotification();
@@ -688,7 +705,20 @@ const PaymentDetail = () => {
         <div className="bg-slate-50 py-2">
           <div className="container mx-auto px-6">
             <button 
-              onClick={() => handleNavigation(`/project/${payment?.Project || 2}`, hasUnsavedFiles)}
+              onClick={() => {
+                // Verificar tipo de acceso para determinar redirección
+                if (isLimitedAccess) {
+                  // Contratista no registrado: no puede salir de la página de payment
+                  toast({
+                    title: "Acceso limitado",
+                    description: "Solo puedes acceder a esta página de estado de pago y la vista previa",
+                    variant: "destructive"
+                  });
+                  return;
+                }
+                // Acceso completo: redirigir normalmente
+                handleNavigation(`/project/${payment?.Project || 2}`, hasUnsavedFiles);
+              }}
               className="text-gloster-gray hover:text-slate-800 text-sm font-rubik flex items-center"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />

@@ -95,13 +95,16 @@ const EmailAccess = () => {
 
       const projectData = paymentData.Proyectos;
 
-      // 1. VERIFICAR ACCESO POR TOKEN (URLContratista) PRIMERO
-      if (token && (paymentData as any).URLContratista) {
-        const urlContratista = (paymentData as any).URLContratista;
+      // ✅ 1. VERIFICAR ACCESO POR TOKEN (URLContratista) PRIMERO - CORREGIDO
+      if (token && paymentData.URLContratista) {
+        const urlContratista = paymentData.URLContratista;
         const expectedToken = urlContratista.split('token=')[1];
+        
+        console.log('🔐 Verificando token de acceso:', { token, expectedToken, urlContratista });
         
         if (token === expectedToken) {
           // Token válido - acceso directo como contratista no registrado
+          console.log('✅ Token válido, otorgando acceso directo');
           const accessData = {
             paymentId: paymentId.toString(),
             token: token,
@@ -112,7 +115,11 @@ const EmailAccess = () => {
           sessionStorage.setItem('contractorAccess', JSON.stringify(accessData));
           navigate(`/submission/${paymentId}`);
           return;
+        } else {
+          console.log('❌ Token inválido');
         }
+      } else {
+        console.log('ℹ️ Sin token o sin URLContratista, continuando con verificación por email');
       }
 
       // 2. VERIFICAR ACCESO POR EMAIL/CONTRASEÑA

@@ -11,6 +11,7 @@ export interface PaymentState {
   Completion: boolean;
   Mes: string;
   Año: number;
+  URLContratista?: string; // ✅ AGREGADO: Campo crucial para notificaciones
 }
 
 export interface ProjectDetail {
@@ -110,10 +111,10 @@ export const useProjectDetailMandante = (projectId: string) => {
         return;
       }
 
-      // Fetch payment states
+      // Fetch payment states - ✅ CORREGIDO: Incluir URLContratista
       const { data: paymentsData, error: paymentsError } = await supabase
         .from('Estados de pago')
-        .select('id, Name, Status, Total, ExpiryDate, Completion, Mes, "Año"')
+        .select('id, Name, Status, Total, ExpiryDate, Completion, Mes, "Año", URLContratista')
         .eq('Project', parseInt(projectId))
         .order('ExpiryDate', { ascending: true });
           

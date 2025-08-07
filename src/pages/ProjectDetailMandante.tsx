@@ -38,7 +38,7 @@ const ProjectDetailMandante = () => {
       case 'Rechazado':
         return 'Rechazado';
       case 'Pendiente':
-        return 'Programado';
+        return 'Pendiente'; // ✅ CORREGIDO: Mostrar como "Pendiente" no "Programado"
       case 'Programado':
         return 'Programado';
       default:
@@ -106,14 +106,22 @@ const ProjectDetailMandante = () => {
     return status === 'Enviado';
   };
 
-  // Función para obtener el estado de pago más cercano a notificar (solo el más cercano)
+  // ✅ FUNCIÓN CORREGIDA: Obtener el estado de pago más cercano a notificar (solo el más cercano)
   const getClosestPaymentToNotify = () => {
     if (!project?.EstadosPago) return null;
     
+    console.log('🔍 Verificando pagos para notificación:', project.EstadosPago);
+    
     const eligiblePayments = project.EstadosPago.filter((payment: any) => {
       const eligibleStatuses = ['Pendiente', 'Programado'];
-      return eligibleStatuses.includes(payment.Status) && payment.URLContratista;
+      const hasUrl = Boolean(payment.URLContratista);
+      const isEligible = eligibleStatuses.includes(payment.Status) && hasUrl;
+      
+      console.log(`💰 Pago ${payment.id}: Status=${payment.Status}, URLContratista=${hasUrl ? 'SÍ' : 'NO'}, Elegible=${isEligible}`);
+      return isEligible;
     });
+    
+    console.log('📋 Pagos elegibles para notificación:', eligiblePayments.length);
     
     if (eligiblePayments.length === 0) return null;
     
@@ -122,18 +130,22 @@ const ProjectDetailMandante = () => {
       new Date(a.ExpiryDate).getTime() - new Date(b.ExpiryDate).getTime()
     );
     
+    console.log('🎯 Pago más cercano para notificar:', sortedPayments[0]);
     return sortedPayments[0]; // Solo el más cercano
   };
 
-  // Función para notificar contratista
+  // ✅ FUNCIÓN CORREGIDA: Notificar contratista
   const handleNotifyContractor = async (payment: any) => {
+    console.log('🔔 Iniciando notificación para pago:', payment.id);
     await sendContractorPaymentNotification(payment.id, false); // false = notificación manual
   };
 
-  // Función para determinar si debe mostrarse el botón notificar (solo en el pago más cercano)
+  // ✅ FUNCIÓN CORREGIDA: Determinar si debe mostrarse el botón notificar (solo en el pago más cercano)
   const shouldShowNotifyButton = (payment: any) => {
     const closestPayment = getClosestPaymentToNotify();
-    return closestPayment && closestPayment.id === payment.id;
+    const shouldShow = closestPayment && closestPayment.id === payment.id;
+    console.log(`🔔 ¿Mostrar botón notificar para pago ${payment.id}?`, shouldShow ? 'SÍ' : 'NO');
+    return shouldShow;
   };
 
   const filteredAndSortedPayments = project?.EstadosPago
@@ -303,6 +315,7 @@ const ProjectDetailMandante = () => {
                   <SelectItem value="aprobado">Aprobado</SelectItem>
                   <SelectItem value="enviado">Recibido</SelectItem>
                   <SelectItem value="rechazado">Rechazado</SelectItem>
+                  <SelectItem value="pendiente">Pendiente</SelectItem> {/* ✅ CORREGIDO: Filtro correcto */}
                   <SelectItem value="programado">Programado</SelectItem>
                 </SelectContent>
               </Select>

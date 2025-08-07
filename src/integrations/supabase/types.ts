@@ -73,6 +73,7 @@ export type Database = {
           Status: string | null
           Total: number | null
           URL: string | null
+          URLContratista: string | null
           URLMandante: string | null
         }
         Insert: {
@@ -88,6 +89,7 @@ export type Database = {
           Status?: string | null
           Total?: number | null
           URL?: string | null
+          URLContratista?: string | null
           URLMandante?: string | null
         }
         Update: {
@@ -103,6 +105,7 @@ export type Database = {
           Status?: string | null
           Total?: number | null
           URL?: string | null
+          URLContratista?: string | null
           URLMandante?: string | null
         }
         Relationships: [
@@ -311,9 +314,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      ensure_contractor_urls: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       get_user_mandante_ids: {
         Args: { user_id: string }
         Returns: number[]
+      }
+      send_contractor_payment_reminders: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       update_payment_states_weekly: {
         Args: Record<PropertyKey, never>

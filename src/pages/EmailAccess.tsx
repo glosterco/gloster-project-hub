@@ -47,9 +47,9 @@ const EmailAccess = () => {
   };
 
   const checkContratistaAccount = async (email: string, projectData: any) => {
-    const contratistaEmail = projectData?.Contratista?.ContactEmail;
-    const contratistaPassword = projectData?.Contratista?.Password;
-    const contratistaAuthUserId = projectData?.Contratista?.auth_user_id;
+    const contratistaEmail = projectData?.Contratistas?.ContactEmail;
+    const contratistaPassword = projectData?.Contratistas?.Password;
+    const contratistaAuthUserId = projectData?.Contratistas?.auth_user_id;
 
     if (!contratistaEmail || email.toLowerCase() !== contratistaEmail.toLowerCase()) {
       return { hasAccess: false, error: 'El email ingresado no coincide con el contratista autorizado para este proyecto.' };
@@ -100,18 +100,19 @@ const EmailAccess = () => {
     }
 
     try {
-      // Paso 2: Consulta a Supabase para obtener el estado de pago con query simplificada
+      // Consulta a Supabase para obtener el estado de pago
       const { data: paymentData, error: paymentError } = await supabase
         .from('Estados de pago')
         .select(`
           id,
           Project,
-          URLMandante
+          URLMandante,
+          URLContratista
         `)
         .eq('id', parsedPaymentId)
         .maybeSingle();
 
-      // Obtener datos del proyecto por separado para evitar problemas de join
+      // Obtener datos del proyecto por separado
       let projectData = null;
       if (paymentData) {
         const { data: projectInfo } = await supabase
@@ -138,7 +139,6 @@ const EmailAccess = () => {
           .eq('id', paymentData.Project)
           .single();
 
-        
         if (projectInfo) {
           projectData = projectInfo;
         }
@@ -146,7 +146,6 @@ const EmailAccess = () => {
 
       console.log("paymentData:", paymentData);
       console.log("projectData:", projectData);
-      console.log("paymentError:", paymentError);
 
       if (paymentError) {
         console.error("Error en la consulta de Supabase:", paymentError);
@@ -155,20 +154,16 @@ const EmailAccess = () => {
       }
 
       if (!paymentData) {
-        console.log("Estado de pago no encontrado en la base de datos.");
         setPopupError('No se encontró el estado de pago con el ID proporcionado.');
         return;
       }
 
       if (!projectData) {
-        console.log("Proyecto no encontrado.");
         setPopupError('No se encontró información del proyecto.');
         return;
       }
 
-      console.log("Estado de pago encontrado:", paymentData);
-
-      // Verificar primero si es mandante o contratista
+      // Verificar si es mandante o contratista
       let accessCheck = null;
       
       // Intentar verificar como mandante primero
@@ -182,7 +177,7 @@ const EmailAccess = () => {
 
       // Si no es mandante, intentar verificar como contratista
       if (!accessCheck) {
-        const contratistaEmail = projectData?.Contratista?.ContactEmail;
+        const contratistaEmail = projectData?.Contratistas?.ContactEmail;
         if (contratistaEmail) {
           const contratistaCheck = await checkContratistaAccount(email, projectData);
           if (contratistaCheck.hasAccess) {
@@ -220,25 +215,30 @@ const EmailAccess = () => {
         }
       }
 
-      // Paso 5: Verificación del token si está presente
+      // Verificación del token según el tipo de usuario
       if (token) {
         const expectedUrl = `${window.location.origin}/email-access?paymentId=${paymentId}&token=${token}`;
-        console.log('Comprobando URL:', { esperado: expectedUrl, almacenado: paymentData?.URLMandante });
+        const storedUrl = accessCheck.userType === 'mandante' 
+          ? paymentData?.URLMandante 
+          : paymentData?.URLContratista;
+        
+        console.log('Comprobando URL:', { 
+          esperado: expectedUrl, 
+          almacenado: storedUrl,
+          userType: accessCheck.userType 
+        });
 
-        if (paymentData?.URLMandante !== expectedUrl) {
+        if (storedUrl !== expectedUrl) {
           setPopupError('El enlace de acceso no es válido o ha expirado.');
           return;
         }
       }
 
-      // Paso 6: Verificación de los estados de pago relacionados con el proyecto
+      // Verificación de los estados de pago relacionados con el proyecto
       const { data: relatedPayments, error: relatedPaymentsError } = await supabase
         .from('Estados de pago')
         .select('id')
         .eq('Project', projectData.id);
-
-      console.log("Estados de pago relacionados (relatedPayments):", relatedPayments);
-      console.log("Error al obtener estados de pago relacionados (relatedPaymentsError):", relatedPaymentsError);
 
       if (relatedPaymentsError) {
         console.error("Error al obtener los estados de pago relacionados:", relatedPaymentsError);
@@ -259,7 +259,7 @@ const EmailAccess = () => {
           email: email,
           token: `${accessCheck.userType}_authenticated`,
           mandanteCompany: projectData?.Mandantes?.CompanyName || '',
-          contratistaCompany: projectData?.Contratista?.CompanyName || '',
+          contratistaCompany: projectData?.Contratistas?.CompanyName || '',
           userType: accessCheck.userType,
           isRegistered: accessCheck.isRegistered,
           timestamp: Date.now()
@@ -268,14 +268,11 @@ const EmailAccess = () => {
         sessionStorage.setItem('userAccess', JSON.stringify(accessData));
 
         // Redirección según el tipo de usuario y si está registrado
-        if (accessCheck.userType === 'contratista' && accessCheck.isRegistered) {
-          // Contratista registrado: redirigir al payment page específico
-          navigate(`/payment-detail/${paymentId}`);
-        } else if (accessCheck.userType === 'contratista' && !accessCheck.isRegistered) {
-          // Contratista no registrado: redirigir al payment page específico
+        if (accessCheck.userType === 'contratista') {
+          // Todos los contratistas van al payment detail (registrados y no registrados)
           navigate(`/payment-detail/${paymentId}`);
         } else {
-          // Mandante: redirigir a submission view
+          // Mandantes van a submission view (registrados y no registrados con acceso limitado)
           navigate(`/submission/${paymentId}`);
         }
       } else {

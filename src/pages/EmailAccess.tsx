@@ -39,11 +39,29 @@ const EmailAccess = () => {
 
     // Si el mandante tiene auth_user_id, requiere contraseña
     if (mandanteAuthUserId) {
-      return { hasAccess: true, needsPassword: true, mandantePassword };
+      return { hasAccess: true, needsPassword: true, mandantePassword, userType: 'mandante', isRegistered: true };
     }
 
     // Si no tiene auth_user_id, solo verificación por email
-    return { hasAccess: true, needsPassword: false };
+    return { hasAccess: true, needsPassword: false, userType: 'mandante', isRegistered: false };
+  };
+
+  const checkContratistaAccount = async (email: string, projectData: any) => {
+    const contratistaEmail = projectData?.Contratista?.ContactEmail;
+    const contratistaPassword = projectData?.Contratista?.Password;
+    const contratistaAuthUserId = projectData?.Contratista?.auth_user_id;
+
+    if (!contratistaEmail || email.toLowerCase() !== contratistaEmail.toLowerCase()) {
+      return { hasAccess: false, error: 'El email ingresado no coincide con el contratista autorizado para este proyecto.' };
+    }
+
+    // Si el contratista tiene auth_user_id, requiere contraseña
+    if (contratistaAuthUserId) {
+      return { hasAccess: true, needsPassword: true, contratistaPassword, userType: 'contratista', isRegistered: true };
+    }
+
+    // Si no tiene auth_user_id, solo verificación por email
+    return { hasAccess: true, needsPassword: false, userType: 'contratista', isRegistered: false };
   };
 
   const verifyEmailAccess = async () => {
@@ -101,7 +119,15 @@ const EmailAccess = () => {
           .select(`
             id,
             Owner,
+            Contratista,
             Mandantes!Owner (
+              id,
+              CompanyName,
+              ContactEmail,
+              Password,
+              auth_user_id
+            ),
+            Contratistas!Contratista (
               id,
               CompanyName,
               ContactEmail,
@@ -142,38 +168,56 @@ const EmailAccess = () => {
 
       console.log("Estado de pago encontrado:", paymentData);
 
-      // Verificar el email y contraseña del mandante
-      const mandanteEmail = projectData?.Mandantes?.ContactEmail;
-      const mandantePassword = projectData?.Mandantes?.Password;
-
-      if (!mandanteEmail) {
-        console.log("No se encontró el email del mandante.");
-        setPopupError('No se encontró el email del mandante para este proyecto.');
-        return;
-      }
-
-      // Verificar acceso del mandante
-      const accessCheck = await checkMandanteAccount(email, projectData);
+      // Verificar primero si es mandante o contratista
+      let accessCheck = null;
       
-      if (!accessCheck.hasAccess) {
-        setPopupError(accessCheck.error);
+      // Intentar verificar como mandante primero
+      const mandanteEmail = projectData?.Mandantes?.ContactEmail;
+      if (mandanteEmail) {
+        const mandanteCheck = await checkMandanteAccount(email, projectData);
+        if (mandanteCheck.hasAccess) {
+          accessCheck = mandanteCheck;
+        }
+      }
+
+      // Si no es mandante, intentar verificar como contratista
+      if (!accessCheck) {
+        const contratistaEmail = projectData?.Contratista?.ContactEmail;
+        if (contratistaEmail) {
+          const contratistaCheck = await checkContratistaAccount(email, projectData);
+          if (contratistaCheck.hasAccess) {
+            accessCheck = contratistaCheck;
+          }
+        }
+      }
+
+      // Si no coincide con ninguno
+      if (!accessCheck || !accessCheck.hasAccess) {
+        setPopupError('El email ingresado no coincide con el mandante o contratista autorizado para este proyecto.');
         return;
       }
 
-      // Si el mandante necesita contraseña pero no la hemos verificado aún
+      // Si necesita contraseña pero no la hemos verificado aún
       if (accessCheck.needsPassword && !needsPassword) {
         setNeedsPassword(true);
+        const userTypeText = accessCheck.userType === 'mandante' ? 'mandante' : 'contratista';
         toast({
           title: "Contraseña requerida",
-          description: "Este mandante tiene una cuenta. Por favor ingresa tu contraseña.",
+          description: `Este ${userTypeText} tiene una cuenta registrada. Por favor ingresa tu contraseña.`,
         });
         return;
       }
 
       // Verificar contraseña si es necesaria
-      if (accessCheck.needsPassword && password !== accessCheck.mandantePassword) {
-        setPopupError('La contraseña ingresada es incorrecta.');
-        return;
+      if (accessCheck.needsPassword) {
+        const correctPassword = accessCheck.userType === 'mandante' 
+          ? accessCheck.mandantePassword 
+          : accessCheck.contratistaPassword;
+          
+        if (password !== correctPassword) {
+          setPopupError('La contraseña ingresada es incorrecta.');
+          return;
+        }
       }
 
       // Paso 5: Verificación del token si está presente
@@ -213,14 +257,27 @@ const EmailAccess = () => {
         const accessData = {
           paymentId: paymentId,
           email: email,
-          token: 'mandante_authenticated',
+          token: `${accessCheck.userType}_authenticated`,
           mandanteCompany: projectData?.Mandantes?.CompanyName || '',
+          contratistaCompany: projectData?.Contratista?.CompanyName || '',
+          userType: accessCheck.userType,
+          isRegistered: accessCheck.isRegistered,
           timestamp: Date.now()
         };
 
-        sessionStorage.setItem('mandanteAccess', JSON.stringify(accessData));
+        sessionStorage.setItem('userAccess', JSON.stringify(accessData));
 
-        navigate(`/submission/${paymentId}`);
+        // Redirección según el tipo de usuario y si está registrado
+        if (accessCheck.userType === 'contratista' && accessCheck.isRegistered) {
+          // Contratista registrado: redirigir al payment page específico
+          navigate(`/payment-detail/${paymentId}`);
+        } else if (accessCheck.userType === 'contratista' && !accessCheck.isRegistered) {
+          // Contratista no registrado: redirigir al payment page específico
+          navigate(`/payment-detail/${paymentId}`);
+        } else {
+          // Mandante: redirigir a submission view
+          navigate(`/submission/${paymentId}`);
+        }
       } else {
         setPopupError('El estado de pago no coincide con los estados de pago encontrados para el proyecto.');
       }
@@ -259,7 +316,7 @@ const EmailAccess = () => {
           <div className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="email" className="text-sm font-medium text-slate-700 font-rubik">
-                Email del Mandante
+                Email
               </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gloster-gray" />
@@ -269,7 +326,7 @@ const EmailAccess = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder="mandante@empresa.com"
+                  placeholder="tu.email@empresa.com"
                   className="pl-10 font-rubik"
                   disabled={loading}
                 />
@@ -279,7 +336,7 @@ const EmailAccess = () => {
             {needsPassword && (
               <div className="space-y-2">
                 <label htmlFor="password" className="text-sm font-medium text-slate-700 font-rubik">
-                  Contraseña del Mandante
+                  Contraseña
                 </label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gloster-gray" />

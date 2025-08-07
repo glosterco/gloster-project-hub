@@ -6,10 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, Calendar, Search, Filter, Eye, Settings } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ArrowLeft, Calendar, Search, Filter, Eye, Settings, Bell } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import PageHeader from '@/components/PageHeader';
 import { useProjectDetailMandante } from '@/hooks/useProjectDetailMandante';
+import { useContractorNotification } from '@/hooks/useContractorNotification';
 import { formatCurrency } from '@/utils/currencyUtils';
 
 const ProjectDetailMandante = () => {
@@ -21,6 +23,7 @@ const ProjectDetailMandante = () => {
   const [filterBy, setFilterBy] = useState('all');
   
   const { project, loading, refetch } = useProjectDetailMandante(id || '');
+  const { sendContractorPaymentNotification, loading: notificationLoading } = useContractorNotification();
 
   const getPaymentStatus = (payment: any) => {
     return payment.Status || 'Sin Estado';
@@ -101,6 +104,23 @@ const ProjectDetailMandante = () => {
   const canManagePayment = (status: string) => {
     // Solo para estados "Enviado" (que se muestran como "Recibido" al mandante) se muestra "Gestionar"
     return status === 'Enviado';
+  };
+
+  // Función para obtener el estado de pago más cercano a notificar  
+  const getClosestPaymentToNotify = (payment: any) => {
+    const eligibleStatuses = ['Pendiente', 'Programado'];
+    return eligibleStatuses.includes(payment.Status) && payment.URLContratista;
+  };
+
+  // Función para notificar contratista
+  const handleNotifyContractor = async (payment: any) => {
+    if (!getClosestPaymentToNotify(payment)) return;
+    await sendContractorPaymentNotification(payment.id, false); // false = notificación manual
+  };
+
+  // Función para determinar si debe mostrarse el botón notificar
+  const shouldShowNotifyButton = (payment: any) => {
+    return getClosestPaymentToNotify(payment);
   };
 
   const filteredAndSortedPayments = project?.EstadosPago
@@ -330,7 +350,7 @@ const ProjectDetailMandante = () => {
                       
                       {/* Action Buttons */}
                       <div className="mt-4 pt-4 border-t border-gloster-gray/20">
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 mb-2">
                           {canViewPayment(status) && (
                             <Button
                               size="sm"
@@ -360,6 +380,28 @@ const ProjectDetailMandante = () => {
                             </div>
                           )}
                         </div>
+                        
+                        {/* Botón Notificar - Solo si hay pagos elegibles */}
+                        {shouldShowNotifyButton(payment) && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleNotifyContractor(payment)}
+                                  disabled={notificationLoading}
+                                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-rubik"
+                                >
+                                  <Bell className="h-4 w-4 mr-1" />
+                                  {notificationLoading ? 'Enviando...' : 'Notificar'}
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Enviar recordatorio al contratista sobre este estado de pago</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
                       </div>
                     </CardContent>
                   </Card>

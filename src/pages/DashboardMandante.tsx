@@ -7,11 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Calendar, MapPin, Building2, User, Phone, Mail, FileText, CheckCircle, Clock, AlertCircle, XCircle, LogOut, DollarSign, FolderOpen, Search, Filter, ArrowUpDown, Plus, Folder, ChevronRight, ChevronDown, Edit2, Trash2, Bell } from 'lucide-react';
+import { Calendar, MapPin, Building2, User, Phone, Mail, FileText, CheckCircle, Clock, AlertCircle, XCircle, LogOut, DollarSign, FolderOpen, Search, Filter, ArrowUpDown, Plus, Folder, ChevronRight, ChevronDown, Edit2, Trash2 } from 'lucide-react';
 import { useProjectsWithDetailsMandante } from '@/hooks/useProjectsWithDetailsMandante';
 import { useMandanteFolders } from '@/hooks/useMandanteFolders';
-import { useContractorNotification } from '@/hooks/useContractorNotification';
 import { formatCurrency } from '@/utils/currencyUtils';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -26,7 +24,6 @@ interface ProjectFolder {
 const DashboardMandante: React.FC = () => {
   const { projects, mandante, loading } = useProjectsWithDetailsMandante();
   const { folders, createFolder, updateFolder, deleteFolder } = useMandanteFolders(mandante?.id || null);
-  const { sendContractorPaymentNotification, loading: notificationLoading } = useContractorNotification();
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const [mandanteInfo, setMandanteInfo] = useState<{
@@ -225,17 +222,6 @@ const DashboardMandante: React.FC = () => {
   };
 
   // Función para manejar notificación manual
-  const handleNotifyContractor = async (project: any) => {
-    const paymentToNotify = getClosestPaymentToNotify(project);
-    if (!paymentToNotify) return;
-
-    await sendContractorPaymentNotification(paymentToNotify.id, false); // false = notificación manual
-  };
-
-  // Función para determinar si debe mostrarse el botón notificar
-  const shouldShowNotifyButton = (project: any) => {
-    return getClosestPaymentToNotify(project) !== null;
-  };
 
   // Función para verificar si un proyecto tiene estados "Recibido" (Enviado)
   const hasReceivedPayments = (project: any) => {
@@ -860,70 +846,16 @@ const DashboardMandante: React.FC = () => {
                                   )}
 
                                   {/* Botones de acción */}
-                                  <div className="pt-4 border-t border-gloster-gray/20 space-y-2">
-                                    <div className="grid grid-cols-2 gap-2">
-                                      {/* Botón Ver */}
-                                      <TooltipProvider>
-                                        <Tooltip>
-                                          <TooltipTrigger asChild>
-                                            <Button 
-                                              onClick={() => handleProjectDetails(project.id)}
-                                              variant="outline"
-                                              size="sm"
-                                              className="text-gloster-gray border-gloster-gray/30 hover:bg-gloster-yellow/10 font-rubik"
-                                            >
-                                              <FileText className="h-4 w-4 mr-1" />
-                                              Ver
-                                            </Button>
-                                          </TooltipTrigger>
-                                          <TooltipContent>
-                                            <p>Ver detalles completos del proyecto</p>
-                                          </TooltipContent>
-                                        </Tooltip>
-                                      </TooltipProvider>
-
-                                      {/* Botón Gestionar */}
-                                      <TooltipProvider>
-                                        <Tooltip>
-                                          <TooltipTrigger asChild>
-                                            <Button 
-                                              onClick={() => handleProjectDetails(project.id)}
-                                              variant="outline"
-                                              size="sm"
-                                              className="text-gloster-gray border-gloster-gray/30 hover:bg-gloster-yellow/10 font-rubik"
-                                            >
-                                              <Edit2 className="h-4 w-4 mr-1" />
-                                              Gestionar
-                                            </Button>
-                                          </TooltipTrigger>
-                                          <TooltipContent>
-                                            <p>Gestionar estados de pago y documentos</p>
-                                          </TooltipContent>
-                                        </Tooltip>
-                                      </TooltipProvider>
-                                    </div>
-
-                                    {/* Botón Notificar - Solo si hay pagos elegibles */}
-                                    {shouldShowNotifyButton(project) && (
-                                      <TooltipProvider>
-                                        <Tooltip>
-                                          <TooltipTrigger asChild>
-                                            <Button 
-                                              onClick={() => handleNotifyContractor(project)}
-                                              disabled={notificationLoading}
-                                              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-rubik"
-                                              size="sm"
-                                            >
-                                              <Bell className="h-4 w-4 mr-1" />
-                                              {notificationLoading ? 'Enviando...' : 'Notificar'}
-                                            </Button>
-                                          </TooltipTrigger>
-                                          <TooltipContent>
-                                            <p>Enviar recordatorio al contratista sobre el estado de pago pendiente</p>
-                                          </TooltipContent>
-                                        </Tooltip>
-                                      </TooltipProvider>
-                                    )}
+                                  <div className="pt-4 border-t border-gloster-gray/20">
+                                    <Button 
+                                      onClick={() => handleProjectDetails(project.id)}
+                                      variant="outline"
+                                      size="sm"
+                                      className="w-full text-gloster-gray border-gloster-gray/30 hover:bg-gloster-yellow/10 font-rubik"
+                                    >
+                                      <FileText className="h-4 w-4 mr-2" />
+                                      Ver más información
+                                    </Button>
                                   </div>
                                 </CardContent>
                               </Card>
@@ -1061,71 +993,17 @@ const DashboardMandante: React.FC = () => {
                               </div>
                             )}
 
-                            {/* Botones de acción */}
-                            <div className="pt-4 border-t border-gloster-gray/20 space-y-2">
-                              <div className="grid grid-cols-2 gap-2">
-                                {/* Botón Ver */}
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button 
-                                        onClick={() => handleProjectDetails(project.id)}
-                                        variant="outline"
-                                        size="sm"
-                                        className="text-gloster-gray border-gloster-gray/30 hover:bg-gloster-yellow/10 font-rubik"
-                                      >
-                                        <FileText className="h-4 w-4 mr-1" />
-                                        Ver
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p>Ver detalles completos del proyecto</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-
-                                {/* Botón Gestionar */}
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button 
-                                        onClick={() => handleProjectDetails(project.id)}
-                                        variant="outline"
-                                        size="sm"
-                                        className="text-gloster-gray border-gloster-gray/30 hover:bg-gloster-yellow/10 font-rubik"
-                                      >
-                                        <Edit2 className="h-4 w-4 mr-1" />
-                                        Gestionar
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p>Gestionar estados de pago y documentos</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                              </div>
-
-                              {/* Botón Notificar - Solo si hay pagos elegibles */}
-                              {shouldShowNotifyButton(project) && (
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button 
-                                        onClick={() => handleNotifyContractor(project)}
-                                        disabled={notificationLoading}
-                                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-rubik"
-                                        size="sm"
-                                      >
-                                        <Bell className="h-4 w-4 mr-1" />
-                                        {notificationLoading ? 'Enviando...' : 'Notificar'}
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p>Enviar recordatorio al contratista sobre el estado de pago pendiente</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                              )}
+                            {/* Botón de acción */}
+                            <div className="pt-4 border-t border-gloster-gray/20">
+                              <Button 
+                                onClick={() => handleProjectDetails(project.id)}
+                                variant="outline"
+                                size="sm"
+                                className="w-full text-gloster-gray border-gloster-gray/30 hover:bg-gloster-yellow/10 font-rubik"
+                              >
+                                <FileText className="h-4 w-4 mr-2" />
+                                Ver más información
+                              </Button>
                             </div>
                           </CardContent>
                         </Card>

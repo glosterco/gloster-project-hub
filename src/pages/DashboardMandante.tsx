@@ -15,6 +15,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 
+// Force rebuild to clear cached TooltipProvider reference
+
 interface ProjectFolder {
   id: string;
   name: string;

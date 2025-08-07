@@ -64,125 +64,72 @@ const EmailAccess = () => {
     return { hasAccess: true, needsPassword: false, userType: 'contratista', isRegistered: false };
   };
 
-  const verifyEmailAccess = async () => {
+  const handleAccessAttempt = async () => {
     if (!email.trim()) {
-      toast({
-        title: "Email requerido",
-        description: "Por favor ingresa tu email para verificar el acceso",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (needsPassword && !password.trim()) {
-      toast({
-        title: "Contraseña requerida",
-        description: "Por favor ingresa tu contraseña para verificar el acceso",
-        variant: "destructive"
-      });
+      setPopupError('Por favor ingrese su email');
       return;
     }
 
     setLoading(true);
-
-    const parsedPaymentId = parseInt(paymentId?.trim() || "", 10);
-
-    console.log("paymentId (parsed):", parsedPaymentId);
-
-    if (isNaN(parsedPaymentId)) {
-      toast({
-        title: "ID de pago inválido",
-        description: "El ID de pago proporcionado no es válido.",
-        variant: "destructive",
-      });
-      setLoading(false);
-      return;
-    }
+    setPopupError(null);
 
     try {
-      // Consulta a Supabase para obtener el estado de pago
+      // Obtener información del estado de pago
       const { data: paymentData, error: paymentError } = await supabase
         .from('Estados de pago')
         .select(`
-          id,
-          Project,
-          URLMandante,
-          URLContratista
+          *,
+          Proyectos:Project (
+            *,
+            Mandantes:Owner (*),
+            Contratistas:Contratista (*)
+          )
         `)
-        .eq('id', parsedPaymentId)
-        .maybeSingle();
+        .eq('id', parseInt(paymentId || '0'))
+        .single();
 
-      // Obtener datos del proyecto por separado
-      let projectData = null;
-      if (paymentData) {
-        const { data: projectInfo } = await supabase
-          .from('Proyectos')
-          .select(`
-            id,
-            Owner,
-            Contratista,
-            Mandantes!Owner (
-              id,
-              CompanyName,
-              ContactEmail,
-              Password,
-              auth_user_id
-            ),
-            Contratistas!Contratista (
-              id,
-              CompanyName,
-              ContactEmail,
-              Password,
-              auth_user_id
-            )
-          `)
-          .eq('id', paymentData.Project)
-          .single();
+      if (paymentError || !paymentData) {
+        setPopupError('Estado de pago no encontrado');
+        return;
+      }
 
-        if (projectInfo) {
-          projectData = projectInfo;
+      const projectData = paymentData.Proyectos;
+
+      // 1. VERIFICAR ACCESO POR TOKEN (URLContratista) PRIMERO
+      if (token && (paymentData as any).URLContratista) {
+        const urlContratista = (paymentData as any).URLContratista;
+        const expectedToken = urlContratista.split('token=')[1];
+        
+        if (token === expectedToken) {
+          // Token válido - acceso directo como contratista no registrado
+          const accessData = {
+            paymentId: paymentId.toString(),
+            token: token,
+            timestamp: Date.now(),
+            userType: 'contratista',
+            isRegistered: false
+          };
+          sessionStorage.setItem('contractorAccess', JSON.stringify(accessData));
+          navigate(`/submission/${paymentId}`);
+          return;
         }
       }
 
-      console.log("paymentData:", paymentData);
-      console.log("projectData:", projectData);
-
-      if (paymentError) {
-        console.error("Error en la consulta de Supabase:", paymentError);
-        setPopupError('Error al verificar la información del estado de pago.');
-        return;
-      }
-
-      if (!paymentData) {
-        setPopupError('No se encontró el estado de pago con el ID proporcionado.');
-        return;
-      }
-
-      if (!projectData) {
-        setPopupError('No se encontró información del proyecto.');
-        return;
-      }
-
+      // 2. VERIFICAR ACCESO POR EMAIL/CONTRASEÑA
       // Verificar si es mandante o contratista
       let accessCheck = null;
       
       // Intentar verificar como mandante primero
-      const mandanteEmail = projectData?.Mandantes?.ContactEmail;
-      if (mandanteEmail) {
-        const mandanteCheck = await checkMandanteAccount(email, projectData);
-        if (mandanteCheck.hasAccess) {
-          accessCheck = mandanteCheck;
-        }
+      const mandanteCheck = await checkMandanteAccount(email, projectData);
+      if (mandanteCheck.hasAccess) {
+        accessCheck = mandanteCheck;
       }
 
       // Si no es mandante, intentar verificar como contratista
       if (!accessCheck) {
-        const contratistaEmail = projectData?.Contratistas?.ContactEmail;
-        if (contratistaEmail) {
-          const contratistaCheck = await checkContratistaAccount(email, projectData);
-          if (contratistaCheck.hasAccess) {
-            accessCheck = contratistaCheck;
-          }
+        const contratistaCheck = await checkContratistaAccount(email, projectData);
+        if (contratistaCheck.hasAccess) {
+          accessCheck = contratistaCheck;
         }
       }
 
@@ -215,69 +162,34 @@ const EmailAccess = () => {
         }
       }
 
-      // Verificación del token según el tipo de usuario
-      if (token) {
-        const expectedUrl = `${window.location.origin}/email-access?paymentId=${paymentId}&token=${token}`;
-        const storedUrl = accessCheck.userType === 'mandante' 
-          ? paymentData?.URLMandante 
-          : paymentData?.URLContratista;
-        
-        console.log('Comprobando URL:', { 
-          esperado: expectedUrl, 
-          almacenado: storedUrl,
-          userType: accessCheck.userType 
-        });
+      // Acceso concedido
+      toast({
+        title: "Acceso verificado",
+        description: "Acceso concedido correctamente.",
+      });
 
-        if (storedUrl !== expectedUrl) {
-          setPopupError('El enlace de acceso no es válido o ha expirado.');
-          return;
-        }
-      }
+      const accessData = {
+        paymentId: paymentId,
+        email: email,
+        token: `${accessCheck.userType}_authenticated`,
+        userType: accessCheck.userType,
+        isRegistered: accessCheck.isRegistered,
+        timestamp: Date.now()
+      };
 
-      // Verificación de los estados de pago relacionados con el proyecto
-      const { data: relatedPayments, error: relatedPaymentsError } = await supabase
-        .from('Estados de pago')
-        .select('id')
-        .eq('Project', projectData.id);
-
-      if (relatedPaymentsError) {
-        console.error("Error al obtener los estados de pago relacionados:", relatedPaymentsError);
-        setPopupError('Hubo un error al obtener los estados de pago relacionados.');
-        return;
-      }
-
-      const isPaymentValid = relatedPayments && relatedPayments.some(payment => payment.id === parsedPaymentId);
-
-      if (isPaymentValid) {
-        toast({
-          title: "Acceso verificado",
-          description: "Estado de pago verificado correctamente.",
-        });
-
-        const accessData = {
-          paymentId: paymentId,
-          email: email,
-          token: `${accessCheck.userType}_authenticated`,
-          mandanteCompany: projectData?.Mandantes?.CompanyName || '',
-          contratistaCompany: projectData?.Contratistas?.CompanyName || '',
-          userType: accessCheck.userType,
-          isRegistered: accessCheck.isRegistered,
-          timestamp: Date.now()
-        };
-
-        sessionStorage.setItem('userAccess', JSON.stringify(accessData));
-
-        // Redirección según el tipo de usuario y si está registrado
-        if (accessCheck.userType === 'contratista') {
-          // Todos los contratistas van al payment detail (registrados y no registrados)
-          navigate(`/payment-detail/${paymentId}`);
-        } else {
-          // Mandantes van a submission view (registrados y no registrados con acceso limitado)
-          navigate(`/submission/${paymentId}`);
-        }
+      if (accessCheck.userType === 'mandante') {
+        sessionStorage.setItem('mandanteAccess', JSON.stringify(accessData));
       } else {
-        setPopupError('El estado de pago no coincide con los estados de pago encontrados para el proyecto.');
+        sessionStorage.setItem('contractorAccess', JSON.stringify(accessData));
       }
+
+      // Redirección según el tipo de usuario
+      if (accessCheck.userType === 'contratista') {
+        navigate(`/submission/${paymentId}`);
+      } else {
+        navigate(`/submission/${paymentId}`);
+      }
+
     } catch (error) {
       console.error('Error al verificar el acceso:', error);
       setPopupError('No se pudo verificar el acceso. Intenta nuevamente.');
@@ -288,7 +200,7 @@ const EmailAccess = () => {
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      verifyEmailAccess();
+      handleAccessAttempt();
     }
   };
 
@@ -352,7 +264,7 @@ const EmailAccess = () => {
             )}
             
             <Button
-              onClick={verifyEmailAccess}
+              onClick={handleAccessAttempt}
               disabled={loading || !email.trim() || (needsPassword && !password.trim())}
               className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik font-medium"
             >

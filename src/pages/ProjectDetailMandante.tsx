@@ -106,21 +106,34 @@ const ProjectDetailMandante = () => {
     return status === 'Enviado';
   };
 
-  // Función para obtener el estado de pago más cercano a notificar  
-  const getClosestPaymentToNotify = (payment: any) => {
-    const eligibleStatuses = ['Pendiente', 'Programado'];
-    return eligibleStatuses.includes(payment.Status) && payment.URLContratista;
+  // Función para obtener el estado de pago más cercano a notificar (solo el más cercano)
+  const getClosestPaymentToNotify = () => {
+    if (!project?.EstadosPago) return null;
+    
+    const eligiblePayments = project.EstadosPago.filter((payment: any) => {
+      const eligibleStatuses = ['Pendiente', 'Programado'];
+      return eligibleStatuses.includes(payment.Status) && payment.URLContratista;
+    });
+    
+    if (eligiblePayments.length === 0) return null;
+    
+    // Ordenar por fecha de vencimiento más cercana
+    const sortedPayments = eligiblePayments.sort((a, b) => 
+      new Date(a.ExpiryDate).getTime() - new Date(b.ExpiryDate).getTime()
+    );
+    
+    return sortedPayments[0]; // Solo el más cercano
   };
 
   // Función para notificar contratista
   const handleNotifyContractor = async (payment: any) => {
-    if (!getClosestPaymentToNotify(payment)) return;
     await sendContractorPaymentNotification(payment.id, false); // false = notificación manual
   };
 
-  // Función para determinar si debe mostrarse el botón notificar
+  // Función para determinar si debe mostrarse el botón notificar (solo en el pago más cercano)
   const shouldShowNotifyButton = (payment: any) => {
-    return getClosestPaymentToNotify(payment);
+    const closestPayment = getClosestPaymentToNotify();
+    return closestPayment && closestPayment.id === payment.id;
   };
 
   const filteredAndSortedPayments = project?.EstadosPago
@@ -352,26 +365,44 @@ const ProjectDetailMandante = () => {
                       <div className="mt-4 pt-4 border-t border-gloster-gray/20">
                         <div className="flex gap-2 mb-2">
                           {canViewPayment(status) && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handlePaymentAction(payment, 'view')}
-                              className="flex-1 border-gloster-yellow text-gloster-gray hover:bg-gloster-yellow/10"
-                            >
-                              <Eye className="h-4 w-4 mr-1" />
-                              Ver
-                            </Button>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handlePaymentAction(payment, 'view')}
+                                    className="flex-1 border-gloster-yellow text-gloster-gray hover:bg-gloster-yellow/10"
+                                  >
+                                    <Eye className="h-4 w-4 mr-1" />
+                                    Ver
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Ver los documentos enviados por el contratista para este estado de pago</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                           )}
                           
                           {canManagePayment(status) && (
-                            <Button
-                              size="sm"
-                              onClick={() => handlePaymentAction(payment, 'manage')}
-                              className="flex-1 bg-gloster-yellow hover:bg-gloster-yellow/90 text-black"
-                            >
-                              <Settings className="h-4 w-4 mr-1" />
-                              Gestionar
-                            </Button>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handlePaymentAction(payment, 'manage')}
+                                    className="flex-1 bg-gloster-yellow hover:bg-gloster-yellow/90 text-black"
+                                  >
+                                    <Settings className="h-4 w-4 mr-1" />
+                                    Gestionar
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Revisar y aprobar/rechazar los documentos del estado de pago</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                           )}
                           
                           {!canViewPayment(status) && !canManagePayment(status) && (
@@ -397,7 +428,7 @@ const ProjectDetailMandante = () => {
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>
-                                <p>Enviar recordatorio al contratista sobre este estado de pago</p>
+                                <p>Enviar recordatorio al contratista sobre este estado de pago (solo disponible para el estado más próximo a vencer)</p>
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>

@@ -418,7 +418,7 @@ const ProjectDetailMandante = () => {
                             </TooltipProvider>
                           )}
                           
-                          {!canViewPayment(status) && !canManagePayment(status) && (
+                          {!canViewPayment(status) && !canManagePayment(status) && !shouldShowNotifyButton(payment) && (
                             <div className="flex-1 text-center text-xs text-gloster-gray py-2">
                               Sin acciones disponibles
                             </div>
@@ -441,7 +441,7 @@ const ProjectDetailMandante = () => {
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>
-                                <p>Enviar recordatorio al contratista sobre este estado de pago (solo disponible para el estado más próximo a vencer)</p>
+                                <p>Enviar recordatorio al contratista sobre este estado de pago</p>
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
@@ -452,6 +452,37 @@ const ProjectDetailMandante = () => {
                 );
               })}
             </div>
+          )}
+          
+          {/* Project Info Banner */}
+          {project && (
+            <Card className="mt-8 border-l-4 border-l-blue-500 bg-blue-50/50">
+              <CardHeader>
+                <CardTitle className="text-lg font-rubik text-slate-800">Información del Proyecto</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-gloster-gray font-rubik">Contacto:</p>
+                    <p className="font-semibold text-slate-800 font-rubik">{project.Contratista?.ContactName}</p>
+                  </div>
+                  <div>
+                    <p className="text-gloster-gray font-rubik">Email de Contacto:</p>
+                    <p className="font-semibold text-slate-800 font-rubik">{project.Contratista?.ContactEmail}</p>
+                  </div>
+                  <div>
+                    <p className="text-gloster-gray font-rubik">Fecha de Inicio:</p>
+                    <p className="font-semibold text-slate-800 font-rubik">
+                      {new Date(project.StartDate).toLocaleDateString('es-CL')}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gloster-gray font-rubik">Duración:</p>
+                    <p className="font-semibold text-slate-800 font-rubik">{project.Duration} días</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           )}
         </div>
       </div>

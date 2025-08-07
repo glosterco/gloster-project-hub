@@ -114,7 +114,7 @@ export const useProjectDetailMandante = (projectId: string) => {
       // Fetch payment states - ✅ CORREGIDO: Incluir URLContratista
       const { data: paymentsData, error: paymentsError } = await supabase
         .from('Estados de pago')
-        .select('id, Name, Status, Total, ExpiryDate, Completion, Mes, "Año", URLContratista')
+        .select('id, Name, Status, Total, ExpiryDate, Completion, Mes, "Año", "URLContratista"')
         .eq('Project', parseInt(projectId))
         .order('ExpiryDate', { ascending: true });
           

@@ -95,7 +95,7 @@ export const useAccessVerification = (payment: PaymentDetail | null, paymentId: 
             return;
           }
 
-          // Verificar si es un mandante autenticado - verificar cualquier mandante asociado al usuario
+          // Verificar si es un mandante autenticado (propietario directo)
           const { data: mandanteData } = await supabase
             .from('Mandantes')
             .select('*')
@@ -109,6 +109,25 @@ export const useAccessVerification = (payment: PaymentDetail | null, paymentId: 
             setAccessChecked(true);
             setCheckingAccess(false);
             return;
+          }
+
+          // Verificar si es un usuario asociado al mandante del proyecto
+          if (payment.projectData.Owner?.id) {
+            const { data: mandanteUserData } = await supabase
+              .from('mandante_users')
+              .select('*')
+              .eq('mandante_id', payment.projectData.Owner.id)
+              .eq('auth_user_id', user.id)
+              .maybeSingle();
+
+            if (mandanteUserData) {
+              console.log('✅ Associated mandante user access granted for user:', user.email);
+              setHasAccess(true);
+              setIsMandante(true);
+              setAccessChecked(true);
+              setCheckingAccess(false);
+              return;
+            }
           }
 
           console.log('❌ Authenticated user has no access to this payment');

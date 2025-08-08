@@ -30,16 +30,15 @@ const EmailAccess = () => {
 
   const checkMandanteAccount = async (email: string, projectData: any) => {
     const mandanteEmail = projectData?.Mandantes?.ContactEmail;
-    const mandantePassword = projectData?.Mandantes?.Password;
     const mandanteAuthUserId = projectData?.Mandantes?.auth_user_id;
 
     if (!mandanteEmail || email.toLowerCase() !== mandanteEmail.toLowerCase()) {
       return { hasAccess: false, error: 'El email ingresado no coincide con el mandante autorizado para este proyecto.' };
     }
 
-    // Si el mandante tiene auth_user_id, requiere contraseña
+    // Si el mandante tiene auth_user_id, requiere autenticación de Supabase
     if (mandanteAuthUserId) {
-      return { hasAccess: true, needsPassword: true, mandantePassword, userType: 'mandante', isRegistered: true };
+      return { hasAccess: true, needsPassword: true, userType: 'mandante', isRegistered: true, authUserId: mandanteAuthUserId };
     }
 
     // Si no tiene auth_user_id, solo verificación por email
@@ -48,16 +47,15 @@ const EmailAccess = () => {
 
   const checkContratistaAccount = async (email: string, projectData: any) => {
     const contratistaEmail = projectData?.Contratistas?.ContactEmail;
-    const contratistaPassword = projectData?.Contratistas?.Password;
     const contratistaAuthUserId = projectData?.Contratistas?.auth_user_id;
 
     if (!contratistaEmail || email.toLowerCase() !== contratistaEmail.toLowerCase()) {
       return { hasAccess: false, error: 'El email ingresado no coincide con el contratista autorizado para este proyecto.' };
     }
 
-    // Si el contratista tiene auth_user_id, requiere contraseña
+    // Si el contratista tiene auth_user_id, requiere autenticación de Supabase
     if (contratistaAuthUserId) {
-      return { hasAccess: true, needsPassword: true, contratistaPassword, userType: 'contratista', isRegistered: true };
+      return { hasAccess: true, needsPassword: true, userType: 'contratista', isRegistered: true, authUserId: contratistaAuthUserId };
     }
 
     // Si no tiene auth_user_id, solo verificación por email
@@ -148,6 +146,7 @@ const EmailAccess = () => {
 
       // Si necesita contraseña pero no la hemos verificado aún
       if (accessCheck.needsPassword && !needsPassword) {
+        console.log(`🔐 Usuario registrado detectado (${accessCheck.userType}), solicitando contraseña`);
         setNeedsPassword(true);
         const userTypeText = accessCheck.userType === 'mandante' ? 'mandante' : 'contratista';
         toast({
@@ -157,14 +156,37 @@ const EmailAccess = () => {
         return;
       }
 
-      // Verificar contraseña si es necesaria
+      // Verificar contraseña si es necesaria (autenticación con Supabase)
       if (accessCheck.needsPassword) {
-        const correctPassword = accessCheck.userType === 'mandante' 
-          ? accessCheck.mandantePassword 
-          : accessCheck.contratistaPassword;
-          
-        if (password !== correctPassword) {
-          setPopupError('La contraseña ingresada es incorrecta.');
+        if (!password.trim()) {
+          setPopupError('Por favor ingresa tu contraseña.');
+          return;
+        }
+
+        try {
+          // Intentar autenticación con Supabase
+          const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: password
+          });
+
+          if (authError || !authData.user) {
+            setPopupError('Email o contraseña incorrectos.');
+            return;
+          }
+
+          // Verificar que el usuario autenticado coincide con el auth_user_id del proyecto
+          if (authData.user.id !== accessCheck.authUserId) {
+            setPopupError('Las credenciales no coinciden con el usuario autorizado para este proyecto.');
+            // Cerrar sesión si se autenticó con credenciales incorrectas
+            await supabase.auth.signOut();
+            return;
+          }
+
+          console.log('✅ Usuario autenticado correctamente:', authData.user.email);
+        } catch (error) {
+          console.error('Error en autenticación:', error);
+          setPopupError('Error al verificar las credenciales. Intenta nuevamente.');
           return;
         }
       }

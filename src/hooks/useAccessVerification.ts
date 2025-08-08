@@ -46,6 +46,34 @@ export const useAccessVerification = (payment: PaymentDetail | null, paymentId: 
           }
         }
 
+        // VERIFICAR ACCESO DE CONTRATISTA REGISTRADO desde sessionStorage
+        const contractorAccess = sessionStorage.getItem('contractorAccess');
+        
+        if (contractorAccess) {
+          try {
+            const accessData = JSON.parse(contractorAccess);
+            console.log('🔍 Found contractor access in sessionStorage:', { 
+              storedPaymentId: accessData.paymentId, 
+              requestedPaymentId: paymentId, 
+              hasToken: !!accessData.token,
+              email: accessData.email,
+              isRegistered: accessData.isRegistered
+            });
+            
+            if (accessData.paymentId === paymentId && 
+                (accessData.token === 'contratista_authenticated' || accessData.isRegistered)) {
+              console.log('✅ Contractor access granted from sessionStorage');
+              setHasAccess(true);
+              setIsMandante(false);
+              setAccessChecked(true);
+              setCheckingAccess(false);
+              return;
+            }
+          } catch (parseError) {
+            console.error('Error parsing contractorAccess:', parseError);
+          }
+        }
+
         // SEGUNDA PRIORIDAD: Solo verificar autenticación si NO hay acceso de mandante en sessionStorage
         const { data: { user } } = await supabase.auth.getUser();
         
@@ -86,9 +114,9 @@ export const useAccessVerification = (payment: PaymentDetail | null, paymentId: 
           console.log('❌ Authenticated user has no access to this payment');
         }
 
-        // Si llegamos aquí y tenemos acceso de mandante válido pero sin payment data aún, esperar
-        if (mandanteAccess && !payment) {
-          console.log('⏳ Waiting for payment data to load for mandante access...');
+        // Si llegamos aquí y tenemos acceso válido pero sin payment data aún, esperar
+        if ((mandanteAccess || contractorAccess) && !payment) {
+          console.log('⏳ Waiting for payment data to load for session access...');
           return; // No marcar como fallido aún, esperar que cargue el payment
         }
 

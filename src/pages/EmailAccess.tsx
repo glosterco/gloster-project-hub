@@ -118,17 +118,28 @@ const EmailAccess = () => {
   const checkContratistaAccount = async (email: string, projectData: any) => {
     const contratistaEmail = projectData?.Contratistas?.ContactEmail;
     const contratistaAuthUserId = projectData?.Contratistas?.auth_user_id;
+    const contratistaId = projectData?.Contratistas?.id;
 
-    if (!contratistaEmail || email.toLowerCase() !== contratistaEmail.toLowerCase()) {
+    // Verificar si el email coincide con el contratista principal
+    const isMainContratista = contratistaEmail && email.toLowerCase() === contratistaEmail.toLowerCase();
+    
+    // TODO: Verificar si es un usuario asociado al contratista (cuando se cree la tabla contratista_users)
+    let isAssociatedUser = false;
+    let associatedUserAuthId = null;
+    
+    // Si no coincide con ninguno
+    if (!isMainContratista && !isAssociatedUser) {
       return { hasAccess: false, error: 'El email ingresado no coincide con el contratista autorizado para este proyecto.' };
     }
 
-    // Si el contratista tiene auth_user_id, requiere autenticación de Supabase
-    if (contratistaAuthUserId) {
-      return { hasAccess: true, needsPassword: true, userType: 'contratista', isRegistered: true, authUserId: contratistaAuthUserId };
+    // Determinar si necesita contraseña
+    const authUserId = isMainContratista ? contratistaAuthUserId : associatedUserAuthId;
+    
+    if (authUserId) {
+      return { hasAccess: true, needsPassword: true, userType: 'contratista', isRegistered: true, authUserId };
     }
 
-    // Si no tiene auth_user_id, solo verificación por email
+    // Si no tiene auth_user_id, solo verificación por email (solo para contratista principal)
     return { hasAccess: true, needsPassword: false, userType: 'contratista', isRegistered: false };
   };
 
@@ -181,18 +192,9 @@ const EmailAccess = () => {
               console.log('🔐 Contratista registrado detectado, requiere autenticación');
               // Continúa con el flujo normal de verificación
             } else {
-              // Contratista no registrado - acceso directo con token
-              console.log('✅ Token válido, contratista no registrado, otorgando acceso directo');
-              const accessData = {
-                paymentId: paymentId.toString(),
-                token: token,
-                timestamp: Date.now(),
-                userType: 'contratista',
-                isRegistered: false
-              };
-              sessionStorage.setItem('contractorAccess', JSON.stringify(accessData));
-              navigate(`/payment/${paymentId}`);
-              return;
+              // Contratista no registrado - requiere verificación de email
+              console.log('📧 Contratista no registrado, requiere verificación de email');
+              // Continúa con el flujo normal de verificación de email
             }
           } else {
             console.log('❌ Token de contratista inválido');

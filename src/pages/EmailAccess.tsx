@@ -328,7 +328,7 @@ const EmailAccess = () => {
 
       // Redirección según el tipo de usuario
       if (accessCheck.userType === 'contratista') {
-        navigate(`/submission/${paymentId}`);
+        navigate(`/payment-detail/${paymentId}`);
       } else {
         navigate(`/submission/${paymentId}`);
       }

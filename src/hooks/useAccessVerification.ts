@@ -61,7 +61,7 @@ export const useAccessVerification = (payment: PaymentDetail | null, paymentId: 
             });
             
             if (accessData.paymentId === paymentId && 
-                (accessData.token === 'contratista_authenticated' || accessData.isRegistered)) {
+                (accessData.token === 'contratista_authenticated' || accessData.token || accessData.isRegistered === false)) {
               console.log('✅ Contractor access granted from sessionStorage');
               setHasAccess(true);
               setIsMandante(false);

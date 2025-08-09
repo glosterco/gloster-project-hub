@@ -191,7 +191,7 @@ const EmailAccess = () => {
                 isRegistered: false
               };
               sessionStorage.setItem('contractorAccess', JSON.stringify(accessData));
-              navigate(`/submission/${paymentId}`);
+              navigate(`/payment/${paymentId}`);
               return;
             }
           } else {
@@ -328,7 +328,7 @@ const EmailAccess = () => {
 
       // Redirección según el tipo de usuario
       if (accessCheck.userType === 'contratista') {
-        navigate(`/payment-detail/${paymentId}`);
+        navigate(`/payment/${paymentId}`);
       } else {
         navigate(`/submission/${paymentId}`);
       }

@@ -34,14 +34,31 @@ const PaymentDetail = () => {
   const [isLimitedAccess, setIsLimitedAccess] = useState(false);
 
   useEffect(() => {
-    const userAccess = sessionStorage.getItem('userAccess');
-    if (userAccess) {
-      const accessInfo = JSON.parse(userAccess);
-      setAccessData(accessInfo);
-      
-      // Determinar si es acceso limitado (contratista no registrado)
-      if (accessInfo.userType === 'contratista' && !accessInfo.isRegistered) {
-        setIsLimitedAccess(true);
+    // Verificar acceso de contratista
+    const contractorAccess = sessionStorage.getItem('contractorAccess');
+    if (contractorAccess) {
+      try {
+        const accessInfo = JSON.parse(contractorAccess);
+        setAccessData(accessInfo);
+        
+        // Determinar si es acceso limitado (contratista no registrado)
+        if (accessInfo.userType === 'contratista' && !accessInfo.isRegistered) {
+          setIsLimitedAccess(true);
+        }
+      } catch (error) {
+        console.error('Error parsing contractorAccess:', error);
+      }
+    }
+    
+    // También verificar acceso de mandante
+    const mandanteAccess = sessionStorage.getItem('mandanteAccess');
+    if (mandanteAccess) {
+      try {
+        const accessInfo = JSON.parse(mandanteAccess);
+        setAccessData(accessInfo);
+        setIsLimitedAccess(false); // Mandantes no tienen acceso limitado
+      } catch (error) {
+        console.error('Error parsing mandanteAccess:', error);
       }
     }
   }, []);

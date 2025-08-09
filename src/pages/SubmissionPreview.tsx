@@ -50,7 +50,7 @@ const SubmissionPreview = () => {
     handleNavigation(() => {
       if (isLimitedAccess) {
         // Usuarios con acceso limitado solo pueden volver al payment detail
-        navigate(`/payment-detail/${payment?.id}`);
+        navigate(`/payment/${payment?.id}`);
       } else if (isProjectUser) {
         navigate(`/payment/${payment?.id}`);
       } else {

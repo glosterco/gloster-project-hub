@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      contratista_users: {
+        Row: {
+          auth_user_id: string
+          contratista_id: number
+          created_at: string
+          id: string
+          permission_level: string
+          updated_at: string
+        }
+        Insert: {
+          auth_user_id: string
+          contratista_id: number
+          created_at?: string
+          id?: string
+          permission_level?: string
+          updated_at?: string
+        }
+        Update: {
+          auth_user_id?: string
+          contratista_id?: number
+          created_at?: string
+          id?: string
+          permission_level?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       Contratistas: {
         Row: {
           auth_user_id: string | null

@@ -123,9 +123,37 @@ const EmailAccess = () => {
     // Verificar si el email coincide con el contratista principal
     const isMainContratista = contratistaEmail && email.toLowerCase() === contratistaEmail.toLowerCase();
     
-    // TODO: Verificar si es un usuario asociado al contratista (cuando se cree la tabla contratista_users)
+    // Verificar si es un usuario asociado al contratista
     let isAssociatedUser = false;
     let associatedUserAuthId = null;
+    
+    if (!isMainContratista && contratistaId) {
+      try {
+        // Llamar a la edge function para verificar usuarios asociados del contratista
+        const response = await fetch('https://mqzuvqwsaeguphqjwvap.supabase.co/functions/v1/verify-contratista-user-email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || ''}`,
+          },
+          body: JSON.stringify({
+            email: email,
+            contratistaId: contratistaId
+          })
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          if (result.hasAccess && result.isAssociatedUser) {
+            isAssociatedUser = true;
+            associatedUserAuthId = result.authUserId;
+            console.log('✅ Usuario asociado del contratista encontrado');
+          }
+        }
+      } catch (error) {
+        console.error('Error verificando usuarios del contratista:', error);
+      }
+    }
     
     // Si no coincide con ninguno
     if (!isMainContratista && !isAssociatedUser) {

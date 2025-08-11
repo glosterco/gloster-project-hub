@@ -29,146 +29,55 @@ const EmailAccess = () => {
     }
   }, [paymentId, navigate]);
 
-  // Detectar tipo de acceso desde URL params
+  // Detectar tipo de acceso desde URL params de forma segura
   useEffect(() => {
     const detectAccessType = async () => {
-      if (!paymentId) return;
+      if (!paymentId || !token) return;
 
       try {
-        const { data: paymentData } = await supabase
-          .from('Estados de pago')
-          .select('URLContratista, URLMandante')
-          .eq('id', parseInt(paymentId))
-          .single();
+        // Use secure edge function to verify token and determine user type
+        const { data, error } = await supabase.functions.invoke('verify-email-access', {
+          body: { paymentId, token }
+        });
 
-        if (paymentData) {
-          // Determinar de qué tipo de URL viene basado en el token
-          if (token && paymentData.URLContratista && paymentData.URLContratista.includes(token)) {
-            setUserType('contratista');
-            console.log('🔍 Acceso detectado como contratista via URLContratista');
-          } else if (token && paymentData.URLMandante && paymentData.URLMandante.includes(token)) {
-            setUserType('mandante');
-            console.log('🔍 Acceso detectado como mandante via URLMandante');
-          }
+        if (error) {
+          setPopupError('Token de acceso inválido');
+          return;
+        }
+
+        if (data?.userType) {
+          setUserType(data.userType);
         }
       } catch (error) {
-        console.error('Error detectando tipo de acceso:', error);
+        setPopupError('Error verificando el acceso');
       }
     };
 
     detectAccessType();
   }, [paymentId, token]);
 
-  const checkMandanteAccount = async (email: string, projectData: any) => {
-    const mandanteEmail = projectData?.Mandantes?.ContactEmail;
-    const mandanteAuthUserId = projectData?.Mandantes?.auth_user_id;
-    const mandanteId = projectData?.Mandantes?.id;
-
-    // Verificar si el email coincide con el mandante principal
-    const isMainMandante = mandanteEmail && email.toLowerCase() === mandanteEmail.toLowerCase();
-    
-    // Verificar si es un usuario asociado al mandante
-    let isAssociatedUser = false;
-    let associatedUserAuthId = null;
-    
-    if (mandanteId) {
-      try {
-        // Llamar a la edge function para verificar usuarios asociados del mandante
-        const response = await fetch('https://mqzuvqwsaeguphqjwvap.supabase.co/functions/v1/verify-mandante-user-email', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || ''}`,
-          },
-          body: JSON.stringify({
-            email: email,
-            mandanteId: mandanteId
-          })
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          if (result.hasAccess && result.isAssociatedUser) {
-            isAssociatedUser = true;
-            associatedUserAuthId = result.authUserId;
-            console.log('✅ Usuario asociado del mandante encontrado');
-          }
+  const checkUserAccount = async (email: string, userType: 'contratista' | 'mandante') => {
+    try {
+      // Use secure edge function to verify user access without exposing sensitive data
+      const { data: result, error } = await supabase.functions.invoke(
+        'verify-email-user-access',
+        { 
+          body: { 
+            email: email, 
+            paymentId: paymentId,
+            userType: userType
+          } 
         }
-      } catch (error) {
-        console.error('Error verificando usuarios del mandante:', error);
+      );
+
+      if (error) {
+        return { hasAccess: false, needsPassword: false, userType, isRegistered: false, authUserId: null };
       }
+
+      return result || { hasAccess: false, needsPassword: false, userType, isRegistered: false, authUserId: null };
+    } catch (error) {
+      return { hasAccess: false, needsPassword: false, userType, isRegistered: false, authUserId: null };
     }
-
-    // Si no coincide con ninguno
-    if (!isMainMandante && !isAssociatedUser) {
-      return { hasAccess: false, error: 'El email ingresado no coincide con el mandante autorizado para este proyecto.' };
-    }
-
-    // Determinar si necesita contraseña
-    const authUserId = isMainMandante ? mandanteAuthUserId : associatedUserAuthId;
-    
-    if (authUserId) {
-      return { hasAccess: true, needsPassword: true, userType: 'mandante', isRegistered: true, authUserId };
-    }
-
-    // Si no tiene auth_user_id, solo verificación por email (solo para mandante principal)
-    return { hasAccess: true, needsPassword: false, userType: 'mandante', isRegistered: false };
-  };
-
-  const checkContratistaAccount = async (email: string, projectData: any) => {
-    const contratistaEmail = projectData?.Contratistas?.ContactEmail;
-    const contratistaAuthUserId = projectData?.Contratistas?.auth_user_id;
-    const contratistaId = projectData?.Contratistas?.id;
-
-    // Verificar si el email coincide con el contratista principal
-    const isMainContratista = contratistaEmail && email.toLowerCase() === contratistaEmail.toLowerCase();
-    
-    // Verificar si es un usuario asociado al contratista
-    let isAssociatedUser = false;
-    let associatedUserAuthId = null;
-    
-    if (!isMainContratista && contratistaId) {
-      try {
-        // Llamar a la edge function para verificar usuarios asociados del contratista
-        const response = await fetch('https://mqzuvqwsaeguphqjwvap.supabase.co/functions/v1/verify-contratista-user-email', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || ''}`,
-          },
-          body: JSON.stringify({
-            email: email,
-            contratistaId: contratistaId
-          })
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          if (result.hasAccess && result.isAssociatedUser) {
-            isAssociatedUser = true;
-            associatedUserAuthId = result.authUserId;
-            console.log('✅ Usuario asociado del contratista encontrado');
-          }
-        }
-      } catch (error) {
-        console.error('Error verificando usuarios del contratista:', error);
-      }
-    }
-    
-    // Si no coincide con ninguno
-    if (!isMainContratista && !isAssociatedUser) {
-      return { hasAccess: false, error: 'El email ingresado no coincide con el contratista autorizado para este proyecto.' };
-    }
-
-    // Determinar si necesita contraseña
-    const authUserId = isMainContratista ? contratistaAuthUserId : associatedUserAuthId;
-    
-    if (authUserId) {
-      return { hasAccess: true, needsPassword: true, userType: 'contratista', isRegistered: true, authUserId };
-    }
-
-    // Si no tiene auth_user_id, solo verificación por email (solo para contratista principal)
-    return { hasAccess: true, needsPassword: false, userType: 'contratista', isRegistered: false };
   };
 
   const handleAccessAttempt = async () => {
@@ -181,95 +90,25 @@ const EmailAccess = () => {
     setPopupError(null);
 
     try {
-      // Obtener información del estado de pago
-      const { data: paymentData, error: paymentError } = await supabase
-        .from('Estados de pago')
-        .select(`
-          *,
-          Proyectos:Project (
-            *,
-            Mandantes:Owner (*),
-            Contratistas:Contratista (*)
-          )
-        `)
-        .eq('id', parseInt(paymentId || '0'))
-        .single();
-
-      if (paymentError || !paymentData) {
-        setPopupError('Estado de pago no encontrado');
+      // Verify token first if provided
+      if (token && !userType) {
+        setPopupError('Token de acceso inválido');
         return;
       }
 
-      const projectData = paymentData.Proyectos;
-
-      // ✅ 1. VERIFICAR ACCESO POR TOKEN DIRECTO PRIMERO
-      if (token) {
-        // Verificar token de URLContratista
-        if (userType === 'contratista' && paymentData.URLContratista) {
-          const urlContratista = paymentData.URLContratista;
-          const expectedToken = urlContratista.split('token=')[1];
-          
-          console.log('🔐 Verificando token de contratista:', { token, expectedToken, urlContratista });
-          
-          if (token === expectedToken) {
-            // Verificar si el contratista tiene cuenta registrada
-            const contratistaAuthUserId = projectData?.Contratistas?.auth_user_id;
-            
-            if (contratistaAuthUserId) {
-              // Contratista registrado - necesita email y contraseña
-              console.log('🔐 Contratista registrado detectado, requiere autenticación');
-              // Continúa con el flujo normal de verificación
-            } else {
-              // Contratista no registrado - requiere verificación de email
-              console.log('📧 Contratista no registrado, requiere verificación de email');
-              // Continúa con el flujo normal de verificación de email
-            }
-          } else {
-            console.log('❌ Token de contratista inválido');
-            setPopupError('Token de acceso inválido');
-            return;
-          }
-        }
-        
-        // Verificar token de URLMandante
-        if (userType === 'mandante' && paymentData.URLMandante) {
-          const urlMandante = paymentData.URLMandante;
-          const expectedToken = urlMandante.split('token=')[1];
-          
-          console.log('🔐 Verificando token de mandante:', { token, expectedToken, urlMandante });
-          
-          if (token === expectedToken) {
-            // Token válido para mandante - continúa con verificación de email/contraseña
-            console.log('✅ Token de mandante válido, continuando con verificación');
-          } else {
-            console.log('❌ Token de mandante inválido');
-            setPopupError('Token de acceso inválido');
-            return;
-          }
-        }
-      }
-
-      // 2. VERIFICAR ACCESO POR EMAIL/CONTRASEÑA
+      // Check user access using secure edge function
       let accessCheck = null;
       
-      // Si ya detectamos el tipo de usuario por token, verificar solo ese tipo
-      if (userType === 'mandante') {
-        const mandanteCheck = await checkMandanteAccount(email, projectData);
-        if (mandanteCheck.hasAccess) {
-          accessCheck = mandanteCheck;
-        }
-      } else if (userType === 'contratista') {
-        const contratistaCheck = await checkContratistaAccount(email, projectData);
-        if (contratistaCheck.hasAccess) {
-          accessCheck = contratistaCheck;
-        }
+      // If we detected the user type by token, verify only that type
+      if (userType) {
+        accessCheck = await checkUserAccount(email, userType);
       } else {
-        // Si no hay token específico, intentar ambos tipos (empezar con mandante)
-        const mandanteCheck = await checkMandanteAccount(email, projectData);
+        // If no token specific, try both types (start with mandante)
+        const mandanteCheck = await checkUserAccount(email, 'mandante');
         if (mandanteCheck.hasAccess) {
           accessCheck = mandanteCheck;
         } else {
-          const contratistaCheck = await checkContratistaAccount(email, projectData);
+          const contratistaCheck = await checkUserAccount(email, 'contratista');
           if (contratistaCheck.hasAccess) {
             accessCheck = contratistaCheck;
           }
@@ -326,8 +165,6 @@ const EmailAccess = () => {
             await supabase.auth.signOut();
             return;
           }
-
-          console.log('✅ Usuario autenticado correctamente:', authData.user.email);
         } catch (error) {
           console.error('Error en autenticación:', error);
           setPopupError('Error al verificar las credenciales. Intenta nuevamente.');
@@ -343,10 +180,7 @@ const EmailAccess = () => {
 
       const accessData = {
         paymentId: paymentId,
-        email: email,
-        token: `${accessCheck.userType}_authenticated`,
         userType: accessCheck.userType,
-        isRegistered: accessCheck.isRegistered,
         timestamp: Date.now()
       };
 

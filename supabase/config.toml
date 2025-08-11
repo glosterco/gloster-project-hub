@@ -30,3 +30,9 @@ verify_jwt = false
 
 [functions.payment-status-automation]
 verify_jwt = false
+
+[functions.verify-email-access]
+verify_jwt = false
+
+[functions.verify-email-user-access]
+verify_jwt = false

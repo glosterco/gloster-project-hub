@@ -50,11 +50,9 @@ export type Database = {
           ContactPhone: number | null
           Experience: string | null
           id: number
-          Password: string | null
           RUT: string | null
           Specialization: string | null
           Status: boolean | null
-          Username: string | null
         }
         Insert: {
           auth_user_id?: string | null
@@ -64,11 +62,9 @@ export type Database = {
           ContactPhone?: number | null
           Experience?: string | null
           id?: number
-          Password?: string | null
           RUT?: string | null
           Specialization?: string | null
           Status?: boolean | null
-          Username?: string | null
         }
         Update: {
           auth_user_id?: string | null
@@ -78,11 +74,9 @@ export type Database = {
           ContactPhone?: number | null
           Experience?: string | null
           id?: number
-          Password?: string | null
           RUT?: string | null
           Specialization?: string | null
           Status?: boolean | null
-          Username?: string | null
         }
         Relationships: []
       }

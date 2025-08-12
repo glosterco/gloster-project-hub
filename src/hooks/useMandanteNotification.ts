@@ -17,6 +17,7 @@ interface MandanteNotificationData {
   driveUrl: string;
   uploadedDocuments: string[];
   currency?: string;
+  accessUrl?: string;
 }
 
 export const useMandanteNotification = () => {
@@ -26,9 +27,9 @@ export const useMandanteNotification = () => {
   const sendNotificationToMandante = async (data: MandanteNotificationData) => {
     setLoading(true);
     try {
-      // Generar URL de acceso único
+      // Generar URL de acceso único si no viene provisto
       const baseUrl = window.location.origin;
-      const accessUrl = `${baseUrl}/email-access?paymentId=${data.paymentId}`;
+      const computedAccessUrl = data.accessUrl || `${baseUrl}/email-access?paymentId=${data.paymentId}`;
 
       console.log('🚀 Sending mandante notification with data:', data);
 
@@ -43,7 +44,7 @@ export const useMandanteNotification = () => {
         contractorCompany: data.contractorCompany,
         amount: data.amount,
         dueDate: data.dueDate,
-        accessUrl: accessUrl,
+        accessUrl: computedAccessUrl,
         currency: data.currency
       };
 

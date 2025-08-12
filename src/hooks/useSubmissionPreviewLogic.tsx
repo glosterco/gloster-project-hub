@@ -25,11 +25,27 @@ export const useSubmissionPreviewLogic = (payment: PaymentDetail | null) => {
       
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        setIsProjectUser(!!user);
+        if (user) {
+          setIsProjectUser(true);
+        } else {
+          const contractorAccess = sessionStorage.getItem('contractorAccess');
+          const mandanteAccess = sessionStorage.getItem('mandanteAccess');
+          const accessInfo = contractorAccess
+            ? JSON.parse(contractorAccess)
+            : (mandanteAccess ? JSON.parse(mandanteAccess) : null);
+
+          // Permitir acciones a contratistas con acceso por email
+          setIsProjectUser(accessInfo?.userType === 'contratista');
+        }
         setUserChecked(true);
       } catch (error) {
         console.error('Error checking user:', error);
-        setIsProjectUser(false);
+        // Fallback: revisar acceso por email
+        try {
+          const contractorAccess = sessionStorage.getItem('contractorAccess');
+          const accessInfo = contractorAccess ? JSON.parse(contractorAccess) : null;
+          setIsProjectUser(accessInfo?.userType === 'contratista');
+        } catch {}
         setUserChecked(true);
       }
     };
@@ -79,8 +95,34 @@ export const useSubmissionPreviewLogic = (payment: PaymentDetail | null) => {
         .eq('id', payment.id);
 
       if (updateError) {
-        console.error('❌ Error updating payment data:', updateError);
-        throw new Error('Error al actualizar los datos del estado de pago');
+        console.warn('⚠️ Error updating payment data (direct). Will try public fallback if available:', updateError);
+
+        // Intentar fallback público con token de acceso por email
+        try {
+          const contractorAccess = sessionStorage.getItem('contractorAccess');
+          const mandanteAccess = sessionStorage.getItem('mandanteAccess');
+          const accessInfo = contractorAccess
+            ? JSON.parse(contractorAccess)
+            : (mandanteAccess ? JSON.parse(mandanteAccess) : null);
+          const accessToken = accessInfo?.accessToken;
+          const userType = accessInfo?.userType;
+
+          if (accessToken && userType === 'contratista') {
+            const { data: fnData, error: fnError } = await supabase.functions.invoke('update-payment-detail-public', {
+              body: {
+                paymentId: payment.id,
+                token: accessToken,
+                amount: payment.Total,
+                percentage: Math.round(payment.Progress || 0)
+              }
+            });
+            if (fnError || !fnData?.success) {
+              console.warn('⚠️ Public fallback failed:', fnError || fnData);
+            }
+          }
+        } catch (fallbackErr) {
+          console.warn('⚠️ Could not perform public fallback:', fallbackErr);
+        }
       }
 
       // Refrescar los datos del payment después de la actualización
@@ -91,8 +133,7 @@ export const useSubmissionPreviewLogic = (payment: PaymentDetail | null) => {
         .single();
 
       if (refreshError) {
-        console.error('❌ Error refreshing payment data:', refreshError);
-        throw new Error('Error al refrescar los datos del estado de pago');
+        console.warn('⚠️ Error refreshing payment data, continuing with current values:', refreshError);
       }
 
       // Usar el sistema de enlace único
@@ -126,11 +167,12 @@ export const useSubmissionPreviewLogic = (payment: PaymentDetail | null) => {
         mandanteEmail: payment.projectData.Owner?.ContactEmail || '',
         mandanteCompany: payment.projectData.Owner?.CompanyName || '',
         contractorCompany: payment.projectData.Contratista?.CompanyName || '',
-        amount: updatedPayment.Total || payment.Total || 0, // Usar el valor actualizado
+        amount: updatedPayment?.Total ?? payment.Total ?? 0, // Usar el valor actualizado si existe
         dueDate: payment.ExpiryDate || '',
         driveUrl: paymentStateData.URL || '',
         uploadedDocuments: [],
-        currency: payment.projectData.Currency || 'CLP'
+        currency: payment.projectData.Currency || 'CLP',
+        accessUrl: accessUrl
       };
 
       const result = await sendNotificationToMandante(notificationData);

@@ -416,7 +416,9 @@ const PaymentDetail = () => {
         amount: payment.Total || 0,
         dueDate: payment.ExpiryDate || '',
         driveUrl: paymentStateData.URL || '',
-        uploadedDocuments: uploadedDocuments
+        uploadedDocuments: uploadedDocuments,
+        currency: payment.projectData?.Currency || 'CLP',
+        accessUrl: accessUrl
       };
 
       const result = await sendNotificationToMandante(notificationData);
@@ -582,7 +584,9 @@ const PaymentDetail = () => {
         amount: payment.Total || 0,
         dueDate: payment.ExpiryDate || '',
         driveUrl: paymentStateData.URL || '',
-        uploadedDocuments: uploadedDocuments
+        uploadedDocuments: uploadedDocuments,
+        currency: payment.projectData?.Currency || 'CLP',
+        accessUrl: accessUrl
       };
 
       const result = await sendNotificationToMandante(notificationData);
@@ -673,8 +677,8 @@ const PaymentDetail = () => {
       }
     }
 
-    // Usar el sistema de enlace único para preview también
-    await ensureUniqueAccessUrl(payment.id);
+    // Usar el sistema de enlace único para preview también (ignorar errores en acceso por email)
+    try { await ensureUniqueAccessUrl(payment.id); } catch (e) { console.warn('Preview ensure URL skipped:', e); }
     navigate(`/submission-preview?paymentId=${payment.id}`);
   };
 

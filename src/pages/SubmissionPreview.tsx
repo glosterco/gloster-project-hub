@@ -19,15 +19,30 @@ const SubmissionPreview = () => {
   const [isLimitedAccess, setIsLimitedAccess] = useState(false);
 
   useEffect(() => {
-    const userAccess = sessionStorage.getItem('userAccess');
-    if (userAccess) {
-      const accessInfo = JSON.parse(userAccess);
-      setAccessData(accessInfo);
-      
-      // Determinar si es acceso limitado
-      if ((accessInfo.userType === 'contratista' && !accessInfo.isRegistered) ||
-          (accessInfo.userType === 'mandante' && !accessInfo.isRegistered)) {
-        setIsLimitedAccess(true);
+    // Verificar acceso de contratista
+    const contractorAccess = sessionStorage.getItem('contractorAccess');
+    if (contractorAccess) {
+      try {
+        const accessInfo = JSON.parse(contractorAccess);
+        setAccessData(accessInfo);
+        // Contratista no registrado => acceso limitado
+        if (accessInfo.userType === 'contratista' && accessInfo.isRegistered === false) {
+          setIsLimitedAccess(true);
+        }
+      } catch (error) {
+        console.error('Error parsing contractorAccess:', error);
+      }
+    }
+
+    // Verificar acceso de mandante
+    const mandanteAccess = sessionStorage.getItem('mandanteAccess');
+    if (mandanteAccess) {
+      try {
+        const accessInfo = JSON.parse(mandanteAccess);
+        setAccessData(accessInfo);
+        setIsLimitedAccess(false); // Mandante no es acceso limitado
+      } catch (error) {
+        console.error('Error parsing mandanteAccess:', error);
       }
     }
   }, []);

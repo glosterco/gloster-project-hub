@@ -41,8 +41,38 @@ export const useUniqueAccessUrl = () => {
         .single();
 
       if (fetchError) {
-        console.error('Error fetching existing payment:', fetchError);
-        throw new Error('Error al verificar el enlace existente');
+        console.warn('⚠️ RLS prevented direct fetch of URLMandante, trying public fallback via edge function:', fetchError);
+
+        // Try public fallback using access token from sessionStorage
+        try {
+          const contractorAccess = sessionStorage.getItem('contractorAccess');
+          const mandanteAccess = sessionStorage.getItem('mandanteAccess');
+          const accessInfo = contractorAccess
+            ? JSON.parse(contractorAccess)
+            : (mandanteAccess ? JSON.parse(mandanteAccess) : null);
+          const accessToken = accessInfo?.accessToken;
+
+          if (!accessToken) {
+            throw new Error('No se encontró token de acceso para generar el enlace');
+          }
+
+          const { data: fnData, error: fnError } = await supabase.functions.invoke('ensure-unique-access-url', {
+            body: { paymentId: numericPaymentId, token: accessToken, baseUrl: getBaseUrl() }
+          });
+
+          if (fnError) {
+            console.error('❌ Edge function ensure-unique-access-url error:', fnError);
+            throw new Error('Error al verificar el enlace existente');
+          }
+
+          if (fnData?.accessUrl) {
+            console.log('✅ Access URL ensured via edge function:', fnData.accessUrl);
+            return fnData.accessUrl;
+          }
+        } catch (fallbackErr) {
+          console.error('❌ Public fallback failed:', fallbackErr);
+          throw new Error('Error al verificar el enlace existente');
+        }
       }
 
       // Si ya existe un enlace válido, verificar si el dominio coincide con el actual

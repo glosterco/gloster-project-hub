@@ -1,4 +1,4 @@
-project_id = "mzuvqwsaeguphqjwvap"
+project_id = "mqzuvqwsaeguphqjwvap"
 
 [api]
 enabled = true
@@ -41,4 +41,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.update-payment-detail-public]
+verify_jwt = false
+
+[functions.ensure-unique-access-url]
 verify_jwt = false

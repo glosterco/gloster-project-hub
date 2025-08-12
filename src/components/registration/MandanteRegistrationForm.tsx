@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useMandantes } from '@/hooks/useMandantes';
 import { useCreateUserRole } from '@/hooks/useUserRoles';
+import LoadingModal from '@/components/LoadingModal';
 
 interface MandanteRegistrationFormProps {
   onBack: () => void;
@@ -114,8 +115,6 @@ const MandanteRegistrationForm: React.FC<MandanteRegistrationFormProps> = ({ onB
             CompanyName: formData.companyName,
             ContactName: formData.contactName,
             ContactPhone: parseInt(formData.contactPhone),
-            Username: formData.contactEmail, // Agregar email como username
-            Password: formData.password, // Agregar password
             Status: true
           })
           .eq('id', existingMandante.id);
@@ -154,8 +153,6 @@ const MandanteRegistrationForm: React.FC<MandanteRegistrationFormProps> = ({ onB
           ContactName: formData.contactName,
           ContactEmail: formData.contactEmail,
           ContactPhone: parseInt(formData.contactPhone),
-          Username: formData.contactEmail, // Agregar email como username
-          Password: formData.password, // Agregar password
           Status: true,
           auth_user_id: authData.user.id
         };
@@ -236,6 +233,7 @@ const MandanteRegistrationForm: React.FC<MandanteRegistrationFormProps> = ({ onB
 
   return (
     <div className="min-h-screen bg-slate-50">
+      <LoadingModal isOpen={loading} title="Creando cuenta..." description="Estamos creando tu cuenta de mandante. Esto puede tardar unos segundos." />
       <header className="bg-white border-b border-gloster-gray/20 shadow-sm">
         <div className="container mx-auto px-6 py-4">
           <button 

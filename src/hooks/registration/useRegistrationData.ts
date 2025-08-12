@@ -10,8 +10,6 @@ export const useRegistrationData = () => {
     ContactName: formData.contactName,
     ContactEmail: formData.email,
     ContactPhone: parseInt(formData.phone.replace('+56', '')),
-    Username: formData.email,
-    Password: formData.password,
     Status: true,
     auth_user_id: authUserId
   });

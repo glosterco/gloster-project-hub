@@ -11,8 +11,6 @@ export interface ContratistaData {
   ContactName: string;
   ContactEmail: string;
   ContactPhone: number;
-  Username: string;
-  Password: string;
   Status?: boolean;
 }
 
@@ -49,8 +47,6 @@ export const useContratistas = () => {
         ContactName: data.ContactName,
         ContactEmail: data.ContactEmail,
         ContactPhone: data.ContactPhone,
-        Username: data.Username,
-        Password: data.Password,
         Status: true,
         auth_user_id: userId
       };

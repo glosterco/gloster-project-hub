@@ -16,6 +16,7 @@ import { RegistrationProgressBar } from '@/components/registration/RegistrationP
 import { RegistrationBreakPage } from '@/components/registration/RegistrationBreakPage';
 import RoleSelectionForm from '@/components/RoleSelectionForm';
 import MandanteRegistrationForm from '@/components/registration/MandanteRegistrationForm';
+import LoadingModal from '@/components/LoadingModal';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -231,6 +232,7 @@ const Register = () => {
 
   return (
     <div className="min-h-screen bg-slate-50">
+      <LoadingModal isOpen={contratistaLoading || mandanteLoading} title="Creando cuenta..." description="Estamos creando tu cuenta y configurando el proyecto. Esto puede tardar unos segundos." />
       <header className="bg-white border-b border-gloster-gray/20 shadow-sm">
         <div className="container mx-auto px-6 py-4">
           <button 

@@ -39,7 +39,15 @@ export type Database = {
           permission_level?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "contratista_users_contratista_fkey"
+            columns: ["contratista_id"]
+            isOneToOne: false
+            referencedRelation: "Contratistas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       Contratistas: {
         Row: {
@@ -50,9 +58,11 @@ export type Database = {
           ContactPhone: number | null
           Experience: string | null
           id: number
+          Password: string | null
           RUT: string | null
           Specialization: string | null
           Status: boolean | null
+          Username: string | null
         }
         Insert: {
           auth_user_id?: string | null
@@ -62,9 +72,11 @@ export type Database = {
           ContactPhone?: number | null
           Experience?: string | null
           id?: number
+          Password?: string | null
           RUT?: string | null
           Specialization?: string | null
           Status?: boolean | null
+          Username?: string | null
         }
         Update: {
           auth_user_id?: string | null
@@ -74,9 +86,11 @@ export type Database = {
           ContactPhone?: number | null
           Experience?: string | null
           id?: number
+          Password?: string | null
           RUT?: string | null
           Specialization?: string | null
           Status?: boolean | null
+          Username?: string | null
         }
         Relationships: []
       }
@@ -164,7 +178,15 @@ export type Database = {
           project_ids?: number[]
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "mandante_project_folders_mandante_fkey"
+            columns: ["mandante_id"]
+            isOneToOne: false
+            referencedRelation: "Mandantes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       mandante_users: {
         Row: {
@@ -342,6 +364,10 @@ export type Database = {
       get_user_mandante_ids: {
         Args: { user_id: string }
         Returns: number[]
+      }
+      is_contractor_related: {
+        Args: { _contratista_id: number; _user_id: string }
+        Returns: boolean
       }
       send_contractor_payment_reminders: {
         Args: Record<PropertyKey, never>

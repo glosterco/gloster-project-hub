@@ -6,6 +6,18 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Helper: find auth user by email (fallback when auth_user_id is not set)
+const findAuthUserByEmail = async (client: ReturnType<typeof createClient>, email: string) => {
+  try {
+    const { data, error } = await client.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    if (error) return null;
+    const user = data.users?.find((u: any) => u.email?.toLowerCase() === email.toLowerCase());
+    return user || null;
+  } catch (_err) {
+    return null;
+  }
+};
+
 interface VerifyUserAccessRequest {
   email: string;
   paymentId: string;
@@ -134,6 +146,16 @@ const handler = async (req: Request): Promise<Response> => {
             }
           }
         }
+      }
+    }
+
+    // Fallback: if hasAccess but auth_user_id is not set, check if there is an auth user with this email
+    if (hasAccess && !isRegistered) {
+      const userByEmail = await findAuthUserByEmail(supabaseAdmin as any, email);
+      if (userByEmail) {
+        isRegistered = true;
+        needsPassword = true;
+        authUserId = userByEmail.id;
       }
     }
 

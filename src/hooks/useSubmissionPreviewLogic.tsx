@@ -142,20 +142,41 @@ export const useSubmissionPreviewLogic = (payment: PaymentDetail | null) => {
         throw new Error('No se pudo generar el enlace de acceso');
       }
 
+      // Obtener URL del estado de pago con fallback público para acceso por email
+      let driveUrl = '' as string;
       const { data: paymentStateData, error: paymentStateError } = await supabase
         .from('Estados de pago')
         .select('URL')
         .eq('id', payment.id)
-        .single();
+        .maybeSingle();
 
-      if (paymentStateError) {
-        console.error('Error fetching payment state URL:', paymentStateError);
-        toast({
-          title: "Error",
-          description: "No se pudo obtener la URL del estado de pago",
-          variant: "destructive"
-        });
-        return;
+      if (paymentStateData?.URL) {
+        driveUrl = paymentStateData.URL;
+      } else {
+        console.warn('⚠️ Could not fetch URL directly, trying public function fallback...', paymentStateError);
+        try {
+          const contractorAccess = sessionStorage.getItem('contractorAccess');
+          const mandanteAccess = sessionStorage.getItem('mandanteAccess');
+          const accessInfo = contractorAccess ? JSON.parse(contractorAccess) : (mandanteAccess ? JSON.parse(mandanteAccess) : null);
+          const accessToken = accessInfo?.accessToken;
+          if (!accessToken) {
+            throw new Error('No se encontró token de acceso');
+          }
+          const { data: publicData, error: publicError } = await supabase.functions.invoke('get-payment-detail-public', {
+            body: { paymentId: payment.id, token: accessToken }
+          });
+          if (publicError) throw publicError;
+          if (!publicData?.URL) throw new Error('No se pudo obtener la URL pública');
+          driveUrl = publicData.URL;
+        } catch (err) {
+          console.error('Error fetching payment state URL (public fallback):', err);
+          toast({
+            title: 'Error',
+            description: 'No se pudo obtener la URL del estado de pago',
+            variant: 'destructive'
+          });
+          return;
+        }
       }
 
       const notificationData = {
@@ -169,7 +190,7 @@ export const useSubmissionPreviewLogic = (payment: PaymentDetail | null) => {
         contractorCompany: payment.projectData.Contratista?.CompanyName || '',
         amount: updatedPayment?.Total ?? payment.Total ?? 0, // Usar el valor actualizado si existe
         dueDate: payment.ExpiryDate || '',
-        driveUrl: paymentStateData.URL || '',
+        driveUrl: driveUrl,
         uploadedDocuments: [],
         currency: payment.projectData.Currency || 'CLP',
         accessUrl: accessUrl

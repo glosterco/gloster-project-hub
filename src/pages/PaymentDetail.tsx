@@ -374,21 +374,41 @@ const PaymentDetail = () => {
       // Cambiar status a "Enviado" para permitir nueva revisión
       await handleResubmission(payment.id.toString());
 
-      // Obtener datos actualizados del estado de pago
+      // Obtener datos actualizados del estado de pago (con fallback público)
+      let driveUrl = '' as string;
       const { data: paymentStateData, error: paymentStateError } = await supabase
         .from('Estados de pago')
         .select('URL')
         .eq('id', payment.id)
-        .single();
+        .maybeSingle();
 
-      if (paymentStateError) {
-        console.error('Error fetching payment state URL:', paymentStateError);
-        toast({
-          title: "Error",
-          description: "No se pudo obtener la URL del estado de pago",
-          variant: "destructive"
-        });
-        return;
+      if (paymentStateData?.URL) {
+        driveUrl = paymentStateData.URL;
+      } else {
+        console.warn('⚠️ Could not fetch URL directly, trying public function fallback...', paymentStateError);
+        try {
+          const contractorAccess = sessionStorage.getItem('contractorAccess');
+          const mandanteAccess = sessionStorage.getItem('mandanteAccess');
+          const accessInfo = contractorAccess ? JSON.parse(contractorAccess) : (mandanteAccess ? JSON.parse(mandanteAccess) : null);
+          const accessToken = accessInfo?.accessToken;
+          if (!accessToken) {
+            throw new Error('No se encontró token de acceso');
+          }
+          const { data: publicData, error: publicError } = await supabase.functions.invoke('get-payment-detail-public', {
+            body: { paymentId: payment.id, token: accessToken }
+          });
+          if (publicError) throw publicError;
+          if (!publicData?.URL) throw new Error('No se pudo obtener la URL pública');
+          driveUrl = publicData.URL;
+        } catch (err) {
+          console.error('Error fetching payment state URL (public fallback):', err);
+          toast({
+            title: 'Error',
+            description: 'No se pudo obtener la URL del estado de pago',
+            variant: 'destructive'
+          });
+          return;
+        }
       }
 
       // Preparar documentos cargados para notificación
@@ -415,7 +435,7 @@ const PaymentDetail = () => {
         contractorCompany: payment.projectData.Contratista?.CompanyName || '',
         amount: payment.Total || 0,
         dueDate: payment.ExpiryDate || '',
-        driveUrl: paymentStateData.URL || '',
+         driveUrl: driveUrl,
         uploadedDocuments: uploadedDocuments,
         currency: payment.projectData?.Currency || 'CLP',
         accessUrl: accessUrl
@@ -543,21 +563,41 @@ const PaymentDetail = () => {
       // Cambiar status a "Enviado" automáticamente (primera vez o reenvío después de correcciones)
       await handleResubmission(payment.id.toString());
 
-      // Get the payment state data to fetch the URL
+      // Get the payment state data to fetch the URL (with public fallback)
+      let driveUrl = '' as string;
       const { data: paymentStateData, error: paymentStateError } = await supabase
         .from('Estados de pago')
         .select('URL')
         .eq('id', payment.id)
-        .single();
+        .maybeSingle();
 
-      if (paymentStateError) {
-        console.error('Error fetching payment state URL:', paymentStateError);
-        toast({
-          title: "Error",
-          description: "No se pudo obtener la URL del estado de pago",
-          variant: "destructive"
-        });
-        return;
+      if (paymentStateData?.URL) {
+        driveUrl = paymentStateData.URL;
+      } else {
+        console.warn('⚠️ Could not fetch URL directly, trying public function fallback...', paymentStateError);
+        try {
+          const contractorAccess = sessionStorage.getItem('contractorAccess');
+          const mandanteAccess = sessionStorage.getItem('mandanteAccess');
+          const accessInfo = contractorAccess ? JSON.parse(contractorAccess) : (mandanteAccess ? JSON.parse(mandanteAccess) : null);
+          const accessToken = accessInfo?.accessToken;
+          if (!accessToken) {
+            throw new Error('No se encontró token de acceso');
+          }
+          const { data: publicData, error: publicError } = await supabase.functions.invoke('get-payment-detail-public', {
+            body: { paymentId: payment.id, token: accessToken }
+          });
+          if (publicError) throw publicError;
+          if (!publicData?.URL) throw new Error('No se pudo obtener la URL pública');
+          driveUrl = publicData.URL;
+        } catch (err) {
+          console.error('Error fetching payment state URL (public fallback):', err);
+          toast({
+            title: 'Error',
+            description: 'No se pudo obtener la URL del estado de pago',
+            variant: 'destructive'
+          });
+          return;
+        }
       }
 
       // Convert uploadedFiles to string array for the notification
@@ -583,7 +623,7 @@ const PaymentDetail = () => {
         contractorCompany: payment.projectData.Contratista?.CompanyName || '',
         amount: payment.Total || 0,
         dueDate: payment.ExpiryDate || '',
-        driveUrl: paymentStateData.URL || '',
+        driveUrl: driveUrl,
         uploadedDocuments: uploadedDocuments,
         currency: payment.projectData?.Currency || 'CLP',
         accessUrl: accessUrl

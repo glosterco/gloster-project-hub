@@ -320,7 +320,10 @@ const PaymentDetail = () => {
 
   // Auto-guardar antes de vista previa si hay cambios sin guardar
   const handleAutoSaveBeforePreview = async () => {
-    if (editableAmount && payment?.Total?.toString() !== editableAmount) {
+    const amountChanged = editableAmount.trim() !== '' && `${payment?.Total ?? ''}` !== editableAmount;
+    const progressChanged = editablePercentage.trim() !== '' && `${payment?.Progress ?? ''}` !== editablePercentage;
+
+    if (amountChanged || progressChanged) {
       await handleSaveAmount();
     }
   };
@@ -350,6 +353,11 @@ const PaymentDetail = () => {
     console.log('🚀 Starting resubmission after rejection...');
 
     try {
+      // Guardar monto y progreso ANTES de reenviar
+      console.log('💾 Saving amount and progress before resubmission...');
+      await handleSaveAmount();
+      await refetch();
+
       // Subir documentos actualizados
       const uploadResult = await uploadDocumentsToDrive(
         payment.id, 

@@ -380,6 +380,10 @@ export type Database = {
         Args: { _contratista_id: number; _user_id: string }
         Returns: boolean
       }
+      is_project_related: {
+        Args: { _project_id: number; _user_id: string }
+        Returns: boolean
+      }
       send_contractor_payment_reminders: {
         Args: Record<PropertyKey, never>
         Returns: undefined

@@ -65,12 +65,41 @@ export const usePaymentDetail = (paymentId: string, shouldRefetch = true) => {
         .eq('id', numericPaymentId)
         .maybeSingle();
 
-      if (paymentError) {
-        console.error('❌ Payment fetch error:', paymentError);
-        throw paymentError;
-      }
+      if (paymentError || !paymentData) {
+        console.warn('⚠️ Direct fetch failed or returned no data. Trying public token-based fetch...');
+        try {
+          const contractorAccess = sessionStorage.getItem('contractorAccess');
+          const mandanteAccess = sessionStorage.getItem('mandanteAccess');
+          const accessInfo = contractorAccess
+            ? JSON.parse(contractorAccess)
+            : (mandanteAccess ? JSON.parse(mandanteAccess) : null);
+          const accessToken = accessInfo?.accessToken;
 
-      if (!paymentData) {
+          if (accessToken) {
+            const { data: publicData, error: publicError } = await supabase.functions.invoke('get-payment-detail-public', {
+              body: { paymentId: numericPaymentId, token: accessToken }
+            });
+
+            if (publicError) {
+              throw publicError;
+            }
+
+            if (publicData) {
+              // Respuesta ya viene con projectData
+              setPayment(publicData as any);
+              setError(null);
+              return;
+            }
+          }
+        } catch (fallbackErr) {
+          console.error('❌ Public token-based fetch failed:', fallbackErr);
+        }
+
+        // Si llegamos aquí, no pudimos obtener datos
+        if (paymentError) {
+          console.error('❌ Payment fetch error:', paymentError);
+          throw paymentError;
+        }
         console.log('❌ No payment found for ID:', paymentId);
         setError('Estado de pago no encontrado');
         return;

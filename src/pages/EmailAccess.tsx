@@ -183,6 +183,7 @@ const EmailAccess = () => {
         userType: accessCheck.userType,
         isRegistered: accessCheck.isRegistered ?? false,
         token: accessCheck.userType === 'mandante' ? 'mandante_authenticated' : 'contratista_authenticated',
+        accessToken: token || null,
         timestamp: Date.now()
       };
 

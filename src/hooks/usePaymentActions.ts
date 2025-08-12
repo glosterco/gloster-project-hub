@@ -59,13 +59,12 @@ export const usePaymentActions = (
 
   const handleSaveAmount = async () => {
     if (!payment?.id || !editableAmount) return;
-    
+    const amount = parseFloat(editableAmount);
+    const percentage = editablePercentage ? parseFloat(editablePercentage) : 
+      (payment?.projectData?.Budget ? (amount / payment.projectData.Budget) * 100 : 0);
+
     setIsSaving(true);
     try {
-      const amount = parseFloat(editableAmount);
-      const percentage = editablePercentage ? parseFloat(editablePercentage) : 
-        (payment?.projectData?.Budget ? (amount / payment.projectData.Budget) * 100 : 0);
-
       const { error } = await supabase
         .from('Estados de pago')
         .update({ 
@@ -83,7 +82,43 @@ export const usePaymentActions = (
       
       refetch();
     } catch (error) {
-      console.error('Error updating amount and progress:', error);
+      console.error('Error updating amount and progress (direct):', error);
+
+      // Intentar vía función pública con token (acceso por email sin autenticación)
+      try {
+        const contractorAccess = sessionStorage.getItem('contractorAccess');
+        const mandanteAccess = sessionStorage.getItem('mandanteAccess');
+        const accessInfo = contractorAccess
+          ? JSON.parse(contractorAccess)
+          : (mandanteAccess ? JSON.parse(mandanteAccess) : null);
+        const accessToken = accessInfo?.accessToken;
+        const userType = accessInfo?.userType;
+
+        if (accessToken && userType === 'contratista') {
+          const { data, error: fnError } = await supabase.functions.invoke('update-payment-detail-public', {
+            body: {
+              paymentId: payment.id,
+              token: accessToken,
+              amount,
+              percentage: Math.round(percentage)
+            }
+          });
+
+          if (fnError) throw fnError;
+
+          if (data?.success) {
+            toast({
+              title: "Datos actualizados",
+              description: "El monto y porcentaje del estado de pago se han actualizado correctamente",
+            });
+            refetch();
+            return;
+          }
+        }
+      } catch (fallbackErr) {
+        console.error('Error updating via public token-based function:', fallbackErr);
+      }
+
       toast({
         title: "Error",
         description: "No se pudo actualizar la información",
@@ -93,7 +128,6 @@ export const usePaymentActions = (
       setIsSaving(false);
     }
   };
-
   const handleNavigation = (targetPath: string, hasUnsavedFiles: boolean) => {
     if (hasUnsavedFiles) {
       const confirmed = window.confirm(

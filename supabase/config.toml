@@ -36,3 +36,9 @@ verify_jwt = false
 
 [functions.verify-email-user-access]
 verify_jwt = false
+
+[functions.get-payment-detail-public]
+verify_jwt = false
+
+[functions.update-payment-detail-public]
+verify_jwt = false

@@ -42,7 +42,7 @@ const PaymentDetail = () => {
         setAccessData(accessInfo);
         
         // Determinar si es acceso limitado (contratista no registrado)
-        if (accessInfo.userType === 'contratista' && !accessInfo.isRegistered) {
+        if (accessInfo.userType === 'contratista' && accessInfo.isRegistered === false) {
           setIsLimitedAccess(true);
         }
       } catch (error) {

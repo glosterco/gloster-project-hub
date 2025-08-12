@@ -47,6 +47,13 @@ export type Database = {
             referencedRelation: "Contratistas"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_contratista_users_contratista"
+            columns: ["contratista_id"]
+            isOneToOne: false
+            referencedRelation: "Contratistas"
+            referencedColumns: ["id"]
+          },
         ]
       }
       Contratistas: {
@@ -58,11 +65,9 @@ export type Database = {
           ContactPhone: number | null
           Experience: string | null
           id: number
-          Password: string | null
           RUT: string | null
           Specialization: string | null
           Status: boolean | null
-          Username: string | null
         }
         Insert: {
           auth_user_id?: string | null
@@ -72,11 +77,9 @@ export type Database = {
           ContactPhone?: number | null
           Experience?: string | null
           id?: number
-          Password?: string | null
           RUT?: string | null
           Specialization?: string | null
           Status?: boolean | null
-          Username?: string | null
         }
         Update: {
           auth_user_id?: string | null
@@ -86,11 +89,9 @@ export type Database = {
           ContactPhone?: number | null
           Experience?: string | null
           id?: number
-          Password?: string | null
           RUT?: string | null
           Specialization?: string | null
           Status?: boolean | null
-          Username?: string | null
         }
         Relationships: []
       }
@@ -180,6 +181,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_mandante_project_folders_mandante"
+            columns: ["mandante_id"]
+            isOneToOne: false
+            referencedRelation: "Mandantes"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "mandante_project_folders_mandante_fkey"
             columns: ["mandante_id"]
             isOneToOne: false
@@ -231,9 +239,7 @@ export type Database = {
           ContactName: string | null
           ContactPhone: number | null
           id: number
-          Password: string | null
           Status: boolean | null
-          Username: string | null
         }
         Insert: {
           auth_user_id?: string | null
@@ -242,9 +248,7 @@ export type Database = {
           ContactName?: string | null
           ContactPhone?: number | null
           id?: number
-          Password?: string | null
           Status?: boolean | null
-          Username?: string | null
         }
         Update: {
           auth_user_id?: string | null
@@ -253,9 +257,7 @@ export type Database = {
           ContactName?: string | null
           ContactPhone?: number | null
           id?: number
-          Password?: string | null
           Status?: boolean | null
-          Username?: string | null
         }
         Relationships: []
       }
@@ -334,6 +336,9 @@ export type Database = {
           created_at: string | null
           entity_id: number
           id: number
+          local_username: string | null
+          login_provider: string
+          password_hash: string | null
           role_type: string
         }
         Insert: {
@@ -341,6 +346,9 @@ export type Database = {
           created_at?: string | null
           entity_id: number
           id?: never
+          local_username?: string | null
+          login_provider?: string
+          password_hash?: string | null
           role_type: string
         }
         Update: {
@@ -348,6 +356,9 @@ export type Database = {
           created_at?: string | null
           entity_id?: number
           id?: never
+          local_username?: string | null
+          login_provider?: string
+          password_hash?: string | null
           role_type?: string
         }
         Relationships: []

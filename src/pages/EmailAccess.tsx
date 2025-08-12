@@ -181,6 +181,8 @@ const EmailAccess = () => {
       const accessData = {
         paymentId: paymentId,
         userType: accessCheck.userType,
+        isRegistered: accessCheck.isRegistered ?? false,
+        token: accessCheck.userType === 'mandante' ? 'mandante_authenticated' : 'contratista_authenticated',
         timestamp: Date.now()
       };
 

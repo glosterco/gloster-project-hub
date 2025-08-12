@@ -45,6 +45,10 @@ const ClientInfoStep: React.FC<ClientInfoStepProps> = ({
 
   const handleCompanyChange = (value: string) => {
     setClientCompany(value);
+    // Si parece un ID numérico, intenta autocompletar de inmediato
+    if (/^\d+$/.test(value.trim())) {
+      handleCompanyBlur();
+    }
   };
 
   const handleCompanyBlur = async () => {
@@ -79,6 +83,7 @@ const ClientInfoStep: React.FC<ClientInfoStepProps> = ({
           value={clientCompany}
           onChange={(e) => handleCompanyChange(e.target.value)}
           onBlur={handleCompanyBlur}
+          onKeyDown={(e) => { if (e.key === 'Enter') handleCompanyBlur(); }}
           placeholder="Nombre de la empresa o ID del mandante"
           className="font-rubik"
         />

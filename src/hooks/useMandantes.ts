@@ -30,8 +30,6 @@ export const useMandantes = () => {
           ContactName: data.ContactName,
           ContactEmail: data.ContactEmail,
           ContactPhone: data.ContactPhone,
-          Username: data.Username,
-          Password: data.Password,
           auth_user_id: data.auth_user_id,
           Status: true
         }])

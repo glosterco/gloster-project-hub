@@ -124,7 +124,10 @@ const MandanteRegistrationForm: React.FC<MandanteRegistrationFormProps> = ({ onB
         }
 
         // Asignar rol de mandante
-        const roleResult = await createUserRole(authData.user.id, 'mandante', existingMandante.id);
+        const roleResult = await createUserRole(authData.user.id, 'mandante', existingMandante.id, {
+          username: formData.contactEmail,
+          password: formData.password,
+        });
         
         if (!roleResult.success) {
           throw new Error('No se pudo asignar el rol');
@@ -164,7 +167,10 @@ const MandanteRegistrationForm: React.FC<MandanteRegistrationFormProps> = ({ onB
         }
 
         // Asignar rol de mandante
-        const roleResult = await createUserRole(authData.user.id, 'mandante', mandanteResult[0].id);
+        const roleResult = await createUserRole(authData.user.id, 'mandante', mandanteResult[0].id, {
+          username: formData.contactEmail,
+          password: formData.password,
+        });
         
         if (!roleResult.success) {
           throw new Error('No se pudo asignar el rol');
@@ -329,7 +335,21 @@ const MandanteRegistrationForm: React.FC<MandanteRegistrationFormProps> = ({ onB
                     id="password"
                     type="password"
                     value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setFormData({ ...formData, password: value });
+                      const newErrors = { ...errors };
+                      if (!value) newErrors.password = 'La contraseña es requerida';
+                      else if (value.length < 6) delete newErrors.password ? null : null;
+                      else delete newErrors.password;
+                      // Revalidar confirmación
+                      if (formData.confirmPassword && formData.confirmPassword !== value) {
+                        newErrors.confirmPassword = 'Las contraseñas no coinciden';
+                      } else {
+                        delete newErrors.confirmPassword;
+                      }
+                      setErrors(newErrors);
+                    }}
                     className={`font-rubik ${errors.password ? 'border-red-500' : ''}`}
                   />
                   {errors.password && (
@@ -343,7 +363,17 @@ const MandanteRegistrationForm: React.FC<MandanteRegistrationFormProps> = ({ onB
                     id="confirmPassword"
                     type="password"
                     value={formData.confirmPassword}
-                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setFormData({ ...formData, confirmPassword: value });
+                      const newErrors = { ...errors };
+                      if (formData.password !== value) {
+                        newErrors.confirmPassword = 'Las contraseñas no coinciden';
+                      } else {
+                        delete newErrors.confirmPassword;
+                      }
+                      setErrors(newErrors);
+                    }}
                     className={`font-rubik ${errors.confirmPassword ? 'border-red-500' : ''}`}
                   />
                   {errors.confirmPassword && (

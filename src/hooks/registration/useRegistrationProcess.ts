@@ -183,7 +183,10 @@ export const useRegistrationProcess = () => {
 
       // Paso 3: Asignar rol de contratista
       console.log('Assigning contratista role...');
-      const roleResult = await createUserRole(authResult.user.id, 'contratista', contratistaResult.id);
+      const roleResult = await createUserRole(authResult.user.id, 'contratista', contratistaResult.id, {
+        username: formData.email,
+        password: formData.password,
+      });
       if (!roleResult.success) {
         console.error('Error assigning contratista role');
         showError("Error al asignar rol", "No se pudo asignar el rol de contratista");

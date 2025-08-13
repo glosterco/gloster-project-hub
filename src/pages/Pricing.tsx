@@ -11,7 +11,7 @@ const Pricing = () => {
       duration: "(3 meses)",
       smallProjects: "$0",
       mediumProjects: "$0",
-      largeProjects: "Por definir",
+      largeProjects: "Contactar",
       projects: "1 proyecto",
       isPopular: false,
       icon: Star,
@@ -21,7 +21,7 @@ const Pricing = () => {
       duration: "",
       smallProjects: "$70k/mes",
       mediumProjects: "$100k/mes",
-      largeProjects: "Por definir",
+      largeProjects: "Contactar",
       projects: "Hasta 3 proyectos",
       isPopular: false,
       icon: Zap,
@@ -31,7 +31,7 @@ const Pricing = () => {
       duration: "",
       smallProjects: "$150k/mes",
       mediumProjects: "$200k/mes",
-      largeProjects: "Por definir",
+      largeProjects: "Contactar",
       projects: "Hasta 5 proyectos",
       isPopular: false,
       icon: Building2,
@@ -41,7 +41,7 @@ const Pricing = () => {
       duration: "",
       smallProjects: "Contactar",
       mediumProjects: "Contactar",
-      largeProjects: "Por definir",
+      largeProjects: "Contactar",
       projects: "Variable",
       isPopular: false,
       icon: Crown,
@@ -91,9 +91,6 @@ const Pricing = () => {
                      <TableHead className="text-center font-semibold text-foreground">
                        Cantidad de Proyectos
                      </TableHead>
-                     <TableHead className="text-center font-semibold text-foreground">
-                       Acción
-                     </TableHead>
                    </TableRow>
                  </TableHeader>
                  <TableBody>
@@ -136,17 +133,10 @@ const Pricing = () => {
                            <Check className="h-4 w-4 text-black bg-gloster-yellow rounded-full p-0.5" />
                            <span className="font-medium">{plan.projects}</span>
                          </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                         <Button 
-                           className="w-full max-w-28 bg-gloster-yellow hover:bg-gloster-yellow/90 text-black"
-                         >
-                           Contactar
-                         </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
+                       </TableCell>
+                     </TableRow>
+                   ))}
+                 </TableBody>
               </Table>
             </div>
           </CardContent>

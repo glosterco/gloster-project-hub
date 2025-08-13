@@ -48,7 +48,7 @@ const Pricing = () => {
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <div className="container mx-auto px-4 py-16">
         <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 bg-brand-yellow text-brand-yellow-foreground px-4 py-2 rounded-full mb-4">
+          <div className="inline-flex items-center gap-2 bg-gloster-yellow text-black px-4 py-2 rounded-full mb-4">
             <Building2 className="h-5 w-5" />
             <span className="font-medium">Planes para Contratistas</span>
           </div>
@@ -61,7 +61,7 @@ const Pricing = () => {
         </div>
 
         <Card className="max-w-6xl mx-auto shadow-xl border-0 bg-card/50 backdrop-blur-sm">
-          <CardHeader className="bg-brand-yellow/10 rounded-t-lg">
+          <CardHeader className="bg-gloster-yellow/10 rounded-t-lg">
             <CardTitle className="text-2xl text-center text-foreground">
               Comparación de Planes
             </CardTitle>
@@ -73,7 +73,7 @@ const Pricing = () => {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-brand-yellow/20">
+                  <TableRow className="border-gloster-yellow/20">
                     <TableHead className="font-semibold text-foreground">Plan</TableHead>
                     <TableHead className="text-center font-semibold text-foreground">
                       Proyectos Pequeños
@@ -91,12 +91,12 @@ const Pricing = () => {
                 </TableHeader>
                 <TableBody>
                   {plans.map((plan, index) => (
-                    <TableRow key={index} className="hover:bg-brand-yellow/5 border-muted/30">
+                    <TableRow key={index} className="hover:bg-gloster-yellow/5 border-muted/30">
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-lg bg-brand-yellow text-brand-yellow-foreground">
-                            <plan.icon className="h-4 w-4" />
-                          </div>
+                           <div className="p-2 rounded-lg bg-gloster-yellow text-black">
+                             <plan.icon className="h-4 w-4" />
+                           </div>
                           <div>
                             <div className="flex items-center gap-2">
                               <span className="font-semibold">{plan.name}</span>
@@ -120,19 +120,17 @@ const Pricing = () => {
                         </span>
                       </TableCell>
                       <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          <Check className="h-4 w-4 text-brand-yellow-foreground bg-brand-yellow rounded-full p-0.5" />
-                          <span className="font-medium">{plan.projects}</span>
-                        </div>
+                         <div className="flex items-center justify-center gap-2">
+                           <Check className="h-4 w-4 text-black bg-gloster-yellow rounded-full p-0.5" />
+                           <span className="font-medium">{plan.projects}</span>
+                         </div>
                       </TableCell>
                       <TableCell className="text-center">
-                        <Button 
-                          variant={plan.name === "Plan Enterprise" ? "secondary" : "default"}
-                          className={`w-full max-w-28 ${plan.name !== "Plan Enterprise" ? 'bg-brand-yellow hover:bg-brand-yellow/90 text-brand-yellow-foreground' : ''}`}
-                        >
-                          {plan.name === "Free Pilot" ? "Empezar Gratis" : 
-                           plan.name === "Plan Enterprise" ? "Contactar" : "Elegir Plan"}
-                        </Button>
+                         <Button 
+                           className="w-full max-w-28 bg-gloster-yellow hover:bg-gloster-yellow/90 text-black"
+                         >
+                           Contactar
+                         </Button>
                       </TableCell>
                     </TableRow>
                   ))}

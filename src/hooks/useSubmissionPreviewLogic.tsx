@@ -83,46 +83,54 @@ export const useSubmissionPreviewLogic = (payment: PaymentDetail | null) => {
     try {
       // CRÍTICO: Actualizar PRIMERO el Total y Progress en la base de datos antes de enviar
       console.log('💾 Updating payment amount and progress with current values:', { Total: payment.Total, Progress: payment.Progress });
-      
-      // Asegurar que usamos los valores actuales del payment
-      const { error: updateError } = await supabase
-        .from('Estados de pago')
-        .update({ 
-          Total: payment.Total,
-          Progress: payment.Progress,
-          Status: 'Enviado'
-        })
-        .eq('id', payment.id);
 
-      if (updateError) {
-        console.warn('⚠️ Error updating payment data (direct). Will try public fallback if available:', updateError);
+      // Detectar acceso por email del contratista (sin auth_id) y usar función pública
+      try {
+        const contractorAccess = sessionStorage.getItem('contractorAccess');
+        const mandanteAccess = sessionStorage.getItem('mandanteAccess');
+        const accessInfo = contractorAccess
+          ? JSON.parse(contractorAccess)
+          : (mandanteAccess ? JSON.parse(mandanteAccess) : null);
+        const accessToken = accessInfo?.accessToken;
+        const userType = accessInfo?.userType;
 
-        // Intentar fallback público con token de acceso por email
-        try {
-          const contractorAccess = sessionStorage.getItem('contractorAccess');
-          const mandanteAccess = sessionStorage.getItem('mandanteAccess');
-          const accessInfo = contractorAccess
-            ? JSON.parse(contractorAccess)
-            : (mandanteAccess ? JSON.parse(mandanteAccess) : null);
-          const accessToken = accessInfo?.accessToken;
-          const userType = accessInfo?.userType;
-
-          if (accessToken && userType === 'contratista') {
-            const { data: fnData, error: fnError } = await supabase.functions.invoke('update-payment-detail-public', {
-              body: {
-                paymentId: payment.id,
-                token: accessToken,
-                amount: payment.Total,
-                percentage: Math.round(payment.Progress || 0)
-              }
-            });
-            if (fnError || !fnData?.success) {
-              console.warn('⚠️ Public fallback failed:', fnError || fnData);
+        if (accessToken && userType === 'contratista') {
+          const { data: fnData, error: fnError } = await supabase.functions.invoke('update-payment-detail-public', {
+            body: {
+              paymentId: payment.id,
+              token: accessToken,
+              amount: payment.Total,
+              percentage: Math.round(payment.Progress || 0)
             }
+          });
+          if (fnError || !fnData?.success) {
+            throw fnError || new Error('No se pudo actualizar (función pública)');
           }
-        } catch (fallbackErr) {
-          console.warn('⚠️ Could not perform public fallback:', fallbackErr);
+        } else {
+          // Usuario autenticado: actualizar directamente e incluir cambio de estado si aplica
+          const { data: directData, error: updateError } = await supabase
+            .from('Estados de pago')
+            .update({ 
+              Total: payment.Total,
+              Progress: payment.Progress,
+              Status: 'Enviado'
+            })
+            .eq('id', payment.id)
+            .select('*')
+            .maybeSingle();
+
+          if (updateError) throw updateError;
+          if (!directData) throw new Error('Sin permisos para actualizar');
         }
+      } catch (err) {
+        console.warn('⚠️ Error updating payment data before sending:', err);
+        toast({
+          title: 'Error',
+          description: 'No se pudo actualizar el monto o avance',
+          variant: 'destructive'
+        });
+        setIsUploading(false);
+        return;
       }
 
       // Refrescar los datos del payment después de la actualización

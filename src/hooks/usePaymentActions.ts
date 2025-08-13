@@ -65,60 +65,56 @@ export const usePaymentActions = (
 
     setIsSaving(true);
     try {
-      const { error } = await supabase
+      // Prefer public edge function when using contractor email access (no auth_id)
+      const contractorAccess = sessionStorage.getItem('contractorAccess');
+      const mandanteAccess = sessionStorage.getItem('mandanteAccess');
+      const accessInfo = contractorAccess
+        ? JSON.parse(contractorAccess)
+        : (mandanteAccess ? JSON.parse(mandanteAccess) : null);
+      const accessToken = accessInfo?.accessToken;
+      const userType = accessInfo?.userType;
+
+      if (accessToken && userType === 'contratista') {
+        const { data, error: fnError } = await supabase.functions.invoke('update-payment-detail-public', {
+          body: {
+            paymentId: payment.id,
+            token: accessToken,
+            amount,
+            percentage: Math.round(percentage)
+          }
+        });
+        if (fnError) throw fnError;
+        if (!data?.success) throw new Error('No se pudo actualizar (función pública)');
+
+        toast({
+          title: "Datos actualizados",
+          description: "El monto y porcentaje del estado de pago se han actualizado correctamente",
+        });
+        refetch();
+        return;
+      }
+
+      // Authenticated path: update directly and verify row was updated
+      const { data, error } = await supabase
         .from('Estados de pago')
         .update({ 
           Total: amount,
           Progress: Math.round(percentage)
         })
-        .eq('id', payment.id);
+        .eq('id', payment.id)
+        .select('*')
+        .maybeSingle();
 
       if (error) throw error;
+      if (!data) throw new Error('Sin permisos para actualizar');
 
       toast({
         title: "Datos actualizados",
         description: "El monto y porcentaje del estado de pago se han actualizado correctamente",
       });
-      
       refetch();
     } catch (error) {
-      console.error('Error updating amount and progress (direct):', error);
-
-      // Intentar vía función pública con token (acceso por email sin autenticación)
-      try {
-        const contractorAccess = sessionStorage.getItem('contractorAccess');
-        const mandanteAccess = sessionStorage.getItem('mandanteAccess');
-        const accessInfo = contractorAccess
-          ? JSON.parse(contractorAccess)
-          : (mandanteAccess ? JSON.parse(mandanteAccess) : null);
-        const accessToken = accessInfo?.accessToken;
-        const userType = accessInfo?.userType;
-
-        if (accessToken && userType === 'contratista') {
-          const { data, error: fnError } = await supabase.functions.invoke('update-payment-detail-public', {
-            body: {
-              paymentId: payment.id,
-              token: accessToken,
-              amount,
-              percentage: Math.round(percentage)
-            }
-          });
-
-          if (fnError) throw fnError;
-
-          if (data?.success) {
-            toast({
-              title: "Datos actualizados",
-              description: "El monto y porcentaje del estado de pago se han actualizado correctamente",
-            });
-            refetch();
-            return;
-          }
-        }
-      } catch (fallbackErr) {
-        console.error('Error updating via public token-based function:', fallbackErr);
-      }
-
+      console.error('Error updating amount and progress:', error);
       toast({
         title: "Error",
         description: "No se pudo actualizar la información",

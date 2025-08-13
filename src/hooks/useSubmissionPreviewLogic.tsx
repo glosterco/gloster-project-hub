@@ -100,7 +100,8 @@ export const useSubmissionPreviewLogic = (payment: PaymentDetail | null) => {
               paymentId: payment.id,
               token: accessToken,
               amount: payment.Total,
-              percentage: Math.round(payment.Progress || 0)
+              percentage: Math.round(payment.Progress || 0),
+              markAsSent: true
             }
           });
           if (fnError || !fnData?.success) {

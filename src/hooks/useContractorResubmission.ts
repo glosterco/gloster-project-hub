@@ -24,15 +24,41 @@ export const useContractorResubmission = () => {
     try {
       console.log('🔄 Handling contractor resubmission for payment:', paymentId);
 
-      // Change status back to "Enviado" to allow mandante to review again
-      const { error: statusError } = await supabase
-        .from('Estados de pago')
-        .update({ Status: 'Enviado' })
-        .eq('id', parseInt(paymentId));
+      // Intentar usar acceso público del contratista (sin auth_id)
+      try {
+        const contractorAccess = sessionStorage.getItem('contractorAccess');
+        const mandanteAccess = sessionStorage.getItem('mandanteAccess');
+        const accessInfo = contractorAccess
+          ? JSON.parse(contractorAccess)
+          : (mandanteAccess ? JSON.parse(mandanteAccess) : null);
+        const accessToken = accessInfo?.accessToken;
+        const userType = accessInfo?.userType;
 
-      if (statusError) {
-        console.error('❌ Error updating status to Enviado:', statusError);
-        throw new Error(`Error al actualizar el estado: ${statusError.message}`);
+        if (accessToken && userType === 'contratista') {
+          const { data: fnData, error: fnError } = await supabase.functions.invoke('update-payment-detail-public', {
+            body: {
+              paymentId: parseInt(paymentId),
+              token: accessToken,
+              markAsSent: true
+            }
+          });
+          if (fnError || !fnData?.success) {
+            throw fnError || new Error('No se pudo actualizar el estado (función pública)');
+          }
+        } else {
+          // Usuario autenticado o sin token: actualizar directamente
+          const { error: statusError } = await supabase
+            .from('Estados de pago')
+            .update({ Status: 'Enviado' })
+            .eq('id', parseInt(paymentId));
+
+          if (statusError) {
+            console.error('❌ Error updating status to Enviado:', statusError);
+            throw new Error(`Error al actualizar el estado: ${statusError.message}`);
+          }
+        }
+      } catch (e) {
+        throw e;
       }
 
       console.log('✅ Payment status updated to "Enviado" for resubmission');

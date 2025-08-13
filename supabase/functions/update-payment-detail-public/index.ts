@@ -9,8 +9,9 @@ const corsHeaders = {
 interface UpdatePaymentRequest {
   paymentId: string | number;
   token: string;
-  amount: number;
-  percentage: number; // already rounded client-side
+  amount?: number;
+  percentage?: number; // already rounded client-side (optional)
+  markAsSent?: boolean; // when true, also set Status = 'Enviado'
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -19,9 +20,9 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { paymentId, token, amount, percentage }: UpdatePaymentRequest = await req.json();
+    const { paymentId, token, amount, percentage, markAsSent }: UpdatePaymentRequest = await req.json();
 
-    if (!paymentId || !token || amount === undefined || percentage === undefined) {
+    if (!paymentId || !token) {
       return new Response(JSON.stringify({ error: 'Faltan parámetros' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
@@ -59,12 +60,26 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
+    // Build update payload only with provided fields
+    const updateFields: Record<string, unknown> = {};
+    if (typeof amount === 'number') updateFields.Total = amount;
+    if (typeof percentage === 'number') updateFields.Progress = Math.round(percentage);
+    if (markAsSent) updateFields.Status = 'Enviado';
+
+    if (Object.keys(updateFields).length === 0) {
+      return new Response(JSON.stringify({ error: 'Nada para actualizar' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
+    }
+
     const { error: updateError } = await supabaseAdmin
       .from('Estados de pago')
-      .update({ Total: amount, Progress: Math.round(percentage) })
+      .update(updateFields)
       .eq('id', paymentId);
 
     if (updateError) {
+      console.error('Update error:', updateError);
       return new Response(JSON.stringify({ error: 'No se pudo actualizar' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },

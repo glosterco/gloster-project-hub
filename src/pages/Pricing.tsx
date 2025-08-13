@@ -21,7 +21,7 @@ const Pricing = () => {
       smallProjects: "$70k/mes",
       mediumProjects: "$100k/mes",
       projects: "Hasta 3 proyectos",
-      isPopular: true,
+      isPopular: false,
       icon: Zap,
     },
     {
@@ -48,11 +48,11 @@ const Pricing = () => {
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <div className="container mx-auto px-4 py-16">
         <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full mb-4">
-            <Building2 className="h-5 w-5" />
+          <div className="inline-flex items-center gap-2 bg-brand-yellow/10 text-brand-yellow-foreground px-4 py-2 rounded-full mb-4 border border-brand-yellow/20">
+            <Building2 className="h-5 w-5 text-brand-yellow" />
             <span className="font-medium">Planes para Contratistas</span>
           </div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent mb-4">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-brand-yellow to-primary/70 bg-clip-text text-transparent mb-4">
             Impulsa tu negocio con el plan perfecto
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
@@ -60,9 +60,9 @@ const Pricing = () => {
           </p>
         </div>
 
-        <Card className="max-w-6xl mx-auto shadow-xl border-0 bg-card/50 backdrop-blur-sm">
-          <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 rounded-t-lg">
-            <CardTitle className="text-2xl text-center bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+        <Card className="max-w-6xl mx-auto shadow-xl border-0 bg-card/50 backdrop-blur-sm border-brand-yellow/10">
+          <CardHeader className="bg-gradient-to-r from-brand-yellow/5 via-primary/5 to-brand-yellow/10 rounded-t-lg border-b border-brand-yellow/10">
+            <CardTitle className="text-2xl text-center bg-gradient-to-r from-primary via-brand-yellow to-primary/70 bg-clip-text text-transparent">
               Comparación de Planes
             </CardTitle>
             <CardDescription className="text-center">
@@ -73,7 +73,7 @@ const Pricing = () => {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-primary/20">
+                  <TableRow className="border-brand-yellow/20">
                     <TableHead className="font-semibold text-primary">Plan</TableHead>
                     <TableHead className="text-center font-semibold text-primary">
                       Proyectos Pequeños
@@ -91,10 +91,10 @@ const Pricing = () => {
                 </TableHeader>
                 <TableBody>
                   {plans.map((plan, index) => (
-                    <TableRow key={index} className="hover:bg-primary/5 border-muted/30">
+                    <TableRow key={index} className="hover:bg-brand-yellow/5 border-muted/30">
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-3">
-                          <div className={`p-2 rounded-lg ${plan.isPopular ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                          <div className={`p-2 rounded-lg ${plan.name === "Plan Starter" ? 'bg-brand-yellow text-brand-yellow-foreground' : 'bg-muted'}`}>
                             <plan.icon className="h-4 w-4" />
                           </div>
                           <div>
@@ -106,44 +106,43 @@ const Pricing = () => {
                                 </span>
                               )}
                             </div>
-                            {plan.isPopular && (
-                              <Badge variant="default" className="text-xs mt-1 bg-gradient-to-r from-primary to-primary/80">
-                                Más Popular
-                              </Badge>
-                            )}
                           </div>
                         </div>
                       </TableCell>
                       <TableCell className="text-center font-semibold text-lg">
-                        <span className={plan.name === "Free Pilot" ? "text-green-600" : "text-primary"}>
+                        <span className={plan.name === "Free Pilot" ? "text-brand-yellow" : "text-primary"}>
                           {plan.smallProjects}
                         </span>
                       </TableCell>
                       <TableCell className="text-center font-semibold text-lg">
-                        <span className={plan.name === "Free Pilot" ? "text-green-600" : "text-primary"}>
+                        <span className={plan.name === "Free Pilot" ? "text-brand-yellow" : "text-primary"}>
                           {plan.mediumProjects}
                         </span>
                       </TableCell>
                       <TableCell className="text-center">
                         <div className="flex items-center justify-center gap-2">
-                          <Check className="h-4 w-4 text-green-600" />
+                          <Check className="h-4 w-4 text-brand-yellow" />
                           <span className="font-medium">{plan.projects}</span>
                         </div>
                       </TableCell>
                       <TableCell className="text-center">
                         {plan.name === "Free Pilot" ? (
-                          <Button variant="outline" className="w-full max-w-28 border-green-600 text-green-600 hover:bg-green-50">
+                          <Button variant="outline" className="w-full max-w-28 border-brand-yellow text-brand-yellow hover:bg-brand-yellow/10">
                             Empezar Gratis
                           </Button>
                         ) : plan.name === "Plan Enterprise" ? (
                           <Button variant="secondary" className="w-full max-w-28">
                             Contactar
                           </Button>
-                        ) : (
+                        ) : plan.name === "Plan Starter" ? (
                           <Button 
-                            variant={plan.isPopular ? "default" : "outline"} 
-                            className={`w-full max-w-28 ${plan.isPopular ? 'bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70' : ''}`}
+                            variant="default"
+                            className="w-full max-w-28 bg-gradient-to-r from-brand-yellow to-brand-yellow/80 hover:from-brand-yellow/90 hover:to-brand-yellow/70 text-brand-yellow-foreground"
                           >
+                            Elegir Plan
+                          </Button>
+                        ) : (
+                          <Button variant="outline" className="w-full max-w-28">
                             Elegir Plan
                           </Button>
                         )}

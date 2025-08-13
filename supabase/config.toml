@@ -45,3 +45,6 @@ verify_jwt = false
 
 [functions.ensure-unique-access-url]
 verify_jwt = false
+
+[functions.regenerate-access-urls]
+verify_jwt = false

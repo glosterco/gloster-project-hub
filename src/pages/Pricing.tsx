@@ -11,6 +11,7 @@ const Pricing = () => {
       duration: "(3 meses)",
       smallProjects: "$0",
       mediumProjects: "$0",
+      largeProjects: "Por definir",
       projects: "1 proyecto",
       isPopular: false,
       icon: Star,
@@ -20,6 +21,7 @@ const Pricing = () => {
       duration: "",
       smallProjects: "$70k/mes",
       mediumProjects: "$100k/mes",
+      largeProjects: "Por definir",
       projects: "Hasta 3 proyectos",
       isPopular: false,
       icon: Zap,
@@ -29,6 +31,7 @@ const Pricing = () => {
       duration: "",
       smallProjects: "$150k/mes",
       mediumProjects: "$200k/mes",
+      largeProjects: "Por definir",
       projects: "Hasta 5 proyectos",
       isPopular: false,
       icon: Building2,
@@ -38,6 +41,7 @@ const Pricing = () => {
       duration: "",
       smallProjects: "Contactar",
       mediumProjects: "Contactar",
+      largeProjects: "Por definir",
       projects: "Variable",
       isPopular: false,
       icon: Crown,
@@ -74,23 +78,26 @@ const Pricing = () => {
               <Table>
                 <TableHeader>
                   <TableRow className="border-gloster-yellow/20">
-                    <TableHead className="font-semibold text-foreground">Plan</TableHead>
-                    <TableHead className="text-center font-semibold text-foreground">
-                      Proyectos Pequeños
-                    </TableHead>
-                    <TableHead className="text-center font-semibold text-foreground">
-                      Proyectos Medianos
-                    </TableHead>
-                    <TableHead className="text-center font-semibold text-foreground">
-                      Cantidad de Proyectos
-                    </TableHead>
-                    <TableHead className="text-center font-semibold text-foreground">
-                      Acción
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {plans.map((plan, index) => (
+                     <TableHead className="font-semibold text-foreground">Plan</TableHead>
+                     <TableHead className="text-center font-semibold text-foreground">
+                       Proyectos Pequeños
+                     </TableHead>
+                     <TableHead className="text-center font-semibold text-foreground">
+                       Proyectos Medianos
+                     </TableHead>
+                     <TableHead className="text-center font-semibold text-foreground">
+                       Proyectos Grandes
+                     </TableHead>
+                     <TableHead className="text-center font-semibold text-foreground">
+                       Cantidad de Proyectos
+                     </TableHead>
+                     <TableHead className="text-center font-semibold text-foreground">
+                       Acción
+                     </TableHead>
+                   </TableRow>
+                 </TableHeader>
+                 <TableBody>
+                   {plans.map((plan, index) => (
                     <TableRow key={index} className="hover:bg-gloster-yellow/5 border-muted/30">
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-3">
@@ -109,17 +116,22 @@ const Pricing = () => {
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="text-center font-semibold text-lg">
-                        <span className="text-foreground">
-                          {plan.smallProjects}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-center font-semibold text-lg">
-                        <span className="text-foreground">
-                          {plan.mediumProjects}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-center">
+                       <TableCell className="text-center font-semibold text-lg">
+                         <span className="text-foreground">
+                           {plan.smallProjects}
+                         </span>
+                       </TableCell>
+                       <TableCell className="text-center font-semibold text-lg">
+                         <span className="text-foreground">
+                           {plan.mediumProjects}
+                         </span>
+                       </TableCell>
+                       <TableCell className="text-center font-semibold text-lg">
+                         <span className="text-foreground">
+                           {plan.largeProjects}
+                         </span>
+                       </TableCell>
+                       <TableCell className="text-center">
                          <div className="flex items-center justify-center gap-2">
                            <Check className="h-4 w-4 text-black bg-gloster-yellow rounded-full p-0.5" />
                            <span className="font-medium">{plan.projects}</span>

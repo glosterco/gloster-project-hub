@@ -11,7 +11,7 @@ const Pricing = () => {
       duration: "(3 meses)",
       smallProjects: "$0 por primer proyecto",
       mediumProjects: "$0 por primer proyecto",
-      projects: "1",
+      projects: "1 proyecto",
       isPopular: false,
     },
     {
@@ -19,7 +19,7 @@ const Pricing = () => {
       duration: "",
       smallProjects: "$70k/mes",
       mediumProjects: "$100k/mes",
-      projects: "Ilimitados",
+      projects: "Hasta 3 proyectos",
       isPopular: true,
     },
     {
@@ -27,7 +27,7 @@ const Pricing = () => {
       duration: "",
       smallProjects: "$150k/mes",
       mediumProjects: "$200k/mes",
-      projects: "Ilimitados",
+      projects: "Hasta 5 proyectos",
       isPopular: false,
     },
     {
@@ -35,7 +35,7 @@ const Pricing = () => {
       duration: "",
       smallProjects: "Contactar",
       mediumProjects: "Contactar",
-      projects: "Ilimitados",
+      projects: "Variable",
       isPopular: false,
     },
   ];
@@ -56,7 +56,7 @@ const Pricing = () => {
           <CardHeader>
             <CardTitle className="text-2xl text-center">Comparación de Planes</CardTitle>
             <CardDescription className="text-center">
-              Los precios se definen según usuarios, valor total del contrato y almacenamiento
+              El tamaño de proyectos se define según usuarios, valor total del contrato y almacenamiento
             </CardDescription>
           </CardHeader>
           <CardContent>

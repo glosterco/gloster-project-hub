@@ -131,7 +131,7 @@ const Pricing = () => {
                           className={`w-full max-w-28 ${plan.name !== "Plan Enterprise" ? 'bg-brand-yellow hover:bg-brand-yellow/90 text-brand-yellow-foreground' : ''}`}
                         >
                           {plan.name === "Free Pilot" ? "Empezar Gratis" : 
-                           plan.name === "Plan Enterprise" ? "Contactar" : "Elegir Plan"}
+                           plan.name === "Plan Enterprise" ? "Contactar" }
                         </Button>
                       </TableCell>
                     </TableRow>

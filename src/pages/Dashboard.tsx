@@ -11,7 +11,6 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { useProjectsWithDetails } from '@/hooks/useProjectsWithDetails';
 import TotalContractsValue from '@/components/TotalContractsValue';
 import TotalApprovedValue from '@/components/TotalApprovedValue';
-import { UrlRegeneratorCard } from '@/components/admin/UrlRegeneratorCard';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -164,10 +163,6 @@ const Dashboard = () => {
           <TotalApprovedValue projects={projects} />
         </div>
 
-        {/* Admin Tools */}
-        <div className="mb-8">
-          <UrlRegeneratorCard />
-        </div>
 
         {/* Projects Mosaic Grid */}
         {projects.length === 0 ? (

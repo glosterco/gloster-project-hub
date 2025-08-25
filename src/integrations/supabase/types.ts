@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -391,6 +391,10 @@ export type Database = {
       update_payment_states_weekly: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      verify_mandante_email_access: {
+        Args: { email: string; payment_id: number }
+        Returns: boolean
       }
     }
     Enums: {

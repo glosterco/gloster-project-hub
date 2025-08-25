@@ -445,81 +445,6 @@ const DashboardMandante: React.FC = () => {
           </div>
         </div>
 
-        {/* Barra de búsqueda y filtros */}
-        <div className="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="md:col-span-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gloster-gray h-4 w-4" />
-              <Input
-                placeholder="Buscar proyectos por nombre, descripción, ubicación o contratista..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 font-rubik"
-              />
-            </div>
-          </div>
-          
-          <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="font-rubik">
-              <SelectValue>
-                <div className="flex items-center">
-                  <ArrowUpDown className="h-4 w-4 mr-2" />
-                  <span>
-                    {sortBy === 'recibidos' ? 'Por Recibidos' : 
-                     sortBy === 'name' ? 'Por Nombre' :
-                     sortBy === 'date' ? 'Por Fecha' : 'Por Presupuesto'}
-                  </span>
-                </div>
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="recibidos">
-                <div className="flex items-center">
-                  <div className="w-3 h-3 bg-purple-100 rounded-full mr-2"></div>
-                  Por Recibidos
-                </div>
-              </SelectItem>
-              <SelectItem value="name">
-                <div className="flex items-center">
-                  <div className="w-3 h-3 bg-blue-100 rounded-full mr-2"></div>
-                  Por Nombre
-                </div>
-              </SelectItem>
-              <SelectItem value="date">
-                <div className="flex items-center">
-                  <div className="w-3 h-3 bg-green-100 rounded-full mr-2"></div>
-                  Por Fecha de Inicio
-                </div>
-              </SelectItem>
-              <SelectItem value="budget">
-                <div className="flex items-center">
-                  <div className="w-3 h-3 bg-yellow-100 rounded-full mr-2"></div>
-                  Por Presupuesto
-                </div>
-              </SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="font-rubik">
-              <SelectValue>
-                <div className="flex items-center">
-                  <Filter className="h-4 w-4 mr-2" />
-                  <span>
-                    {filterStatus === 'all' ? 'Todos' :
-                     filterStatus === 'active' ? 'Activos' : 'Inactivos'}
-                  </span>
-                </div>
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="active">Activos</SelectItem>
-              <SelectItem value="inactive">Inactivos</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
         {/* Tarjetas de resumen */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card className="border-gloster-gray/20">
@@ -547,13 +472,10 @@ const DashboardMandante: React.FC = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
+              <div className="space-y-1">
                 {Object.entries(totalsByCurrency).map(([currency, total]) => (
-                  <div key={currency} className="flex justify-between items-center">
-                    <span className="text-sm font-medium text-gloster-gray font-rubik">{currency}:</span>
-                    <span className="text-lg font-bold text-slate-800 font-rubik">
-                      {formatCurrency(total, currency)}
-                    </span>
+                  <div key={currency} className="text-lg font-bold text-slate-800 font-rubik">
+                    {formatCurrency(total, currency)}
                   </div>
                 ))}
               </div>
@@ -564,17 +486,14 @@ const DashboardMandante: React.FC = () => {
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-gloster-gray font-rubik">Total Aprobado</CardTitle>
               <div className="w-8 h-8 bg-gloster-yellow/20 rounded-lg flex items-center justify-center">
-                <CheckCircle className="h-4 w-4 text-gloster-gray" />
+                <DollarSign className="h-4 w-4 text-gloster-gray" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
+              <div className="space-y-1">
                 {Object.entries(totalApprovedByCurrency).map(([currency, total]) => (
-                  <div key={currency} className="flex justify-between items-center">
-                    <span className="text-sm font-medium text-gloster-gray font-rubik">{currency}:</span>
-                    <span className="text-lg font-bold text-green-600 font-rubik">
-                      {formatCurrency(total, currency)}
-                    </span>
+                  <div key={currency} className="text-lg font-bold text-green-600 font-rubik">
+                    {formatCurrency(total, currency)}
                   </div>
                 ))}
               </div>
@@ -582,527 +501,403 @@ const DashboardMandante: React.FC = () => {
           </Card>
         </div>
 
+        {/* Barra de búsqueda, orden y filtro (solo en dashboard contratista, no aquí) */}
+        {/* Por lo tanto, no se incluye aquí */}
+
         {/* Lista de proyectos con filtros y búsqueda */}
         <div className="space-y-6">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-slate-800 font-rubik">Mis Proyectos</h2>
-            
-            {/* Botón crear carpeta */}
-            <Dialog open={isCreateFolderOpen} onOpenChange={setIsCreateFolderOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="font-rubik">
-                  <Folder className="h-4 w-4 mr-2" />
-                  Crear Carpeta
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle className="font-rubik">Crear Nueva Carpeta</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="folder-name" className="font-rubik">Nombre de la carpeta</Label>
-                    <Input
-                      id="folder-name"
-                      value={newFolderName}
-                      onChange={(e) => setNewFolderName(e.target.value)}
-                      placeholder="Nombre Obra/Nombre contratista"
-                      className="font-rubik"
-                    />
-                  </div>
-                  <div>
-                    <Label className="font-rubik">Seleccionar proyectos</Label>
-                    <div className="max-h-40 overflow-y-auto border rounded p-2 space-y-2">
-                      {filteredAndSortedProjects.map((project) => (
-                        <div key={project.id} className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            id={`project-${project.id}`}
-                            checked={selectedProjectsForFolder.includes(project.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedProjectsForFolder(prev => [...prev, project.id]);
-                              } else {
-                                setSelectedProjectsForFolder(prev => prev.filter(id => id !== project.id));
-                              }
-                            }}
-                          />
-                          <label htmlFor={`project-${project.id}`} className="text-sm font-rubik cursor-pointer">
-                            {project.Name}
-                          </label>
-                        </div>
-                      ))}
+          {/* Carpetas */}
+          {folders.map((folder) => {
+            const folderProjects = getFolderProjects(folder);
+            if (folderProjects.length === 0) return null;
+
+            return (
+              <Card key={folder.id} className="border-gloster-gray/20">
+                <CardHeader>
+                  <div className="flex items-center justify-between w-full">
+                    <button
+                      onClick={() => toggleFolder(folder.id)}
+                      className="flex items-center gap-2 hover:bg-slate-50 rounded-lg p-2 transition-colors"
+                    >
+                      <Folder className="h-5 w-5 text-gloster-yellow" />
+                      {editingFolder === folder.id ? (
+                        <Input
+                          value={editFolderName}
+                          onChange={(e) => setEditFolderName(e.target.value)}
+                          className="text-lg font-semibold text-slate-800 font-rubik h-8 min-w-0"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              handleSaveEditFolder();
+                            } else if (e.key === 'Escape') {
+                              handleCancelEdit();
+                            }
+                          }}
+                          autoFocus
+                        />
+                      ) : (
+                        <h3 className="text-lg font-semibold text-slate-800 font-rubik">{folder.folder_name}</h3>
+                      )}
+                      <Badge variant="secondary" className="bg-gloster-yellow/20 text-gloster-gray font-rubik">
+                        {folderProjects.length} proyectos
+                      </Badge>
+                      {expandedFolders.has(folder.id) ? 
+                        <ChevronDown className="h-5 w-5 text-gloster-gray" /> : 
+                        <ChevronRight className="h-5 w-5 text-gloster-gray" />
+                      }
+                    </button>
+                    
+                    <div className="flex items-center gap-2">
+                      {editingFolder === folder.id ? (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={handleSaveEditFolder}
+                            className="h-8 w-8 p-0"
+                          >
+                            <CheckCircle className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={handleCancelEdit}
+                            className="h-8 w-8 p-0"
+                          >
+                            <XCircle className="h-4 w-4" />
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEditFolder(folder.id, folder.folder_name)}
+                            className="h-8 w-8 p-0"
+                            title="Editar nombre"
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEditFolderProjects(folder.id)}
+                            className="h-8 w-8 p-0"
+                            title="Editar proyectos"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDeleteFolder(folder.id)}
+                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </div>
-                  <div className="flex justify-end space-x-2">
-                    <Button variant="outline" onClick={() => setIsCreateFolderOpen(false)} className="font-rubik">
-                      Cancelar
-                    </Button>
-                    <Button onClick={handleCreateFolder} className="font-rubik">
-                      Crear Carpeta
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
+                </CardHeader>
+                
+                {expandedFolders.has(folder.id) && (
+                  <CardContent>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {folderProjects.map((project) => {
+                        const progress = getProjectProgress(project);
+                        const approvedValue = getProjectApprovedValue(project);
 
-          {/* Controles de búsqueda y filtros */}
-          <Card className="border-gloster-gray/20">
-            <CardContent className="pt-6">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                {/* Barra de búsqueda */}
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gloster-gray h-4 w-4" />
-                  <Input
-                    placeholder="Buscar proyectos..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 font-rubik"
-                  />
-                </div>
+                        return (
+                          <Card 
+                            key={project.id} 
+                            className="overflow-hidden border-gloster-gray/20 hover:shadow-xl transition-all duration-300 cursor-pointer hover:border-gloster-yellow/50"
+                          >
+                            <CardHeader>
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <CardTitle className="text-xl mb-2 text-slate-800 font-rubik">
+                                    {project.Name}
+                                    {hasReceivedPayments(project) && (
+                                      <Badge className="ml-2 bg-blue-100 text-blue-800 font-rubik">
+                                        Estados Recibidos
+                                      </Badge>
+                                    )}
+                                  </CardTitle>
+                                  <CardDescription className="text-sm text-gloster-gray font-rubik">
+                                    {project.Description}
+                                  </CardDescription>
+                                </div>
+                                <Badge variant="secondary" className="bg-gloster-yellow/20 text-gloster-gray border-gloster-yellow/30 text-xs font-rubik">
+                                  {project.Status ? "Activo" : "Inactivo"}
+                                </Badge>
+                              </div>
+                            </CardHeader>
 
-                {/* Ordenamiento */}
-                <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="font-rubik">
-                    <ArrowUpDown className="h-4 w-4 mr-2" />
-                    <SelectValue placeholder="Ordenar por" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="recibidos" className="font-rubik">Estados Recibidos Primero</SelectItem>
-                    <SelectItem value="name" className="font-rubik">Nombre A-Z</SelectItem>
-                    <SelectItem value="date" className="font-rubik">Fecha Más Reciente</SelectItem>
-                    <SelectItem value="budget" className="font-rubik">Presupuesto Mayor</SelectItem>
-                  </SelectContent>
-                </Select>
+                            <CardContent className="space-y-4">
+                              {/* Información del proyecto */}
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                <div className="flex items-center gap-2">
+                                  <MapPin className="w-4 h-4 text-gloster-gray" />
+                                  <span className="text-gloster-gray font-rubik">{project.Location}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Calendar className="w-4 h-4 text-gloster-gray" />
+                                  <span className="text-gloster-gray font-rubik">{new Date(project.StartDate).toLocaleDateString()}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Building2 className="w-4 h-4 text-gloster-gray" />
+                                  <span className="text-gloster-gray font-rubik">{project.Contratista?.CompanyName}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <User className="w-4 h-4 text-gloster-gray" />
+                                  <span className="text-gloster-gray font-rubik">{project.Contratista?.ContactName}</span>
+                                </div>
+                              </div>
 
-                {/* Filtro por estado */}
-                <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger className="font-rubik">
-                    <Filter className="h-4 w-4 mr-2" />
-                    <SelectValue placeholder="Filtrar estado" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all" className="font-rubik">Todos los Proyectos</SelectItem>
-                    <SelectItem value="active" className="font-rubik">Solo Activos</SelectItem>
-                    <SelectItem value="inactive" className="font-rubik">Solo Inactivos</SelectItem>
-                  </SelectContent>
-                </Select>
+                              {/* Progreso del proyecto */}
+                              <div className="space-y-2">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-sm font-medium text-gloster-gray font-rubik">Progreso del Proyecto</span>
+                                  <span className="text-sm text-slate-800 font-rubik">{progress}%</span>
+                                </div>
+                                <div className="w-full bg-gloster-gray/20 rounded-full h-2">
+                                  <div 
+                                    className="bg-gloster-yellow h-2 rounded-full transition-all duration-300"
+                                    style={{ width: `${progress}%` }}
+                                  ></div>
+                                </div>
+                              </div>
 
-                {/* Contador de resultados */}
-                <div className="flex items-center justify-center text-sm text-gloster-gray font-rubik">
-                  {filteredAndSortedProjects.length} de {projects.length} proyectos
-                </div>
+                              {/* Información financiera */}
+                              <div className="flex justify-between items-center pt-2 border-t border-gloster-gray/20">
+                                <div>
+                                  <p className="text-sm text-gloster-gray font-rubik">Presupuesto Total</p>
+                                  <p className="font-semibold text-slate-800 font-rubik">{formatCurrency(project.Budget, project.Currency)}</p>
+                                </div>
+                                <div>
+                                  <p className="text-sm text-gloster-gray font-rubik">Total Aprobado</p>
+                                  <p className="font-semibold text-green-600 font-rubik">{formatCurrency(approvedValue, project.Currency)}</p>
+                                </div>
+                              </div>
+
+                              {/* Estados recibidos para aprobación rápida */}
+                              {project.EstadosPago && project.EstadosPago.length > 0 && (
+                                <div className="space-y-2">
+                                  <h4 className="text-sm font-medium text-slate-800 font-rubik">Estados Recibidos para Aprobación</h4>
+                                  <div className="grid gap-2 max-h-32 overflow-y-auto">
+                                    {project.EstadosPago
+                                      .filter(payment => payment.Status === 'Enviado')
+                                      .map((payment) => (
+                                      <div 
+                                        key={payment.id} 
+                                        className="flex items-center justify-between p-2 rounded border text-sm cursor-pointer hover:bg-blue-50 border-blue-200"
+                                        onClick={() => handlePaymentClick(payment.id)}
+                                      >
+                                        <div className="flex items-center gap-2">
+                                          {getStatusIcon(payment.Status)}
+                                          <span className="font-medium text-slate-800 font-rubik">{payment.Name}</span>
+                                          <Badge className={`text-xs ${getStatusColor(payment.Status)} font-rubik`}>
+                                            {getDisplayStatus(payment.Status)}
+                                          </Badge>
+                                        </div>
+                                        <div className="text-right">
+                                          <div className="font-medium text-slate-800 font-rubik">
+                                            {formatCurrency(payment.Total, project.Currency)}
+                                          </div>
+                                          <div className="text-xs text-gloster-gray font-rubik">
+                                            {payment.ExpiryDate}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                    {project.EstadosPago.filter(payment => payment.Status === 'Enviado').length === 0 && (
+                                      <div className="text-sm text-gloster-gray text-center py-2 font-rubik">
+                                        No hay estados recibidos para aprobación
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Botones de acción */}
+                              <div className="pt-4 border-t border-gloster-gray/20">
+                                <Button 
+                                  onClick={() => handleProjectDetails(project.id)}
+                                  variant="outline"
+                                  size="sm"
+                                  className="w-full text-gloster-gray border-gloster-gray/30 hover:bg-gloster-yellow/10 font-rubik"
+                                >
+                                  <FileText className="h-4 w-4 mr-2" />
+                                  Ver más información
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                )}
+              </Card>
+            );
+          })}
+
+          {/* Proyectos sin asignar a carpetas */}
+          {getUnassignedProjects().length > 0 && (
+            <div>
+              {folders.length > 0 && (
+                <h3 className="text-lg font-semibold text-slate-800 font-rubik mb-4">
+                  Proyectos Individuales
+                </h3>
+              )}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {getUnassignedProjects().map((project) => {
+                  const progress = getProjectProgress(project);
+                  const approvedValue = getProjectApprovedValue(project);
+
+                  return (
+                    <Card 
+                      key={project.id} 
+                      className="overflow-hidden border-gloster-gray/20 hover:shadow-xl transition-all duration-300 cursor-pointer hover:border-gloster-yellow/50"
+                    >
+                      <CardHeader>
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <CardTitle className="text-xl mb-2 text-slate-800 font-rubik">
+                              {project.Name}
+                              {hasReceivedPayments(project) && (
+                                <Badge className="ml-2 bg-blue-100 text-blue-800 font-rubik">
+                                  Estados Recibidos
+                                </Badge>
+                              )}
+                            </CardTitle>
+                            <CardDescription className="text-sm text-gloster-gray font-rubik">
+                              {project.Description}
+                            </CardDescription>
+                          </div>
+                          <Badge variant="secondary" className="bg-gloster-yellow/20 text-gloster-gray border-gloster-yellow/30 text-xs font-rubik">
+                            {project.Status ? "Activo" : "Inactivo"}
+                          </Badge>
+                        </div>
+                      </CardHeader>
+
+                      <CardContent className="space-y-4">
+                        {/* Información del proyecto */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                          <div className="flex items-center gap-2">
+                            <MapPin className="w-4 h-4 text-gloster-gray" />
+                            <span className="text-gloster-gray font-rubik">{project.Location}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4 text-gloster-gray" />
+                            <span className="text-gloster-gray font-rubik">{new Date(project.StartDate).toLocaleDateString()}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Building2 className="w-4 h-4 text-gloster-gray" />
+                            <span className="text-gloster-gray font-rubik">{project.Contratista?.CompanyName}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <User className="w-4 h-4 text-gloster-gray" />
+                            <span className="text-gloster-gray font-rubik">{project.Contratista?.ContactName}</span>
+                          </div>
+                        </div>
+
+                        {/* Progreso del proyecto */}
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm font-medium text-gloster-gray font-rubik">Progreso del Proyecto</span>
+                            <span className="text-sm text-slate-800 font-rubik">{progress}%</span>
+                          </div>
+                          <div className="w-full bg-gloster-gray/20 rounded-full h-2">
+                            <div 
+                              className="bg-gloster-yellow h-2 rounded-full transition-all duration-300"
+                              style={{ width: `${progress}%` }}
+                            ></div>
+                          </div>
+                        </div>
+
+                        {/* Información financiera */}
+                        <div className="flex justify-between items-center pt-2 border-t border-gloster-gray/20">
+                          <div>
+                            <p className="text-sm text-gloster-gray font-rubik">Presupuesto Total</p>
+                            <p className="font-semibold text-slate-800 font-rubik">{formatCurrency(project.Budget, project.Currency)}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gloster-gray font-rubik">Total Aprobado</p>
+                            <p className="font-semibold text-green-600 font-rubik">{formatCurrency(approvedValue, project.Currency)}</p>
+                          </div>
+                        </div>
+
+                        {/* Estados recibidos para aprobación rápida */}
+                        {project.EstadosPago && project.EstadosPago.length > 0 && (
+                          <div className="space-y-2">
+                            <h4 className="text-sm font-medium text-slate-800 font-rubik">Estados Recibidos para Aprobación</h4>
+                            <div className="grid gap-2 max-h-32 overflow-y-auto">
+                              {project.EstadosPago
+                                .filter(payment => payment.Status === 'Enviado')
+                                .map((payment) => (
+                                <div 
+                                  key={payment.id} 
+                                  className="flex items-center justify-between p-2 rounded border text-sm cursor-pointer hover:bg-blue-50 border-blue-200"
+                                  onClick={() => handlePaymentClick(payment.id)}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    {getStatusIcon(payment.Status)}
+                                    <span className="font-medium text-slate-800 font-rubik">{payment.Name}</span>
+                                    <Badge className={`text-xs ${getStatusColor(payment.Status)} font-rubik`}>
+                                      {getDisplayStatus(payment.Status)}
+                                    </Badge>
+                                  </div>
+                                  <div className="text-right">
+                                    <div className="font-medium text-slate-800 font-rubik">
+                                      {formatCurrency(payment.Total, project.Currency)}
+                                    </div>
+                                    <div className="text-xs text-gloster-gray font-rubik">
+                                      {payment.ExpiryDate}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                              {project.EstadosPago.filter(payment => payment.Status === 'Enviado').length === 0 && (
+                                <div className="text-sm text-gloster-gray text-center py-2 font-rubik">
+                                  No hay estados recibidos para aprobación
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Botón de acción */}
+                        <div className="pt-4 border-t border-gloster-gray/20">
+                          <Button 
+                            onClick={() => handleProjectDetails(project.id)}
+                            variant="outline"
+                            size="sm"
+                            className="w-full text-gloster-gray border-gloster-gray/30 hover:bg-gloster-yellow/10 font-rubik"
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            Ver más información
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
-            </CardContent>
-          </Card>
-          
-          {projects.length === 0 ? (
+            </div>
+          )}
+
+          {/* Mensaje cuando no hay proyectos filtrados */}
+          {filteredAndSortedProjects.length === 0 && projects.length > 0 && (
             <Card className="border-gloster-gray/20">
               <CardContent className="flex flex-col items-center justify-center py-12">
-                <Building2 className="h-12 w-12 text-gloster-gray mb-4" />
-                <h3 className="text-lg font-medium text-slate-800 mb-2 font-rubik">No hay proyectos</h3>
+                <Search className="h-12 w-12 text-gloster-gray mb-4" />
+                <h3 className="text-lg font-medium text-slate-800 mb-2 font-rubik">No se encontraron proyectos</h3>
                 <p className="text-gloster-gray text-center max-w-md font-rubik">
-                  No hay proyectos asignados.
+                  No hay proyectos que coincidan con los filtros actuales. Intenta ajustar la búsqueda o los filtros.
                 </p>
               </CardContent>
             </Card>
-          ) : (
-            <div className="space-y-6">
-              {/* Carpetas */}
-              {folders.map((folder) => {
-                const folderProjects = getFolderProjects(folder);
-                if (folderProjects.length === 0) return null;
-
-                return (
-                  <Card key={folder.id} className="border-gloster-gray/20">
-                    <CardHeader>
-                      <div className="flex items-center justify-between w-full">
-                        <button
-                          onClick={() => toggleFolder(folder.id)}
-                          className="flex items-center gap-2 hover:bg-slate-50 rounded-lg p-2 transition-colors"
-                        >
-                          <Folder className="h-5 w-5 text-gloster-yellow" />
-                          {editingFolder === folder.id ? (
-                            <Input
-                              value={editFolderName}
-                              onChange={(e) => setEditFolderName(e.target.value)}
-                              className="text-lg font-semibold text-slate-800 font-rubik h-8 min-w-0"
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  handleSaveEditFolder();
-                                } else if (e.key === 'Escape') {
-                                  handleCancelEdit();
-                                }
-                              }}
-                              autoFocus
-                            />
-                          ) : (
-                            <h3 className="text-lg font-semibold text-slate-800 font-rubik">{folder.folder_name}</h3>
-                          )}
-                          <Badge variant="secondary" className="bg-gloster-yellow/20 text-gloster-gray font-rubik">
-                            {folderProjects.length} proyectos
-                          </Badge>
-                          {expandedFolders.has(folder.id) ? 
-                            <ChevronDown className="h-5 w-5 text-gloster-gray" /> : 
-                            <ChevronRight className="h-5 w-5 text-gloster-gray" />
-                          }
-                        </button>
-                        
-                        <div className="flex items-center gap-2">
-                          {editingFolder === folder.id ? (
-                            <>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={handleSaveEditFolder}
-                                className="h-8 w-8 p-0"
-                              >
-                                <CheckCircle className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={handleCancelEdit}
-                                className="h-8 w-8 p-0"
-                              >
-                                <XCircle className="h-4 w-4" />
-                              </Button>
-                            </>
-                          ) : (
-                            <>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleEditFolder(folder.id, folder.folder_name)}
-                                className="h-8 w-8 p-0"
-                                title="Editar nombre"
-                              >
-                                <Edit2 className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleEditFolderProjects(folder.id)}
-                                className="h-8 w-8 p-0"
-                                title="Editar proyectos"
-                              >
-                                <Plus className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleDeleteFolder(folder.id)}
-                                className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </CardHeader>
-                    
-                    {expandedFolders.has(folder.id) && (
-                      <CardContent>
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                          {folderProjects.map((project) => {
-                            const progress = getProjectProgress(project);
-                            const approvedValue = getProjectApprovedValue(project);
-
-                            return (
-                              <Card 
-                                key={project.id} 
-                                className="overflow-hidden border-gloster-gray/20 hover:shadow-xl transition-all duration-300 cursor-pointer hover:border-gloster-yellow/50"
-                              >
-                                <CardHeader>
-                                  <div className="flex justify-between items-start">
-                                    <div>
-                                      <CardTitle className="text-xl mb-2 text-slate-800 font-rubik">
-                                        {project.Name}
-                                        {hasReceivedPayments(project) && (
-                                          <Badge className="ml-2 bg-blue-100 text-blue-800 font-rubik">
-                                            Estados Recibidos
-                                          </Badge>
-                                        )}
-                                      </CardTitle>
-                                      <CardDescription className="text-sm text-gloster-gray font-rubik">
-                                        {project.Description}
-                                      </CardDescription>
-                                    </div>
-                                    <Badge variant="secondary" className="bg-gloster-yellow/20 text-gloster-gray border-gloster-yellow/30 text-xs font-rubik">
-                                      {project.Status ? "Activo" : "Inactivo"}
-                                    </Badge>
-                                  </div>
-                                </CardHeader>
-
-                                <CardContent className="space-y-4">
-                                  {/* Información del proyecto */}
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                                    <div className="flex items-center gap-2">
-                                      <MapPin className="w-4 h-4 text-gloster-gray" />
-                                      <span className="text-gloster-gray font-rubik">{project.Location}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <Calendar className="w-4 h-4 text-gloster-gray" />
-                                      <span className="text-gloster-gray font-rubik">{new Date(project.StartDate).toLocaleDateString()}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <Building2 className="w-4 h-4 text-gloster-gray" />
-                                      <span className="text-gloster-gray font-rubik">{project.Contratista?.CompanyName}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <User className="w-4 h-4 text-gloster-gray" />
-                                      <span className="text-gloster-gray font-rubik">{project.Contratista?.ContactName}</span>
-                                    </div>
-                                  </div>
-
-                                  {/* Progreso del proyecto */}
-                                  <div className="space-y-2">
-                                    <div className="flex justify-between items-center">
-                                      <span className="text-sm font-medium text-gloster-gray font-rubik">Progreso del Proyecto</span>
-                                      <span className="text-sm text-slate-800 font-rubik">{progress}%</span>
-                                    </div>
-                                    <div className="w-full bg-gloster-gray/20 rounded-full h-2">
-                                      <div 
-                                        className="bg-gloster-yellow h-2 rounded-full transition-all duration-300"
-                                        style={{ width: `${progress}%` }}
-                                      ></div>
-                                    </div>
-                                  </div>
-
-                                  {/* Información financiera */}
-                                  <div className="flex justify-between items-center pt-2 border-t border-gloster-gray/20">
-                                    <div>
-                                      <p className="text-sm text-gloster-gray font-rubik">Presupuesto Total</p>
-                                      <p className="font-semibold text-slate-800 font-rubik">{formatCurrency(project.Budget, project.Currency)}</p>
-                                    </div>
-                                    <div>
-                                      <p className="text-sm text-gloster-gray font-rubik">Total Aprobado</p>
-                                      <p className="font-semibold text-green-600 font-rubik">{formatCurrency(approvedValue, project.Currency)}</p>
-                                    </div>
-                                  </div>
-
-                                  {/* Estados recibidos para aprobación rápida */}
-                                  {project.EstadosPago && project.EstadosPago.length > 0 && (
-                                    <div className="space-y-2">
-                                      <h4 className="text-sm font-medium text-slate-800 font-rubik">Estados Recibidos para Aprobación</h4>
-                                      <div className="grid gap-2 max-h-32 overflow-y-auto">
-                                        {project.EstadosPago
-                                          .filter(payment => payment.Status === 'Enviado')
-                                          .map((payment) => (
-                                          <div 
-                                            key={payment.id} 
-                                            className="flex items-center justify-between p-2 rounded border text-sm cursor-pointer hover:bg-blue-50 border-blue-200"
-                                            onClick={() => handlePaymentClick(payment.id)}
-                                          >
-                                            <div className="flex items-center gap-2">
-                                              {getStatusIcon(payment.Status)}
-                                              <span className="font-medium text-slate-800 font-rubik">{payment.Name}</span>
-                                              <Badge className={`text-xs ${getStatusColor(payment.Status)} font-rubik`}>
-                                                {getDisplayStatus(payment.Status)}
-                                              </Badge>
-                                            </div>
-                                            <div className="text-right">
-                                              <div className="font-medium text-slate-800 font-rubik">
-                                                {formatCurrency(payment.Total, project.Currency)}
-                                              </div>
-                                              <div className="text-xs text-gloster-gray font-rubik">
-                                                {payment.ExpiryDate}
-                                              </div>
-                                            </div>
-                                          </div>
-                                        ))}
-                                        {project.EstadosPago.filter(payment => payment.Status === 'Enviado').length === 0 && (
-                                          <div className="text-sm text-gloster-gray text-center py-2 font-rubik">
-                                            No hay estados recibidos para aprobación
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  )}
-
-                                  {/* Botones de acción */}
-                                  <div className="pt-4 border-t border-gloster-gray/20">
-                                    <Button 
-                                      onClick={() => handleProjectDetails(project.id)}
-                                      variant="outline"
-                                      size="sm"
-                                      className="w-full text-gloster-gray border-gloster-gray/30 hover:bg-gloster-yellow/10 font-rubik"
-                                    >
-                                      <FileText className="h-4 w-4 mr-2" />
-                                      Ver más información
-                                    </Button>
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            );
-                          })}
-                        </div>
-                      </CardContent>
-                    )}
-                  </Card>
-                );
-              })}
-
-              {/* Proyectos sin asignar a carpetas */}
-              {getUnassignedProjects().length > 0 && (
-                <div>
-                  {folders.length > 0 && (
-                    <h3 className="text-lg font-semibold text-slate-800 font-rubik mb-4">
-                      Proyectos Individuales
-                    </h3>
-                  )}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {getUnassignedProjects().map((project) => {
-                      const progress = getProjectProgress(project);
-                      const approvedValue = getProjectApprovedValue(project);
-
-                      return (
-                        <Card 
-                          key={project.id} 
-                          className="overflow-hidden border-gloster-gray/20 hover:shadow-xl transition-all duration-300 cursor-pointer hover:border-gloster-yellow/50"
-                        >
-                          <CardHeader>
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <CardTitle className="text-xl mb-2 text-slate-800 font-rubik">
-                                  {project.Name}
-                                  {hasReceivedPayments(project) && (
-                                    <Badge className="ml-2 bg-blue-100 text-blue-800 font-rubik">
-                                      Estados Recibidos
-                                    </Badge>
-                                  )}
-                                </CardTitle>
-                                <CardDescription className="text-sm text-gloster-gray font-rubik">
-                                  {project.Description}
-                                </CardDescription>
-                              </div>
-                              <Badge variant="secondary" className="bg-gloster-yellow/20 text-gloster-gray border-gloster-yellow/30 text-xs font-rubik">
-                                {project.Status ? "Activo" : "Inactivo"}
-                              </Badge>
-                            </div>
-                          </CardHeader>
-
-                          <CardContent className="space-y-4">
-                            {/* Información del proyecto */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-                              <div className="flex items-center gap-2">
-                                <MapPin className="w-4 h-4 text-gloster-gray" />
-                                <span className="text-gloster-gray font-rubik">{project.Location}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Calendar className="w-4 h-4 text-gloster-gray" />
-                                <span className="text-gloster-gray font-rubik">{new Date(project.StartDate).toLocaleDateString()}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Building2 className="w-4 h-4 text-gloster-gray" />
-                                <span className="text-gloster-gray font-rubik">{project.Contratista?.CompanyName}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <User className="w-4 h-4 text-gloster-gray" />
-                                <span className="text-gloster-gray font-rubik">{project.Contratista?.ContactName}</span>
-                              </div>
-                            </div>
-
-                            {/* Progreso del proyecto */}
-                            <div className="space-y-2">
-                              <div className="flex justify-between items-center">
-                                <span className="text-sm font-medium text-gloster-gray font-rubik">Progreso del Proyecto</span>
-                                <span className="text-sm text-slate-800 font-rubik">{progress}%</span>
-                              </div>
-                              <div className="w-full bg-gloster-gray/20 rounded-full h-2">
-                                <div 
-                                  className="bg-gloster-yellow h-2 rounded-full transition-all duration-300"
-                                  style={{ width: `${progress}%` }}
-                                ></div>
-                              </div>
-                            </div>
-
-                            {/* Información financiera */}
-                            <div className="flex justify-between items-center pt-2 border-t border-gloster-gray/20">
-                              <div>
-                                <p className="text-sm text-gloster-gray font-rubik">Presupuesto Total</p>
-                                <p className="font-semibold text-slate-800 font-rubik">{formatCurrency(project.Budget, project.Currency)}</p>
-                              </div>
-                              <div>
-                                <p className="text-sm text-gloster-gray font-rubik">Total Aprobado</p>
-                                <p className="font-semibold text-green-600 font-rubik">{formatCurrency(approvedValue, project.Currency)}</p>
-                              </div>
-                            </div>
-
-                            {/* Estados recibidos para aprobación rápida */}
-                            {project.EstadosPago && project.EstadosPago.length > 0 && (
-                              <div className="space-y-2">
-                                <h4 className="text-sm font-medium text-slate-800 font-rubik">Estados Recibidos para Aprobación</h4>
-                                <div className="grid gap-2 max-h-32 overflow-y-auto">
-                                  {project.EstadosPago
-                                    .filter(payment => payment.Status === 'Enviado')
-                                    .map((payment) => (
-                                    <div 
-                                      key={payment.id} 
-                                      className="flex items-center justify-between p-2 rounded border text-sm cursor-pointer hover:bg-blue-50 border-blue-200"
-                                      onClick={() => handlePaymentClick(payment.id)}
-                                    >
-                                      <div className="flex items-center gap-2">
-                                        {getStatusIcon(payment.Status)}
-                                        <span className="font-medium text-slate-800 font-rubik">{payment.Name}</span>
-                                        <Badge className={`text-xs ${getStatusColor(payment.Status)} font-rubik`}>
-                                          {getDisplayStatus(payment.Status)}
-                                        </Badge>
-                                      </div>
-                                      <div className="text-right">
-                                        <div className="font-medium text-slate-800 font-rubik">
-                                          {formatCurrency(payment.Total, project.Currency)}
-                                        </div>
-                                        <div className="text-xs text-gloster-gray font-rubik">
-                                          {payment.ExpiryDate}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  ))}
-                                  {project.EstadosPago.filter(payment => payment.Status === 'Enviado').length === 0 && (
-                                    <div className="text-sm text-gloster-gray text-center py-2 font-rubik">
-                                      No hay estados recibidos para aprobación
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Botón de acción */}
-                            <div className="pt-4 border-t border-gloster-gray/20">
-                              <Button 
-                                onClick={() => handleProjectDetails(project.id)}
-                                variant="outline"
-                                size="sm"
-                                className="w-full text-gloster-gray border-gloster-gray/30 hover:bg-gloster-yellow/10 font-rubik"
-                              >
-                                <FileText className="h-4 w-4 mr-2" />
-                                Ver más información
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Mensaje cuando no hay proyectos filtrados */}
-              {filteredAndSortedProjects.length === 0 && projects.length > 0 && (
-                <Card className="border-gloster-gray/20">
-                  <CardContent className="flex flex-col items-center justify-center py-12">
-                    <Search className="h-12 w-12 text-gloster-gray mb-4" />
-                    <h3 className="text-lg font-medium text-slate-800 mb-2 font-rubik">No se encontraron proyectos</h3>
-                    <p className="text-gloster-gray text-center max-w-md font-rubik">
-                      No hay proyectos que coincidan con los filtros actuales. Intenta ajustar la búsqueda o los filtros.
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
           )}
         </div>
       </div>

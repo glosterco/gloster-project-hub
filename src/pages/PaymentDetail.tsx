@@ -447,7 +447,7 @@ const PaymentDetail = () => {
         mandanteEmail: payment.projectData.Owner?.ContactEmail || '',
         mandanteCompany: payment.projectData.Owner?.CompanyName || '',
         contractorCompany: payment.projectData.Contratista?.CompanyName || '',
-        amount: payment.Total || 0,
+        amount: finalAmount, // Usar el monto actualizado
         dueDate: payment.ExpiryDate || '',
          driveUrl: driveUrl,
         uploadedDocuments: uploadedDocuments,

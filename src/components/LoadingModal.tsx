@@ -33,9 +33,6 @@ const LoadingModal: React.FC<LoadingModalProps> = ({
         <CardContent>
           <div className="flex items-center justify-center space-x-2">
             <Loader2 className="h-6 w-6 animate-spin text-gloster-yellow" />
-            <span className="text-sm text-gloster-gray font-rubik">
-              Subiendo documentos...
-            </span>
           </div>
         </CardContent>
       </Card>

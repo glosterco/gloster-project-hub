@@ -34,13 +34,15 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) {
+    if (!email.trim()) {
+      alert('Por favor ingresa tu email');
       return;
     }
     
     const { error } = await resetPassword(email);
     if (!error) {
       setShowForgotPassword(false);
+      alert('Se ha enviado un email de recuperación. Revisa tu bandeja de entrada.');
     }
   };
 

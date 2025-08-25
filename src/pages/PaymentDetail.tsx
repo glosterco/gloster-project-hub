@@ -438,6 +438,12 @@ const PaymentDetail = () => {
       });
 
       // Enviar notificación al mandante sobre la corrección
+      // Determinar el monto final después de guardar
+      const currentAmount = parseFloat(editableAmount) || 0;
+      const amountToUse = editableAmount.trim() !== '' && currentAmount !== (payment?.Total || 0) 
+        ? currentAmount 
+        : (payment?.Total || 0);
+      
       const notificationData = {
         paymentId: payment.id.toString(),
         contratista: payment.projectData.Contratista?.ContactName || '',
@@ -447,7 +453,7 @@ const PaymentDetail = () => {
         mandanteEmail: payment.projectData.Owner?.ContactEmail || '',
         mandanteCompany: payment.projectData.Owner?.CompanyName || '',
         contractorCompany: payment.projectData.Contratista?.CompanyName || '',
-        amount: finalAmount, // Usar el monto actualizado
+        amount: amountToUse, // Usar el monto correcto
         dueDate: payment.ExpiryDate || '',
          driveUrl: driveUrl,
         uploadedDocuments: uploadedDocuments,

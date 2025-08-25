@@ -19,63 +19,38 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
     // Check if user is authenticated or accessing via email
     const { data: { user } } = await supabase.auth.getUser();
     
-    if (user) {
-      // Authenticated user - use direct update
-      console.log('👤 Authenticated user updating payment status');
-      
-      const { data, error: updateError } = await supabase
-        .from('Estados de pago')
-        .update({ 
-          Status: status,
-          Notes: notes
-        })
-        .eq('id', parseInt(paymentId))
-        .select();
-
-      if (updateError) {
-        console.error('❌ Error updating payment status (authenticated):', updateError);
-        throw new Error(`Error al actualizar el estado del pago: ${updateError.message}`);
-      }
-      
-      console.log(`✅ Payment status updated to ${status} (authenticated)`);
-    } else {
-      // Non-authenticated user - check for mandante email access
-      console.log('📧 Non-authenticated user, checking email access');
-      
+    // Set email context for RLS policy if accessing via email
+    if (!user) {
       const mandanteAccess = sessionStorage.getItem('mandanteAccess');
-      if (!mandanteAccess) {
-        throw new Error('No se encontró acceso de mandante válido');
-      }
-      
-      const accessInfo = JSON.parse(mandanteAccess);
-      const { email } = accessInfo;
-      
-      if (!email) {
-        throw new Error('No se encontró email en la información de acceso');
-      }
-      
-      // Use the edge function for mandantes without auth_user_id
-      const { data: result, error: fnError } = await supabase.functions.invoke('update-payment-status-mandante', {
-        body: {
-          paymentId: paymentId,
-          email: email,
-          status: status,
-          notes: notes
+      if (mandanteAccess) {
+        const accessInfo = JSON.parse(mandanteAccess);
+        if (accessInfo.email) {
+          // Set custom setting for RLS policy
+          await supabase.rpc('set_config', {
+            setting_name: 'custom.email_access',
+            setting_value: accessInfo.email,
+            is_local: true
+          });
         }
-      });
-      
-      if (fnError) {
-        console.error('❌ Error calling update-payment-status-mandante:', fnError);
-        throw new Error(`Error en la función de actualización: ${fnError.message}`);
       }
-      
-      if (!result?.success) {
-        console.error('❌ Edge function returned error:', result);
-        throw new Error(result?.error || 'Error al actualizar el estado del pago');
-      }
-      
-      console.log(`✅ Payment status updated to ${status} (email access)`);
     }
+    
+    // Direct update for both authenticated and email-verified users
+    const { data, error: updateError } = await supabase
+      .from('Estados de pago')
+      .update({ 
+        Status: status,
+        Notes: notes
+      })
+      .eq('id', parseInt(paymentId))
+      .select();
+
+    if (updateError) {
+      console.error('❌ Error updating payment status:', updateError);
+      throw new Error(`Error al actualizar el estado del pago: ${updateError.message}`);
+    }
+    
+    console.log(`✅ Payment status updated to ${status}`);
   };
 
   const sendContractorNotification = async (paymentData: any, status: 'Aprobado' | 'Rechazado', rejectionReason?: string) => {

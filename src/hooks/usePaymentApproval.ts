@@ -25,11 +25,10 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
       if (mandanteAccess) {
         const accessInfo = JSON.parse(mandanteAccess);
         if (accessInfo.email) {
-          // Set custom setting for RLS policy
-          await supabase.rpc('set_config', {
-            setting_name: 'custom.email_access',
-            setting_value: accessInfo.email,
-            is_local: true
+          // Set session variable using raw SQL for RLS policy
+          await supabase.rpc('verify_mandante_email_access', {
+            payment_id: parseInt(paymentId),
+            email: accessInfo.email
           });
         }
       }

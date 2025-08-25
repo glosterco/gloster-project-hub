@@ -144,12 +144,6 @@ export const useSubmissionPreviewLogic = (payment: PaymentDetail | null) => {
       if (refreshError) {
         console.warn('⚠️ Error refreshing payment data, continuing with current values:', refreshError);
       }
-      
-      console.log('💰 Payment amounts for notification:', {
-        originalAmount: payment.Total,
-        updatedAmount: updatedPayment?.Total,
-        finalAmount: updatedPayment?.Total ?? payment.Total ?? 0
-      });
 
       // Usar el sistema de enlace único
       const accessUrl = await ensureUniqueAccessUrl(payment.id);
@@ -203,7 +197,7 @@ export const useSubmissionPreviewLogic = (payment: PaymentDetail | null) => {
         mandanteEmail: payment.projectData.Owner?.ContactEmail || '',
         mandanteCompany: payment.projectData.Owner?.CompanyName || '',
         contractorCompany: payment.projectData.Contratista?.CompanyName || '',
-        amount: payment.Total || 0, // Usar el monto actual del payment que ya contiene los valores actualizados
+        amount: updatedPayment?.Total ?? payment.Total ?? 0, // Usar el valor actualizado si existe
         dueDate: payment.ExpiryDate || '',
         driveUrl: driveUrl,
         uploadedDocuments: [],

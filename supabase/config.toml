@@ -48,9 +48,3 @@ verify_jwt = false
 
 [functions.regenerate-access-urls]
 verify_jwt = false
-
-[functions.verify-mandante-user-email]
-verify_jwt = false
-
-[functions.update-payment-status-mandante]
-verify_jwt = false

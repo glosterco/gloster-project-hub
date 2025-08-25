@@ -8,7 +8,7 @@ const corsHeaders = {
 
 interface VerifyEmailRequest {
   email: string;
-  paymentId: string;
+  mandanteId: number;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -17,9 +17,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { email, paymentId }: VerifyEmailRequest = await req.json();
-
-    console.log('🔍 Verifying mandante email access:', { email, paymentId });
+    const { email, mandanteId }: VerifyEmailRequest = await req.json();
 
     // Create Supabase client with service role key for admin operations
     const supabaseAdmin = createClient(
@@ -27,69 +25,21 @@ const handler = async (req: Request): Promise<Response> => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // Verificar si el email del mandante coincide con el proyecto del estado de pago
-    const { data: verificationData, error: verificationError } = await supabaseAdmin
-      .from('Estados de pago')
-      .select(`
-        id,
-        Project,
-        Proyectos!inner (
-          id,
-          Owner,
-          Mandantes!inner (
-            id,
-            ContactEmail
-          )
-        )
-      `)
-      .eq('id', parseInt(paymentId))
-      .single();
-
-    if (verificationError) {
-      console.error('Error verifying mandante access:', verificationError);
-      return new Response(
-        JSON.stringify({ hasAccess: false, error: 'Error verificando acceso del mandante' }),
-        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
-    // Verificar si el email coincide (case insensitive)
-    const mandanteEmail = verificationData?.Proyectos?.Mandantes?.ContactEmail;
-    const hasAccess = mandanteEmail && 
-      mandanteEmail.toLowerCase() === email.toLowerCase();
-
-    console.log('📧 Email verification result:', {
-      provided: email,
-      mandanteEmail,
-      hasAccess
-    });
-
-    if (hasAccess) {
-      return new Response(
-        JSON.stringify({ 
-          hasAccess: true,
-          mandanteId: verificationData.Proyectos.Mandantes.id,
-          isValidMandante: true 
-        }),
-        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
-    // Si no hay match, verificar si existe un usuario autenticado asociado
+    // Get all users associated with the mandante
     const { data: mandanteUsers, error: mandanteUsersError } = await supabaseAdmin
       .from('mandante_users')
-      .select('auth_user_id, mandante_id')
-      .eq('mandante_id', verificationData.Proyectos.Owner);
+      .select('auth_user_id')
+      .eq('mandante_id', mandanteId);
 
     if (mandanteUsersError) {
       console.error('Error fetching mandante users:', mandanteUsersError);
       return new Response(
-        JSON.stringify({ hasAccess: false }),
-        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        JSON.stringify({ error: 'Error verificando usuarios del mandante' }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    // Check if email matches any of the associated users
+    // Check if email matches any of the mandante users
     if (mandanteUsers && mandanteUsers.length > 0) {
       for (const mandanteUser of mandanteUsers) {
         const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(
@@ -101,7 +51,6 @@ const handler = async (req: Request): Promise<Response> => {
             JSON.stringify({ 
               hasAccess: true, 
               authUserId: mandanteUser.auth_user_id,
-              mandanteId: mandanteUser.mandante_id,
               isAssociatedUser: true 
             }),
             { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }

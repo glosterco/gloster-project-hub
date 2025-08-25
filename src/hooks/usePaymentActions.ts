@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -16,32 +15,22 @@ export const usePaymentActions = (
   const navigate = useNavigate();
 
   const formatCurrency = (amount: number) => {
-    if (!payment?.projectData?.Currency) {
-      return new Intl.NumberFormat('es-CL', {
-        style: 'currency',
-        currency: 'CLP',
-        minimumFractionDigits: 0,
-      }).format(amount);
-    }
-
-    if (payment.projectData.Currency === 'UF') {
+    const currency = payment?.projectData?.Currency || 'CLP';
+    if (currency === 'UF') {
       return `${amount.toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} UF`;
-    } else if (payment.projectData.Currency === 'USD') {
-      return new Intl.NumberFormat('es-CL', {
-        style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 0,
-      }).format(amount);
-    } else {
-      return new Intl.NumberFormat('es-CL', {
-        style: 'currency',
-        currency: 'CLP',
-        minimumFractionDigits: 0,
-      }).format(amount);
     }
+    return new Intl.NumberFormat('es-CL', {
+      style: 'currency',
+      currency,
+      minimumFractionDigits: 0,
+    }).format(amount);
   };
 
-  const handleAmountChange = (value: string, setEditableAmount: (value: string) => void, setEditablePercentage: (value: string) => void) => {
+  const handleAmountChange = (
+    value: string,
+    setEditableAmount: (value: string) => void,
+    setEditablePercentage: (value: string) => void
+  ) => {
     setEditableAmount(value);
     if (value && payment?.projectData?.Budget) {
       const percentage = (parseFloat(value) / payment.projectData.Budget) * 100;
@@ -49,7 +38,11 @@ export const usePaymentActions = (
     }
   };
 
-  const handlePercentageChange = (value: string, setEditableAmount: (value: string) => void, setEditablePercentage: (value: string) => void) => {
+  const handlePercentageChange = (
+    value: string,
+    setEditableAmount: (value: string) => void,
+    setEditablePercentage: (value: string) => void
+  ) => {
     setEditablePercentage(value);
     if (value && payment?.projectData?.Budget) {
       const amount = (parseFloat(value) / 100) * payment.projectData.Budget;
@@ -57,47 +50,66 @@ export const usePaymentActions = (
     }
   };
 
+  // ✅ Nuevo: guarda si el valor editable es distinto al actual
+  const saveAmountIfChanged = async () => {
+    if (!payment?.id || !editableAmount) return;
+
+    const amount = parseFloat(editableAmount);
+    const percentage = editablePercentage
+      ? parseFloat(editablePercentage)
+      : (payment.projectData?.Budget ? (amount / payment.projectData.Budget) * 100 : 0);
+
+    const alreadySaved =
+      Math.round(amount) === Math.round(payment.amount) &&
+      Math.round(percentage) === Math.round(payment.percentage || 0);
+
+    if (alreadySaved) {
+      return; // no hay cambios, no actualiza
+    }
+
+    try {
+      setIsSaving(true);
+      const { error } = await supabase
+        .from('Estados de pago')
+        .update({
+          Total: amount,
+          Progress: Math.round(percentage)
+        })
+        .eq('id', payment.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Cambios guardados",
+        description: "El monto ha sido actualizado correctamente antes de enviar.",
+      });
+
+      refetch();
+    } catch (error) {
+      console.error("❌ Error al guardar el monto automáticamente:", error);
+      toast({
+        title: "Error al guardar",
+        description: "Hubo un problema al actualizar el monto antes de enviar.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleSaveAmount = async () => {
     if (!payment?.id || !editableAmount) return;
+
     const amount = parseFloat(editableAmount);
-    const percentage = editablePercentage ? parseFloat(editablePercentage) : 
-      (payment?.projectData?.Budget ? (amount / payment.projectData.Budget) * 100 : 0);
+    const percentage = editablePercentage
+      ? parseFloat(editablePercentage)
+      : (payment?.projectData?.Budget ? (amount / payment.projectData.Budget) * 100 : 0);
 
     setIsSaving(true);
     try {
-      // Prefer public edge function when using contractor email access (no auth_id)
-      const contractorAccess = sessionStorage.getItem('contractorAccess');
-      const mandanteAccess = sessionStorage.getItem('mandanteAccess');
-      const accessInfo = contractorAccess
-        ? JSON.parse(contractorAccess)
-        : (mandanteAccess ? JSON.parse(mandanteAccess) : null);
-      const accessToken = accessInfo?.accessToken;
-      const userType = accessInfo?.userType;
-
-      if (accessToken && userType === 'contratista') {
-        const { data, error: fnError } = await supabase.functions.invoke('update-payment-detail-public', {
-          body: {
-            paymentId: payment.id,
-            token: accessToken,
-            amount,
-            percentage: Math.round(percentage)
-          }
-        });
-        if (fnError) throw fnError;
-        if (!data?.success) throw new Error('No se pudo actualizar (función pública)');
-
-        toast({
-          title: "Datos actualizados",
-          description: "El monto y porcentaje del estado de pago se han actualizado correctamente",
-        });
-        refetch();
-        return;
-      }
-
-      // Authenticated path: update directly and verify row was updated
       const { data, error } = await supabase
         .from('Estados de pago')
-        .update({ 
+        .update({
           Total: amount,
           Progress: Math.round(percentage)
         })
@@ -106,7 +118,7 @@ export const usePaymentActions = (
         .maybeSingle();
 
       if (error) throw error;
-      if (!data) throw new Error('Sin permisos para actualizar');
+      if (!data) throw new Error("Sin permisos para actualizar");
 
       toast({
         title: "Datos actualizados",
@@ -114,7 +126,7 @@ export const usePaymentActions = (
       });
       refetch();
     } catch (error) {
-      console.error('Error updating amount and progress:', error);
+      console.error("Error actualizando monto:", error);
       toast({
         title: "Error",
         description: "No se pudo actualizar la información",
@@ -124,14 +136,13 @@ export const usePaymentActions = (
       setIsSaving(false);
     }
   };
+
   const handleNavigation = (targetPath: string, hasUnsavedFiles: boolean) => {
     if (hasUnsavedFiles) {
       const confirmed = window.confirm(
-        'Tienes archivos cargados que aún no han sido respaldados y enviados. Si sales de la página se perderá el progreso.\n\nDebes enviar la solicitud o ver la previsualización para que se respalde la información.\n\n¿Estás seguro de que quieres continuar?'
+        'Tienes archivos cargados que aún no han sido respaldados. Si sales, se perderán.\n\n¿Continuar?'
       );
-      if (!confirmed) {
-        return;
-      }
+      if (!confirmed) return;
     }
     navigate(targetPath);
   };
@@ -142,6 +153,7 @@ export const usePaymentActions = (
     handleAmountChange,
     handlePercentageChange,
     handleSaveAmount,
+    saveAmountIfChanged, // <- usa esto antes de invocar la función que envía el correo
     handleNavigation
   };
 };

@@ -145,7 +145,7 @@ const Dashboard = () => {
           </Dialog>
         </div>
 
-        {/* Barra de búsqueda y filtros - AGREGADA AQUÍ COMO SOLICITASTE */}
+        {/* Barra de búsqueda y filtros - POSICIONADA CORRECTAMENTE */}
         <div className="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="md:col-span-2">
             <div className="relative">

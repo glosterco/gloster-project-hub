@@ -437,12 +437,21 @@ const PaymentDetail = () => {
         }
       });
 
-      // Enviar notificación al mandante sobre la corrección
-      // Determinar el monto final después de guardar
+      // CRÍTICO: Primero guardar los cambios y ESPERAR a que se complete
+      console.log('💾 Guardando cambios antes de enviar email...');
+      await handleSaveAmount();
+      
+      // Refrescar los datos del payment después del guardado
+      console.log('🔄 Refrescando datos del payment...');
+      await refetch();
+      
+      // Ahora determinar el monto actualizado de la base de datos
       const currentAmount = parseFloat(editableAmount) || 0;
-      const amountToUse = editableAmount.trim() !== '' && currentAmount !== (payment?.Total || 0) 
+      const finalAmount = editableAmount.trim() !== '' && currentAmount !== (payment?.Total || 0) 
         ? currentAmount 
         : (payment?.Total || 0);
+      
+      console.log('💰 Monto a enviar en email:', finalAmount);
       
       const notificationData = {
         paymentId: payment.id.toString(),
@@ -453,7 +462,7 @@ const PaymentDetail = () => {
         mandanteEmail: payment.projectData.Owner?.ContactEmail || '',
         mandanteCompany: payment.projectData.Owner?.CompanyName || '',
         contractorCompany: payment.projectData.Contratista?.CompanyName || '',
-        amount: amountToUse, // Usar el monto correcto
+        amount: finalAmount, // Usar el monto DESPUÉS del guardado
         dueDate: payment.ExpiryDate || '',
          driveUrl: driveUrl,
         uploadedDocuments: uploadedDocuments,

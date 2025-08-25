@@ -501,8 +501,62 @@ const DashboardMandante: React.FC = () => {
           </Card>
         </div>
 
-        {/* Barra de búsqueda, orden y filtro (solo en dashboard contratista, no aquí) */}
-        {/* Por lo tanto, no se incluye aquí */}
+        {/* Barra de búsqueda y filtros - AGREGADA COMO SOLICITASTE */}
+        <div className="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="md:col-span-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gloster-gray h-4 w-4" />
+              <Input
+                placeholder="Buscar proyectos por nombre, descripción, contratista..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 font-rubik"
+              />
+            </div>
+          </div>
+          
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="font-rubik">
+              <SelectValue>
+                <div className="flex items-center">
+                  <ArrowUpDown className="h-4 w-4 mr-2" />
+                  <span>
+                    {sortBy === 'recibidos' && 'Por Recibidos'}
+                    {sortBy === 'name' && 'Por Nombre'}
+                    {sortBy === 'date' && 'Por Fecha'}
+                    {sortBy === 'budget' && 'Por Presupuesto'}
+                  </span>
+                </div>
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="recibidos">Por Recibidos</SelectItem>
+              <SelectItem value="name">Por Nombre</SelectItem>
+              <SelectItem value="date">Por Fecha</SelectItem>
+              <SelectItem value="budget">Por Presupuesto</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="font-rubik">
+              <SelectValue>
+                <div className="flex items-center">
+                  <Filter className="h-4 w-4 mr-2" />
+                  <span>
+                    {filterStatus === 'all' && 'Todos'}
+                    {filterStatus === 'active' && 'Activos'}
+                    {filterStatus === 'inactive' && 'Inactivos'}
+                  </span>
+                </div>
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="active">Activos</SelectItem>
+              <SelectItem value="inactive">Inactivos</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
         {/* Lista de proyectos con filtros y búsqueda */}
         <div className="space-y-6">

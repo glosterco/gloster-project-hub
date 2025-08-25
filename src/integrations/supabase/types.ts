@@ -388,6 +388,14 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      set_config: {
+        Args: {
+          is_local?: boolean
+          setting_name: string
+          setting_value: string
+        }
+        Returns: undefined
+      }
       update_payment_states_weekly: {
         Args: Record<PropertyKey, never>
         Returns: undefined

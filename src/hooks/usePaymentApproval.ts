@@ -14,42 +14,41 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
   const { toast } = useToast();
 
   const updatePaymentStatus = async (status: 'Aprobado' | 'Rechazado', notes: string) => {
-    console.log('🔄 Updating payment status...', { paymentId, status, notes });
-    
-    // Check if user is authenticated or accessing via email
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    // Set email context for RLS policy if accessing via email
-    if (!user) {
-      const mandanteAccess = sessionStorage.getItem('mandanteAccess');
+    try {
+      setLoading(true);
+      
+      // Set session context for RLS if we have mandante access
+      const mandanteAccess = localStorage.getItem('mandanteAccess');
       if (mandanteAccess) {
         const accessInfo = JSON.parse(mandanteAccess);
         if (accessInfo.email) {
-          // Set session variable using raw SQL for RLS policy
-          await supabase.rpc('verify_mandante_email_access', {
-            payment_id: parseInt(paymentId),
-            email: accessInfo.email
+          // Set the email context for RLS policy verification
+          await supabase.rpc('set_config', {
+            setting_name: 'custom.email_access',
+            setting_value: accessInfo.email,
+            is_local: true
           });
         }
       }
-    }
-    
-    // Direct update for both authenticated and email-verified users
-    const { data, error: updateError } = await supabase
-      .from('Estados de pago')
-      .update({ 
-        Status: status,
-        Notes: notes
-      })
-      .eq('id', parseInt(paymentId))
-      .select();
 
-    if (updateError) {
-      console.error('❌ Error updating payment status:', updateError);
-      throw new Error(`Error al actualizar el estado del pago: ${updateError.message}`);
+      // Update payment status
+      const { error } = await supabase
+        .from('Estados de pago')
+        .update({ 
+          Status: status,
+          Notes: notes || null
+        })
+        .eq('id', parseInt(paymentId));
+
+      if (error) {
+        console.error('Error updating payment status:', error);
+        throw new Error(`Error al actualizar el estado del pago: ${error.message}`);
+      }
+
+      console.log(`✅ Payment status updated to ${status}`);
+    } finally {
+      setLoading(false);
     }
-    
-    console.log(`✅ Payment status updated to ${status}`);
   };
 
   const sendContractorNotification = async (paymentData: any, status: 'Aprobado' | 'Rechazado', rejectionReason?: string) => {

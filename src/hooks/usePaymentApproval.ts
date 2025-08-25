@@ -16,13 +16,28 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
   const updatePaymentStatus = async (status: 'Aprobado' | 'Rechazado', notes: string) => {
     console.log('🔄 Updating payment status...', { paymentId, status, notes });
     
-    const { error: updateError } = await supabase
+    // Verify user has access to this payment first
+    const { data: paymentCheck, error: checkError } = await supabase
+      .from('Estados de pago')
+      .select('id, Project')
+      .eq('id', parseInt(paymentId))
+      .single();
+
+    if (checkError || !paymentCheck) {
+      console.error('❌ Cannot access payment or payment not found:', checkError);
+      throw new Error('No se puede acceder a este estado de pago o no existe');
+    }
+
+    console.log('✅ Payment access verified, proceeding with update...');
+
+    const { data, error: updateError } = await supabase
       .from('Estados de pago')
       .update({ 
         Status: status,
         Notes: notes
       })
-      .eq('id', parseInt(paymentId));
+      .eq('id', parseInt(paymentId))
+      .select();
 
     if (updateError) {
       console.error('❌ Error updating payment status:', updateError);

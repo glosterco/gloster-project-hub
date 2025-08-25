@@ -225,7 +225,7 @@ const Register = () => {
     const success = await handleSubmit();
     if (success) {
       setTimeout(() => {
-        navigate('/');
+        navigate('/dashboard');
       }, 1500);
     }
   };

@@ -445,6 +445,81 @@ const DashboardMandante: React.FC = () => {
           </div>
         </div>
 
+        {/* Barra de búsqueda y filtros */}
+        <div className="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="md:col-span-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gloster-gray h-4 w-4" />
+              <Input
+                placeholder="Buscar proyectos por nombre, descripción, ubicación o contratista..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 font-rubik"
+              />
+            </div>
+          </div>
+          
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="font-rubik">
+              <SelectValue>
+                <div className="flex items-center">
+                  <ArrowUpDown className="h-4 w-4 mr-2" />
+                  <span>
+                    {sortBy === 'recibidos' ? 'Por Recibidos' : 
+                     sortBy === 'name' ? 'Por Nombre' :
+                     sortBy === 'date' ? 'Por Fecha' : 'Por Presupuesto'}
+                  </span>
+                </div>
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="recibidos">
+                <div className="flex items-center">
+                  <div className="w-3 h-3 bg-purple-100 rounded-full mr-2"></div>
+                  Por Recibidos
+                </div>
+              </SelectItem>
+              <SelectItem value="name">
+                <div className="flex items-center">
+                  <div className="w-3 h-3 bg-blue-100 rounded-full mr-2"></div>
+                  Por Nombre
+                </div>
+              </SelectItem>
+              <SelectItem value="date">
+                <div className="flex items-center">
+                  <div className="w-3 h-3 bg-green-100 rounded-full mr-2"></div>
+                  Por Fecha de Inicio
+                </div>
+              </SelectItem>
+              <SelectItem value="budget">
+                <div className="flex items-center">
+                  <div className="w-3 h-3 bg-yellow-100 rounded-full mr-2"></div>
+                  Por Presupuesto
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="font-rubik">
+              <SelectValue>
+                <div className="flex items-center">
+                  <Filter className="h-4 w-4 mr-2" />
+                  <span>
+                    {filterStatus === 'all' ? 'Todos' :
+                     filterStatus === 'active' ? 'Activos' : 'Inactivos'}
+                  </span>
+                </div>
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="active">Activos</SelectItem>
+              <SelectItem value="inactive">Inactivos</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
         {/* Tarjetas de resumen */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card className="border-gloster-gray/20">

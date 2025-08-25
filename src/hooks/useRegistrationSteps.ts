@@ -28,7 +28,11 @@ export const useRegistrationSteps = ({ formData, errors }: any) => {
   };
 
   const handleSubmit = async () => {
-    return await processRegistration(formData);
+    try {
+      return await processRegistration(formData);
+    } finally {
+      // El loading se maneja en processRegistration
+    }
   };
 
   return {

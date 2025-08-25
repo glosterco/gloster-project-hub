@@ -186,7 +186,7 @@ const MandanteRegistrationForm: React.FC<MandanteRegistrationFormProps> = ({ onB
 
       // Redirigir después de un breve retraso para mostrar el mensaje
       setTimeout(() => {
-        navigate('/');
+        navigate('/mandante-dashboard');
       }, 2000);
 
     } catch (error: any) {

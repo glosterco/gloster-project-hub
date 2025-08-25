@@ -7,6 +7,7 @@ import { useRegistrationProcess } from './registration/useRegistrationProcess';
 
 export const useRegistrationSteps = ({ formData, errors }: any) => {
   const [currentStep, setCurrentStep] = useState(1);
+  const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   const totalSteps = 6;
 
   const { loading: contratistaLoading } = useContratistas();
@@ -28,10 +29,12 @@ export const useRegistrationSteps = ({ formData, errors }: any) => {
   };
 
   const handleSubmit = async () => {
+    setIsCreatingAccount(true);
     try {
-      return await processRegistration(formData);
+      const result = await processRegistration(formData);
+      return result;
     } finally {
-      // El loading se maneja en processRegistration
+      setIsCreatingAccount(false);
     }
   };
 
@@ -43,5 +46,6 @@ export const useRegistrationSteps = ({ formData, errors }: any) => {
     handleSubmit,
     contratistaLoading,
     mandanteLoading,
+    isCreatingAccount,
   };
 };

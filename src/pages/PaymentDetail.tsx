@@ -320,11 +320,17 @@ const PaymentDetail = () => {
 
   // Auto-guardar antes de vista previa si hay cambios sin guardar
   const handleAutoSaveBeforePreview = async () => {
-    const amountChanged = editableAmount.trim() !== '' && `${payment?.Total ?? ''}` !== editableAmount;
-    const progressChanged = editablePercentage.trim() !== '' && `${payment?.Progress ?? ''}` !== editablePercentage;
+    const currentAmount = parseFloat(editableAmount) || 0;
+    const currentProgress = parseFloat(editablePercentage) || 0;
+    const amountChanged = editableAmount.trim() !== '' && currentAmount !== (payment?.Total || 0);
+    const progressChanged = editablePercentage.trim() !== '' && currentProgress !== (payment?.Progress || 0);
 
     if (amountChanged || progressChanged) {
+      console.log('💾 Auto-saving before preview...');
       await handleSaveAmount();
+      console.log('💾 Auto-save completed, refreshing data...');
+      await refetch();
+      console.log('💾 Data refreshed for preview');
     }
   };
 
@@ -544,10 +550,20 @@ const PaymentDetail = () => {
     try {
       // CRÍTICO: Guardar monto y progreso ANTES de enviar
       console.log('💾 Saving amount and progress before sending...');
-      await handleSaveAmount();
       
-      // Refrescar datos para asegurar que tenemos los valores actualizados
-      await refetch();
+      // Verificar si hay cambios en monto o porcentaje y guardarlos
+      const currentAmount = parseFloat(editableAmount) || 0;
+      const currentProgress = parseFloat(editablePercentage) || 0;
+      const amountChanged = editableAmount.trim() !== '' && currentAmount !== (payment.Total || 0);
+      const progressChanged = editablePercentage.trim() !== '' && currentProgress !== (payment.Progress || 0);
+      
+      if (amountChanged || progressChanged) {
+        console.log('💾 Changes detected, saving amount and progress...');
+        await handleSaveAmount();
+        console.log('💾 Amount and progress saved, refreshing data...');
+        await refetch();
+        console.log('💾 Data refreshed successfully');
+      }
       const uploadResult = await uploadDocumentsToDrive(
         payment.id, 
         uploadedFiles, 

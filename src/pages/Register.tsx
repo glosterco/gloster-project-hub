@@ -30,7 +30,8 @@ const Register = () => {
     handlePrevious, 
     handleSubmit, 
     contratistaLoading, 
-    mandanteLoading 
+    mandanteLoading,
+    isCreatingAccount
   } = useRegistrationSteps({ formData, errors });
 
   const handleRoleSelection = (role: 'contratista' | 'mandante') => {
@@ -232,7 +233,7 @@ const Register = () => {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <LoadingModal isOpen={contratistaLoading || mandanteLoading} title="Creando cuenta..." description="Estamos creando tu cuenta y configurando el proyecto. Esto puede tardar unos segundos." />
+      <LoadingModal isOpen={isCreatingAccount || contratistaLoading || mandanteLoading} title="Creando cuenta..." description="Estamos creando tu cuenta y configurando el proyecto. Esto puede tardar unos segundos." />
       <header className="bg-white border-b border-gloster-gray/20 shadow-sm">
         <div className="container mx-auto px-6 py-4">
           <button 
@@ -276,7 +277,7 @@ const Register = () => {
                     variant="outline"
                     onClick={handlePrevious}
                     className="font-rubik"
-                    disabled={contratistaLoading || mandanteLoading}
+                    disabled={isCreatingAccount || contratistaLoading || mandanteLoading}
                   >
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     Anterior
@@ -288,18 +289,18 @@ const Register = () => {
                     <Button
                       onClick={handleNext}
                       className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
-                      disabled={contratistaLoading || mandanteLoading}
+                      disabled={isCreatingAccount || contratistaLoading || mandanteLoading}
                     >
-                      {(contratistaLoading || mandanteLoading) ? 'Guardando...' : 'Continuar'}
+                      {(isCreatingAccount || contratistaLoading || mandanteLoading) ? 'Guardando...' : 'Continuar'}
                       <ArrowRight className="h-4 w-4 ml-2" />
                     </Button>
                   ) : (
                     <Button
                       onClick={onSubmit}
                       className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
-                      disabled={contratistaLoading || mandanteLoading}
+                      disabled={isCreatingAccount || contratistaLoading || mandanteLoading}
                     >
-                      {(contratistaLoading || mandanteLoading) ? 'Guardando...' : 'Crear Cuenta'}
+                      {(isCreatingAccount || contratistaLoading || mandanteLoading) ? 'Creando cuenta...' : 'Crear Cuenta'}
                     </Button>
                   )}
                 </div>

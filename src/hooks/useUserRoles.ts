@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import bcrypt from 'bcryptjs';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -99,19 +98,13 @@ export const useCreateUserRole = () => {
     credentials?: { username?: string; password?: string }
   ) => {
     try {
-      let password_hash: string | undefined = undefined;
-      if (credentials?.password) {
-        // Hash on client to avoid storing plaintext
-        password_hash = await bcrypt.hash(credentials.password, 10);
-      }
-
       const insertPayload: any = {
         auth_user_id: authUserId,
         role_type: roleType,
         entity_id: entityId,
       };
       if (credentials?.username) insertPayload.local_username = credentials.username;
-      if (password_hash) insertPayload.password_hash = password_hash;
+      if (credentials?.password) insertPayload.password = credentials.password;
 
       const { error } = await supabase
         .from('user_roles')

@@ -338,7 +338,7 @@ export type Database = {
           id: number
           local_username: string | null
           login_provider: string
-          password_hash: string | null
+          password: string | null
           role_type: string
         }
         Insert: {
@@ -348,7 +348,7 @@ export type Database = {
           id?: never
           local_username?: string | null
           login_provider?: string
-          password_hash?: string | null
+          password?: string | null
           role_type: string
         }
         Update: {
@@ -358,7 +358,7 @@ export type Database = {
           id?: never
           local_username?: string | null
           login_provider?: string
-          password_hash?: string | null
+          password?: string | null
           role_type?: string
         }
         Relationships: []

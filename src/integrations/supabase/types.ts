@@ -392,10 +392,6 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
-      verify_email_payment_access: {
-        Args: { payment_id: number; user_email: string }
-        Returns: boolean
-      }
       verify_mandante_email_access: {
         Args: { email: string; payment_id: number }
         Returns: boolean

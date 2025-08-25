@@ -501,7 +501,75 @@ const DashboardMandante: React.FC = () => {
           </Card>
         </div>
 
-        {/* Barra de búsqueda y filtros - AGREGADA COMO SOLICITASTE */}
+        {/* Gestión de Carpetas */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-slate-800 font-rubik">Organización de Proyectos</h3>
+            <Dialog open={isCreateFolderOpen} onOpenChange={setIsCreateFolderOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="font-rubik">
+                  <Folder className="h-4 w-4 mr-2" />
+                  Nueva Carpeta
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle className="font-rubik">Crear Nueva Carpeta</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="folderName" className="font-rubik">Nombre de la carpeta</Label>
+                    <Input
+                      id="folderName"
+                      value={newFolderName}
+                      onChange={(e) => setNewFolderName(e.target.value)}
+                      placeholder="Ej: Proyectos Región Metropolitana"
+                      className="font-rubik"
+                    />
+                  </div>
+                  <div>
+                    <Label className="font-rubik">Seleccionar proyectos</Label>
+                    <div className="max-h-60 overflow-y-auto border rounded-lg p-2 mt-2">
+                      {filteredAndSortedProjects.map(project => (
+                        <div key={project.id} className="flex items-center space-x-2 py-1">
+                          <input
+                            type="checkbox"
+                            id={`project-${project.id}`}
+                            checked={selectedProjectsForFolder.includes(project.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedProjectsForFolder(prev => [...prev, project.id]);
+                              } else {
+                                setSelectedProjectsForFolder(prev => prev.filter(id => id !== project.id));
+                              }
+                            }}
+                          />
+                          <label htmlFor={`project-${project.id}`} className="text-sm font-rubik">
+                            {project.Name}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex justify-end space-x-2">
+                    <Button variant="outline" onClick={() => setIsCreateFolderOpen(false)} className="font-rubik">
+                      Cancelar
+                    </Button>
+                    <Button 
+                      onClick={handleCreateFolder}
+                      disabled={!newFolderName.trim() || selectedProjectsForFolder.length === 0}
+                      className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
+                    >
+                      Crear Carpeta
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+
+        {/* Barra de búsqueda y filtros - POSICIONADA DESPUÉS DE LAS TARJETAS DE RESUMEN */}
         <div className="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="md:col-span-2">
             <div className="relative">

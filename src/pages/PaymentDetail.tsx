@@ -441,17 +441,25 @@ const PaymentDetail = () => {
       console.log('💾 Guardando cambios antes de enviar email...');
       await handleSaveAmount();
       
-      // Refrescar los datos del payment después del guardado
+      // IMPORTANTE: Esperar un delay para asegurar consistencia de BD
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Refrescar los datos del payment después del guardado y delay
       console.log('🔄 Refrescando datos del payment...');
       await refetch();
       
-      // Ahora determinar el monto actualizado de la base de datos
-      const currentAmount = parseFloat(editableAmount) || 0;
-      const finalAmount = editableAmount.trim() !== '' && currentAmount !== (payment?.Total || 0) 
-        ? currentAmount 
-        : (payment?.Total || 0);
+      // Obtener el valor DIRECTAMENTE de la base de datos para asegurar consistencia
+      const { data: freshPaymentData, error: freshPaymentError } = await supabase
+        .from('Estados de pago')
+        .select('Total')
+        .eq('id', payment.id)
+        .single();
       
-      console.log('💰 Monto a enviar en email:', finalAmount);
+      const finalAmount = freshPaymentData?.Total || payment?.Total || 0;
+      
+      console.log('💰 Monto directo desde BD a enviar en email:', finalAmount, 
+                  '(freshPaymentData.Total:', freshPaymentData?.Total, 
+                  ', payment.Total:', payment?.Total, ')');
       
       const notificationData = {
         paymentId: payment.id.toString(),

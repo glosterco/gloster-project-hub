@@ -145,7 +145,28 @@ const Dashboard = () => {
           </Dialog>
         </div>
 
-        {/* Barra de búsqueda y filtros - POSICIONADA CORRECTAMENTE */}
+        {/* Summary Cards */}
+        <div className="grid md:grid-cols-3 gap-6 mb-8">
+          <Card className="border-gloster-gray/20">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-gloster-gray font-rubik">
+                Proyectos Activos
+              </CardTitle>
+              <div className="w-8 h-8 bg-gloster-yellow/20 rounded-lg flex items-center justify-center">
+                <FolderOpen className="h-4 w-4 text-gloster-gray" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-slate-800 font-rubik">{projects.length}</div>
+            </CardContent>
+          </Card>
+
+          <TotalContractsValue projects={projects} />
+
+          <TotalApprovedValue projects={projects} />
+        </div>
+
+        {/* Barra de búsqueda y filtros - POSICIONADA CORRECTAMENTE ABAJO DE SUMMARY CARDS */}
         <div className="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="md:col-span-2">
             <div className="relative">
@@ -191,28 +212,6 @@ const Dashboard = () => {
             </SelectContent>
           </Select>
         </div>
-
-        {/* Summary Cards */}
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
-          <Card className="border-gloster-gray/20">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gloster-gray font-rubik">
-                Proyectos Activos
-              </CardTitle>
-              <div className="w-8 h-8 bg-gloster-yellow/20 rounded-lg flex items-center justify-center">
-                <FolderOpen className="h-4 w-4 text-gloster-gray" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-slate-800 font-rubik">{projects.length}</div>
-            </CardContent>
-          </Card>
-
-          <TotalContractsValue projects={projects} />
-
-          <TotalApprovedValue projects={projects} />
-        </div>
-
 
         {/* Projects Mosaic Grid */}
         {projects.length === 0 ? (

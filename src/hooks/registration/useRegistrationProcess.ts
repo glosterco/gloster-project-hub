@@ -23,12 +23,39 @@ export const useRegistrationProcess = () => {
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: email,
       password: password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/dashboard`
+      }
     });
 
     if (authError) {
-      console.error('Authentication error:', authError);
-      showError("Error de autenticación", authError.message);
-      return { success: false };
+      // Si el usuario ya existe, intentar hacer login
+      if (authError.message === 'User already registered') {
+        console.log('User already exists, attempting login...');
+        
+        const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+          email: email,
+          password: password,
+        });
+
+        if (loginError) {
+          console.error('Login error:', loginError);
+          showError("Error de autenticación", "Usuario ya existe pero las credenciales son incorrectas");
+          return { success: false };
+        }
+
+        if (!loginData.user) {
+          showError("Error de autenticación", "No se pudo autenticar el usuario");
+          return { success: false };
+        }
+
+        console.log('User logged in successfully:', loginData.user.id);
+        return { success: true, user: loginData.user };
+      } else {
+        console.error('Authentication error:', authError);
+        showError("Error de autenticación", authError.message);
+        return { success: false };
+      }
     }
 
     if (!authData.user) {
@@ -41,7 +68,21 @@ export const useRegistrationProcess = () => {
   };
 
   const createContratistaRecord = async (formData: any, authUserId: string) => {
-    console.log('Creating contratista...');
+    console.log('Creating or finding contratista...');
+    
+    // Primero verificar si ya existe un contratista para este usuario
+    const { data: existingContratista } = await supabase
+      .from('Contratistas')
+      .select('*')
+      .eq('auth_user_id', authUserId)
+      .maybeSingle();
+
+    if (existingContratista) {
+      console.log('Contratista already exists with ID:', existingContratista.id);
+      return { success: true, id: existingContratista.id };
+    }
+
+    // Si no existe, crear nuevo contratista
     const contratistaData = prepareContratistaData(formData, authUserId);
     
     const { data: contratistaResult, error: contratistaError } = await createContratista(contratistaData, authUserId);
@@ -181,16 +222,28 @@ export const useRegistrationProcess = () => {
       const contratistaResult = await createContratistaRecord(formData, authResult.user.id);
       if (!contratistaResult.success) return false;
 
-      // Paso 3: Asignar rol de contratista
-      console.log('Assigning contratista role...');
-      const roleResult = await createUserRole(authResult.user.id, 'contratista', contratistaResult.id, {
-        username: formData.email,
-        password: formData.password,
-      });
-      if (!roleResult.success) {
-        console.error('Error assigning contratista role');
-        showError("Error al asignar rol", "No se pudo asignar el rol de contratista");
-        return false;
+      // Paso 3: Verificar si ya tiene rol de contratista
+      console.log('Checking existing contratista role...');
+      const { data: existingRoles } = await supabase
+        .from('user_roles')
+        .select('*')
+        .eq('auth_user_id', authResult.user.id)
+        .eq('role_type', 'contratista');
+
+      if (!existingRoles || existingRoles.length === 0) {
+        // Solo asignar rol si no existe
+        console.log('Assigning contratista role...');
+        const roleResult = await createUserRole(authResult.user.id, 'contratista', contratistaResult.id, {
+          username: formData.email,
+          password: formData.password,
+        });
+        if (!roleResult.success) {
+          console.error('Error assigning contratista role');
+          showError("Error al asignar rol", "No se pudo asignar el rol de contratista");
+          return false;
+        }
+      } else {
+        console.log('User already has contratista role, skipping...');
       }
 
       // Paso 4: Procesar mandante (existente o nuevo)

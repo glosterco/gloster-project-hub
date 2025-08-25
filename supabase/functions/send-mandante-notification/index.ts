@@ -291,6 +291,11 @@ const createEmailHtml = (data: NotificationRequest): string => {
 };
 
 
+const isValidEmail = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -300,6 +305,11 @@ const handler = async (req: Request): Promise<Response> => {
     const data: NotificationRequest = await req.json();
     console.log("📧 Sending notification with data:", data);
 
+    // Validar que el email del mandante sea válido
+    if (!data.mandanteEmail || !isValidEmail(data.mandanteEmail)) {
+      console.error("❌ Invalid mandante email format:", data.mandanteEmail);
+      throw new Error(`Invalid email format: ${data.mandanteEmail}`);
+    }
 
     const accessToken = await getAccessToken();
     const fromEmail = Deno.env.get("GMAIL_FROM_EMAIL");

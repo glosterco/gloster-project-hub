@@ -60,8 +60,8 @@ export const usePaymentActions = (
       : (payment.projectData?.Budget ? (amount / payment.projectData.Budget) * 100 : 0);
 
     const alreadySaved =
-      Math.round(amount) === Math.round(payment.amount) &&
-      Math.round(percentage) === Math.round(payment.percentage || 0);
+      Math.round(amount) === Math.round(payment.Total) &&
+      Math.round(percentage) === Math.round(payment.Progress || 0);
 
     if (alreadySaved) {
       return; // no hay cambios, no actualiza

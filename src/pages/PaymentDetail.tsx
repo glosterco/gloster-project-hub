@@ -50,6 +50,32 @@ const PaymentDetail = () => {
       }
     }
     
+const PaymentDetail = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  // Verificar tipo de acceso desde sessionStorage
+  const [accessData, setAccessData] = useState<any>(null);
+  const [isLimitedAccess, setIsLimitedAccess] = useState(false);
+
+  useEffect(() => {
+    // Verificar acceso de contratista
+    const contractorAccess = sessionStorage.getItem('contractorAccess');
+    if (contractorAccess) {
+      try {
+        const accessInfo = JSON.parse(contractorAccess);
+        setAccessData(accessInfo);
+        
+        // Determinar si es acceso limitado (contratista no registrado)
+        if (accessInfo.userType === 'contratista' && accessInfo.isRegistered === false) {
+          setIsLimitedAccess(true);
+        }
+      } catch (error) {
+        console.error('Error parsing contractorAccess:', error);
+      }
+    }
+    
     // También verificar acceso de mandante
     const mandanteAccess = sessionStorage.getItem('mandanteAccess');
     if (mandanteAccess) {

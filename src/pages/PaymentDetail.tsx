@@ -616,6 +616,9 @@ const PaymentDetail = () => {
 
       // Esperar un poco para asegurar que la BD esté actualizada
       await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Refrescar datos para obtener el monto actualizado
+      await refetch();
 
       // Get the payment state data to fetch the URL (with public fallback)
       let driveUrl = '' as string;
@@ -666,6 +669,19 @@ const PaymentDetail = () => {
         }
       });
 
+      // Obtener el valor DIRECTAMENTE de la base de datos para asegurar consistencia
+      const { data: freshPaymentData, error: freshPaymentError } = await supabase
+        .from('Estados de pago')
+        .select('Total')
+        .eq('id', payment.id)
+        .single();
+      
+      const finalAmount = freshPaymentData?.Total || payment?.Total || 0;
+      
+      console.log('💰 Monto directo desde BD a enviar en email:', finalAmount, 
+                  '(freshPaymentData.Total:', freshPaymentData?.Total, 
+                  ', payment.Total:', payment?.Total, ')');
+
       const notificationData = {
         paymentId: payment.id.toString(),
         contratista: payment.projectData.Contratista?.ContactName || '',
@@ -675,7 +691,7 @@ const PaymentDetail = () => {
         mandanteEmail: payment.projectData.Owner?.ContactEmail || '',
         mandanteCompany: payment.projectData.Owner?.CompanyName || '',
         contractorCompany: payment.projectData.Contratista?.CompanyName || '',
-        amount: payment.Total || 0,
+        amount: finalAmount, // Usar el monto DESPUÉS del guardado y refetch
         dueDate: payment.ExpiryDate || '',
         driveUrl: driveUrl,
         uploadedDocuments: uploadedDocuments,

@@ -45,7 +45,11 @@ export const useExecutiveSummary = () => {
         throw new Error('Usuario no autenticado');
       }
 
-      // Fetch projects with related data
+      // Get user's mandante and contratista IDs
+      const mandanteIds = await getUserMandanteIds(user.id);
+      const contratistaIds = await getUserContratistaIds(user.id);
+
+      // Fetch projects with related data - using proper filter syntax
       const { data: projects, error: projectsError } = await supabase
         .from('Proyectos')
         .select(`
@@ -67,10 +71,7 @@ export const useExecutiveSummary = () => {
             auth_user_id
           )
         `)
-        .or(`
-          Owner.in.(${await getUserMandanteIds(user.id)}),
-          Contratista.in.(${await getUserContratistaIds(user.id)})
-        `);
+        .or(`Owner.in.(${mandanteIds}),Contratista.in.(${contratistaIds})`);
 
       if (projectsError) {
         throw projectsError;
@@ -184,41 +185,51 @@ export const useExecutiveSummary = () => {
 
   // Helper functions to get user's mandante and contratista IDs
   const getUserMandanteIds = async (userId: string): Promise<string> => {
-    const { data } = await supabase
-      .from('Mandantes')
-      .select('id')
-      .eq('auth_user_id', userId);
-    
-    const { data: userRoles } = await supabase
-      .from('mandante_users')
-      .select('mandante_id')
-      .eq('auth_user_id', userId);
+    try {
+      const { data: directMandantes } = await supabase
+        .from('Mandantes')
+        .select('id')
+        .eq('auth_user_id', userId);
+      
+      const { data: userRoles } = await supabase
+        .from('mandante_users')
+        .select('mandante_id')
+        .eq('auth_user_id', userId);
 
-    const mandanteIds = [
-      ...(data?.map(m => m.id) || []),
-      ...(userRoles?.map(ur => ur.mandante_id) || [])
-    ];
+      const mandanteIds = [
+        ...(directMandantes?.map(m => m.id) || []),
+        ...(userRoles?.map(ur => ur.mandante_id) || [])
+      ];
 
-    return mandanteIds.length > 0 ? mandanteIds.join(',') : '0';
+      return mandanteIds.length > 0 ? mandanteIds.join(',') : '0';
+    } catch (error) {
+      console.error('Error getting mandante IDs:', error);
+      return '0';
+    }
   };
 
   const getUserContratistaIds = async (userId: string): Promise<string> => {
-    const { data } = await supabase
-      .from('Contratistas')
-      .select('id')
-      .eq('auth_user_id', userId);
-    
-    const { data: userRoles } = await supabase
-      .from('contratista_users')
-      .select('contratista_id')
-      .eq('auth_user_id', userId);
+    try {
+      const { data: directContratistas } = await supabase
+        .from('Contratistas')
+        .select('id')
+        .eq('auth_user_id', userId);
+      
+      const { data: userRoles } = await supabase
+        .from('contratista_users')
+        .select('contratista_id')
+        .eq('auth_user_id', userId);
 
-    const contratistaIds = [
-      ...(data?.map(c => c.id) || []),
-      ...(userRoles?.map(ur => ur.contratista_id) || [])
-    ];
+      const contratistaIds = [
+        ...(directContratistas?.map(c => c.id) || []),
+        ...(userRoles?.map(ur => ur.contratista_id) || [])
+      ];
 
-    return contratistaIds.length > 0 ? contratistaIds.join(',') : '0';
+      return contratistaIds.length > 0 ? contratistaIds.join(',') : '0';
+    } catch (error) {
+      console.error('Error getting contratista IDs:', error);
+      return '0';
+    }
   };
 
   useEffect(() => {

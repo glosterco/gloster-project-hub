@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, TrendingDown, AlertCircle, CheckCircle, Clock, DollarSign } from 'lucide-react';
+import { TrendingUp, TrendingDown, AlertCircle, CheckCircle, Clock, DollarSign, XCircle } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 import { useExecutiveSummary } from '@/hooks/useExecutiveSummary';
 import { formatCurrency } from '@/utils/currencyUtils';
@@ -77,7 +77,7 @@ const ExecutiveSummary = () => {
         </div>
 
         {/* Metrics Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -121,6 +121,9 @@ const ExecutiveSummary = () => {
               <div className="text-2xl font-bold text-yellow-600">
                 {summaryData?.pendingPayments || 0}
               </div>
+              <div className="text-sm font-medium text-yellow-600">
+                {formatCurrency(summaryData?.pendingPaymentsAmount || 0)}
+              </div>
               <p className="text-xs text-muted-foreground">
                 Estados de pago pendientes
               </p>
@@ -138,90 +141,89 @@ const ExecutiveSummary = () => {
               <div className="text-2xl font-bold text-green-600">
                 {summaryData?.approvedPayments || 0}
               </div>
+              <div className="text-sm font-medium text-green-600">
+                {formatCurrency(summaryData?.approvedPaymentsAmount || 0)}
+              </div>
               <p className="text-xs text-muted-foreground">
                 Estados de pago aprobados
               </p>
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Pagos Rechazados
+              </CardTitle>
+              <XCircle className="h-4 w-4 text-red-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-600">
+                {summaryData?.rejectedPayments || 0}
+              </div>
+              <div className="text-sm font-medium text-red-600">
+                {formatCurrency(summaryData?.rejectedPaymentsAmount || 0)}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Estados de pago rechazados
+              </p>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Recent Payment States */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                Últimos Estados de Pago
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {summaryData?.recentPayments?.map((payment, index) => (
-                  <div key={`${payment.id}-${index}`} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                    <div className="flex-1">
-                      <div className="font-medium text-sm">
-                        {payment.projectName}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {payment.paymentName} - {payment.contractorName}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        Vence: {new Date(payment.expiryDate).toLocaleDateString('es-CL')}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="text-right">
+        {/* Project Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {summaryData?.projectSummaries?.map((project, index) => (
+            <Card key={`${project.id}-${index}`} className="h-fit">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg font-semibold">
+                  {project.name}
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  {project.contractorName}
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="text-sm font-medium text-muted-foreground mb-2">
+                    Últimos Estados de Pago:
+                  </div>
+                  {project.recentPayments.map((payment, paymentIndex) => (
+                    <div key={`${payment.id}-${paymentIndex}`} className="flex items-center justify-between p-2 bg-muted/30 rounded-md">
+                      <div className="flex-1">
                         <div className="font-medium text-sm">
-                          {formatCurrency(payment.amount, payment.currency)}
+                          {payment.paymentName}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Vence: {new Date(payment.expiryDate).toLocaleDateString('es-CL')}
                         </div>
                       </div>
-                      <Badge variant={getStatusVariant(payment.status)} className="flex items-center gap-1">
-                        {getStatusIcon(payment.status)}
-                        {payment.status}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <div className="text-right">
+                          <div className="font-medium text-sm">
+                            {formatCurrency(payment.amount, payment.currency)}
+                          </div>
+                        </div>
+                        <Badge variant={getStatusVariant(payment.status)} className="flex items-center gap-1">
+                          {getStatusIcon(payment.status)}
+                          {payment.status}
+                        </Badge>
+                      </div>
                     </div>
-                  </div>
-                )) || (
-                  <div className="text-center text-muted-foreground py-4">
-                    No hay estados de pago recientes
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5" />
-                Resumen por Estado
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {summaryData?.statusSummary?.map((statusGroup, index) => (
-                  <div key={index} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      {getStatusIcon(statusGroup.status)}
-                      <span className="font-medium">{statusGroup.status}</span>
+                  ))}
+                  {project.recentPayments.length === 0 && (
+                    <div className="text-center text-muted-foreground py-4 text-sm">
+                      No hay estados de pago recientes
                     </div>
-                    <div className="flex items-center gap-4">
-                      <span className="text-sm text-muted-foreground">
-                        {statusGroup.count} pagos
-                      </span>
-                      <span className="font-medium">
-                        {formatCurrency(statusGroup.totalAmount)}
-                      </span>
-                    </div>
-                  </div>
-                )) || (
-                  <div className="text-center text-muted-foreground py-4">
-                    No hay datos de estado disponibles
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )) || (
+            <div className="col-span-full text-center text-muted-foreground py-8">
+              No hay proyectos con estados de pago disponibles
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -13,19 +13,24 @@ export interface PaymentSummary {
   expiryDate: string;
 }
 
-export interface StatusSummary {
-  status: string;
-  count: number;
-  totalAmount: number;
+export interface ProjectSummary {
+  id: number;
+  name: string;
+  contractorName: string;
+  currency: string;
+  recentPayments: PaymentSummary[];
 }
 
 export interface ExecutiveSummaryData {
   totalProjects: number;
   totalValue: number;
   pendingPayments: number;
+  pendingPaymentsAmount: number;
   approvedPayments: number;
-  recentPayments: PaymentSummary[];
-  statusSummary: StatusSummary[];
+  approvedPaymentsAmount: number;
+  rejectedPayments: number;
+  rejectedPaymentsAmount: number;
+  projectSummaries: ProjectSummary[];
 }
 
 export const useExecutiveSummary = () => {
@@ -82,9 +87,12 @@ export const useExecutiveSummary = () => {
           totalProjects: 0,
           totalValue: 0,
           pendingPayments: 0,
+          pendingPaymentsAmount: 0,
           approvedPayments: 0,
-          recentPayments: [],
-          statusSummary: []
+          approvedPaymentsAmount: 0,
+          rejectedPayments: 0,
+          rejectedPaymentsAmount: 0,
+          projectSummaries: []
         });
         return;
       }
@@ -124,50 +132,50 @@ export const useExecutiveSummary = () => {
       const totalValue = projects.reduce((sum, project) => sum + (project.Budget || 0), 0);
       
       const pendingPayments = payments?.filter(p => p.Status === 'Pendiente').length || 0;
+      const pendingPaymentsAmount = payments?.filter(p => p.Status === 'Pendiente').reduce((sum, p) => sum + (p.Total || 0), 0) || 0;
+      
       const approvedPayments = payments?.filter(p => p.Status === 'Aprobado').length || 0;
+      const approvedPaymentsAmount = payments?.filter(p => p.Status === 'Aprobado').reduce((sum, p) => sum + (p.Total || 0), 0) || 0;
+      
+      const rejectedPayments = payments?.filter(p => p.Status === 'Rechazado').length || 0;
+      const rejectedPaymentsAmount = payments?.filter(p => p.Status === 'Rechazado').reduce((sum, p) => sum + (p.Total || 0), 0) || 0;
 
-      // Get last 3 payments per project (excluding Programado)
-      const recentPaymentsByProject = projectIds.map(projectId => {
-        const projectPayments = payments?.filter(p => p.Project === projectId) || [];
-        return projectPayments.slice(0, 3); // Get last 3 for each project
-      }).flat().slice(0, 15); // Limit total to 15 most recent
+      // Create project summaries with last 3 payments each
+      const projectSummaries: ProjectSummary[] = projects.map(project => {
+        const projectPayments = payments?.filter(p => p.Project === project.id) || [];
+        const last3Payments = projectPayments.slice(0, 3);
 
-      const recentPayments: PaymentSummary[] = recentPaymentsByProject.map(payment => ({
-        id: payment.id,
-        paymentName: payment.Name,
-        projectName: payment.Proyectos?.Name || 'Proyecto sin nombre',
-        contractorName: payment.Proyectos?.Contratistas?.ContactName || 
-                      payment.Proyectos?.Contratistas?.CompanyName || 'Contratista no identificado',
-        amount: payment.Total || 0,
-        currency: payment.Proyectos?.Currency || 'CLP',
-        status: payment.Status || 'Sin estado',
-        expiryDate: payment.ExpiryDate || ''
-      }));
+        const recentPayments: PaymentSummary[] = last3Payments.map(payment => ({
+          id: payment.id,
+          paymentName: payment.Name,
+          projectName: project.Name || 'Proyecto sin nombre',
+          contractorName: payment.Proyectos?.Contratistas?.ContactName || 
+                        payment.Proyectos?.Contratistas?.CompanyName || 'Contratista no identificado',
+          amount: payment.Total || 0,
+          currency: project.Currency || 'CLP',
+          status: payment.Status || 'Sin estado',
+          expiryDate: payment.ExpiryDate || ''
+        }));
 
-      // Calculate status summary
-      const statusGroups = payments?.reduce((acc, payment) => {
-        const status = payment.Status || 'Sin estado';
-        if (!acc[status]) {
-          acc[status] = { count: 0, totalAmount: 0 };
-        }
-        acc[status].count++;
-        acc[status].totalAmount += payment.Total || 0;
-        return acc;
-      }, {} as Record<string, { count: number; totalAmount: number }>) || {};
-
-      const statusSummary: StatusSummary[] = Object.entries(statusGroups).map(([status, data]) => ({
-        status,
-        count: data.count,
-        totalAmount: data.totalAmount
-      }));
+        return {
+          id: project.id,
+          name: project.Name || 'Proyecto sin nombre',
+          contractorName: project.Contratistas?.ContactName || project.Contratistas?.CompanyName || 'Contratista no identificado',
+          currency: project.Currency || 'CLP',
+          recentPayments
+        };
+      }).filter(project => project.recentPayments.length > 0); // Only include projects with payments
 
       setSummaryData({
         totalProjects,
         totalValue,
         pendingPayments,
+        pendingPaymentsAmount,
         approvedPayments,
-        recentPayments,
-        statusSummary
+        approvedPaymentsAmount,
+        rejectedPayments,
+        rejectedPaymentsAmount,
+        projectSummaries
       });
 
     } catch (error: any) {

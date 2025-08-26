@@ -20,6 +20,7 @@ import EmailPreview from "./pages/EmailPreview";
 import DataViewer from "./pages/DataViewer";
 import ContractorAccess from "./pages/ContractorAccess";
 import Pricing from "./pages/Pricing";
+import ExecutiveSummary from "./pages/ExecutiveSummary";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -49,6 +50,7 @@ const App = () => (
             <Route path="/data-viewer" element={<DataViewer />} />
             <Route path="/contractor-access/:paymentId" element={<ContractorAccess />} />
             <Route path="/pricing" element={<Pricing />} />
+            <Route path="/executive-summary" element={<ExecutiveSummary />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </TooltipProvider>

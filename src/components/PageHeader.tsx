@@ -1,14 +1,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { LogOut, User } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { LogOut, User, BarChart3, Home } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 
 const PageHeader = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const { signOut, loading } = useAuth();
   const [contractorInfo, setContractorInfo] = useState<{
@@ -74,6 +75,29 @@ const PageHeader = () => {
               <User className="h-4 w-4" />
               <span className="text-sm font-rubik">{displayName}</span>
             </div>
+            
+            {/* Navigation Buttons */}
+            <div className="flex items-center space-x-2">
+              <Button 
+                variant={location.pathname === '/dashboard' || location.pathname === '/dashboard-mandante' ? 'default' : 'ghost'} 
+                size="sm" 
+                onClick={() => navigate('/dashboard')}
+                className="font-rubik"
+              >
+                <Home className="h-4 w-4 mr-2" />
+                Dashboard
+              </Button>
+              <Button 
+                variant={location.pathname === '/executive-summary' ? 'default' : 'ghost'} 
+                size="sm" 
+                onClick={() => navigate('/executive-summary')}
+                className="font-rubik"
+              >
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Resumen Ejecutivo
+              </Button>
+            </div>
+            
             <Button 
               variant="outline" 
               size="sm" 

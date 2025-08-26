@@ -111,6 +111,7 @@ const PaymentDetail = () => {
     handleAmountChange,
     handlePercentageChange,
     handleSaveAmount,
+    saveAmountIfChanged,
     handleNavigation
   } = usePaymentActions(payment, editableAmount, editablePercentage, refetch);
 
@@ -607,8 +608,14 @@ const PaymentDetail = () => {
         throw new Error('No se pudo generar el enlace de acceso');
       }
 
+      // Guardar cualquier cambio en el monto antes de enviar
+      await saveAmountIfChanged();
+
       // Cambiar status a "Enviado" automáticamente (primera vez o reenvío después de correcciones)
       await handleResubmission(payment.id.toString());
+
+      // Esperar un poco para asegurar que la BD esté actualizada
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       // Get the payment state data to fetch the URL (with public fallback)
       let driveUrl = '' as string;

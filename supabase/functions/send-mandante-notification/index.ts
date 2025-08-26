@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
 
@@ -68,6 +67,12 @@ const getAccessToken = async (): Promise<string> => {
 
 const formatCurrency = (amount: number, currency?: string): string => {
   console.log('💰 formatCurrency called with amount:', amount, 'currency:', currency);
+  
+  // Verificar si el amount es válido
+  if (amount === null || amount === undefined || isNaN(amount)) {
+    console.warn('⚠️ Invalid amount received:', amount);
+    return '$0';
+  }
   
   // Normalizar currency - manejar casos null, undefined, o vacío
   const normalizedCurrency = currency?.trim()?.toUpperCase() || 'CLP';
@@ -259,7 +264,7 @@ const createEmailHtml = (data: NotificationRequest): string => {
               </tr>
               <tr>
                 <td class="info-label">Monto Solicitado:</td>
-                <td class="info-value amount">${formatCurrency(data.amount, data.currency)}</td>
+                <td class="info-value amount">${formatCurrency(data.amount || 0, data.currency)}</td>
               </tr>
               <tr>
                 <td class="info-label">Fecha de Vencimiento:</td>
@@ -303,7 +308,13 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const data: NotificationRequest = await req.json();
-    console.log("📧 Sending notification with data:", data);
+    console.log("📧 Sending mandante notification with data:", JSON.stringify(data, null, 2));
+
+    // Validar que tenemos los datos mínimos necesarios
+    if (!data.paymentId) {
+      console.error("❌ Missing paymentId");
+      throw new Error('paymentId is required');
+    }
 
     // Validar que el email del mandante sea válido
     if (!data.mandanteEmail || !isValidEmail(data.mandanteEmail)) {
@@ -311,11 +322,36 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error(`Invalid email format: ${data.mandanteEmail}`);
     }
 
+    // Validar que el amount no sea null/undefined y convertir a número si es necesario
+    let validAmount = 0;
+    if (data.amount !== null && data.amount !== undefined) {
+      validAmount = typeof data.amount === 'string' ? parseFloat(data.amount) : data.amount;
+      if (isNaN(validAmount)) {
+        console.warn("⚠️ Invalid amount provided, using 0:", data.amount);
+        validAmount = 0;
+      }
+    }
+
+    console.log("💰 Validated amount:", validAmount);
+
     const accessToken = await getAccessToken();
     const fromEmail = Deno.env.get("GMAIL_FROM_EMAIL");
 
-    const emailHtml = createEmailHtml(data);
-    const subject = `Estado de Pago ${data.mes} ${data.año} - ${data.proyecto}`;
+    // Crear el objeto de datos con valores por defecto seguros
+    const emailData = {
+      ...data,
+      amount: validAmount,
+      proyecto: data.proyecto || 'Proyecto no especificado',
+      mes: data.mes || 'Mes no especificado',
+      año: data.año || new Date().getFullYear(),
+      contractorCompany: data.contractorCompany || 'Empresa no especificada',
+      mandanteCompany: data.mandanteCompany || 'Empresa no especificada',
+      dueDate: data.dueDate || 'Fecha no especificada',
+      currency: data.currency || 'CLP'
+    };
+
+    const emailHtml = createEmailHtml(emailData);
+    const subject = `Estado de Pago ${emailData.mes} ${emailData.año} - ${emailData.proyecto}`;
     
     const emailPayload = {
       raw: encodeBase64UTF8(
@@ -332,6 +368,7 @@ ${emailHtml}`
       ),
     };
 
+    console.log("📧 Sending email to Gmail API...");
     const response = await fetch(
       "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
       {
@@ -346,12 +383,12 @@ ${emailHtml}`
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.error("Gmail API error:", errorData);
-      throw new Error(`Gmail API error: ${response.status}`);
+      console.error("❌ Gmail API error:", errorData);
+      throw new Error(`Gmail API error: ${response.status} - ${JSON.stringify(errorData)}`);
     }
 
     const result = await response.json();
-    console.log("Email sent successfully:", result);
+    console.log("✅ Email sent successfully:", result);
 
     return new Response(
       JSON.stringify({ success: true, messageId: result.id }),
@@ -361,7 +398,7 @@ ${emailHtml}`
       }
     );
   } catch (error) {
-    console.error("Error sending mandante notification:", error);
+    console.error("❌ Error sending mandante notification:", error);
     return new Response(
       JSON.stringify({ 
         success: false, 

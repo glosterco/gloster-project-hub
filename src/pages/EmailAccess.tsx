@@ -207,51 +207,59 @@ const EmailAccess = () => {
           }
         }
 
-        // Verificar si es mandante sin user_auth_id - debe configurar email access
+        // MANDANTE SIN user_auth_id - Continuar con verificación de email
         if (accessCheck.userType === 'mandante' && !accessCheck.needsPassword) {
-          // MANDANTE SIN user_auth_id - Configurar email access y acceso limitado
-          console.log('🔧 Setting up limited access for mandante without auth');
+          console.log('✅ Mandante sin user_auth_id - acceso limitado otorgado');
           
-          try {
-            const { data: emailAccessResult, error: emailAccessError } = await supabase.functions.invoke(
-              'set-email-access',
-              { body: { email: email, paymentId: paymentId } }
-            );
+          const accessData = {
+            paymentId: paymentId,
+            email: email,
+            userType: 'mandante',
+            isRegistered: false,
+            isLimitedAccess: true, // CRÍTICO: Solo acceso a submission
+            hasFullAccess: false, // NO puede acceder a dashboards u otras páginas  
+            token: 'mandante_authenticated',
+            accessToken: token || null,
+            timestamp: Date.now()
+          };
 
-            if (emailAccessError || !emailAccessResult?.success) {
-              setPopupError('Error configurando el acceso por email.');
-              return;
-            }
+          sessionStorage.setItem('mandanteAccess', JSON.stringify(accessData));
+          
+          toast({
+            title: "Acceso verificado",
+            description: "Acceso limitado concedido al estado de pago.",
+          });
 
-            // Acceso limitado configurado exitosamente
-            const accessData = {
-              paymentId: paymentId,
-              email: email,
-              userType: 'mandante',
-              isRegistered: false,
-              isLimitedAccess: true, // CRÍTICO: Solo acceso a submission
-              hasFullAccess: false, // NO puede acceder a dashboards u otras páginas
-              token: 'mandante_authenticated',
-              accessToken: token || null,
-              timestamp: Date.now()
-            };
+          // SOLO puede ir a submission view
+          navigate(`/submission/${paymentId}`);
+          return;
+        }
 
-            sessionStorage.setItem('mandanteAccess', JSON.stringify(accessData));
-            
-            toast({
-              title: "Acceso verificado",
-              description: "Acceso limitado concedido al estado de pago.",
-            });
+        // CONTRATISTA SIN user_auth_id - Continuar con verificación de email  
+        if (accessCheck.userType === 'contratista' && !accessCheck.needsPassword) {
+          console.log('✅ Contratista sin user_auth_id - acceso otorgado');
+          
+          const accessData = {
+            paymentId: paymentId,
+            email: email,
+            userType: 'contratista',
+            isRegistered: false,
+            isLimitedAccess: false,
+            hasFullAccess: true, // Contratistas pueden acceder a payment detail
+            token: 'contratista_authenticated', 
+            accessToken: token || null,
+            timestamp: Date.now()
+          };
 
-            // SOLO puede ir a submission view
-            navigate(`/submission/${paymentId}`);
-            return;
+          sessionStorage.setItem('contractorAccess', JSON.stringify(accessData));
+          
+          toast({
+            title: "Acceso verificado",
+            description: "Acceso concedido al estado de pago.",
+          });
 
-          } catch (error) {
-            console.error('Error setting email access:', error);
-            setPopupError('Error configurando el acceso. Intenta nuevamente.');
-            return;
-          }
+          navigate(`/payment/${paymentId}`);
+          return;
         }
 
         // MANDANTE CON user_auth_id o CONTRATISTA - Acceso completo

@@ -50,79 +50,102 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    let userType = null;
+    // Get project data to find contractor
+    const { data: project, error: projectError } = await supabaseAdmin
+      .from('Proyectos')
+      .select('Contratista, Owner')
+      .eq('id', payment.Project)
+      .single();
 
-    // PRIORIDAD 1: Si se proporciona email, verificar coincidencia directa con CCEmail
-    if (email) {
-      console.log('🔍 Verificando acceso por email CC:', email, 'para pago:', paymentId);
-      
-      // Get project data to find contractor
-      const { data: project, error: projectError } = await supabaseAdmin
-        .from('Proyectos')
-        .select('Contratista')
-        .eq('id', payment.Project)
+    if (projectError) {
+      return new Response(
+        JSON.stringify({ error: 'Proyecto no encontrado' }),
+        { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    let userType = null;
+    let accessType = null; // 'cc', 'mandante', 'contratista'
+
+    // PASO 1: Identificar el tipo de acceso basado en el token
+    if (payment.URLContratista && payment.URLContratista.includes(`token=${token}`)) {
+      console.log('🔍 Token identificado como CONTRATISTA');
+      userType = 'contratista';
+      accessType = 'contratista';
+    } else if (payment.URLMandante && payment.URLMandante.includes(`token=${token}`)) {
+      console.log('🔍 Token identificado como MANDANTE');
+      userType = 'mandante';
+      accessType = 'mandante';
+    } else {
+      // Check if token matches URLCC of the contractor
+      const { data: contractor } = await supabaseAdmin
+        .from('Contratistas')
+        .select('URLCC, CCEmail')
+        .eq('id', project.Contratista)
         .single();
 
-      console.log('🔍 Datos del proyecto:', project, 'Error:', projectError);
-
-      if (project) {
-        // Check if email matches contractor's CCEmail
-        const { data: contractor, error: contractorError } = await supabaseAdmin
-          .from('Contratistas')
-          .select('CCEmail, URLCC')
-          .eq('id', project.Contratista)
-          .single();
-
-        console.log('🔍 Datos del contratista:', contractor, 'Error:', contractorError);
-        
-        if (contractor?.CCEmail && contractor.CCEmail.toLowerCase().trim() === email.toLowerCase().trim()) {
-          console.log('✅ Email CC verificado exitosamente - coincide con CCEmail');
-          userType = 'mandante'; // CC users access executive summary like mandantes
-        } else {
-          console.log('❌ Email CC no coincide.');
-          console.log('    Esperado:', contractor?.CCEmail ? `"${contractor.CCEmail}"` : 'null/undefined');
-          console.log('    Recibido:', `"${email}"`);
-          console.log('    Comparación (toLowerCase):', contractor?.CCEmail?.toLowerCase().trim(), 'vs', email.toLowerCase().trim());
-        }
-      } else {
-        console.log('❌ No se pudo obtener datos del proyecto');
+      if (contractor?.URLCC && contractor.URLCC.includes(`token=${token}`)) {
+        console.log('🔍 Token identificado como CC (URLCC)');
+        userType = 'cc'; // Tipo especial para CC
+        accessType = 'cc';
+      } else if (payment.Notes && payment.Notes.includes(`CC_TOKEN:${token}`)) {
+        console.log('🔍 Token identificado como CC (Notes)');
+        userType = 'cc';
+        accessType = 'cc';
       }
     }
 
-    // PRIORIDAD 2: Verificar tokens en URLs si no se verificó por email
-    if (!userType) {
-      // Check if token matches contratista URL
-      if (payment.URLContratista && payment.URLContratista.includes(`token=${token}`)) {
-        userType = 'contratista';
-      }
-      // Check if token matches mandante URL
-      else if (payment.URLMandante && payment.URLMandante.includes(`token=${token}`)) {
-        userType = 'mandante';
-      }
-      // Check if token matches CC token in Notes field
-      else if (payment.Notes && payment.Notes.includes(`CC_TOKEN:${token}`)) {
-        userType = 'mandante'; // CC users access executive summary like mandantes
-      }
-      // Check if token matches URLCC of the contractor associated with this payment's project
-      else {
-        // Get project data to find contractor
-        const { data: project } = await supabaseAdmin
-          .from('Proyectos')
-          .select('Contratista')
-          .eq('id', payment.Project)
+    // PASO 2: Verificar email según el tipo de acceso identificado
+    if (userType && email) {
+      console.log(`🔍 Verificando email para tipo de acceso: ${accessType}`);
+      
+      if (accessType === 'cc') {
+        // ESCENARIO 2: Verificar CCEmail del contratista
+        const { data: contractor } = await supabaseAdmin
+          .from('Contratistas')
+          .select('CCEmail')
+          .eq('id', project.Contratista)
           .single();
 
-        if (project) {
-          // Check if token matches contractor's URLCC
-          const { data: contractor } = await supabaseAdmin
-            .from('Contratistas')
-            .select('URLCC')
-            .eq('id', project.Contratista)
-            .single();
+        if (contractor?.CCEmail && contractor.CCEmail.toLowerCase().trim() === email.toLowerCase().trim()) {
+          console.log('✅ Email CC verificado exitosamente');
+        } else {
+          console.log('❌ Email CC no coincide');
+          console.log('    Esperado:', contractor?.CCEmail || 'null');
+          console.log('    Recibido:', email);
+          userType = null;
+        }
+      } else if (accessType === 'mandante') {
+        // ESCENARIO 1: Verificar ContactEmail del mandante
+        const { data: mandante } = await supabaseAdmin
+          .from('Mandantes')
+          .select('ContactEmail')
+          .eq('id', project.Owner)
+          .single();
 
-          if (contractor?.URLCC && contractor.URLCC.includes(`token=${token}`)) {
-            userType = 'mandante'; // CC users access executive summary like mandantes
-          }
+        if (mandante?.ContactEmail && mandante.ContactEmail.toLowerCase().trim() === email.toLowerCase().trim()) {
+          console.log('✅ Email MANDANTE verificado exitosamente');
+        } else {
+          console.log('❌ Email MANDANTE no coincide');
+          console.log('    Esperado:', mandante?.ContactEmail || 'null');
+          console.log('    Recibido:', email);
+          userType = null;
+        }
+      } else if (accessType === 'contratista') {
+        // ESCENARIO 3: Verificar ContactEmail del contratista
+        const { data: contractor } = await supabaseAdmin
+          .from('Contratistas')
+          .select('ContactEmail')
+          .eq('id', project.Contratista)
+          .single();
+
+        if (contractor?.ContactEmail && contractor.ContactEmail.toLowerCase().trim() === email.toLowerCase().trim()) {
+          console.log('✅ Email CONTRATISTA verificado exitosamente');
+        } else {
+          console.log('❌ Email CONTRATISTA no coincide');
+          console.log('    Esperado:', contractor?.ContactEmail || 'null');
+          console.log('    Recibido:', email);
+          userType = null;
         }
       }
     }
@@ -135,7 +158,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     return new Response(
-      JSON.stringify({ userType }),
+      JSON.stringify({ userType, accessType }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
 

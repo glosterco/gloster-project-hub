@@ -20,7 +20,7 @@ const EmailAccess = () => {
   const [loading, setLoading] = useState(false);
   const [popupError, setPopupError] = useState<string | null>(null);
   const [needsPassword, setNeedsPassword] = useState(false);
-  const [userType, setUserType] = useState<'contratista' | 'mandante' | null>(null);
+  const [userType, setUserType] = useState<'contratista' | 'mandante' | 'cc' | null>(null);
 
   useEffect(() => {
     if (!paymentId) {
@@ -90,142 +90,141 @@ const EmailAccess = () => {
     setPopupError(null);
 
     try {
-      // First, try to verify the token with the email for CC access
+      // PASO 1: Verificar token y email juntos para identificar el tipo de acceso
       if (token) {
         const { data: tokenVerification, error: tokenError } = await supabase.functions.invoke('verify-email-access', {
           body: { paymentId, token, email }
         });
 
         if (!tokenError && tokenVerification?.userType) {
-          // Token verification successful with email - proceed directly
+          console.log('🔍 Verificación de token exitosa:', tokenVerification);
+          
+          // Acceso verificado - configurar datos de sesión
+          let finalUserType = tokenVerification.userType;
+          let redirectPath = '';
+          
+          // Determinar redirección basada en el tipo de acceso
+          if (tokenVerification.accessType === 'cc') {
+            // ESCENARIO 2: CC → Executive Summary
+            finalUserType = 'cc';
+            redirectPath = `/executive-summary`;
+          } else if (tokenVerification.accessType === 'mandante') {
+            // ESCENARIO 1: Mandante → Submission View
+            finalUserType = 'mandante';
+            redirectPath = `/submission/${paymentId}`;
+          } else if (tokenVerification.accessType === 'contratista') {
+            // ESCENARIO 3: Contratista → Payment View
+            finalUserType = 'contratista';
+            redirectPath = `/payment/${paymentId}`;
+          }
+
           const accessData = {
             paymentId: paymentId,
-            userType: tokenVerification.userType,
-            isRegistered: false, // CC access doesn't require registration
-            token: tokenVerification.userType === 'mandante' ? 'mandante_authenticated' : 'contratista_authenticated',
+            userType: finalUserType,
+            isRegistered: false,
+            token: finalUserType === 'mandante' ? 'mandante_authenticated' : 
+                   finalUserType === 'cc' ? 'cc_authenticated' : 'contratista_authenticated',
             accessToken: token,
             timestamp: Date.now()
           };
 
-          if (tokenVerification.userType === 'mandante') {
+          // Guardar en sessionStorage según el tipo
+          if (finalUserType === 'mandante' || finalUserType === 'cc') {
             sessionStorage.setItem('mandanteAccess', JSON.stringify(accessData));
-            navigate(`/submission/${paymentId}`);
           } else {
             sessionStorage.setItem('contractorAccess', JSON.stringify(accessData));
-            navigate(`/payment/${paymentId}`);
           }
+
+          // Redirigir al destino correcto
+          navigate(redirectPath);
+          return;
+        } else {
+          console.log('❌ Verificación de token falló:', tokenError);
+          setPopupError('Token de acceso inválido o email no autorizado para este tipo de acceso.');
           return;
         }
       }
 
-      // Verify token first if provided but no email verification worked
-      if (token && !userType) {
-        setPopupError('Token de acceso inválido');
-        return;
-      }
+      // PASO 2: Si no hay token, verificar usando verify-email-user-access SOLO para el tipo detectado
+      if (userType && userType !== 'cc') {
+        // Solo permitir verificación de usuario registrado para mandante/contratista, NO para CC
+        const accessCheck = await checkUserAccount(email, userType);
 
-      // Check user access using secure edge function
-      let accessCheck = null;
-      
-      // If we detected the user type by token, verify only that type
-      if (userType) {
-        accessCheck = await checkUserAccount(email, userType);
-      } else {
-        // If no token specific, try both types (start with mandante)
-        const mandanteCheck = await checkUserAccount(email, 'mandante');
-        if (mandanteCheck.hasAccess) {
-          accessCheck = mandanteCheck;
-        } else {
-          const contratistaCheck = await checkUserAccount(email, 'contratista');
-          if (contratistaCheck.hasAccess) {
-            accessCheck = contratistaCheck;
+        if (!accessCheck || !accessCheck.hasAccess) {
+          if (userType === 'mandante') {
+            setPopupError('El email ingresado no coincide con ningún usuario autorizado del mandante para este proyecto.');
+          } else if (userType === 'contratista') {
+            setPopupError('El email ingresado no coincide con el contratista autorizado para este proyecto.');
           }
-        }
-      }
-
-      // Si no coincide con ninguno
-      if (!accessCheck || !accessCheck.hasAccess) {
-        if (userType === 'mandante') {
-          setPopupError('El email ingresado no coincide con ningún usuario autorizado del mandante para este proyecto.');
-        } else if (userType === 'contratista') {
-          setPopupError('El email ingresado no coincide con el contratista autorizado para este proyecto.');
-        } else {
-          setPopupError('El email ingresado no coincide con el mandante o contratista autorizado para este proyecto.');
-        }
-        return;
-      }
-
-      // Si necesita contraseña pero no la hemos verificado aún
-      if (accessCheck.needsPassword && !needsPassword) {
-        console.log(`🔐 Usuario registrado detectado (${accessCheck.userType}), solicitando contraseña`);
-        setNeedsPassword(true);
-        const userTypeText = accessCheck.userType === 'mandante' ? 'mandante' : 'contratista';
-        toast({
-          title: "Contraseña requerida",
-          description: `Este ${userTypeText} tiene una cuenta registrada. Por favor ingresa tu contraseña.`,
-        });
-        return;
-      }
-
-      // Verificar contraseña si es necesaria (autenticación con Supabase)
-      if (accessCheck.needsPassword) {
-        if (!password.trim()) {
-          setPopupError('Por favor ingresa tu contraseña.');
           return;
         }
 
-        try {
-          // Intentar autenticación con Supabase
-          const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-            email: email,
-            password: password
+        // Si necesita contraseña pero no la hemos verificado aún
+        if (accessCheck.needsPassword && !needsPassword) {
+          console.log(`🔐 Usuario registrado detectado (${accessCheck.userType}), solicitando contraseña`);
+          setNeedsPassword(true);
+          const userTypeText = accessCheck.userType === 'mandante' ? 'mandante' : 'contratista';
+          toast({
+            title: "Contraseña requerida",
+            description: `Este ${userTypeText} tiene una cuenta registrada. Por favor ingresa tu contraseña.`,
           });
-
-          if (authError || !authData.user) {
-            setPopupError('Email o contraseña incorrectos.');
-            return;
-          }
-
-          // Verificar que el usuario autenticado coincide con el auth_user_id del proyecto
-          if (authData.user.id !== accessCheck.authUserId) {
-            setPopupError('Las credenciales no coinciden con el usuario autorizado para este proyecto.');
-            // Cerrar sesión si se autenticó con credenciales incorrectas
-            await supabase.auth.signOut();
-            return;
-          }
-        } catch (error) {
-          console.error('Error en autenticación:', error);
-          setPopupError('Error al verificar las credenciales. Intenta nuevamente.');
           return;
         }
-      }
 
-      // Acceso concedido
-      toast({
-        title: "Acceso verificado",
-        description: "Acceso concedido correctamente.",
-      });
+        // Verificar contraseña si es necesaria
+        if (accessCheck.needsPassword) {
+          if (!password.trim()) {
+            setPopupError('Por favor ingresa tu contraseña.');
+            return;
+          }
 
-      const accessData = {
-        paymentId: paymentId,
-        userType: accessCheck.userType,
-        isRegistered: accessCheck.isRegistered ?? false,
-        token: accessCheck.userType === 'mandante' ? 'mandante_authenticated' : 'contratista_authenticated',
-        accessToken: token || null,
-        timestamp: Date.now()
-      };
+          try {
+            const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+              email: email,
+              password: password
+            });
 
-      if (accessCheck.userType === 'mandante') {
-        sessionStorage.setItem('mandanteAccess', JSON.stringify(accessData));
+            if (authError || !authData.user) {
+              setPopupError('Email o contraseña incorrectos.');
+              return;
+            }
+
+            if (authData.user.id !== accessCheck.authUserId) {
+              setPopupError('Las credenciales no coinciden con el usuario autorizado para este proyecto.');
+              await supabase.auth.signOut();
+              return;
+            }
+          } catch (error) {
+            console.error('Error en autenticación:', error);
+            setPopupError('Error al verificar las credenciales. Intenta nuevamente.');
+            return;
+          }
+        }
+
+        // Acceso concedido para usuario registrado
+        toast({
+          title: "Acceso verificado",
+          description: "Acceso concedido correctamente.",
+        });
+
+        const accessData = {
+          paymentId: paymentId,
+          userType: accessCheck.userType,
+          isRegistered: accessCheck.isRegistered ?? false,
+          token: accessCheck.userType === 'mandante' ? 'mandante_authenticated' : 'contratista_authenticated',
+          accessToken: token || null,
+          timestamp: Date.now()
+        };
+
+        if (accessCheck.userType === 'mandante') {
+          sessionStorage.setItem('mandanteAccess', JSON.stringify(accessData));
+          navigate(`/submission/${paymentId}`);
+        } else {
+          sessionStorage.setItem('contractorAccess', JSON.stringify(accessData));
+          navigate(`/payment/${paymentId}`);
+        }
       } else {
-        sessionStorage.setItem('contractorAccess', JSON.stringify(accessData));
-      }
-
-      // Redirección según el tipo de usuario
-      if (accessCheck.userType === 'contratista') {
-        navigate(`/payment/${paymentId}`);
-      } else {
-        navigate(`/submission/${paymentId}`);
+        setPopupError('Acceso no autorizado o token inválido.');
       }
 
     } catch (error) {

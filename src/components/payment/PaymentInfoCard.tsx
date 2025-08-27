@@ -69,7 +69,7 @@ const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div className="sm:col-span-2 lg:col-span-1">
             <p className="text-gloster-gray text-sm font-rubik mb-2">Monto del Estado</p>
-            {(shouldShowDriveFiles && payment.Status !== 'Rechazado') || payment.Status === 'Aprobado' ? (
+            {(shouldShowDriveFiles && payment.Status !== 'Rechazado') || payment.Status === 'Aprobado' || payment.Status === 'Enviado' || payment.Status === 'Pendiente' || payment.Status === 'Rechazado' ? (
               <p className="font-bold text-lg md:text-xl text-slate-800 font-rubik break-words">
                 {formatCurrency(paymentState.amount)}
               </p>
@@ -83,14 +83,6 @@ const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
                   placeholder="Ingrese monto"
                   className={`w-40 ${shouldShowValidationErrors && !isAmountValid ? 'border-orange-500 focus:border-orange-500' : ''}`}
                 />
-                <Button
-                  size="sm"
-                  onClick={onSaveAmount}
-                  disabled={isSaving}
-                  className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black"
-                >
-                  <Save className="h-4 w-4" />
-                </Button>
               </div>
             )}
           </div>

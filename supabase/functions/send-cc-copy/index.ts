@@ -86,15 +86,39 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Get access token for Gmail
-    const getAccessToken = async (): Promise<string> => {
-      const { data, error } = await supabaseAdmin.functions.invoke('gmail-token-manager');
-      if (error) throw new Error(`Error getting access token: ${error.message}`);
-      if (!data?.access_token) throw new Error('No access token received');
-      return data.access_token;
-    };
+    // Get Gmail credentials directly from environment variables
+    const gmailClientId = Deno.env.get('GMAIL_CLIENT_ID');
+    const gmailClientSecret = Deno.env.get('GMAIL_CLIENT_SECRET');
+    const gmailRefreshToken = Deno.env.get('GMAIL_REFRESH_TOKEN');
+    
+    if (!gmailClientId || !gmailClientSecret || !gmailRefreshToken) {
+      throw new Error('Missing Gmail credentials');
+    }
 
-    const accessToken = await getAccessToken();
+    // Get fresh access token using refresh token
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        client_id: gmailClientId,
+        client_secret: gmailClientSecret,
+        refresh_token: gmailRefreshToken,
+        grant_type: 'refresh_token',
+      }),
+    });
+
+    if (!tokenResponse.ok) {
+      throw new Error(`Failed to refresh Gmail token: ${tokenResponse.status}`);
+    }
+
+    const tokenData = await tokenResponse.json();
+    const accessToken = tokenData.access_token;
+    
+    if (!accessToken) {
+      throw new Error('No access token received from refresh');
+    }
 
     // Format currency
     const formatCurrency = (amount: number, currency?: string): string => {

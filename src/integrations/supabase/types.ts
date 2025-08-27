@@ -69,6 +69,7 @@ export type Database = {
           RUT: string | null
           Specialization: string | null
           Status: boolean | null
+          URLCC: string | null
         }
         Insert: {
           auth_user_id?: string | null
@@ -82,6 +83,7 @@ export type Database = {
           RUT?: string | null
           Specialization?: string | null
           Status?: boolean | null
+          URLCC?: string | null
         }
         Update: {
           auth_user_id?: string | null
@@ -95,6 +97,7 @@ export type Database = {
           RUT?: string | null
           Specialization?: string | null
           Status?: boolean | null
+          URLCC?: string | null
         }
         Relationships: []
       }

@@ -1,11 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DollarSign, FileText, FolderOpen, Plus, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import PageHeader from '@/components/PageHeader';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -20,6 +21,50 @@ const Dashboard = () => {
   const { toast } = useToast();
   const [isCreateProjectDialogOpen, setIsCreateProjectDialogOpen] = useState(false);
   const { projects, contractor, loading } = useProjectsWithDetails();
+
+  // CRÍTICO: Verificar que el usuario autenticado es contratista
+  useEffect(() => {
+    const verifyContractorAccess = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          console.log('❌ No authenticated user for contractor dashboard');
+          navigate('/');
+          return;
+        }
+
+        // Verificar que es contratista autenticado
+        const { data: contratistaData } = await supabase
+          .from('Contratistas')
+          .select('id, auth_user_id')
+          .eq('auth_user_id', user.id)
+          .maybeSingle();
+
+        if (!contratistaData || contratistaData.auth_user_id !== user.id) {
+          console.log('❌ User is not an authenticated contratista, checking mandante access');
+          
+          // Verificar si es mandante
+          const { data: mandanteData } = await supabase
+            .from('Mandantes')
+            .select('id')
+            .eq('auth_user_id', user.id)
+            .maybeSingle();
+            
+          if (mandanteData) {
+            navigate('/dashboard-mandante');
+          } else {
+            navigate('/');
+          }
+        }
+      } catch (error) {
+        console.error('Error verifying contractor access:', error);
+        navigate('/');
+      }
+    };
+
+    verifyContractorAccess();
+  }, [navigate]);
 
   const handleCreateProject = () => {
     setIsCreateProjectDialogOpen(true);

@@ -169,10 +169,13 @@ const ProjectDetail = () => {
     if (userType === 'contratista') {
       navigate(`/payment/${payment.id}`);
     } else {
-      // Para mandantes: ir a submission con token de acceso
+      // Para mandantes: ir a submission con token de acceso (solo autenticados)
       const accessData = {
         paymentId: payment.id.toString(),
         token: 'mandante_authenticated',
+        userType: 'mandante',
+        hasFullAccess: true, // Solo mandantes autenticados pueden llegar aquí
+        isLimitedAccess: false,
         timestamp: Date.now()
       };
       sessionStorage.setItem('mandanteAccess', JSON.stringify(accessData));
@@ -187,10 +190,13 @@ const ProjectDetail = () => {
     if (userType === 'contratista') {
       navigate(`/payment/${payment.id}`);
     } else {
-      // Para mandantes: ir a submission con token de acceso
+      // Para mandantes: ir a submission con token de acceso (solo autenticados)
       const accessData = {
         paymentId: payment.id.toString(),
         token: 'mandante_authenticated',
+        userType: 'mandante',
+        hasFullAccess: true, // Solo mandantes autenticados pueden llegar aquí
+        isLimitedAccess: false,
         timestamp: Date.now()
       };
       sessionStorage.setItem('mandanteAccess', JSON.stringify(accessData));

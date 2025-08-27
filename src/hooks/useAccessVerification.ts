@@ -40,12 +40,19 @@ export const useAccessVerification = (payment: PaymentDetail | null, paymentId: 
               
               // VERIFICACIÓN CRÍTICA DE ACCESO SEGÚN TIPO DE MANDANTE:
               
-              // 1. MANDANTE SIN user_auth_id (solo verificación por email):
+              // 1. MANDANTE SIN user_auth_id (acceso limitado):
               //    - Solo puede acceder a submission view del paymentId específico
               //    - NO puede navegar a otras páginas
-              if (!accessData.hasFullAccess) {
-                if (window.location.pathname !== `/submission/${paymentId}`) {
-                  console.log('❌ Limited access mandante (no auth) trying to access wrong page:', window.location.pathname);
+              if (accessData.isLimitedAccess) {
+                const currentPath = window.location.pathname;
+                const allowedPath = `/submission/${paymentId}`;
+                
+                if (currentPath !== allowedPath) {
+                  console.log('❌ Limited access mandante trying to access unauthorized page:', {
+                    currentPath,
+                    allowedPath,
+                    email: accessData.email
+                  });
                   setHasAccess(false);
                   setAccessChecked(true);
                   setCheckingAccess(false);
@@ -53,18 +60,29 @@ export const useAccessVerification = (payment: PaymentDetail | null, paymentId: 
                 }
               }
               
-              // 2. MANDANTE CON user_auth_id (autenticación completa):
+              // 2. MANDANTE CON user_auth_id (acceso completo):
               //    - Puede acceder a páginas de mandante: /dashboard-mandante, /project-mandante, /submission
-              //    - NO puede acceder a páginas de contratista: /dashboard, /project, /payment, /submission-preview, /executive-summary
-              if (accessData.hasFullAccess) {
+              //    - NO puede acceder a páginas de contratista
+              if (accessData.hasFullAccess && accessData.userType === 'mandante') {
                 const currentPath = window.location.pathname;
-                const contractorOnlyPages = ['/dashboard', '/project/', '/payment/', '/submission-preview', '/executive-summary'];
-                const isContractorPage = contractorOnlyPages.some(page => 
+                const contractorOnlyPages = ['/dashboard', '/payment/', '/submission-preview'];
+                // Excluir /project/ porque puede ser /project-mandante/
+                const contractorProjectPages = ['/project/'];
+                
+                const isContractorOnlyPage = contractorOnlyPages.some(page => 
                   currentPath === page || currentPath.startsWith(page)
                 );
                 
-                if (isContractorPage) {
-                  console.log('❌ Authenticated mandante trying to access contractor-only page:', currentPath);
+                const isContractorProjectPage = contractorProjectPages.some(page =>
+                  currentPath.startsWith(page) && !currentPath.startsWith('/project-mandante/')
+                );
+                
+                if (isContractorOnlyPage || isContractorProjectPage) {
+                  console.log('❌ Authenticated mandante trying to access contractor-only page:', {
+                    currentPath,
+                    userType: accessData.userType,
+                    hasFullAccess: accessData.hasFullAccess
+                  });
                   setHasAccess(false);
                   setAccessChecked(true);
                   setCheckingAccess(false);

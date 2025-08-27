@@ -57,3 +57,6 @@ verify_jwt = false
 
 [functions.send-cc-copy]
 verify_jwt = false
+
+[functions.set-email-access]
+verify_jwt = false

@@ -86,10 +86,13 @@ const ProjectDetailMandante = () => {
   };
 
   const handlePaymentAction = (payment: any, action: 'view' | 'manage') => {
-    // Almacenar datos de acceso del mandante para evitar verificación
+    // CRÍTICO: Solo mandantes autenticados (con user_auth_id) pueden acceder desde project-mandante
     const accessData = {
       paymentId: payment.id.toString(),
       token: 'mandante_authenticated',
+      userType: 'mandante',
+      hasFullAccess: true, // Usuario autenticado con acceso completo
+      isLimitedAccess: false,
       timestamp: Date.now()
     };
     sessionStorage.setItem('mandanteAccess', JSON.stringify(accessData));

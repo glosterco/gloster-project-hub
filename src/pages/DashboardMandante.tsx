@@ -54,25 +54,42 @@ const DashboardMandante: React.FC = () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         
-        if (!user) return;
+        // CRÍTICO: Solo usuarios autenticados pueden acceder al dashboard de mandante
+        if (!user) {
+          console.log('❌ No authenticated user, redirecting to home');
+          navigate('/');
+          return;
+        }
 
         const { data: mandanteData, error } = await supabase
           .from('Mandantes')
-          .select('ContactName, CompanyName')
+          .select('ContactName, CompanyName, auth_user_id')
           .eq('auth_user_id', user.id)
           .maybeSingle();
 
-        if (!error && mandanteData) {
+        if (!error && mandanteData && mandanteData.auth_user_id === user.id) {
+          // Usuario es mandante autenticado con user_auth_id
           setMandanteInfo(mandanteData);
-        } else if (!mandanteData) {
-          // Usuario no es mandante, redirigir al dashboard de contratista
-          console.log('User is not a mandante, redirecting to contractor dashboard');
-          navigate('/dashboard');
+        } else {
+          // Usuario no es mandante autenticado o no tiene user_auth_id
+          console.log('❌ User is not an authenticated mandante, checking contractor access');
+          
+          // Verificar si es contratista
+          const { data: contratistaData } = await supabase
+            .from('Contratistas')
+            .select('id')
+            .eq('auth_user_id', user.id)
+            .maybeSingle();
+            
+          if (contratistaData) {
+            navigate('/dashboard'); // Redirigir a dashboard de contratista
+          } else {
+            navigate('/'); // Usuario sin roles válidos
+          }
         }
       } catch (error) {
         console.error('Error fetching mandante info:', error);
-        // En caso de error, redirigir al dashboard principal
-        navigate('/dashboard');
+        navigate('/');
       }
     };
 
@@ -156,10 +173,13 @@ const DashboardMandante: React.FC = () => {
   };
 
   const handlePaymentClick = (paymentId: number) => {
-    // Almacenar datos de acceso del mandante en sessionStorage para evitar verificación
+    // CRÍTICO: Solo mandantes autenticados (con user_auth_id) pueden acceder desde dashboard
     const accessData = {
       paymentId: paymentId.toString(),
       token: 'mandante_authenticated',
+      userType: 'mandante',
+      hasFullAccess: true, // Usuario autenticado con acceso completo
+      isLimitedAccess: false,
       timestamp: Date.now()
     };
     sessionStorage.setItem('mandanteAccess', JSON.stringify(accessData));
@@ -167,10 +187,13 @@ const DashboardMandante: React.FC = () => {
   };
 
   const handleProjectDetails = (projectId: number) => {
-    // Almacenar datos de acceso del mandante en sessionStorage para evitar verificación
+    // CRÍTICO: Solo mandantes autenticados (con user_auth_id) pueden acceder desde dashboard
     const accessData = {
       projectId: projectId.toString(),
       token: 'mandante_authenticated',
+      userType: 'mandante',
+      hasFullAccess: true, // Usuario autenticado con acceso completo
+      isLimitedAccess: false,
       timestamp: Date.now()
     };
     sessionStorage.setItem('mandanteAccess', JSON.stringify(accessData));

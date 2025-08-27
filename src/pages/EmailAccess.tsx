@@ -123,6 +123,7 @@ const EmailAccess = () => {
             userType: finalUserType,
             isRegistered: false,
             isLimitedAccess: true, // Acceso solo con token, sin autenticación completa
+            hasFullAccess: false, // Solo token, no acceso completo
             token: finalUserType === 'mandante' ? 'mandante_authenticated' : 
                    finalUserType === 'cc' ? 'cc_authenticated' : 'contratista_authenticated',
             accessToken: token,
@@ -195,6 +196,9 @@ const EmailAccess = () => {
               await supabase.auth.signOut();
               return;
             }
+
+            // AUTENTICACIÓN COMPLETA EXITOSA - Acceso completo a todas las páginas
+            console.log('✅ Autenticación completa exitosa - acceso total');
           } catch (error) {
             console.error('Error en autenticación:', error);
             setPopupError('Error al verificar las credenciales. Intenta nuevamente.');
@@ -213,6 +217,7 @@ const EmailAccess = () => {
           userType: accessCheck.userType,
           isRegistered: accessCheck.isRegistered ?? false,
           isLimitedAccess: !accessCheck.needsPassword, // Si no necesita contraseña, es acceso limitado
+          hasFullAccess: accessCheck.needsPassword, // Si necesitó contraseña, tiene acceso completo
           token: accessCheck.userType === 'mandante' ? 'mandante_authenticated' : 'contratista_authenticated',
           accessToken: token || null,
           timestamp: Date.now()
@@ -220,10 +225,14 @@ const EmailAccess = () => {
 
         if (accessCheck.userType === 'mandante') {
           sessionStorage.setItem('mandanteAccess', JSON.stringify(accessData));
-          navigate(`/submission/${paymentId}`);
+          // Si tiene acceso completo (con contraseña), redirigir al dashboard
+          const redirectPath = accessData.hasFullAccess ? '/dashboard-mandante' : `/submission/${paymentId}`;
+          navigate(redirectPath);
         } else {
           sessionStorage.setItem('contractorAccess', JSON.stringify(accessData));
-          navigate(`/payment/${paymentId}`);
+          // Si tiene acceso completo (con contraseña), redirigir al dashboard
+          const redirectPath = accessData.hasFullAccess ? '/dashboard' : `/payment/${paymentId}`;
+          navigate(redirectPath);
         }
       } else {
         setPopupError('Acceso no autorizado o token inválido.');

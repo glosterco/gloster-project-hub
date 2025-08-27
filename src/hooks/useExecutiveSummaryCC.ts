@@ -25,8 +25,37 @@ export const useExecutiveSummaryCC = () => {
         throw new Error('Acceso no autorizado para CC');
       }
 
-      // Para CC, obtenemos un resumen general sin restricciones de autenticación
-      // Fetch all projects and payments for executive summary
+      // Obtener el paymentId para identificar el contratista
+      const paymentId = accessData.paymentId;
+      if (!paymentId) {
+        throw new Error('No se pudo identificar el pago');
+      }
+
+      // Obtener datos del pago para identificar el contratista
+      const { data: payment, error: paymentError } = await supabase
+        .from('Estados de pago')
+        .select('Project')
+        .eq('id', paymentId)
+        .single();
+
+      if (paymentError) {
+        throw new Error('Error al obtener información del pago');
+      }
+
+      // Obtener datos del proyecto para identificar el contratista
+      const { data: project, error: projectError } = await supabase
+        .from('Proyectos')
+        .select('Contratista')
+        .eq('id', payment.Project)
+        .single();
+
+      if (projectError) {
+        throw new Error('Error al obtener información del proyecto');
+      }
+
+      const contratistaId = project.Contratista;
+
+      // Fetch projects SOLO del contratista específico
       const { data: projects, error: projectsError } = await supabase
         .from('Proyectos')
         .select(`
@@ -46,6 +75,7 @@ export const useExecutiveSummaryCC = () => {
             ContactName
           )
         `)
+        .eq('Contratista', contratistaId)
         .eq('Status', true); // Solo proyectos activos
 
       if (projectsError) {

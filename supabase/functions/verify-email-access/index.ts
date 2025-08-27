@@ -35,7 +35,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Fetch payment data to check token validity
     const { data: payment, error: paymentError } = await supabaseAdmin
       .from('Estados de pago')
-      .select('URLContratista, URLMandante, Notes')
+      .select('URLContratista, URLMandante, Notes, Project')
       .eq('id', paymentId)
       .single();
 
@@ -59,6 +59,28 @@ const handler = async (req: Request): Promise<Response> => {
     // Check if token matches CC token in Notes field
     else if (payment.Notes && payment.Notes.includes(`CC_TOKEN:${token}`)) {
       userType = 'mandante'; // CC users access executive summary like mandantes
+    }
+    // Check if token matches URLCC of the contractor associated with this payment's project
+    else {
+      // Get project data to find contractor
+      const { data: project } = await supabaseAdmin
+        .from('Proyectos')
+        .select('Contratista')
+        .eq('id', payment.Project)
+        .single();
+
+      if (project) {
+        // Check if token matches contractor's URLCC
+        const { data: contractor } = await supabaseAdmin
+          .from('Contratistas')
+          .select('URLCC')
+          .eq('id', project.Contratista)
+          .single();
+
+        if (contractor?.URLCC && contractor.URLCC.includes(`token=${token}`)) {
+          userType = 'mandante'; // CC users access executive summary like mandantes
+        }
+      }
     }
 
     if (!userType) {

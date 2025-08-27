@@ -69,7 +69,7 @@ const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div className="sm:col-span-2 lg:col-span-1">
             <p className="text-gloster-gray text-sm font-rubik mb-2">Monto del Estado</p>
-            {shouldShowDriveFiles && !['Enviado', 'Pendiente', 'Aprobado', 'Rechazado'].includes(payment.Status || '') ? (
+            {shouldShowDriveFiles && ['Pendiente', 'Rechazado'].includes(payment.Status || '') ? (
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-gloster-gray">{payment?.projectData?.Currency || 'CLP'}</span>
                 <Input
@@ -88,7 +88,7 @@ const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
           </div>
           <div>
             <p className="text-gloster-gray text-sm font-rubik mb-2">% Avance Financiero</p>
-            {shouldShowDriveFiles && !['Enviado', 'Pendiente', 'Aprobado', 'Rechazado'].includes(payment.Status || '') ? (
+            {shouldShowDriveFiles && ['Pendiente', 'Rechazado'].includes(payment.Status || '') ? (
               <div className="flex items-center space-x-2">
                 <Input
                   type="number"

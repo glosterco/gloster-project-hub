@@ -35,21 +35,44 @@ export const useAccessVerification = (payment: PaymentDetail | null, paymentId: 
             });
             
             // CRÍTICO: Solo permitir acceso si el paymentId coincide exactamente
-            // Y además verificar que el acceso sea para el paymentId específico
             if (accessData.paymentId === paymentId && 
                 (accessData.token === 'mandante_authenticated' || accessData.token === 'cc_authenticated')) {
               
-              // VERIFICACIÓN ADICIONAL: Si no tiene acceso completo (hasFullAccess), 
-              // SOLO puede acceder a su paymentId específico, no a otras páginas
-              if (!accessData.hasFullAccess && window.location.pathname !== `/submission/${paymentId}` && window.location.pathname !== `/executive-summary`) {
-                console.log('❌ Limited access user trying to access wrong page');
-                setHasAccess(false);
-                setAccessChecked(true);
-                setCheckingAccess(false);
-                return;
+              // VERIFICACIÓN CRÍTICA DE ACCESO SEGÚN TIPO DE MANDANTE:
+              
+              // 1. MANDANTE SIN user_auth_id (solo verificación por email):
+              //    - Solo puede acceder a submission view del paymentId específico
+              //    - NO puede navegar a otras páginas
+              if (!accessData.hasFullAccess) {
+                if (window.location.pathname !== `/submission/${paymentId}`) {
+                  console.log('❌ Limited access mandante (no auth) trying to access wrong page:', window.location.pathname);
+                  setHasAccess(false);
+                  setAccessChecked(true);
+                  setCheckingAccess(false);
+                  return;
+                }
               }
               
-              console.log('✅ Mandante/CC access granted from sessionStorage (priority over auth)');
+              // 2. MANDANTE CON user_auth_id (autenticación completa):
+              //    - Puede acceder a páginas de mandante: /dashboard-mandante, /project-mandante, /submission
+              //    - NO puede acceder a páginas de contratista: /dashboard, /project, /payment, /submission-preview, /executive-summary
+              if (accessData.hasFullAccess) {
+                const currentPath = window.location.pathname;
+                const contractorOnlyPages = ['/dashboard', '/project/', '/payment/', '/submission-preview', '/executive-summary'];
+                const isContractorPage = contractorOnlyPages.some(page => 
+                  currentPath === page || currentPath.startsWith(page)
+                );
+                
+                if (isContractorPage) {
+                  console.log('❌ Authenticated mandante trying to access contractor-only page:', currentPath);
+                  setHasAccess(false);
+                  setAccessChecked(true);
+                  setCheckingAccess(false);
+                  return;
+                }
+              }
+              
+              console.log('✅ Mandante/CC access granted from sessionStorage');
               setHasAccess(true);
               setIsMandante(true);
               setAccessChecked(true);

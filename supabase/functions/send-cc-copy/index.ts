@@ -77,11 +77,13 @@ const handler = async (req: Request): Promise<Response> => {
     const contractor = payment.Proyectos.Contratistas;
     const mandante = payment.Proyectos.Mandantes;
     const ccEmail = contractor.CCEmail;
+    const contractorEmail = contractor.ContactEmail;
 
-    if (!ccEmail) {
-      console.log('No CC email found for contractor:', contractor.id);
+    // Check if we have at least one email to send to
+    if (!ccEmail && !contractorEmail) {
+      console.log('No CC email or contractor contact email found for contractor:', contractor.id);
       return new Response(
-        JSON.stringify({ message: 'No CC email configured for this contractor' }),
+        JSON.stringify({ message: 'No CC email or contractor contact email configured for this contractor' }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
@@ -277,46 +279,129 @@ const handler = async (req: Request): Promise<Response> => {
       `;
     };
 
-    // Send email using Gmail API
+    // Prepare emails to send
+    const emailsToSend = [];
+    
+    // Add CC email if exists
+    if (ccEmail) {
+      emailsToSend.push({
+        email: ccEmail,
+        type: 'CC'
+      });
+    }
+    
+    // Add contractor contact email if exists and different from CC
+    if (contractorEmail && contractorEmail !== ccEmail) {
+      emailsToSend.push({
+        email: contractorEmail,
+        type: 'Contractor'
+      });
+    }
+
+    if (emailsToSend.length === 0) {
+      console.log('ℹ️ No emails to send (no CC or contractor email configured)');
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: 'No CC or contractor email configured'
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        }
+      );
+    }
+
+    // Send emails to all recipients
+    const emailResults = [];
     const emailHtml = createEmailHtml();
     const subject = `Notificacion: Estado de pago enviado - ${payment.Proyectos.Name}`;
     
-    const emailPayload = {
-      raw: btoa(`From: ${Deno.env.get('GMAIL_FROM_EMAIL')}
-To: ${ccEmail}
+    for (const recipient of emailsToSend) {
+      try {
+        console.log(`📧 Sending CC notification to ${recipient.type}: ${recipient.email}`);
+        
+        const emailPayload = {
+          raw: btoa(`From: ${Deno.env.get('GMAIL_FROM_EMAIL')}
+To: ${recipient.email}
 Subject: ${subject}
 Content-Type: text/html; charset=utf-8
 
 ${emailHtml}`).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
-    };
+        };
 
-    const gmailResponse = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(emailPayload),
-    });
+        const gmailResponse = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(emailPayload),
+        });
 
-    if (!gmailResponse.ok) {
-      const errorText = await gmailResponse.text();
-      console.error('Gmail API error:', errorText);
-      throw new Error(`Gmail API error: ${gmailResponse.status} - ${errorText}`);
+        if (!gmailResponse.ok) {
+          const errorText = await gmailResponse.text();
+          console.error(`❌ Gmail API error for ${recipient.type}:`, errorText);
+          emailResults.push({
+            email: recipient.email,
+            type: recipient.type,
+            success: false,
+            error: `${gmailResponse.status} ${errorText}`
+          });
+        } else {
+          const result = await gmailResponse.json();
+          console.log(`✅ Email sent successfully to ${recipient.type}:`, result.id);
+          emailResults.push({
+            email: recipient.email,
+            type: recipient.type,
+            success: true,
+            messageId: result.id
+          });
+        }
+      } catch (error) {
+        console.error(`❌ Error sending to ${recipient.type}:`, error);
+        emailResults.push({
+          email: recipient.email,
+          type: recipient.type,
+          success: false,
+          error: error.message
+        });
+      }
     }
 
-    const result = await gmailResponse.json();
-    console.log('CC notification sent successfully to:', ccEmail);
+    // Check if at least one email was sent successfully
+    const successfulSends = emailResults.filter(r => r.success);
+    const failedSends = emailResults.filter(r => !r.success);
 
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        messageId: result.id,
-        ccEmail: ccEmail,
-        message: 'CC notification sent successfully'
-      }),
-      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
-    );
+    if (successfulSends.length > 0) {
+      console.log(`✅ CC notifications sent successfully to ${successfulSends.length} recipients`);
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          emailResults: emailResults,
+          successCount: successfulSends.length,
+          failureCount: failedSends.length,
+          message: `CC notifications sent to ${successfulSends.length} recipients`
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        }
+      );
+    } else {
+      console.error('❌ Failed to send to any recipients');
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          emailResults: emailResults,
+          error: 'Failed to send to any recipients'
+        }),
+        {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        }
+      );
+    }
 
   } catch (error) {
     console.error('Error in send-cc-copy function:', error);

@@ -374,6 +374,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      ensure_contractor_cc_urls: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       ensure_contractor_urls: {
         Args: Record<PropertyKey, never>
         Returns: undefined

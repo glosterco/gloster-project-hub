@@ -35,7 +35,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Fetch payment data to check token validity
     const { data: payment, error: paymentError } = await supabaseAdmin
       .from('Estados de pago')
-      .select('URLContratista, URLMandante')
+      .select('URLContratista, URLMandante, Notes')
       .eq('id', paymentId)
       .single();
 
@@ -55,6 +55,10 @@ const handler = async (req: Request): Promise<Response> => {
     // Check if token matches mandante URL
     else if (payment.URLMandante && payment.URLMandante.includes(`token=${token}`)) {
       userType = 'mandante';
+    }
+    // Check if token matches CC token in Notes field
+    else if (payment.Notes && payment.Notes.includes(`CC_TOKEN:${token}`)) {
+      userType = 'mandante'; // CC users access executive summary like mandantes
     }
 
     if (!userType) {

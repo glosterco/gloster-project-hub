@@ -146,31 +146,104 @@ const handler = async (req: Request): Promise<Response> => {
       })
       .eq('id', paymentId);
 
-    // Create email HTML
+    // Create email HTML with brand identity
     const createEmailHtml = (): string => {
       return `
         <html>
           <head>
             <meta charset="utf-8">
             <style>
-              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-              .header { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
-              .content { background: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
-              .button { display: inline-block; background: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; margin: 16px 0; }
-              .details { background: #f8f9fa; padding: 15px; border-radius: 4px; margin: 15px 0; }
-              .footer { margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; }
+              body { 
+                font-family: 'Rubik', Arial, sans-serif; 
+                line-height: 1.6; 
+                color: #333; 
+                margin: 0; 
+                padding: 0; 
+                background-color: #f8f9fa;
+              }
+              .container { 
+                max-width: 600px; 
+                margin: 0 auto; 
+                padding: 20px; 
+                background-color: #ffffff;
+                border-radius: 12px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+              }
+              .header { 
+                background: linear-gradient(135deg, #F5DF4D 0%, #F4D03F 100%);
+                padding: 30px 20px; 
+                border-radius: 12px 12px 0 0; 
+                margin: -20px -20px 20px -20px;
+                text-align: center;
+                color: #333;
+              }
+              .logo {
+                width: 60px;
+                height: 60px;
+                background-color: #333;
+                border-radius: 8px;
+                margin: 0 auto 15px auto;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: bold;
+                font-size: 24px;
+                color: #F5DF4D;
+              }
+              .content { 
+                background: white; 
+                padding: 20px; 
+                border-radius: 8px; 
+              }
+              .button { 
+                display: inline-block; 
+                background: linear-gradient(135deg, #F5DF4D 0%, #F4D03F 100%);
+                color: #333 !important; 
+                padding: 14px 28px; 
+                text-decoration: none; 
+                border-radius: 8px; 
+                margin: 20px 0; 
+                font-weight: bold;
+                text-align: center;
+                transition: all 0.3s ease;
+                box-shadow: 0 2px 8px rgba(245, 223, 77, 0.3);
+              }
+              .button:hover {
+                background: linear-gradient(135deg, #F4D03F 0%, #F5DF4D 100%);
+                box-shadow: 0 4px 12px rgba(245, 223, 77, 0.4);
+                transform: translateY(-1px);
+              }
+              .details { 
+                background: #f8f9fa; 
+                padding: 20px; 
+                border-radius: 8px; 
+                margin: 20px 0; 
+                border-left: 4px solid #F5DF4D;
+              }
+              .footer { 
+                margin-top: 20px; 
+                padding-top: 20px; 
+                border-top: 1px solid #ddd; 
+                font-size: 12px; 
+                color: #939597; 
+                text-align: center;
+              }
+              h2 { margin: 0 0 10px 0; color: #333; }
+              h3 { margin: 0 0 15px 0; color: #333; }
+              p { margin: 10px 0; }
+              strong { color: #333; }
             </style>
           </head>
           <body>
             <div class="container">
               <div class="header">
-                <h2>Notificación de Estado de Pago Enviado</h2>
+                <div class="logo">G</div>
+                <h2>Notificacion de Estado de Pago Enviado</h2>
                 <p>Se ha enviado un estado de pago al mandante</p>
               </div>
               
               <div class="content">
-                <p>Estimado/a ${ccEmail},</p>
+                <p>Estimado/a equipo CC,</p>
                 
                 <p>Te informamos que se ha enviado un estado de pago al mandante <strong>${mandante.CompanyName}</strong> correspondiente al proyecto:</p>
                 
@@ -178,22 +251,24 @@ const handler = async (req: Request): Promise<Response> => {
                   <h3>Detalles del Estado de Pago</h3>
                   <p><strong>Proyecto:</strong> ${payment.Proyectos.Name}</p>
                   <p><strong>Estado de Pago:</strong> ${payment.Name}</p>
-                  <p><strong>Período:</strong> ${payment.Mes} ${payment.Año}</p>
+                  <p><strong>Periodo:</strong> ${payment.Mes} ${payment.Año}</p>
                   <p><strong>Monto:</strong> ${formatCurrency(payment.Total || 0, payment.Proyectos.Currency)}</p>
                   <p><strong>Fecha de Vencimiento:</strong> ${payment.ExpiryDate || 'No especificada'}</p>
                   <p><strong>Contratista:</strong> ${contractor.CompanyName}</p>
                   <p><strong>Mandante:</strong> ${mandante.CompanyName}</p>
                 </div>
                 
-                <p>Puedes revisar el estado de los últimos estados de pago del proyecto haciendo clic en el siguiente botón:</p>
+                <p>Puedes revisar el estado de los ultimos estados de pago del proyecto haciendo clic en el siguiente boton:</p>
                 
-                <a href="${accessUrl}" class="button">Revisar Estados de Pago</a>
+                <div style="text-align: center;">
+                  <a href="${accessUrl}" class="button">Revisar Estados de Pago</a>
+                </div>
                 
-                <p><small>Este enlace te permitirá acceder al resumen ejecutivo después de verificar tu dirección de email.</small></p>
+                <p style="font-size: 14px; color: #939597;">Este enlace te permitira acceder al resumen ejecutivo despues de verificar tu direccion de email.</p>
               </div>
               
               <div class="footer">
-                <p>Este es un correo automático generado por el sistema de gestión de proyectos.</p>
+                <p>Este es un correo automatico generado por el sistema de gestion de proyectos.</p>
                 <p>Si tienes alguna pregunta, ponte en contacto con el equipo del proyecto.</p>
               </div>
             </div>
@@ -204,7 +279,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send email using Gmail API
     const emailHtml = createEmailHtml();
-    const subject = `Notificación: Estado de pago enviado - ${payment.Proyectos.Name}`;
+    const subject = `Notificacion: Estado de pago enviado - ${payment.Proyectos.Name}`;
     
     const emailPayload = {
       raw: btoa(`From: ${Deno.env.get('GMAIL_FROM_EMAIL')}

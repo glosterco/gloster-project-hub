@@ -69,11 +69,7 @@ const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div className="sm:col-span-2 lg:col-span-1">
             <p className="text-gloster-gray text-sm font-rubik mb-2">Monto del Estado</p>
-            {(shouldShowDriveFiles && payment.Status !== 'Rechazado') || payment.Status === 'Aprobado' || payment.Status === 'Enviado' || payment.Status === 'Pendiente' || payment.Status === 'Rechazado' ? (
-              <p className="font-bold text-lg md:text-xl text-slate-800 font-rubik break-words">
-                {formatCurrency(paymentState.amount)}
-              </p>
-            ) : (
+            {shouldShowDriveFiles && !['Enviado', 'Pendiente', 'Aprobado', 'Rechazado'].includes(payment.Status || '') ? (
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-gloster-gray">{payment?.projectData?.Currency || 'CLP'}</span>
                 <Input
@@ -84,18 +80,15 @@ const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
                   className={`w-40 ${shouldShowValidationErrors && !isAmountValid ? 'border-orange-500 focus:border-orange-500' : ''}`}
                 />
               </div>
+            ) : (
+              <p className="font-bold text-lg md:text-xl text-slate-800 font-rubik break-words">
+                {formatCurrency(paymentState.amount)}
+              </p>
             )}
           </div>
           <div>
             <p className="text-gloster-gray text-sm font-rubik mb-2">% Avance Financiero</p>
-            {(shouldShowDriveFiles && payment.Status !== 'Rechazado') || payment.Status === 'Aprobado' ? (
-              <p className="font-semibold text-slate-800 font-rubik">
-                {payment?.projectData?.Budget ? 
-                  ((paymentState.amount / payment.projectData.Budget) * 100).toFixed(2) + '%' : 
-                  'N/A'
-                }
-              </p>
-            ) : (
+            {shouldShowDriveFiles && !['Enviado', 'Pendiente', 'Aprobado', 'Rechazado'].includes(payment.Status || '') ? (
               <div className="flex items-center space-x-2">
                 <Input
                   type="number"
@@ -106,6 +99,13 @@ const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
                 />
                 <span className="text-sm text-gloster-gray">%</span>
               </div>
+            ) : (
+              <p className="font-semibold text-slate-800 font-rubik">
+                {payment?.projectData?.Budget ? 
+                  ((paymentState.amount / payment.projectData.Budget) * 100).toFixed(2) + '%' : 
+                  'N/A'
+                }
+              </p>
             )}
           </div>
           <div>

@@ -83,14 +83,6 @@ const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
                   placeholder="Ingrese monto"
                   className={`w-40 ${shouldShowValidationErrors && !isAmountValid ? 'border-orange-500 focus:border-orange-500' : ''}`}
                 />
-                <Button
-                  onClick={onSaveAmount}
-                  disabled={isSaving}
-                  size="sm"
-                  className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-white"
-                >
-                  <Save className="h-4 w-4" />
-                </Button>
               </div>
             ) : (
               <p className="font-bold text-lg md:text-xl text-slate-800 font-rubik break-words">

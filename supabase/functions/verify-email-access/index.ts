@@ -21,6 +21,8 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const { paymentId, token, email }: VerifyEmailAccessRequest = await req.json();
 
+    console.log('🔍 Inicio de verificación - PaymentId:', paymentId, 'Token:', token, 'Email:', email);
+
     if (!paymentId || !token) {
       return new Response(
         JSON.stringify({ error: 'PaymentId y token son requeridos' }),
@@ -55,28 +57,35 @@ const handler = async (req: Request): Promise<Response> => {
       console.log('🔍 Verificando acceso por email CC:', email, 'para pago:', paymentId);
       
       // Get project data to find contractor
-      const { data: project } = await supabaseAdmin
+      const { data: project, error: projectError } = await supabaseAdmin
         .from('Proyectos')
         .select('Contratista')
         .eq('id', payment.Project)
         .single();
 
+      console.log('🔍 Datos del proyecto:', project, 'Error:', projectError);
+
       if (project) {
         // Check if email matches contractor's CCEmail
-        const { data: contractor } = await supabaseAdmin
+        const { data: contractor, error: contractorError } = await supabaseAdmin
           .from('Contratistas')
           .select('CCEmail, URLCC')
           .eq('id', project.Contratista)
           .single();
 
-        console.log('🔍 Datos del contratista:', contractor);
+        console.log('🔍 Datos del contratista:', contractor, 'Error:', contractorError);
         
-        if (contractor?.CCEmail && contractor.CCEmail.toLowerCase() === email.toLowerCase()) {
-          console.log('✅ Email CC verificado exitosamente');
+        if (contractor?.CCEmail && contractor.CCEmail.toLowerCase().trim() === email.toLowerCase().trim()) {
+          console.log('✅ Email CC verificado exitosamente - coincide con CCEmail');
           userType = 'mandante'; // CC users access executive summary like mandantes
         } else {
-          console.log('❌ Email CC no coincide. Esperado:', contractor?.CCEmail, 'Recibido:', email);
+          console.log('❌ Email CC no coincide.');
+          console.log('    Esperado:', contractor?.CCEmail ? `"${contractor.CCEmail}"` : 'null/undefined');
+          console.log('    Recibido:', `"${email}"`);
+          console.log('    Comparación (toLowerCase):', contractor?.CCEmail?.toLowerCase().trim(), 'vs', email.toLowerCase().trim());
         }
+      } else {
+        console.log('❌ No se pudo obtener datos del proyecto');
       }
     }
 

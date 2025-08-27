@@ -546,6 +546,9 @@ const PaymentDetail = () => {
       return;
     }
 
+    // Auto-guardar antes de enviar
+    await handleAutoSaveBeforePreview();
+
     // Usar la lógica de canActivateButtons que considera el estado del pago
     if (!canActivateButtons()) {
       const errorMessage = payment?.Status === 'Rechazado' 

@@ -122,6 +122,7 @@ const EmailAccess = () => {
             paymentId: paymentId,
             userType: finalUserType,
             isRegistered: false,
+            isLimitedAccess: true, // Acceso solo con token, sin autenticación completa
             token: finalUserType === 'mandante' ? 'mandante_authenticated' : 
                    finalUserType === 'cc' ? 'cc_authenticated' : 'contratista_authenticated',
             accessToken: token,
@@ -211,6 +212,7 @@ const EmailAccess = () => {
           paymentId: paymentId,
           userType: accessCheck.userType,
           isRegistered: accessCheck.isRegistered ?? false,
+          isLimitedAccess: !accessCheck.needsPassword, // Si no necesita contraseña, es acceso limitado
           token: accessCheck.userType === 'mandante' ? 'mandante_authenticated' : 'contratista_authenticated',
           accessToken: token || null,
           timestamp: Date.now()

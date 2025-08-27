@@ -4,10 +4,15 @@ import { Badge } from '@/components/ui/badge';
 import { TrendingUp, TrendingDown, AlertCircle, CheckCircle, Clock, DollarSign, XCircle } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 import { useExecutiveSummary } from '@/hooks/useExecutiveSummary';
+import { useExecutiveSummaryCC } from '@/hooks/useExecutiveSummaryCC';
 import { formatCurrency } from '@/utils/currencyUtils';
 
 const ExecutiveSummary = () => {
-  const { summaryData, loading, error } = useExecutiveSummary();
+  // Verificar si es acceso CC
+  const mandanteAccess = sessionStorage.getItem('mandanteAccess');
+  const isCC = mandanteAccess ? JSON.parse(mandanteAccess).userType === 'cc' : false;
+  
+  const { summaryData, loading, error } = isCC ? useExecutiveSummaryCC() : useExecutiveSummary();
 
   if (loading) {
     return (

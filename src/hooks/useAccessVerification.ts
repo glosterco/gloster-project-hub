@@ -33,8 +33,9 @@ export const useAccessVerification = (payment: PaymentDetail | null, paymentId: 
               email: accessData.email
             });
             
-            if (accessData.paymentId === paymentId && accessData.token === 'mandante_authenticated') {
-              console.log('✅ Mandante access granted from sessionStorage (priority over auth)');
+            if (accessData.paymentId === paymentId && 
+                (accessData.token === 'mandante_authenticated' || accessData.token === 'cc_authenticated')) {
+              console.log('✅ Mandante/CC access granted from sessionStorage (priority over auth)');
               setHasAccess(true);
               setIsMandante(true);
               setAccessChecked(true);

@@ -14,23 +14,35 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
   const { toast } = useToast();
 
   const updatePaymentStatus = async (status: 'Aprobado' | 'Rechazado', notes: string) => {
+    console.log('🔄 Starting updatePaymentStatus with:', { paymentId, status, notes });
+    
     try {
       setLoading(true);
       
       // Set session context for RLS if we have mandante access
       const mandanteAccess = sessionStorage.getItem('mandanteAccess');
+      console.log('📋 Mandante access data:', mandanteAccess ? JSON.parse(mandanteAccess) : 'None');
+      
       if (mandanteAccess) {
         const accessInfo = JSON.parse(mandanteAccess);
         if (accessInfo.email) {
+          console.log('🔑 Setting RLS context with email:', accessInfo.email);
           // Set the email context for RLS policy verification
-          await supabase.rpc('set_config', {
+          const { error: configError } = await supabase.rpc('set_config', {
             setting_name: 'custom.email_access',
             setting_value: accessInfo.email,
             is_local: true
           });
+          
+          if (configError) {
+            console.error('❌ Error setting config:', configError);
+          } else {
+            console.log('✅ RLS context set successfully');
+          }
         }
       }
 
+      console.log('💾 Attempting to update payment status in database...');
       // Update payment status
       const { error } = await supabase
         .from('Estados de pago')
@@ -41,11 +53,11 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
         .eq('id', parseInt(paymentId));
 
       if (error) {
-        console.error('Error updating payment status:', error);
+        console.error('❌ Error updating payment status:', error);
         throw new Error(`Error al actualizar el estado del pago: ${error.message}`);
       }
 
-      console.log(`✅ Payment status updated to ${status}`);
+      console.log(`✅ Payment status updated to ${status} successfully`);
     } finally {
       setLoading(false);
     }

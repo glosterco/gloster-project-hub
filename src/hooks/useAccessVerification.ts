@@ -30,11 +30,25 @@ export const useAccessVerification = (payment: PaymentDetail | null, paymentId: 
               storedPaymentId: accessData.paymentId, 
               requestedPaymentId: paymentId, 
               hasToken: !!accessData.token,
-              email: accessData.email
+              email: accessData.email,
+              hasFullAccess: accessData.hasFullAccess
             });
             
+            // CRÍTICO: Solo permitir acceso si el paymentId coincide exactamente
+            // Y además verificar que el acceso sea para el paymentId específico
             if (accessData.paymentId === paymentId && 
                 (accessData.token === 'mandante_authenticated' || accessData.token === 'cc_authenticated')) {
+              
+              // VERIFICACIÓN ADICIONAL: Si no tiene acceso completo (hasFullAccess), 
+              // SOLO puede acceder a su paymentId específico, no a otras páginas
+              if (!accessData.hasFullAccess && window.location.pathname !== `/submission/${paymentId}` && window.location.pathname !== `/executive-summary`) {
+                console.log('❌ Limited access user trying to access wrong page');
+                setHasAccess(false);
+                setAccessChecked(true);
+                setCheckingAccess(false);
+                return;
+              }
+              
               console.log('✅ Mandante/CC access granted from sessionStorage (priority over auth)');
               setHasAccess(true);
               setIsMandante(true);
@@ -58,11 +72,24 @@ export const useAccessVerification = (payment: PaymentDetail | null, paymentId: 
               requestedPaymentId: paymentId, 
               hasToken: !!accessData.token,
               email: accessData.email,
-              isRegistered: accessData.isRegistered
+              isRegistered: accessData.isRegistered,
+              hasFullAccess: accessData.hasFullAccess
             });
             
+            // CRÍTICO: Solo permitir acceso si el paymentId coincide exactamente
             if (accessData.paymentId === paymentId && 
                 (accessData.token === 'contratista_authenticated' || accessData.token || accessData.isRegistered === false)) {
+              
+              // VERIFICACIÓN ADICIONAL: Si no tiene acceso completo (hasFullAccess), 
+              // SOLO puede acceder a su paymentId específico, no a otras páginas
+              if (!accessData.hasFullAccess && window.location.pathname !== `/payment/${paymentId}`) {
+                console.log('❌ Limited access contractor trying to access wrong page');
+                setHasAccess(false);
+                setAccessChecked(true);
+                setCheckingAccess(false);
+                return;
+              }
+              
               console.log('✅ Contractor access granted from sessionStorage');
               setHasAccess(true);
               setIsMandante(false);

@@ -19,7 +19,7 @@ const ApprovalButtons: React.FC<ApprovalButtonsProps> = ({
       <Button
         onClick={onApprove}
         disabled={loading}
-        className="bg-green-600 hover:bg-green-700 text-white flex items-center"
+        className="bg-green-600 hover:bg-green-700 text-white flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {loading ? (
           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -33,7 +33,7 @@ const ApprovalButtons: React.FC<ApprovalButtonsProps> = ({
         onClick={onReject}
         disabled={loading}
         variant="destructive"
-        className="flex items-center"
+        className="flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <XCircle className="h-4 w-4 mr-2" />
         Rechazar Estado de Pago

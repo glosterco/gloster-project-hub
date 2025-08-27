@@ -40,7 +40,7 @@ const RejectionForm: React.FC<RejectionFormProps> = ({
           onClick={onConfirmReject}
           disabled={loading || !rejectionReason.trim()}
           variant="destructive"
-          className="flex items-center"
+          className="flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? (
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -54,6 +54,7 @@ const RejectionForm: React.FC<RejectionFormProps> = ({
           onClick={onCancel}
           disabled={loading}
           variant="outline"
+          className="disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Cancelar
         </Button>

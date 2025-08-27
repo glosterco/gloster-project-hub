@@ -34,61 +34,64 @@ export const useAccessVerification = (payment: PaymentDetail | null, paymentId: 
               hasFullAccess: accessData.hasFullAccess
             });
             
-            // CRÍTICO: Solo permitir acceso si el paymentId coincide exactamente
-            if (accessData.paymentId === paymentId && 
-                (accessData.token === 'mandante_authenticated' || accessData.token === 'cc_authenticated')) {
-              
-              // VERIFICACIÓN CRÍTICA DE ACCESO SEGÚN TIPO DE MANDANTE:
-              
-              // 1. MANDANTE SIN user_auth_id (acceso limitado):
-              //    - Solo puede acceder a submission view del paymentId específico
-              //    - NO puede navegar a otras páginas
-              if (accessData.isLimitedAccess) {
-                const currentPath = window.location.pathname;
-                const allowedPath = `/submission/${paymentId}`;
+              // STRICT VERIFICATION: Only allow access if paymentId matches AND user has valid authentication
+              if (accessData.paymentId === paymentId && 
+                  (accessData.token === 'mandante_authenticated' || accessData.token === 'cc_authenticated')) {
                 
-                if (currentPath !== allowedPath) {
-                  console.log('❌ Limited access mandante trying to access unauthorized page:', {
-                    currentPath,
-                    allowedPath,
-                    email: accessData.email
-                  });
-                  setHasAccess(false);
-                  setAccessChecked(true);
-                  setCheckingAccess(false);
-                  return;
+                // CRITICAL CHECK: Mandantes WITHOUT user_auth_id can ONLY access submission view
+                if (accessData.isLimitedAccess || !accessData.hasFullAccess) {
+                  const currentPath = window.location.pathname;
+                  const allowedPath = `/submission/${paymentId}`;
+                  
+                  if (currentPath !== allowedPath) {
+                    console.log('❌ LIMITED ACCESS mandante denied - trying to access unauthorized page:', {
+                      currentPath,
+                      allowedPath,
+                      email: accessData.email,
+                      hasFullAccess: accessData.hasFullAccess,
+                      isLimitedAccess: accessData.isLimitedAccess
+                    });
+                    setHasAccess(false);
+                    setAccessChecked(true);
+                    setCheckingAccess(false);
+                    // Redirect to submission view if they try to access other pages
+                    if (window.location.pathname !== allowedPath) {
+                      window.location.href = allowedPath;
+                    }
+                    return;
+                  }
                 }
-              }
-              
-              // 2. MANDANTE CON user_auth_id (acceso completo):
-              //    - Puede acceder a páginas de mandante: /dashboard-mandante, /project-mandante, /submission
-              //    - NO puede acceder a páginas de contratista
-              if (accessData.hasFullAccess && accessData.userType === 'mandante') {
-                const currentPath = window.location.pathname;
-                const contractorOnlyPages = ['/dashboard', '/payment/', '/submission-preview'];
-                // Excluir /project/ porque puede ser /project-mandante/
-                const contractorProjectPages = ['/project/'];
                 
-                const isContractorOnlyPage = contractorOnlyPages.some(page => 
-                  currentPath === page || currentPath.startsWith(page)
-                );
-                
-                const isContractorProjectPage = contractorProjectPages.some(page =>
-                  currentPath.startsWith(page) && !currentPath.startsWith('/project-mandante/')
-                );
-                
-                if (isContractorOnlyPage || isContractorProjectPage) {
-                  console.log('❌ Authenticated mandante trying to access contractor-only page:', {
-                    currentPath,
-                    userType: accessData.userType,
-                    hasFullAccess: accessData.hasFullAccess
-                  });
-                  setHasAccess(false);
-                  setAccessChecked(true);
-                  setCheckingAccess(false);
-                  return;
+                // AUTHENTICATED MANDANTES: Can access mandante pages but NOT contractor pages
+                if (accessData.hasFullAccess && accessData.userType === 'mandante') {
+                  const currentPath = window.location.pathname;
+                  
+                  // CRITICAL: Block ALL contractor-only pages
+                  const contractorOnlyPages = [
+                    '/dashboard',           // Contractor dashboard
+                    '/payment/',           // Payment detail pages
+                    '/submission-preview', // Submission preview
+                    '/project/'            // Project detail (contractor version)
+                  ];
+                  
+                  const isContractorPage = contractorOnlyPages.some(page => 
+                    currentPath === page || currentPath.startsWith(page)
+                  );
+                  
+                  if (isContractorPage && !currentPath.startsWith('/project-mandante/')) {
+                    console.log('❌ AUTHENTICATED mandante blocked from contractor page:', {
+                      currentPath,
+                      userType: accessData.userType,
+                      hasFullAccess: accessData.hasFullAccess
+                    });
+                    setHasAccess(false);
+                    setAccessChecked(true);
+                    setCheckingAccess(false);
+                    // Redirect to mandante dashboard
+                    window.location.href = '/dashboard-mandante';
+                    return;
+                  }
                 }
-              }
               
               console.log('✅ Mandante/CC access granted from sessionStorage');
               setHasAccess(true);

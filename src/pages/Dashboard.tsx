@@ -22,19 +22,19 @@ const Dashboard = () => {
   const [isCreateProjectDialogOpen, setIsCreateProjectDialogOpen] = useState(false);
   const { projects, contractor, loading } = useProjectsWithDetails();
 
-  // CRÍTICO: Verificar que el usuario autenticado es contratista
+  // CRITICAL: STRICT verification for contractor dashboard - ONLY authenticated contractors
   useEffect(() => {
-    const verifyContractorAccess = async () => {
+    const verifyStrictContractorAccess = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         
-        if (!user) {
+        if (!user?.id) {
           console.log('❌ No authenticated user for contractor dashboard');
           navigate('/');
           return;
         }
 
-        // Verificar que es contratista autenticado
+        // STRICT: Verify user is authenticated contractor with user_auth_id
         const { data: contratistaData } = await supabase
           .from('Contratistas')
           .select('id, auth_user_id')
@@ -42,28 +42,33 @@ const Dashboard = () => {
           .maybeSingle();
 
         if (!contratistaData || contratistaData.auth_user_id !== user.id) {
-          console.log('❌ User is not an authenticated contratista, checking mandante access');
+          console.log('❌ Access DENIED: User is not an authenticated contratista with user_auth_id');
           
-          // Verificar si es mandante
+          // Check if they're an authenticated mandante and redirect appropriately
           const { data: mandanteData } = await supabase
             .from('Mandantes')
-            .select('id')
+            .select('id, auth_user_id')
             .eq('auth_user_id', user.id)
             .maybeSingle();
             
-          if (mandanteData) {
+          if (mandanteData && mandanteData.auth_user_id === user.id) {
+            console.log('🔄 Redirecting authenticated mandante to mandante dashboard');
             navigate('/dashboard-mandante');
           } else {
+            console.log('❌ User has no valid authentication, redirecting to home');
             navigate('/');
           }
+          return;
         }
+
+        console.log('✅ Verified authenticated contractor access');
       } catch (error) {
         console.error('Error verifying contractor access:', error);
         navigate('/');
       }
     };
 
-    verifyContractorAccess();
+    verifyStrictContractorAccess();
   }, [navigate]);
 
   const handleCreateProject = () => {

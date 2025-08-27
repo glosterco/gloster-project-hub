@@ -33,35 +33,59 @@ const ProjectDetail = () => {
   const [userType, setUserType] = useState<'mandante' | 'contratista' | null>(null);
   
   useEffect(() => {
-    const determineUserType = async () => {
-      if (!user) return;
+    const verifyStrictProjectAccess = async () => {
+      if (!user?.id) {
+        // Check for session-based access for non-authenticated users
+        const mandanteAccess = sessionStorage.getItem('mandanteAccess');
+        if (mandanteAccess) {
+          try {
+            const accessData = JSON.parse(mandanteAccess);
+            // CRITICAL: Limited access users cannot access project detail pages
+            if (accessData.isLimitedAccess || !accessData.hasFullAccess) {
+              console.log('❌ LIMITED ACCESS user blocked from project detail page');
+              navigate(`/submission/${accessData.paymentId || ''}`);
+              return;
+            }
+          } catch (error) {
+            console.error('Error parsing mandante access:', error);
+          }
+        }
+        
+        console.log('❌ No authenticated user for project detail');
+        navigate('/');
+        return;
+      }
       
-      // Verificar si es mandante
+      // STRICT: Only authenticated users with user_auth_id can access project details
       const { data: mandanteData } = await supabase
         .from('Mandantes')
-        .select('id')
+        .select('id, auth_user_id')
         .eq('auth_user_id', user.id)
         .maybeSingle();
         
-      if (mandanteData) {
+      if (mandanteData && mandanteData.auth_user_id === user.id) {
         setUserType('mandante');
         return;
       }
       
-      // Verificar si es contratista
       const { data: contratistaData } = await supabase
         .from('Contratistas')
-        .select('id')
+        .select('id, auth_user_id')
         .eq('auth_user_id', user.id)
         .maybeSingle();
         
-      if (contratistaData) {
+      if (contratistaData && contratistaData.auth_user_id === user.id) {
         setUserType('contratista');
+        return;
       }
+      
+      // No valid authentication found
+      console.log('❌ User does not have valid user_auth_id for project access');
+      navigate('/');
     };
     
-    determineUserType();
-  }, [user]);
+    verifyStrictProjectAccess();
+  }, [user, navigate]);
   
   // Usar el hook apropiado según el tipo de usuario
   const contratistaHook = useProjectDetailSecure(userType === 'contratista' ? (id || '') : '');

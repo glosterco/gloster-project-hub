@@ -382,6 +382,18 @@ export type Database = {
         Args: { user_id: string }
         Returns: number[]
       }
+      has_cc_access_to_mandante: {
+        Args: { _mandante_id: number }
+        Returns: boolean
+      }
+      has_cc_access_to_project: {
+        Args: { _project_id: number }
+        Returns: boolean
+      }
+      is_cc_contractor: {
+        Args: { _contractor_id: number }
+        Returns: boolean
+      }
       is_contractor_related: {
         Args: { _contratista_id: number; _user_id: string }
         Returns: boolean

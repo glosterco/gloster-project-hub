@@ -188,29 +188,26 @@ const ExecutiveSummary = () => {
                   <div className="text-sm font-medium text-muted-foreground mb-2">
                     Últimos Estados de Pago:
                   </div>
-                  {project.recentPayments.map((payment, paymentIndex) => (
-                    <div key={`${payment.id}-${paymentIndex}`} className="flex items-center justify-between p-2 bg-muted/30 rounded-md">
-                      <div className="flex-1">
-                        <div className="font-medium text-sm">
-                          {payment.paymentName}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          Vence: {new Date(payment.expiryDate).toLocaleDateString('es-CL')}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="text-right">
+                  <div className="grid grid-cols-1 gap-2">
+                    {project.recentPayments.map((payment, paymentIndex) => (
+                      <div key={`${payment.id}-${paymentIndex}`} className="p-3 bg-muted/30 rounded-md">
+                        <div className="flex items-center justify-between mb-2">
                           <div className="font-medium text-sm">
+                            {payment.paymentName}
+                          </div>
+                          <Badge variant={getStatusVariant(payment.status)} className="flex items-center gap-1">
+                            {getStatusIcon(payment.status)}
+                            {payment.status}
+                          </Badge>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-medium text-sm text-muted-foreground">
                             {formatCurrency(payment.amount, payment.currency)}
                           </div>
                         </div>
-                        <Badge variant={getStatusVariant(payment.status)} className="flex items-center gap-1">
-                          {getStatusIcon(payment.status)}
-                          {payment.status}
-                        </Badge>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                   {project.recentPayments.length === 0 && (
                     <div className="text-center text-muted-foreground py-4 text-sm">
                       No hay estados de pago recientes

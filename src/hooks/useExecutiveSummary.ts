@@ -140,12 +140,12 @@ export const useExecutiveSummary = () => {
       const rejectedPayments = payments?.filter(p => p.Status === 'Rechazado').length || 0;
       const rejectedPaymentsAmount = payments?.filter(p => p.Status === 'Rechazado').reduce((sum, p) => sum + (p.Total || 0), 0) || 0;
 
-      // Create project summaries with last 3 payments each
+      // Create project summaries with last 2 payments each
       const projectSummaries: ProjectSummary[] = projects.map(project => {
         const projectPayments = payments?.filter(p => p.Project === project.id) || [];
-        const last3Payments = projectPayments.slice(0, 3);
+        const last2Payments = projectPayments.slice(0, 2);
 
-        const recentPayments: PaymentSummary[] = last3Payments.map(payment => ({
+        const recentPayments: PaymentSummary[] = last2Payments.map(payment => ({
           id: payment.id,
           paymentName: payment.Name,
           projectName: project.Name || 'Proyecto sin nombre',

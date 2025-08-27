@@ -153,12 +153,16 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
       console.log('🟢 Starting approval process for payment:', paymentId);
       console.log('🟢 Using payment data:', payment.projectData?.Contratista);
 
-      // 1. Update payment status
+      // 1. Update payment status FIRST
       const approvalNotes = `Aprobado el ${new Date().toLocaleString('es-CL')}`;
+      console.log('🔄 About to call updatePaymentStatus...');
       await updatePaymentStatus('Aprobado', approvalNotes);
+      console.log('✅ updatePaymentStatus completed');
 
       // 2. Send notification using existing payment data (no additional query needed)
+      console.log('📤 About to send contractor notification...');
       await sendContractorNotification(payment, 'Aprobado');
+      console.log('✅ sendContractorNotification completed');
 
       toast({
         title: "Estado de pago aprobado",
@@ -166,6 +170,7 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
       });
 
       // 3. Update UI immediately
+      console.log('🔄 Calling onStatusChange...');
       onStatusChange?.();
       
       console.log('✅ Approval process completed successfully');

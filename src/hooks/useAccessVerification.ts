@@ -43,21 +43,18 @@ export const useAccessVerification = (payment: PaymentDetail | null, paymentId: 
                   const currentPath = window.location.pathname;
                   const allowedPath = `/submission/${paymentId}`;
                   
+                  // Check if current path is NOT the allowed submission path
                   if (currentPath !== allowedPath) {
-                    console.log('❌ LIMITED ACCESS mandante denied - trying to access unauthorized page:', {
+                    console.log('❌ LIMITED ACCESS mandante blocked - redirecting to submission view:', {
                       currentPath,
                       allowedPath,
                       email: accessData.email,
                       hasFullAccess: accessData.hasFullAccess,
                       isLimitedAccess: accessData.isLimitedAccess
                     });
-                    setHasAccess(false);
-                    setAccessChecked(true);
-                    setCheckingAccess(false);
-                    // Redirect to submission view if they try to access other pages
-                    if (window.location.pathname !== allowedPath) {
-                      window.location.href = allowedPath;
-                    }
+                    
+                    // Immediately redirect to submission view - no other pages allowed
+                    window.location.href = allowedPath;
                     return;
                   }
                 }

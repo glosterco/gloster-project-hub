@@ -37,19 +37,20 @@ const EmailAccess = () => {
       try {
         // Use secure edge function to verify token and determine user type
         const { data, error } = await supabase.functions.invoke('verify-email-access', {
-          body: { paymentId, token, email: email || undefined }
+          body: { paymentId, token }
         });
 
         if (error) {
-          setPopupError('Token de acceso inválido');
+          console.log('❌ Error en verificación inicial de token:', error);
           return;
         }
 
         if (data?.userType) {
           setUserType(data.userType);
+          console.log('✅ Tipo de usuario detectado:', data.userType);
         }
       } catch (error) {
-        setPopupError('Error verificando el acceso');
+        console.log('❌ Error verificando el acceso:', error);
       }
     };
 

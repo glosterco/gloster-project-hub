@@ -84,14 +84,22 @@ const handler = async (req: Request): Promise<Response> => {
         .eq('id', project.Contratista)
         .single();
 
+      console.log('🔍 Verificando URLCC del contratista:', {
+        contractorId: project.Contratista,
+        urlcc: contractor?.URLCC,
+        tokenBuscado: token
+      });
+
       if (contractor?.URLCC && contractor.URLCC.includes(`token=${token}`)) {
         console.log('🔍 Token identificado como CC (URLCC)');
-        userType = 'cc'; // Tipo especial para CC
+        userType = 'cc';
         accessType = 'cc';
       } else if (payment.Notes && payment.Notes.includes(`CC_TOKEN:${token}`)) {
         console.log('🔍 Token identificado como CC (Notes)');
         userType = 'cc';
         accessType = 'cc';
+      } else {
+        console.log('❌ Token no encontrado en URLCC ni en Notes');
       }
     }
 

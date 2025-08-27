@@ -47,7 +47,8 @@ const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
   };
 
   // Verificar si debe mostrar campos editables basado en el status
-  const shouldShowEditableFields = shouldShowDriveFiles && ['Pendiente', 'Rechazado'].includes(payment.Status || '');
+  // Los campos editables deben mostrarse para "Pendiente" y "Rechazado", independientemente de shouldShowDriveFiles
+  const shouldShowEditableFields = ['Pendiente', 'Rechazado'].includes(payment.Status || '');
 
   return (
     <Card className="border-l-4 border-l-gloster-yellow hover:shadow-xl transition-all duration-300 h-full">

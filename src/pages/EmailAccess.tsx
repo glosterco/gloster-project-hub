@@ -37,7 +37,7 @@ const EmailAccess = () => {
       try {
         // Use secure edge function to verify token and determine user type
         const { data, error } = await supabase.functions.invoke('verify-email-access', {
-          body: { paymentId, token }
+          body: { paymentId, token, email: email || undefined }
         });
 
         if (error) {
@@ -90,7 +90,35 @@ const EmailAccess = () => {
     setPopupError(null);
 
     try {
-      // Verify token first if provided
+      // First, try to verify the token with the email for CC access
+      if (token) {
+        const { data: tokenVerification, error: tokenError } = await supabase.functions.invoke('verify-email-access', {
+          body: { paymentId, token, email }
+        });
+
+        if (!tokenError && tokenVerification?.userType) {
+          // Token verification successful with email - proceed directly
+          const accessData = {
+            paymentId: paymentId,
+            userType: tokenVerification.userType,
+            isRegistered: false, // CC access doesn't require registration
+            token: tokenVerification.userType === 'mandante' ? 'mandante_authenticated' : 'contratista_authenticated',
+            accessToken: token,
+            timestamp: Date.now()
+          };
+
+          if (tokenVerification.userType === 'mandante') {
+            sessionStorage.setItem('mandanteAccess', JSON.stringify(accessData));
+            navigate(`/submission/${paymentId}`);
+          } else {
+            sessionStorage.setItem('contractorAccess', JSON.stringify(accessData));
+            navigate(`/payment/${paymentId}`);
+          }
+          return;
+        }
+      }
+
+      // Verify token first if provided but no email verification worked
       if (token && !userType) {
         setPopupError('Token de acceso inválido');
         return;

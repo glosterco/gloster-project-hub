@@ -54,3 +54,6 @@ verify_jwt = false
 
 [functions.update-payment-status-mandante]
 verify_jwt = false
+
+[functions.send-cc-copy]
+verify_jwt = false

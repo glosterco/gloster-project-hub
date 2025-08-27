@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useMandanteNotification } from '@/hooks/useMandanteNotification';
 import { useUniqueAccessUrl } from '@/hooks/useUniqueAccessUrl';
+import { useCCNotification } from '@/hooks/useCCNotification';
 import { supabase } from '@/integrations/supabase/client';
 import { PaymentDetail } from '@/hooks/usePaymentDetail';
 
@@ -11,6 +12,7 @@ export const useSubmissionPreviewLogic = (payment: PaymentDetail | null) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { sendNotificationToMandante, loading: notificationLoading } = useMandanteNotification();
+  const { sendCCNotification } = useCCNotification();
   const { ensureUniqueAccessUrl } = useUniqueAccessUrl();
   
   const [isProjectUser, setIsProjectUser] = useState(false);
@@ -214,6 +216,25 @@ export const useSubmissionPreviewLogic = (payment: PaymentDetail | null) => {
       const result = await sendNotificationToMandante(notificationData);
       
       if (result.success) {
+        // Also send CC notification
+        try {
+          await sendCCNotification({
+            paymentId: payment.id.toString(),
+            contractorEmail: payment.projectData.Contratista?.ContactEmail,
+            contractorName: payment.projectData.Contratista?.ContactName,
+            contractorCompany: payment.projectData.Contratista?.CompanyName,
+            mandanteCompany: payment.projectData.Owner?.CompanyName,
+            proyecto: payment.projectData.Name,
+            mes: payment.Mes,
+            año: payment.Año,
+            amount: payment.Total,
+            dueDate: payment.ExpiryDate,
+            currency: payment.projectData.Currency
+          });
+        } catch (ccError) {
+          console.warn('CC notification failed, but continuing:', ccError);
+        }
+
         setNotificationSent(true);
         toast({
           title: "Notificación enviada exitosamente",

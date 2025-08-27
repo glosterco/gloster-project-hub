@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { usePaymentDetail } from '@/hooks/usePaymentDetail';
 import { useMandanteNotification } from '@/hooks/useMandanteNotification';
+import { useCCNotification } from '@/hooks/useCCNotification';
 import { useGoogleDriveIntegration } from '@/hooks/useGoogleDriveIntegration';
 import { useDocumentUpload } from '@/hooks/useDocumentUpload';
 import { useDirectDriveDownload } from '@/hooks/useDirectDriveDownload';
@@ -66,6 +67,7 @@ const PaymentDetail = () => {
   // Use real data from database
   const { payment, loading, refetch } = usePaymentDetail(id || '');
   const { sendNotificationToMandante, loading: notificationLoading } = useMandanteNotification();
+  const { sendCCNotification } = useCCNotification();
   const { uploadDocumentsToDrive, loading: driveLoading } = useGoogleDriveIntegration();
   const { downloadDocument, isDocumentLoading } = useDirectDriveDownload();
   const { handleResubmission, loading: resubmissionLoading } = useContractorResubmission();
@@ -702,6 +704,25 @@ const PaymentDetail = () => {
       const result = await sendNotificationToMandante(notificationData);
       
       if (result.success) {
+        // Also send CC notification
+        try {
+          await sendCCNotification({
+            paymentId: payment.id.toString(),
+            contractorEmail: payment.projectData.Contratista?.ContactEmail,
+            contractorName: payment.projectData.Contratista?.ContactName,
+            contractorCompany: payment.projectData.Contratista?.CompanyName,
+            mandanteCompany: payment.projectData.Owner?.CompanyName,
+            proyecto: payment.projectData.Name,
+            mes: payment.Mes,
+            año: payment.Año,
+            amount: finalAmount,
+            dueDate: payment.ExpiryDate,
+            currency: payment.projectData?.Currency
+          });
+        } catch (ccError) {
+          console.warn('CC notification failed, but continuing:', ccError);
+        }
+
         toast({
           title: "Documentos enviados exitosamente",
           description: "Los documentos se han subido y se ha notificado al mandante",

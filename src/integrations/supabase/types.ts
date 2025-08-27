@@ -59,6 +59,7 @@ export type Database = {
       Contratistas: {
         Row: {
           auth_user_id: string | null
+          CCEmail: string | null
           CompanyName: string
           ContactEmail: string | null
           ContactName: string | null
@@ -71,6 +72,7 @@ export type Database = {
         }
         Insert: {
           auth_user_id?: string | null
+          CCEmail?: string | null
           CompanyName: string
           ContactEmail?: string | null
           ContactName?: string | null
@@ -83,6 +85,7 @@ export type Database = {
         }
         Update: {
           auth_user_id?: string | null
+          CCEmail?: string | null
           CompanyName?: string
           ContactEmail?: string | null
           ContactName?: string | null

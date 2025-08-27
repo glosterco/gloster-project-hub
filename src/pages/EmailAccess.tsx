@@ -120,6 +120,7 @@ const EmailAccess = () => {
 
           const accessData = {
             paymentId: paymentId,
+            email: email, // CRÍTICO: Agregar email para RLS
             userType: finalUserType,
             isRegistered: false,
             isLimitedAccess: true, // Acceso solo con token, sin autenticación completa
@@ -214,6 +215,7 @@ const EmailAccess = () => {
 
         const accessData = {
           paymentId: paymentId,
+          email: email, // CRÍTICO: Agregar email para RLS
           userType: accessCheck.userType,
           isRegistered: accessCheck.isRegistered ?? false,
           isLimitedAccess: !accessCheck.needsPassword, // Si no necesita contraseña, es acceso limitado

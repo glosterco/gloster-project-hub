@@ -71,11 +71,6 @@ const PageHeader = () => {
           </div>
           
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2 text-gloster-gray">
-              <User className="h-4 w-4" />
-              <span className="text-sm font-rubik">{displayName}</span>
-            </div>
-            
             {/* Navigation Buttons */}
             <div className="flex items-center space-x-2">
               <Button 
@@ -84,18 +79,23 @@ const PageHeader = () => {
                 onClick={() => navigate('/dashboard')}
                 className="font-rubik"
               >
-                <Home className="h-4 w-4 mr-2" />
+                <Home className="h-4 w-4 mr-1" />
                 Dashboard
               </Button>
               <Button 
                 variant={location.pathname === '/executive-summary' ? 'default' : 'ghost'} 
                 size="sm" 
                 onClick={() => navigate('/executive-summary')}
-                className="font-rubik"
+                className="font-rubik text-xs"
               >
-                <BarChart3 className="h-4 w-4 mr-2" />
-                Resumen Ejecutivo
+                <BarChart3 className="h-3 w-3 mr-1" />
+                Resumen
               </Button>
+            </div>
+            
+            <div className="flex items-center space-x-2 text-gloster-gray">
+              <User className="h-4 w-4" />
+              <span className="text-sm font-rubik">{displayName}</span>
             </div>
             
             <Button 

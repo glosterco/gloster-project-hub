@@ -10,7 +10,8 @@ export interface PaymentSummary {
   amount: number;
   currency: string;
   status: string;
-  expiryDate: string;
+  month: string;
+  year: string;
 }
 
 export interface ProjectSummary {
@@ -107,7 +108,8 @@ export const useExecutiveSummary = () => {
           Name,
           Total,
           Status,
-          ExpiryDate,
+          Mes,
+          "Año",
           Project,
           Proyectos:Project (
             Name,
@@ -154,7 +156,8 @@ export const useExecutiveSummary = () => {
           amount: payment.Total || 0,
           currency: project.Currency || 'CLP',
           status: payment.Status || 'Sin estado',
-          expiryDate: payment.ExpiryDate || ''
+          month: payment.Mes || '',
+          year: payment.Año?.toString() || ''
         }));
 
         return {

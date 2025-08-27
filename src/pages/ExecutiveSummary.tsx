@@ -77,7 +77,7 @@ const ExecutiveSummary = () => {
         </div>
 
         {/* Metrics Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -87,25 +87,11 @@ const ExecutiveSummary = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{summaryData?.totalProjects || 0}</div>
-              <p className="text-xs text-muted-foreground">
-                Proyectos activos en el sistema
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Valor Total
-              </CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="text-sm font-medium text-muted-foreground">
                 {formatCurrency(summaryData?.totalValue || 0)}
               </div>
               <p className="text-xs text-muted-foreground">
-                Suma de todos los contratos
+                Proyectos activos y valor total
               </p>
             </CardContent>
           </Card>
@@ -171,8 +157,15 @@ const ExecutiveSummary = () => {
           </Card>
         </div>
 
+        {/* Projects Description */}
+        <div className="mb-6">
+          <p className="text-muted-foreground">
+            A continuación se muestra el estado de los últimos estados de pago presentados por proyecto.
+          </p>
+        </div>
+
         {/* Project Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {summaryData?.projectSummaries?.map((project, index) => (
             <Card key={`${project.id}-${index}`} className="h-fit">
               <CardHeader className="pb-3">
@@ -188,22 +181,23 @@ const ExecutiveSummary = () => {
                   <div className="text-sm font-medium text-muted-foreground mb-2">
                     Últimos Estados de Pago:
                   </div>
-                  <div className="grid grid-cols-1 gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     {project.recentPayments.map((payment, paymentIndex) => (
-                      <div key={`${payment.id}-${paymentIndex}`} className="p-3 bg-muted/30 rounded-md">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="font-medium text-sm">
-                            {payment.paymentName}
-                          </div>
-                          <Badge variant={getStatusVariant(payment.status)} className="flex items-center gap-1">
+                      <div key={`${payment.id}-${paymentIndex}`} className="p-3 bg-muted/30 rounded-md text-center">
+                        <div className="font-medium text-sm mb-1">
+                          {payment.paymentName}
+                        </div>
+                        <div className="text-xs text-muted-foreground mb-2">
+                          {payment.month} {payment.year}
+                        </div>
+                        <div className="mb-2">
+                          <Badge variant={getStatusVariant(payment.status)} className="flex items-center gap-1 justify-center">
                             {getStatusIcon(payment.status)}
                             {payment.status}
                           </Badge>
                         </div>
-                        <div className="text-right">
-                          <div className="font-medium text-sm text-muted-foreground">
-                            {formatCurrency(payment.amount, payment.currency)}
-                          </div>
+                        <div className="font-medium text-xs text-muted-foreground">
+                          {formatCurrency(payment.amount, payment.currency)}
                         </div>
                       </div>
                     ))}

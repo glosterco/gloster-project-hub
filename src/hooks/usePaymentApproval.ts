@@ -18,7 +18,7 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
       setLoading(true);
       
       // Set session context for RLS if we have mandante access
-      const mandanteAccess = localStorage.getItem('mandanteAccess');
+      const mandanteAccess = sessionStorage.getItem('mandanteAccess');
       if (mandanteAccess) {
         const accessInfo = JSON.parse(mandanteAccess);
         if (accessInfo.email) {

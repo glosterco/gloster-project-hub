@@ -133,8 +133,8 @@ export const useExecutiveSummary = () => {
       const totalProjects = projects.length;
       const totalValue = projects.reduce((sum, project) => sum + (project.Budget || 0), 0);
       
-      const pendingPayments = payments?.filter(p => p.Status === 'Pendiente').length || 0;
-      const pendingPaymentsAmount = payments?.filter(p => p.Status === 'Pendiente').reduce((sum, p) => sum + (p.Total || 0), 0) || 0;
+      const pendingPayments = payments?.filter(p => p.Status === 'Pendiente' || p.Status === 'Enviado').length || 0;
+      const pendingPaymentsAmount = payments?.filter(p => p.Status === 'Pendiente' || p.Status === 'Enviado').reduce((sum, p) => sum + (p.Total || 0), 0) || 0;
       
       const approvedPayments = payments?.filter(p => p.Status === 'Aprobado').length || 0;
       const approvedPaymentsAmount = payments?.filter(p => p.Status === 'Aprobado').reduce((sum, p) => sum + (p.Total || 0), 0) || 0;

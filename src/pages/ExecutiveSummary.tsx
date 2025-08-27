@@ -116,7 +116,7 @@ const ExecutiveSummary = () => {
                 {formatCurrency(summaryData?.pendingPaymentsAmount || 0)}
               </div>
               <p className="text-xs text-muted-foreground">
-                Estados de pago pendientes
+                Estados de pago pendientes y enviados
               </p>
             </CardContent>
           </Card>

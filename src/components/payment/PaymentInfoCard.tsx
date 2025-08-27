@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -45,6 +46,9 @@ const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
     recipient: payment.projectData?.Owner?.ContactEmail || ""
   };
 
+  // Verificar si debe mostrar campos editables basado en el status
+  const shouldShowEditableFields = shouldShowDriveFiles && ['Pendiente', 'Rechazado'].includes(payment.Status || '');
+
   return (
     <Card className="border-l-4 border-l-gloster-yellow hover:shadow-xl transition-all duration-300 h-full">
       <CardHeader className="pb-4">
@@ -69,7 +73,7 @@ const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div className="sm:col-span-2 lg:col-span-1">
             <p className="text-gloster-gray text-sm font-rubik mb-2">Monto del Estado</p>
-            {shouldShowDriveFiles && ['Pendiente', 'Rechazado'].includes(payment.Status || '') ? (
+            {shouldShowEditableFields ? (
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-gloster-gray">{payment?.projectData?.Currency || 'CLP'}</span>
                 <Input
@@ -79,6 +83,14 @@ const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
                   placeholder="Ingrese monto"
                   className={`w-40 ${shouldShowValidationErrors && !isAmountValid ? 'border-orange-500 focus:border-orange-500' : ''}`}
                 />
+                <Button
+                  onClick={onSaveAmount}
+                  disabled={isSaving}
+                  size="sm"
+                  className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-white"
+                >
+                  <Save className="h-4 w-4" />
+                </Button>
               </div>
             ) : (
               <p className="font-bold text-lg md:text-xl text-slate-800 font-rubik break-words">
@@ -88,7 +100,7 @@ const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
           </div>
           <div>
             <p className="text-gloster-gray text-sm font-rubik mb-2">% Avance Financiero</p>
-            {shouldShowDriveFiles && ['Pendiente', 'Rechazado'].includes(payment.Status || '') ? (
+            {shouldShowEditableFields ? (
               <div className="flex items-center space-x-2">
                 <Input
                   type="number"

@@ -64,14 +64,40 @@ const SubmissionHeader: React.FC<SubmissionHeaderProps> = ({ projectId }) => {
   }, [user]);
 
   const handleBackToProject = () => {
-    if (projectId) {
+    // Verificar si hay acceso limitado sin autenticación
+    const mandanteAccess = sessionStorage.getItem('mandanteAccess');
+    const contractorAccess = sessionStorage.getItem('contractorAccess');
+    
+    if (mandanteAccess) {
+      const accessData = JSON.parse(mandanteAccess);
+      // Para acceso limitado de mandante o CC, solo permitir volver al inicio
+      if (!accessData.hasFullAccess) {
+        navigate('/');
+        return;
+      }
+    }
+    
+    if (contractorAccess) {
+      const accessData = JSON.parse(contractorAccess);
+      // Para acceso limitado de contratista, solo permitir volver al inicio
+      if (!accessData.hasFullAccess) {
+        navigate('/');
+        return;
+      }
+    }
+    
+    // Para usuarios autenticados con acceso completo
+    if (projectId && user) {
       if (userInfo.userType === 'mandante') {
         navigate(`/project-mandante/${projectId}`);
       } else {
         navigate(`/project/${projectId}`);
       }
-    } else {
+    } else if (user) {
       navigate(userInfo.userType === 'mandante' ? '/dashboard-mandante' : '/dashboard');
+    } else {
+      // Sin autenticación, volver al inicio
+      navigate('/');
     }
   };
 
@@ -103,15 +129,17 @@ const SubmissionHeader: React.FC<SubmissionHeaderProps> = ({ projectId }) => {
                   {userInfo.company ? `${userInfo.name} - ${userInfo.company}` : userInfo.name}
                 </span>
               </div>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleSignOut}
-                className="text-gloster-gray hover:text-slate-800 border-gloster-gray/30 font-rubik"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Cerrar Sesión
-              </Button>
+              {user && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleSignOut}
+                  className="text-gloster-gray hover:text-slate-800 border-gloster-gray/30 font-rubik"
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Cerrar Sesión
+                </Button>
+              )}
             </div>
           </div>
         </div>

@@ -54,7 +54,7 @@ export const usePaymentDetail = (paymentId: string, shouldRefetch = true) => {
 
       // Verificar que paymentId sea válido
       const numericPaymentId = parseInt(paymentId);
-      if (isNaN(numericPaymentId)) {
+      if (isNaN(numericPaymentId) || !paymentId || paymentId.trim() === '') {
         throw new Error('ID de pago inválido');
       }
 

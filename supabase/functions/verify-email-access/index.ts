@@ -8,7 +8,8 @@ const corsHeaders = {
 };
 
 interface VerifyEmailAccessRequest {
-  paymentId: string;
+  paymentId?: string;
+  contractorId?: string; // Para URLCC
   token: string;
   email?: string; // Añadido para verificación de email CC
 }
@@ -19,13 +20,13 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { paymentId, token, email }: VerifyEmailAccessRequest = await req.json();
+    const { paymentId, contractorId, token, email }: VerifyEmailAccessRequest = await req.json();
 
-    console.log('🔍 Inicio de verificación - PaymentId:', paymentId, 'Token:', token, 'Email:', email);
+    console.log('🔍 Inicio de verificación - PaymentId:', paymentId, 'ContractorId:', contractorId, 'Token:', token, 'Email:', email);
 
-    if (!paymentId || !token) {
+    if ((!paymentId && !contractorId) || !token) {
       return new Response(
-        JSON.stringify({ error: 'PaymentId y token son requeridos' }),
+        JSON.stringify({ error: 'PaymentId o ContractorId y token son requeridos' }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
@@ -35,6 +36,62 @@ const handler = async (req: Request): Promise<Response> => {
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
+
+    let payment = null;
+    let project = null;
+
+    // CASO 1: Acceso via URLCC (contractorId)
+    if (contractorId) {
+      console.log('🔍 Verificando acceso CC para contractorId:', contractorId);
+      
+      const { data: contractor, error: contractorError } = await supabaseAdmin
+        .from('Contratistas')
+        .select('URLCC, CCEmail, id')
+        .eq('id', contractorId)
+        .single();
+
+      if (contractorError || !contractor) {
+        return new Response(
+          JSON.stringify({ error: 'Contratista no encontrado' }),
+          { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+
+      if (contractor.URLCC && contractor.URLCC.includes(`token=${token}`)) {
+        console.log('✅ Token CC verificado exitosamente');
+        
+        if (email && contractor.CCEmail && contractor.CCEmail.toLowerCase().trim() === email.toLowerCase().trim()) {
+          console.log('✅ Email CC verificado exitosamente');
+          return new Response(
+            JSON.stringify({ userType: 'cc', accessType: 'cc' }),
+            { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+          );
+        } else if (!email) {
+          return new Response(
+            JSON.stringify({ userType: 'cc', accessType: 'cc' }),
+            { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+          );
+        } else {
+          return new Response(
+            JSON.stringify({ error: 'Token o email inválido' }),
+            { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+          );
+        }
+      } else {
+        return new Response(
+          JSON.stringify({ error: 'Token de acceso inválido' }),
+          { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+    }
+
+    // CASO 2: Acceso via URLMandante/URLContratista (paymentId)
+    if (!paymentId) {
+      return new Response(
+        JSON.stringify({ error: 'PaymentId requerido' }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
 
     // Fetch payment data to check token validity
     const { data: payment, error: paymentError } = await supabaseAdmin
@@ -50,8 +107,24 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Fetch payment data to check token validity
+    const { data: paymentData, error: paymentError } = await supabaseAdmin
+      .from('Estados de pago')
+      .select('URLContratista, URLMandante, Notes, Project')
+      .eq('id', paymentId)
+      .single();
+
+    if (paymentError) {
+      return new Response(
+        JSON.stringify({ error: 'Pago no encontrado' }),
+        { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    payment = paymentData;
+
     // Get project data to find contractor
-    const { data: project, error: projectError } = await supabaseAdmin
+    const { data: projectData, error: projectError } = await supabaseAdmin
       .from('Proyectos')
       .select('Contratista, Owner')
       .eq('id', payment.Project)
@@ -63,6 +136,8 @@ const handler = async (req: Request): Promise<Response> => {
         { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
+
+    project = projectData;
 
     let userType = null;
     let accessType = null; // 'cc', 'mandante', 'contratista'

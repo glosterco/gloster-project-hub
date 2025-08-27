@@ -12,6 +12,7 @@ const EmailAccess = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const paymentId = searchParams.get('paymentId');
+  const contractorId = searchParams.get('contractorId');
   const token = searchParams.get('token');
   const { toast } = useToast();
   
@@ -23,21 +24,25 @@ const EmailAccess = () => {
   const [userType, setUserType] = useState<'contratista' | 'mandante' | 'cc' | null>(null);
 
   useEffect(() => {
-    if (!paymentId) {
+    if (!paymentId && !contractorId) {
       navigate('/');
       return;
     }
-  }, [paymentId, navigate]);
+  }, [paymentId, contractorId, navigate]);
 
   // Detectar tipo de acceso desde URL params de forma segura
   useEffect(() => {
     const detectAccessType = async () => {
-      if (!paymentId || !token) return;
+      if ((!paymentId && !contractorId) || !token) return;
 
       try {
         // Use secure edge function to verify token and determine user type
         const { data, error } = await supabase.functions.invoke('verify-email-access', {
-          body: { paymentId, token }
+          body: { 
+            paymentId: paymentId || undefined, 
+            contractorId: contractorId || undefined,
+            token 
+          }
         });
 
         if (error) {
@@ -55,7 +60,7 @@ const EmailAccess = () => {
     };
 
     detectAccessType();
-  }, [paymentId, token]);
+  }, [paymentId, contractorId, token]);
 
   const checkUserAccount = async (email: string, userType: 'contratista' | 'mandante') => {
     try {
@@ -94,7 +99,12 @@ const EmailAccess = () => {
       // PASO 1: Verificar token y email juntos para identificar el tipo de acceso
       if (token) {
         const { data: tokenVerification, error: tokenError } = await supabase.functions.invoke('verify-email-access', {
-          body: { paymentId, token, email }
+          body: { 
+            paymentId: paymentId || undefined, 
+            contractorId: contractorId || undefined, 
+            token, 
+            email 
+          }
         });
 
         if (!tokenError && tokenVerification?.userType) {
@@ -120,7 +130,7 @@ const EmailAccess = () => {
           }
 
           const accessData = {
-            paymentId: paymentId,
+            paymentId: paymentId || contractorId, // Para CC usamos contractorId
             email: email, // CRÍTICO: Agregar email para RLS
             userType: finalUserType,
             isRegistered: false,

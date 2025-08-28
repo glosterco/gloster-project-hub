@@ -8,6 +8,7 @@ import { usePaymentDetail } from '@/hooks/usePaymentDetail';
 import { useAccessVerification } from '@/hooks/useAccessVerification';
 import SubmissionHeader from '@/components/submission/SubmissionHeader';
 import SubmissionContent from '@/components/submission/SubmissionContent';
+import { useDriveFiles } from '@/hooks/useDriveFiles';
 
 const SubmissionView = () => {
   const navigate = useNavigate();
@@ -56,6 +57,13 @@ const SubmissionView = () => {
   
   // Solo verificar acceso después de que el payment se haya cargado o fallado
   const { hasAccess, checkingAccess, isMandante } = useAccessVerification(payment, paymentId);
+  
+  // Hook para obtener archivos del Drive si el payment está aprobado o enviado
+  const shouldShowDriveFiles = payment?.Status === 'Enviado' || payment?.Status === 'Aprobado' || payment?.Status === 'Rechazado';
+  const { driveFiles } = useDriveFiles(
+    payment?.id?.toString() || null, 
+    shouldShowDriveFiles
+  );
 
   const handleStatusChange = () => {
     console.log('🔄 Status changed, refreshing payment data...');
@@ -150,6 +158,7 @@ const SubmissionView = () => {
         isMandante={isMandante}
         onStatusChange={handleStatusChange}
         useDirectDownload={true}
+        driveFiles={driveFiles} // Pasar archivos del Drive
       />
     </div>
   );

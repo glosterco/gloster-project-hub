@@ -10,6 +10,7 @@ interface SubmissionContentProps {
   isMandante: boolean;
   onStatusChange: () => void;
   useDirectDownload?: boolean;
+  driveFiles?: { [key: string]: string[] };
 }
 
 const SubmissionContent: React.FC<SubmissionContentProps> = ({
@@ -17,7 +18,8 @@ const SubmissionContent: React.FC<SubmissionContentProps> = ({
   payment,
   isMandante,
   onStatusChange,
-  useDirectDownload = false
+  useDirectDownload = false,
+  driveFiles
 }) => {
   // Extract data directly from payment object
   const paymentState = {
@@ -62,6 +64,7 @@ const SubmissionContent: React.FC<SubmissionContentProps> = ({
             project={project}
             documents={documents}
             useDirectDownload={useDirectDownload}
+            driveFiles={driveFiles}
           />
         </div>
 

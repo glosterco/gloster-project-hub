@@ -10,6 +10,7 @@ import { useCCNotification } from '@/hooks/useCCNotification';
 import { useGoogleDriveIntegration } from '@/hooks/useGoogleDriveIntegration';
 import { useDocumentUpload } from '@/hooks/useDocumentUpload';
 import { useDirectDriveDownload } from '@/hooks/useDirectDriveDownload';
+import { useDriveFiles } from '@/hooks/useDriveFiles';
 import { useUniqueAccessUrl } from '@/hooks/useUniqueAccessUrl';
 import { usePaymentValidation } from '@/hooks/usePaymentValidation';
 import { usePaymentActions } from '@/hooks/usePaymentActions';
@@ -71,6 +72,16 @@ const PaymentDetail = () => {
   const { uploadDocumentsToDrive, loading: driveLoading } = useGoogleDriveIntegration();
   const { downloadDocument, isDocumentLoading } = useDirectDriveDownload();
   const { handleResubmission, loading: resubmissionLoading } = useContractorResubmission();
+
+  // CORRIGIENDO: Función para mostrar archivos del Drive si el status es "Enviado", "Aprobado" o "Rechazado"
+  const shouldShowDriveFiles = () => {
+    return payment?.Status === 'Enviado' || payment?.Status === 'Aprobado' || payment?.Status === 'Rechazado';
+  };
+
+  const { driveFiles, loading: driveFilesLoading, refetch: refetchDriveFiles } = useDriveFiles(
+    payment?.id?.toString() || null, 
+    shouldShowDriveFiles()
+  );
 
   // Use the document upload hook
   const {
@@ -335,11 +346,6 @@ const PaymentDetail = () => {
       await refetch();
       console.log('💾 Data refreshed for preview');
     }
-  };
-
-  // CORRIGIENDO: Función para mostrar archivos del Drive si el status es "Enviado", "Aprobado" o "Rechazado"
-  const shouldShowDriveFiles = () => {
-    return payment?.Status === 'Enviado' || payment?.Status === 'Aprobado' || payment?.Status === 'Rechazado';
   };
 
   // Función para verificar si se pueden cargar documentos (solo para status "Rechazado")
@@ -945,7 +951,7 @@ const PaymentDetail = () => {
               onDownloadFile={handleDownloadFile}
               onDocumentUpload={handleDocumentUpload}
               paymentStatus={payment?.Status}
-              uploadedFiles={uploadedFiles}
+              uploadedFiles={driveFiles} // Usar archivos del Drive en lugar de archivos locales
               onFileRemove={handleFileRemove}
             />
           )}

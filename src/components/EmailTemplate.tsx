@@ -43,6 +43,7 @@ interface EmailTemplateProps {
   hideActionButtons?: boolean;
   driveUrl?: string;
   useDirectDownload?: boolean;
+  driveFiles?: { [key: string]: string[] };
 }
 
 const EmailTemplate: React.FC<EmailTemplateProps> = ({
@@ -52,7 +53,8 @@ const EmailTemplate: React.FC<EmailTemplateProps> = ({
   documents,
   hideActionButtons = false,
   driveUrl,
-  useDirectDownload = false
+  useDirectDownload = false,
+  driveFiles
 }) => {
   const { getDriveFiles } = useEmailNotifications();
   const { downloadDocument, isDocumentLoading } = useDirectDriveDownload();
@@ -260,6 +262,49 @@ const EmailTemplate: React.FC<EmailTemplateProps> = ({
           ))}
         </div>
       </div>
+
+      {/* Mandante Documents Section */}
+      {driveFiles && driveFiles['mandante_docs'] && driveFiles['mandante_docs'].length > 0 && (
+        <div className="p-4 border-b border-gray-100 bg-green-50">
+          <div className="flex items-center mb-3">
+            <FileText className="w-4 h-4 mr-2 text-green-600" />
+            <h2 className="text-base font-semibold text-slate-800">Documentos Adicionales del Mandante</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {driveFiles['mandante_docs'].map((fileName, index) => (
+              <div key={`mandante-${index}`} className="border border-green-200 rounded-lg p-3 bg-white">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center mb-1">
+                      <FileText className="w-3 h-3 mr-2 text-green-500" />
+                      <p className="text-sm font-medium text-slate-800">{fileName}</p>
+                    </div>
+                    <p className="text-xs text-gray-600 mb-2">Documento cargado por el mandante</p>
+                    <div className="flex items-center justify-between">
+                      {useDirectDownload && paymentId ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => downloadDocument(paymentId, fileName)}
+                          disabled={isDocumentLoading(fileName)}
+                          className="text-xs py-1 px-2"
+                        >
+                          <Download className="w-3 h-3 mr-1" />
+                          {isDocumentLoading(fileName) ? 'Descargando...' : 'Descargar'}
+                        </Button>
+                      ) : (
+                        <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
+                          ✓ Disponible
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Contact Information */}
       <div className="p-4 border-b border-gray-100 bg-gray-50">

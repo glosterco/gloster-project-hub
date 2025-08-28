@@ -89,18 +89,33 @@ export const useDocumentUpload = () => {
   });
 
   const validateFiles = (files: FileList | File[]) => {
-    const allowedTypes = ['application/pdf', 'text/csv', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel.sheet.macroEnabled.12', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    const allowedTypes = [
+      'application/pdf', // PDF
+      'text/csv', // CSV
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // XLSX
+      'application/vnd.ms-excel.sheet.macroEnabled.12', // XLSM
+      'application/vnd.ms-excel', // XLS
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // DOCX
+      'application/msword', // DOC
+      'image/jpeg', // JPG
+      'image/png' // PNG
+    ];
     
     const fileArray = Array.from(files);
     const validFiles = fileArray.filter(file => {
+      console.log(`🔍 Validating file: ${file.name}, type: ${file.type}, size: ${file.size}`);
+      
       if (!allowedTypes.includes(file.type)) {
+        console.error(`❌ Invalid file format: ${file.name} (${file.type})`);
         toast({
-          title: "Formato no válido",
-          description: `El archivo ${file.name} no es un formato válido. Solo se aceptan PDF, CSV, XLSX, XLSM y DOCX.`,
+          title: "Error de formato",
+          description: `El archivo ${file.name} no es un formato válido. Solo se aceptan: PDF, DOC, DOCX, XLS, XLSX, XLSM, JPG, PNG y CSV.`,
           variant: "destructive",
         });
         return false;
       }
+      
+      console.log(`✅ File format valid: ${file.name}`);
       return true;
     });
 
@@ -113,7 +128,11 @@ export const useDocumentUpload = () => {
     const validFiles = validateFiles(files);
     if (validFiles.length === 0) return;
 
-    console.log(`📁 Uploading ${validFiles.length} files for ${documentId}:`, validFiles.map(f => f.name));
+    // Documentos que requieren UN solo archivo
+    const singleFileDocuments = ['eepp', 'cotizaciones', 'f30', 'f30_1', 'factura'];
+    const requiresSingleFile = singleFileDocuments.includes(documentId);
+    
+    console.log(`📁 Uploading ${validFiles.length} files for ${documentId} (single file required: ${requiresSingleFile}):`, validFiles.map(f => f.name));
 
     setDocumentStatus(prev => ({
       ...prev,
@@ -122,24 +141,30 @@ export const useDocumentUpload = () => {
 
     const fileNames = validFiles.map(file => file.name);
     setUploadedFiles(prev => {
-      // Ensure the array exists before spreading
       const currentFiles = prev[documentId as keyof UploadedFiles] || [];
+      
+      // Si requiere un solo archivo, reemplazar siempre
+      // Si permite múltiples y allowMultiple es true, agregar
+      // Si permite múltiples pero allowMultiple es false, reemplazar
+      const shouldReplace = requiresSingleFile || !allowMultiple;
+      
+      if (shouldReplace && currentFiles.length > 0) {
+        console.log(`🔄 Replacing existing files for ${documentId}: ${currentFiles.join(', ')} -> ${fileNames.join(', ')}`);
+      }
+      
       return {
         ...prev,
-        [documentId]: allowMultiple 
-          ? [...currentFiles, ...fileNames]
-          : fileNames
+        [documentId]: shouldReplace ? fileNames : [...currentFiles, ...fileNames]
       };
     });
 
     setFileObjects(prev => {
-      // Ensure the array exists before spreading
       const currentFiles = prev[documentId] || [];
+      const shouldReplace = requiresSingleFile || !allowMultiple;
+      
       return {
         ...prev,
-        [documentId]: allowMultiple 
-          ? [...currentFiles, ...validFiles]
-          : validFiles
+        [documentId]: shouldReplace ? validFiles : [...currentFiles, ...validFiles]
       };
     });
 
@@ -149,9 +174,11 @@ export const useDocumentUpload = () => {
       input.value = '';
     }
 
+    const action = requiresSingleFile && uploadedFiles[documentId as keyof UploadedFiles]?.length > 0 ? "reemplazado" : "cargado";
+    
     toast({
-      title: "Documento(s) cargado(s)",
-      description: `${validFiles.length} archivo(s) se han cargado exitosamente`,
+      title: `Documento(s) ${action}(s)`,
+      description: `${validFiles.length} archivo(s) se han ${action} exitosamente${requiresSingleFile ? ' (documento de archivo único)' : ''}`,
     });
   };
 

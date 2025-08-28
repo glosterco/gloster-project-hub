@@ -80,10 +80,14 @@ const DriveFilesCard: React.FC<DriveFilesCardProps> = ({
                             <span className="text-xs text-green-800 font-rubik truncate flex-1 pr-2">{file}</span>
                             {onFileRemove && paymentStatus === 'Rechazado' && (
                               <Button
-                                onClick={() => onFileRemove(doc.id, index)}
+                                onClick={() => {
+                                  console.log(`🗑️ Removing file: ${file} from ${doc.id} at index ${index}`);
+                                  onFileRemove(doc.id, index);
+                                }}
                                 variant="ghost"
                                 size="sm"
                                 className="h-4 w-4 p-0 text-red-600 hover:text-red-800 hover:bg-red-100 shrink-0"
+                                disabled={false}
                               >
                                 <X className="h-3 w-3" />
                               </Button>

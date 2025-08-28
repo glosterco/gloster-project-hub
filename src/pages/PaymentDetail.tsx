@@ -11,6 +11,7 @@ import { useGoogleDriveIntegration } from '@/hooks/useGoogleDriveIntegration';
 import { useDocumentUpload } from '@/hooks/useDocumentUpload';
 import { useDirectDriveDownload } from '@/hooks/useDirectDriveDownload';
 import { useDriveFiles } from '@/hooks/useDriveFiles';
+import { useDriveFileManagement } from '@/hooks/useDriveFileManagement';
 import { useUniqueAccessUrl } from '@/hooks/useUniqueAccessUrl';
 import { usePaymentValidation } from '@/hooks/usePaymentValidation';
 import { usePaymentActions } from '@/hooks/usePaymentActions';
@@ -82,6 +83,7 @@ const PaymentDetail = () => {
     payment?.id?.toString() || null, 
     shouldShowDriveFiles()
   );
+  const { deleteFileFromDrive, loading: deleteLoading } = useDriveFileManagement();
 
   // Use the document upload hook
   const {
@@ -539,6 +541,48 @@ const PaymentDetail = () => {
     await downloadDocument(payment.id.toString(), fileName);
   };
 
+  // Handle file removal from Drive (only for rejected status)
+  const handleDriveFileRemove = async (docId: string, fileIndex: number) => {
+    if (!payment?.id) {
+      toast({
+        title: "Error",
+        description: "No se pudo identificar el estado de pago",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (payment?.Status !== 'Rechazado') {
+      toast({
+        title: "Acción no permitida",
+        description: "Solo puedes eliminar archivos cuando el estado de pago está Rechazado",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Get the filename from driveFiles
+    const docFiles = driveFiles[docId];
+    if (!docFiles || !docFiles[fileIndex]) {
+      console.error(`File not found: docId=${docId}, fileIndex=${fileIndex}`);
+      toast({
+        title: "Error",
+        description: "No se pudo encontrar el archivo a eliminar",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const fileName = docFiles[fileIndex];
+    console.log(`🗑️ Removing file from Drive: ${fileName}`);
+
+    const success = await deleteFileFromDrive(payment.id.toString(), fileName);
+    if (success) {
+      // Refresh drive files after successful deletion
+      await refetchDriveFiles();
+    }
+  };
+
   const handleSendDocuments = async () => {
     setIsAttemptingAction(true);
     // Validate fields before sending
@@ -856,7 +900,7 @@ const PaymentDetail = () => {
             type="file"
             ref={el => fileInputRefs.current[doc.id] = el}
             onChange={e => handleFileUpload(doc.id, e.target.files, doc.allowMultiple)}
-            accept=".pdf,.csv,.xlsx,.xlsm,.docx"
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.xlsm,.jpg,.jpeg,.png,.csv"
             multiple={doc.allowMultiple}
             style={{ display: 'none' }}
           />
@@ -952,7 +996,7 @@ const PaymentDetail = () => {
               onDocumentUpload={handleDocumentUpload}
               paymentStatus={payment?.Status}
               uploadedFiles={driveFiles} // Usar archivos del Drive en lugar de archivos locales
-              onFileRemove={handleFileRemove}
+              onFileRemove={handleDriveFileRemove}
             />
           )}
 

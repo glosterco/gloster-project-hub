@@ -105,13 +105,13 @@ export const useDocumentUpload = () => {
     const validFiles = fileArray.filter(file => {
       console.log(`🔍 Validating file: ${file.name}, type: ${file.type}, size: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
       
-      // Check file size (limit to 15MB in frontend to prevent memory issues)
+      // Check file size (limit to 5MB in frontend to prevent memory issues)
       const fileSizeMB = file.size / (1024 * 1024);
-      if (fileSizeMB > 15) {
+      if (fileSizeMB > 5) {
         console.error(`❌ File too large: ${file.name} (${fileSizeMB.toFixed(2)}MB)`);
         toast({
           title: "Archivo demasiado grande",
-          description: `El archivo ${file.name} (${fileSizeMB.toFixed(2)}MB) excede el límite de 15MB.`,
+          description: `El archivo ${file.name} (${fileSizeMB.toFixed(2)}MB) excede el límite de 5MB.`,
           variant: "destructive",
         });
         return false;

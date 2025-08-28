@@ -84,9 +84,10 @@ const downloadFileContent = async (accessToken: string, fileId: string, fileName
     const fileSizeBytes = parseInt(metadata.size || '0');
     const fileSizeMB = fileSizeBytes / (1024 * 1024);
     
-    // Límite más restrictivo para evitar problemas de memoria
-    if (fileSizeMB > 15) {
-      throw new Error(`File ${fileName} is too large (${fileSizeMB.toFixed(2)}MB). Maximum download size is 15MB due to memory limitations.`);
+    // Límite muy restrictivo debido a limitaciones de memoria de edge functions
+    if (fileSizeMB > 5) {
+      console.warn(`⚠️ File ${fileName} is too large (${fileSizeMB.toFixed(2)}MB) for content download. Providing download link only.`);
+      throw new Error(`LARGE_FILE:${fileSizeMB.toFixed(2)}`);
     }
     
     console.log(`📊 File ${fileName} size: ${fileSizeMB.toFixed(2)}MB`);
@@ -343,6 +344,15 @@ const handler = async (req: Request): Promise<Response> => {
           
         } catch (contentError) {
           console.error(`❌ Error downloading content for ${file.name}:`, contentError);
+          
+          // Si es un archivo muy grande, marcar como tal y proporcionar solo enlaces
+          if (contentError.message?.startsWith('LARGE_FILE:')) {
+            const fileSizeMB = contentError.message.split(':')[1];
+            fileData.isLargeFile = true;
+            fileData.fileSizeMB = fileSizeMB;
+            fileData.message = `Archivo demasiado grande (${fileSizeMB}MB) para descarga directa. Use el enlace de descarga.`;
+            console.log(`📎 Large file ${file.name} (${fileSizeMB}MB) - providing download link only`);
+          }
           // Continuar sin el contenido si hay error
         }
       }

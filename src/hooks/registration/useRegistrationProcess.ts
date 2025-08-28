@@ -67,25 +67,27 @@ export const useRegistrationProcess = () => {
     return { success: true, user: authData.user };
   };
 
-  const createContratistaRecord = async (formData: any, authUserId: string) => {
+  const createContratistaRecord = async (formData: any, authUserId?: string) => {
     console.log('Creating or finding contratista...');
     
-    // Primero verificar si ya existe un contratista para este usuario
-    const { data: existingContratista } = await supabase
-      .from('Contratistas')
-      .select('*')
-      .eq('auth_user_id', authUserId)
-      .maybeSingle();
+    // Solo verificar si ya existe un contratista para este usuario si se proporciona authUserId
+    if (authUserId) {
+      const { data: existingContratista } = await supabase
+        .from('Contratistas')
+        .select('*')
+        .eq('auth_user_id', authUserId)
+        .maybeSingle();
 
-    if (existingContratista) {
-      console.log('Contratista already exists with ID:', existingContratista.id);
-      return { success: true, id: existingContratista.id };
+      if (existingContratista) {
+        console.log('Contratista already exists with ID:', existingContratista.id);
+        return { success: true, id: existingContratista.id };
+      }
     }
 
-    // Si no existe, crear nuevo contratista
-    const contratistaData = prepareContratistaData(formData, authUserId);
+    // Si no existe, crear nuevo contratista (puede ser sin authUserId durante registro)
+    const contratistaData = prepareContratistaData(formData, authUserId || null);
     
-    const { data: contratistaResult, error: contratistaError } = await createContratista(contratistaData, authUserId);
+    const { data: contratistaResult, error: contratistaError } = await createContratista(contratistaData, authUserId || null);
     
     if (contratistaError) {
       console.error('Error creating contratista:', contratistaError);
@@ -219,7 +221,7 @@ export const useRegistrationProcess = () => {
       if (!authResult.success) return false;
 
       // Paso 2: Crear contratista
-      const contratistaResult = await createContratistaRecord(formData, authResult.user.id);
+      const contratistaResult = await createContratistaRecord(formData, authResult.user?.id);
       if (!contratistaResult.success) return false;
 
       // Paso 3: Verificar si ya tiene rol de contratista

@@ -84,9 +84,9 @@ const downloadFileContent = async (accessToken: string, fileId: string, fileName
     const fileSizeBytes = parseInt(metadata.size || '0');
     const fileSizeMB = fileSizeBytes / (1024 * 1024);
     
-    // Reduced limit for downloads to prevent memory issues
-    if (fileSizeMB > 25) {
-      throw new Error(`File ${fileName} is too large (${fileSizeMB.toFixed(2)}MB). Maximum download size is 25MB due to memory limitations.`);
+    // Límite más restrictivo para evitar problemas de memoria
+    if (fileSizeMB > 15) {
+      throw new Error(`File ${fileName} is too large (${fileSizeMB.toFixed(2)}MB). Maximum download size is 15MB due to memory limitations.`);
     }
     
     console.log(`📊 File ${fileName} size: ${fileSizeMB.toFixed(2)}MB`);
@@ -123,26 +123,37 @@ const downloadFileContent = async (accessToken: string, fileId: string, fileName
     console.log(`🧠 Memory after download: ${(memAfter.heapUsed / 1024 / 1024).toFixed(2)}MB`);
   }
   
-  // Convertir a base64 de manera más eficiente
+  // Convertir a base64 de manera más eficiente con chunks más pequeños
   console.log(`🔄 Converting ${fileName} to base64...`);
   
-  // Use chunks to avoid memory spikes
-  const chunkSize = 8192;
-  let binary = '';
+  // Use smaller chunks for better memory management
+  const chunkSize = 4096; // Reduced from 8192
+  const chunks = [];
   
+  // Process in smaller chunks to avoid memory spikes
   for (let i = 0; i < bytes.length; i += chunkSize) {
     const chunk = bytes.slice(i, i + chunkSize);
     let chunkBinary = '';
     for (let j = 0; j < chunk.length; j++) {
       chunkBinary += String.fromCharCode(chunk[j]);
     }
-    binary += chunkBinary;
+    chunks.push(btoa(chunkBinary));
+    
+    // Clear the chunk immediately
+    chunk.fill(0);
+    
+    // Force GC every 50 chunks to prevent memory buildup
+    if (chunks.length % 50 === 0 && globalThis.gc) {
+      globalThis.gc();
+    }
   }
   
-  const base64 = btoa(binary);
+  // Join all base64 chunks
+  const base64 = chunks.join('');
   
-  // Clear references immediately
+  // Clear all references immediately
   bytes.fill(0);
+  chunks.length = 0;
   
   // Force cleanup
   if (globalThis.gc) {
@@ -150,7 +161,7 @@ const downloadFileContent = async (accessToken: string, fileId: string, fileName
     console.log(`🗑️ Forced garbage collection after ${fileName}`);
   }
   
-  console.log(`✅ Base64 conversion completed for ${fileName}`);
+  console.log(`✅ Base64 conversion completed for ${fileName} (${(base64.length / 1024 / 1024 * 0.75).toFixed(2)}MB estimated)`);
   return base64;
 };
 

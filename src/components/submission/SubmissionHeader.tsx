@@ -88,6 +88,7 @@ const SubmissionHeader: React.FC<SubmissionHeaderProps> = ({ projectId }) => {
     
     // Para usuarios autenticados con acceso completo
     if (projectId && user) {
+      // Para el contexto de SubmissionView, siempre dirigir mandantes a project-mandante
       if (userInfo.userType === 'mandante') {
         navigate(`/project-mandante/${projectId}`);
       } else {

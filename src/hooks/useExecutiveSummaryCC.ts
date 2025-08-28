@@ -25,35 +25,39 @@ export const useExecutiveSummaryCC = () => {
         throw new Error('Acceso no autorizado para CC');
       }
 
-      // Obtener el paymentId para identificar el contratista
-      const paymentId = accessData.paymentId;
-      if (!paymentId) {
-        throw new Error('No se pudo identificar el pago');
+      // Para CC, obtener el contractorId directamente del accessData
+      let contratistaId = accessData.contractorId;
+      
+      // Si no hay contractorId directo, intentar obtenerlo del paymentId (fallback)
+      if (!contratistaId && accessData.paymentId) {
+        // Obtener datos del pago para identificar el contratista
+        const { data: payment, error: paymentError } = await supabase
+          .from('Estados de pago')
+          .select('Project')
+          .eq('id', accessData.paymentId)
+          .single();
+
+        if (paymentError) {
+          throw new Error('Error al obtener información del pago');
+        }
+
+        // Obtener datos del proyecto para identificar el contratista
+        const { data: project, error: projectError } = await supabase
+          .from('Proyectos')
+          .select('Contratista')
+          .eq('id', payment.Project)
+          .single();
+
+        if (projectError) {
+          throw new Error('Error al obtener información del proyecto');
+        }
+
+        contratistaId = project.Contratista;
       }
-
-      // Obtener datos del pago para identificar el contratista
-      const { data: payment, error: paymentError } = await supabase
-        .from('Estados de pago')
-        .select('Project')
-        .eq('id', paymentId)
-        .single();
-
-      if (paymentError) {
-        throw new Error('Error al obtener información del pago');
+      
+      if (!contratistaId) {
+        throw new Error('No se pudo identificar el contratista');
       }
-
-      // Obtener datos del proyecto para identificar el contratista
-      const { data: project, error: projectError } = await supabase
-        .from('Proyectos')
-        .select('Contratista')
-        .eq('id', payment.Project)
-        .single();
-
-      if (projectError) {
-        throw new Error('Error al obtener información del proyecto');
-      }
-
-      const contratistaId = project.Contratista;
 
       // Fetch projects SOLO del contratista específico
       const { data: projects, error: projectsError } = await supabase

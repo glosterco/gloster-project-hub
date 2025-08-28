@@ -16,25 +16,40 @@ export const RouteProtection = ({ children }: RouteProtectionProps) => {
       try {
         const accessData = JSON.parse(mandanteAccess);
         
-        // If mandante has limited access (no user_auth_id), restrict to submission view only
+        // If mandante has limited access (no user_auth_id), restrict to specific views
         if (accessData.isLimitedAccess || !accessData.hasFullAccess) {
           const currentPath = location.pathname;
           
-          // Only allow access to submission view for this specific paymentId
-          const allowedPathPattern = `/submission/${accessData.paymentId}`;
+          // Allow access patterns based on user type
+          let allowedPaths: string[] = [];
           
-          if (currentPath !== allowedPathPattern) {
-            console.log('🚫 RouteProtection: Limited access mandante blocked from accessing:', {
+          if (accessData.userType === 'cc') {
+            // CC users can access executive summary and related routes
+            allowedPaths = ['/executive-summary'];
+          } else if (accessData.paymentId) {
+            // Regular limited mandante users can only access submission view
+            allowedPaths = [`/submission/${accessData.paymentId}`];
+          }
+          
+          // Check if current path is allowed
+          const isAllowedPath = allowedPaths.some(path => currentPath === path);
+          
+          if (!isAllowedPath) {
+            console.log('🚫 RouteProtection: Limited access user blocked from accessing:', {
               currentPath,
-              allowedPath: allowedPathPattern,
+              allowedPaths,
               email: accessData.email,
+              userType: accessData.userType,
               isLimitedAccess: accessData.isLimitedAccess,
               hasFullAccess: accessData.hasFullAccess
             });
             
-            // Force redirect to submission view
-            window.location.href = allowedPathPattern;
-            return;
+            // Redirect to appropriate allowed path
+            const redirectPath = allowedPaths[0];
+            if (redirectPath) {
+              window.location.href = redirectPath;
+              return;
+            }
           }
         }
       } catch (error) {

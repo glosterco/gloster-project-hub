@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
@@ -14,6 +14,41 @@ const SubmissionView = () => {
   const { id } = useParams();
   const paymentId = id || '';
 
+  // Verificación preventiva de acceso ANTES de cargar datos
+  const [preAccessCheck, setPreAccessCheck] = useState(true);
+  const [hasPreAccess, setHasPreAccess] = useState(false);
+
+  useEffect(() => {
+    const checkPreventiveAccess = () => {
+      const mandanteAccess = sessionStorage.getItem('mandanteAccess');
+      const contractorAccess = sessionStorage.getItem('contractorAccess');
+      
+      if (mandanteAccess) {
+        const accessData = JSON.parse(mandanteAccess);
+        // Si es acceso limitado, verificar que sea para este paymentId específico
+        if (accessData.isLimitedAccess || !accessData.hasFullAccess) {
+          if (accessData.paymentId?.toString() === paymentId) {
+            setHasPreAccess(true);
+          } else {
+            // Bloqueo preventivo: redirigir inmediatamente
+            navigate('/');
+            return;
+          }
+        } else {
+          setHasPreAccess(true);
+        }
+      } else if (contractorAccess) {
+        setHasPreAccess(true); // Los contratistas pueden acceder
+      } else {
+        setHasPreAccess(true); // Usuario autenticado normal
+      }
+      
+      setPreAccessCheck(false);
+    };
+
+    checkPreventiveAccess();
+  }, [paymentId, navigate]);
+
   const { payment, loading, error, refetch } = usePaymentDetail(paymentId, true);
   const { toast } = useToast();
   
@@ -25,15 +60,33 @@ const SubmissionView = () => {
     refetch();
   };
 
-  // Mostrar loading mientras se verifica acceso O se cargan datos
-  if (checkingAccess || loading) {
+  // Mostrar loading durante verificación preventiva o mientras se cargan datos
+  if (preAccessCheck || checkingAccess || loading) {
     return (
       <div className="min-h-screen bg-slate-50 font-rubik">
         <div className="container mx-auto px-6 py-8">
           <div className="flex items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin mr-2" />
-            <span>{checkingAccess ? 'Verificando acceso...' : 'Cargando datos del estado de pago...'}</span>
+            <span>
+              {preAccessCheck ? 'Verificando permisos...' : 
+               checkingAccess ? 'Verificando acceso...' : 
+               'Cargando datos del estado de pago...'}
+            </span>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Bloqueo preventivo: no permitir renderizado si no tiene pre-acceso
+  if (!hasPreAccess) {
+    return (
+      <div className="min-h-screen bg-slate-50 font-rubik flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gloster-gray mb-4">No tienes acceso a este estado de pago.</p>
+          <Button onClick={() => navigate('/')} className="mt-4">
+            Volver al Inicio
+          </Button>
         </div>
       </div>
     );

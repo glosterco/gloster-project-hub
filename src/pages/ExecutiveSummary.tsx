@@ -30,7 +30,14 @@ const ExecutiveSummary = () => {
       <div className="min-h-screen bg-background">
         <PageHeader />
         <div className="container mx-auto px-6 py-8">
-          <div className="text-center text-destructive">Error al cargar datos: {error}</div>
+          <div className="text-center text-destructive">
+            Error al cargar datos: {error}
+            {isCC && (
+              <div className="mt-4 text-sm text-muted-foreground">
+                Asegúrate de que tienes acceso al contratista correspondiente
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );

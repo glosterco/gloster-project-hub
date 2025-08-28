@@ -1,9 +1,14 @@
 
 import React, { useState } from 'react';
 import { usePaymentApproval } from '@/hooks/usePaymentApproval';
+import { useGoogleDriveIntegration } from '@/hooks/useGoogleDriveIntegration';
 import PaymentInfoHeader from '@/components/approval/PaymentInfoHeader';
 import ApprovalButtons from '@/components/approval/ApprovalButtons';
 import RejectionForm from '@/components/approval/RejectionForm';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Upload, X, FileText, CheckCircle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface PaymentApprovalSectionProps {
   paymentId: string;
@@ -25,6 +30,12 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
 }) => {
   const [showRejectionForm, setShowRejectionForm] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [showApprovalForm, setShowApprovalForm] = useState(false);
+  const [mandanteFiles, setMandanteFiles] = useState<File[]>([]);
+  const [uploadedFileNames, setUploadedFileNames] = useState<string[]>([]);
+  
+  const { toast } = useToast();
+  const { uploadDocumentsToDrive } = useGoogleDriveIntegration();
   
   console.log('🏗️ PaymentApprovalSection rendering with:', { paymentId, hasPaymentData: !!payment });
   
@@ -39,15 +50,107 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
   const currentStatus = payment?.Status;
   const statusNotes = payment?.Notes;
 
-  const onApprove = async () => {
-    console.log('✅ PaymentApprovalSection onApprove clicked');
+  const onApprove = () => {
+    console.log('✅ PaymentApprovalSection onApprove clicked - showing file upload');
+    setShowApprovalForm(true);
+  };
+
+  const onConfirmApprove = async () => {
+    console.log('✅ PaymentApprovalSection onConfirmApprove clicked');
     try {
+      // First approve the payment
       await handleApprove();
+      
+      // Upload mandante files if any
+      if (mandanteFiles.length > 0) {
+        console.log('📤 Uploading mandante files:', mandanteFiles.map(f => f.name));
+        
+        // Prepare files for upload with correct structure
+        const uploadedFilesMap: { [key: string]: string[] } = {};
+        const fileObjectsMap: { [key: string]: File[] } = {};
+        const documentStatusMap: { [key: string]: boolean } = {};
+        
+        mandanteFiles.forEach((file, index) => {
+          const docKey = `mandante_doc_${index}`;
+          uploadedFilesMap[docKey] = [file.name + ' - mandante'];
+          fileObjectsMap[docKey] = [file];
+          documentStatusMap[docKey] = true;
+        });
+        
+        // Upload to Google Drive
+        await uploadDocumentsToDrive(
+          parseInt(paymentId),
+          uploadedFilesMap,
+          documentStatusMap,
+          fileObjectsMap
+        );
+        
+        toast({
+          title: "Documentos cargados",
+          description: "Los documentos del mandante se han cargado exitosamente",
+        });
+      }
+      
       // Force immediate UI update by updating local state
       payment.Status = 'Aprobado';
+      setShowApprovalForm(false);
+      setMandanteFiles([]);
+      setUploadedFileNames([]);
     } catch (error) {
-      console.error('❌ Error in onApprove:', error);
+      console.error('❌ Error in onConfirmApprove:', error);
+      toast({
+        title: "Error",
+        description: "Error al procesar la aprobación",
+        variant: "destructive"
+      });
     }
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+
+    const validFiles = Array.from(files).filter(file => {
+      const allowedTypes = ['application/pdf', 'text/csv', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel.sheet.macroEnabled.12', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+      if (!allowedTypes.includes(file.type)) {
+        toast({
+          title: "Formato no válido",
+          description: `El archivo ${file.name} no es un formato válido. Solo se aceptan PDF, CSV, XLSX, XLSM y DOCX.`,
+          variant: "destructive",
+        });
+        return false;
+      }
+      return true;
+    });
+
+    if (validFiles.length > 0) {
+      setMandanteFiles(prev => [...prev, ...validFiles]);
+      setUploadedFileNames(prev => [...prev, ...validFiles.map(f => f.name)]);
+      
+      toast({
+        title: "Archivo(s) cargado(s)",
+        description: `${validFiles.length} archivo(s) agregado(s) exitosamente`,
+      });
+    }
+
+    // Clear input
+    event.target.value = '';
+  };
+
+  const handleFileRemove = (index: number) => {
+    setMandanteFiles(prev => prev.filter((_, i) => i !== index));
+    setUploadedFileNames(prev => prev.filter((_, i) => i !== index));
+    
+    toast({
+      title: "Archivo eliminado",
+      description: "El archivo ha sido eliminado exitosamente",
+    });
+  };
+
+  const onCancelApproval = () => {
+    setShowApprovalForm(false);
+    setMandanteFiles([]);
+    setUploadedFileNames([]);
   };
 
   const onReject = () => {
@@ -116,13 +219,13 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
         </div>
       ) : (
         <>
-          {!showRejectionForm ? (
+          {!showRejectionForm && !showApprovalForm ? (
             <ApprovalButtons
               loading={loading}
               onApprove={onApprove}
               onReject={onReject}
             />
-          ) : (
+          ) : showRejectionForm ? (
             <RejectionForm
               loading={loading}
               rejectionReason={rejectionReason}
@@ -130,6 +233,83 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
               onConfirmReject={onConfirmReject}
               onCancel={onCancel}
             />
+          ) : (
+            <Card className="border border-primary/20 bg-primary/5">
+              <CardContent className="p-6">
+                <h3 className="font-semibold text-lg mb-4 text-primary">Documentos Adicionales (Opcional)</h3>
+                <p className="text-muted-foreground mb-4">
+                  Puedes cargar documentos adicionales necesarios para la aprobación, como carátula firmada u otros documentos relevantes.
+                </p>
+                
+                {/* Upload Area */}
+                <div className="border-2 border-dashed border-border rounded-lg p-6 mb-4 text-center">
+                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground mb-4">
+                    Arrastra archivos aquí o haz clic para seleccionar
+                  </p>
+                  <input
+                    type="file"
+                    multiple
+                    accept=".pdf,.csv,.xlsx,.xlsm,.docx"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    id="mandante-file-upload"
+                  />
+                  <Button
+                    onClick={() => document.getElementById('mandante-file-upload')?.click()}
+                    variant="outline"
+                    className="mb-2"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Seleccionar Archivos
+                  </Button>
+                  <p className="text-sm text-muted-foreground">
+                    Formatos soportados: PDF, CSV, XLSX, XLSM, DOCX
+                  </p>
+                </div>
+
+                {/* Uploaded Files */}
+                {uploadedFileNames.length > 0 && (
+                  <div className="space-y-2 mb-6">
+                    <h4 className="font-medium text-sm">Archivos cargados:</h4>
+                    {uploadedFileNames.map((fileName, index) => (
+                      <div key={index} className="flex items-center justify-between bg-success/10 p-3 rounded-lg border border-success/20">
+                        <div className="flex items-center space-x-2">
+                          <CheckCircle className="h-4 w-4 text-success" />
+                          <span className="text-sm font-medium text-success-foreground">{fileName}</span>
+                        </div>
+                        <Button
+                          onClick={() => handleFileRemove(index)}
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex space-x-4">
+                  <Button
+                    onClick={onConfirmApprove}
+                    disabled={loading}
+                    className="bg-success hover:bg-success/90 text-success-foreground"
+                  >
+                    {loading ? 'Procesando...' : 'Confirmar Aprobación'}
+                  </Button>
+                  <Button
+                    onClick={onCancelApproval}
+                    variant="outline"
+                    disabled={loading}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           )}
         </>
       )}

@@ -202,16 +202,24 @@ serve(async (req) => {
           });
         }
       } else {
-        // Single file (upload directly to main folder)
-        const file = docData.files[0];
-        const fileName = `${subfolderName}.${file.name.split('.').pop()}`;
-        
-        const uploadResult = await uploadFileToFolder(file, fileName, targetFolderId, access_token);
-        uploadResults.push({
-          documentType: docType,
-          fileName: fileName,
-          ...uploadResult
-        });
+      // Single file (upload directly to main folder)
+      const file = docData.files[0];
+      
+      // Special handling for mandante documents - use original name with suffix
+      let fileName;
+      if (docType.startsWith('mandante_doc_')) {
+        // For mandante docs, the file name should already include "- mandante" from frontend
+        fileName = file.name.includes('- mandante') ? file.name : `${file.name} - mandante`;
+      } else {
+        fileName = `${subfolderName}.${file.name.split('.').pop()}`;
+      }
+      
+      const uploadResult = await uploadFileToFolder(file, fileName, targetFolderId, access_token);
+      uploadResults.push({
+        documentType: docType,
+        fileName: fileName,
+        ...uploadResult
+      });
       }
     }
 

@@ -19,31 +19,8 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
     try {
       setLoading(true);
       
-      // Set session context for RLS if we have mandante access
-      const mandanteAccess = sessionStorage.getItem('mandanteAccess');
-      console.log('📋 Mandante access data:', mandanteAccess ? JSON.parse(mandanteAccess) : 'None');
-      
-      if (mandanteAccess) {
-        const accessInfo = JSON.parse(mandanteAccess);
-        if (accessInfo.email) {
-          console.log('🔑 Setting RLS context with email:', accessInfo.email);
-          // Set the email context for RLS policy verification
-          const { error: configError } = await supabase.rpc('set_config', {
-            setting_name: 'custom.email_access',
-            setting_value: accessInfo.email,
-            is_local: true
-          });
-          
-          if (configError) {
-            console.error('❌ Error setting config:', configError);
-          } else {
-            console.log('✅ RLS context set successfully');
-          }
-        }
-      }
-
       console.log('💾 Attempting to update payment status in database...');
-      // Update payment status
+      // Update payment status - now works with open RLS policy
       const { error } = await supabase
         .from('Estados de pago')
         .update({ 

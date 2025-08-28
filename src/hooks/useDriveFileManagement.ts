@@ -26,11 +26,11 @@ export const useDriveFileManagement = () => {
       if (!data.success) {
         if (data.warning) {
           console.warn(`⚠️ File not found: ${data.error}`);
-          toast({
-            title: "Archivo no encontrado",
-            description: "El archivo ya fue eliminado o no existe en Google Drive",
-            variant: "default",
-          });
+      toast({
+        title: "Archivo no encontrado",
+        description: "El archivo ya fue eliminado o no existe",
+        variant: "default",
+      });
           return true; // Tratamos como éxito si el archivo ya no existe
         }
         throw new Error(data.error || 'Failed to delete file');
@@ -40,7 +40,7 @@ export const useDriveFileManagement = () => {
       
       toast({
         title: "Archivo eliminado",
-        description: `El archivo "${fileName}" ha sido eliminado de Google Drive`,
+        description: `El archivo "${fileName}" ha sido eliminado exitosamente`,
       });
       
       return true;
@@ -50,9 +50,9 @@ export const useDriveFileManagement = () => {
       let errorMessage = "Error al eliminar archivo";
       let errorDetails = error.message;
       
-      if (error.message?.includes('Google Drive authentication failed')) {
-        errorMessage = "Error de autenticación con Google Drive";
-        errorDetails = "No se pudo autenticar con Google Drive. Contacte al administrador.";
+      if (error.message?.includes('authentication failed')) {
+        errorMessage = "Error de autenticación";
+        errorDetails = "No se pudo autenticar con el servicio de almacenamiento. Contacte al administrador.";
       }
       
       toast({

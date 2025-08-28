@@ -127,11 +127,12 @@ serve(async (req) => {
       console.log(`⚠️ Found ${existingFilesData.files.length} existing files in folder. They will be replaced if necessary.`);
     }
 
-    // Upload documents
+    // Upload documents - process one at a time to avoid memory issues
     const uploadResults = [];
+    console.log(`🔄 Processing ${Object.keys(documents).length} document types sequentially to avoid memory overflow`);
     
     for (const [docType, docData] of Object.entries(documents)) {
-      console.log(`📤 Processing ${docType} with ${docData.files.length} files`);
+      console.log(`📤 Processing ${docType} with ${docData.files.length} files (Memory optimization: sequential processing)`);
       
       // Determine proper folder name based on document type
       let subfolderName = docData.documentName;
@@ -188,10 +189,12 @@ serve(async (req) => {
           }
         }
 
-        // Upload files to subfolder
+        // Upload files to subfolder - one at a time to prevent memory overflow
         for (let i = 0; i < docData.files.length; i++) {
           const file = docData.files[i];
           const fileName = `${subfolderName}_${i + 1}.${file.name.split('.').pop()}`;
+          
+          console.log(`📋 Uploading file ${i + 1}/${docData.files.length}: ${fileName} (${Math.round(file.content.length * 0.75 / 1024 / 1024 * 100) / 100}MB estimated)`);
           
           const uploadResult = await uploadFileToFolder(file, fileName, subFolderId, access_token);
           uploadResults.push({
@@ -200,6 +203,10 @@ serve(async (req) => {
             subfolder: subfolderName,
             ...uploadResult
           });
+          
+          // Force garbage collection attempt and small delay between files
+          if (globalThis.gc) globalThis.gc();
+          await new Promise(resolve => setTimeout(resolve, 100));
         }
       } else {
       // Single file (upload directly to main folder)
@@ -214,12 +221,17 @@ serve(async (req) => {
         fileName = `${subfolderName}.${file.name.split('.').pop()}`;
       }
       
+      console.log(`📋 Uploading single file: ${fileName} (${Math.round(file.content.length * 0.75 / 1024 / 1024 * 100) / 100}MB estimated)`);
+      
       const uploadResult = await uploadFileToFolder(file, fileName, targetFolderId, access_token);
       uploadResults.push({
         documentType: docType,
         fileName: fileName,
         ...uploadResult
       });
+      
+      // Force garbage collection attempt between documents
+      if (globalThis.gc) globalThis.gc();
       }
     }
 
@@ -276,7 +288,13 @@ async function uploadFileToFolder(file: any, fileName: string, folderId: string,
       }
     }
 
-    // Convert base64 to binary
+    // Check file size before processing (base64 is ~33% larger than actual file)
+    const estimatedFileSize = file.content.length * 0.75 / 1024 / 1024; // MB
+    if (estimatedFileSize > 50) {
+      console.warn(`⚠️ Large file detected: ${fileName} (~${Math.round(estimatedFileSize * 100) / 100}MB)`);
+    }
+    
+    // Convert base64 to binary efficiently
     const binaryString = atob(file.content);
     const bytes = new Uint8Array(binaryString.length);
     for (let j = 0; j < binaryString.length; j++) {

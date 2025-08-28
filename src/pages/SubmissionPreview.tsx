@@ -58,7 +58,7 @@ const SubmissionPreview = () => {
   // Hook para advertencia de navegación
   const { handleNavigation } = useNavigationWarning({
     shouldWarn: isProjectUser && !notificationSent,
-    message: "¿Estás seguro de que quieres salir? La notificación no ha sido enviada al mandante."
+    message: "¿Estás seguro de que quieres salir? La notificación no ha sido enviada al mandante y se perderán los avances realizados."
   });
 
   const handleBackNavigation = () => {

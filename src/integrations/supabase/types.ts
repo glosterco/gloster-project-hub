@@ -394,6 +394,10 @@ export type Database = {
         Args: { _project_id: number }
         Returns: boolean
       }
+      has_mandante_project_access: {
+        Args: { _mandante_id: number; _user_id: string }
+        Returns: boolean
+      }
       is_cc_contractor: {
         Args: { _contractor_id: number }
         Returns: boolean

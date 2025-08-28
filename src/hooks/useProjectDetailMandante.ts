@@ -62,16 +62,40 @@ export const useProjectDetailMandante = (projectId: string) => {
         return;
       }
 
-      // Get mandante data
-      const { data: mandanteData, error: mandanteError } = await supabase
+      // Get mandante data - first try by auth_user_id, then by project access
+      let mandanteData = null;
+      
+      // Try to get mandante directly by auth_user_id
+      const { data: directMandante, error: directError } = await supabase
         .from('Mandantes')
         .select('*')
         .eq('auth_user_id', user.id)
         .maybeSingle();
 
-      if (mandanteError) {
-        console.error('❌ Error fetching mandante:', mandanteError);
-        return;
+      if (directError) {
+        console.error('❌ Error fetching direct mandante:', directError);
+      } else if (directMandante) {
+        mandanteData = directMandante;
+        console.log('✅ Found mandante by auth_user_id:', mandanteData.id);
+      }
+
+      // If no direct mandante found, try through project relationship
+      if (!mandanteData) {
+        const { data: projectMandante, error: projectError } = await supabase
+          .from('Proyectos')
+          .select(`
+            Owner,
+            Mandantes!Proyectos_Owner_fkey (*)
+          `)
+          .eq('id', parseInt(projectId))
+          .maybeSingle();
+
+        if (projectError) {
+          console.error('❌ Error fetching project mandante:', projectError);
+        } else if (projectMandante?.Mandantes) {
+          mandanteData = projectMandante.Mandantes;
+          console.log('✅ Found mandante through project relationship:', mandanteData.id);
+        }
       }
 
       if (!mandanteData) {

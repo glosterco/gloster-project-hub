@@ -21,24 +21,20 @@ export const useContratistas = () => {
   const createContratista = async (data: ContratistaData, authUserId?: string) => {
     setLoading(true);
     try {
-      // Obtener el usuario actual autenticado
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      // Si se proporciona authUserId, usarlo directamente (para registro)
+      // Si no, intentar obtener usuario autenticado actual
+      let userId = authUserId;
       
-      if (userError || !user) {
-        console.error('No authenticated user found:', userError);
-        toast({
-          title: "Error de autenticación",
-          description: "No hay usuario autenticado. Por favor inicia sesión.",
-          variant: "destructive",
-        });
-        return { data: null, error: new Error('No authenticated user') };
+      if (!userId) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          userId = user.id;
+        }
       }
 
-      // Usar el ID del usuario autenticado actual o el proporcionado
-      const userId = authUserId || user.id;
-      console.log('Creating contratista for authenticated user ID:', userId);
-
-      // Crear el registro del contratista con el ID del usuario autenticado
+      // Para el proceso de registro, continuar incluso sin usuario autenticado
+      console.log('Creating contratista with user ID:', userId || 'none (registration)');
+      // Crear el registro del contratista
       const contratistaData = {
         CompanyName: data.CompanyName,
         RUT: data.RUT,
@@ -48,7 +44,7 @@ export const useContratistas = () => {
         ContactEmail: data.ContactEmail,
         ContactPhone: data.ContactPhone,
         Status: true,
-        auth_user_id: userId
+        auth_user_id: userId || null // Permitir null para registro
       };
 
       console.log('Inserting contratista data:', contratistaData);

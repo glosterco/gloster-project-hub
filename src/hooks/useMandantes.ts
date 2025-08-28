@@ -30,7 +30,7 @@ export const useMandantes = () => {
           ContactName: data.ContactName,
           ContactEmail: data.ContactEmail,
           ContactPhone: data.ContactPhone,
-          auth_user_id: data.auth_user_id,
+          auth_user_id: data.auth_user_id || null, // Permitir null para registro
           Status: true
         }])
         .select()

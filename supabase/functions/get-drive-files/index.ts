@@ -123,46 +123,60 @@ const downloadFileContent = async (accessToken: string, fileId: string, fileName
     console.log(`🧠 Memory after download: ${(memAfter.heapUsed / 1024 / 1024).toFixed(2)}MB`);
   }
   
-  // Convertir a base64 de manera más eficiente con chunks más pequeños
+  // Convertir a base64 de manera más eficiente y confiable
   console.log(`🔄 Converting ${fileName} to base64...`);
   
-  // Use smaller chunks for better memory management
-  const chunkSize = 4096; // Reduced from 8192
-  const chunks = [];
-  
-  // Process in smaller chunks to avoid memory spikes
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    const chunk = bytes.slice(i, i + chunkSize);
-    let chunkBinary = '';
-    for (let j = 0; j < chunk.length; j++) {
-      chunkBinary += String.fromCharCode(chunk[j]);
+  try {
+    // Use a more reliable approach: convert the entire buffer at once but with streaming
+    let binary = '';
+    const len = bytes.byteLength;
+    
+    // Process in chunks but build the binary string first
+    const chunkSize = 8192;
+    for (let i = 0; i < len; i += chunkSize) {
+      const end = Math.min(i + chunkSize, len);
+      for (let j = i; j < end; j++) {
+        binary += String.fromCharCode(bytes[j]);
+      }
+      
+      // Allow event loop to process other tasks periodically
+      if (i % (chunkSize * 10) === 0) {
+        await new Promise(resolve => setTimeout(resolve, 0));
+      }
     }
-    chunks.push(btoa(chunkBinary));
     
-    // Clear the chunk immediately
-    chunk.fill(0);
+    // Convert to base64 in one go for reliability
+    const base64 = btoa(binary);
     
-    // Force GC every 50 chunks to prevent memory buildup
-    if (chunks.length % 50 === 0 && globalThis.gc) {
+    // Validate the base64 string
+    if (!base64 || base64.trim() === '') {
+      throw new Error('Generated base64 string is empty');
+    }
+    
+    // Test base64 validity by attempting to decode a small portion
+    try {
+      atob(base64.substring(0, Math.min(100, base64.length)));
+    } catch (testError) {
+      throw new Error('Generated base64 string is invalid');
+    }
+    
+    // Clear references immediately
+    bytes.fill(0);
+    binary = '';
+    
+    // Force cleanup
+    if (globalThis.gc) {
       globalThis.gc();
+      console.log(`🗑️ Forced garbage collection after ${fileName}`);
     }
+    
+    console.log(`✅ Base64 conversion completed for ${fileName} (${(base64.length / 1024 / 1024 * 0.75).toFixed(2)}MB estimated)`);
+    return base64;
+    
+  } catch (error) {
+    console.error(`❌ Error during base64 conversion for ${fileName}:`, error);
+    throw new Error(`Failed to convert ${fileName} to base64: ${error.message}`);
   }
-  
-  // Join all base64 chunks
-  const base64 = chunks.join('');
-  
-  // Clear all references immediately
-  bytes.fill(0);
-  chunks.length = 0;
-  
-  // Force cleanup
-  if (globalThis.gc) {
-    globalThis.gc();
-    console.log(`🗑️ Forced garbage collection after ${fileName}`);
-  }
-  
-  console.log(`✅ Base64 conversion completed for ${fileName} (${(base64.length / 1024 / 1024 * 0.75).toFixed(2)}MB estimated)`);
-  return base64;
 };
 
 const downloadFolderAsZip = async (accessToken: string, folderId: string, folderName: string): Promise<string> => {

@@ -21,7 +21,7 @@ export const useMandantes = () => {
   const createMandante = async (data: MandanteData) => {
     setLoading(true);
     try {
-      console.log('Insertando mandante en BD:', data);
+      console.log('Creating mandante without authentication requirements:', data);
       
       const { data: result, error } = await supabase
         .from('Mandantes')

@@ -16,25 +16,79 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
   const updatePaymentStatus = async (status: 'Aprobado' | 'Rechazado', notes: string) => {
     console.log('🔄 Starting updatePaymentStatus with:', { paymentId, status, notes });
     
+    // LOG: Verificar el contexto actual del usuario
+    const mandanteAccess = sessionStorage.getItem('mandanteAccess');
+    const contractorAccess = sessionStorage.getItem('contractorAccess');
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    console.log('🔍 DEBUGGING APPROVAL CONTEXT:', {
+      paymentId,
+      status,
+      hasMandanteAccess: !!mandanteAccess,
+      hasContractorAccess: !!contractorAccess,
+      mandanteAccessData: mandanteAccess ? JSON.parse(mandanteAccess) : null,
+      contractorAccessData: contractorAccess ? JSON.parse(contractorAccess) : null,
+      authUser: user ? { id: user.id, email: user.email } : null,
+      timestamp: new Date().toISOString()
+    });
+    
     try {
       setLoading(true);
       
-      console.log('💾 Attempting to update payment status in database...');
-      // Update payment status - now works with open RLS policy
-      const { error } = await supabase
-        .from('Estados de pago')
-        .update({ 
-          Status: status,
-          Notes: notes || null
-        })
-        .eq('id', parseInt(paymentId));
-
-      if (error) {
-        console.error('❌ Error updating payment status:', error);
-        throw new Error(`Error al actualizar el estado del pago: ${error.message}`);
+      // DETERMINAR EL MÉTODO DE ACTUALIZACIÓN SEGÚN EL TIPO DE USUARIO
+      const mandanteAccess = sessionStorage.getItem('mandanteAccess');
+      let useServiceFunction = false;
+      let mandanteEmail = '';
+      
+      if (mandanteAccess) {
+        const accessData = JSON.parse(mandanteAccess);
+        // Si es mandante sin user_auth_id (acceso limitado), usar edge function
+        if (accessData.userType === 'mandante' && (accessData.isLimitedAccess || !accessData.hasFullAccess)) {
+          useServiceFunction = true;
+          mandanteEmail = accessData.email;
+          console.log('🔧 Using service function for mandante without user_auth_id');
+        }
       }
 
-      console.log(`✅ Payment status updated to ${status} successfully`);
+      if (useServiceFunction) {
+        // MÉTODO 1: Usar edge function para mandantes sin user_auth_id
+        console.log('📡 Calling update-payment-status-mandante edge function...');
+        const { data: result, error: functionError } = await supabase.functions.invoke(
+          'update-payment-status-mandante',
+          {
+            body: {
+              paymentId,
+              status,
+              notes,
+              mandanteEmail
+            }
+          }
+        );
+
+        if (functionError || !result?.success) {
+          console.error('❌ Error in edge function:', functionError || result?.error);
+          throw new Error(`Error al actualizar el estado del pago: ${functionError?.message || result?.error}`);
+        }
+
+        console.log('✅ Payment status updated via edge function:', result);
+      } else {
+        // MÉTODO 2: Usar cliente directo para usuarios autenticados
+        console.log('💾 Attempting to update payment status via direct client...');
+        const { error } = await supabase
+          .from('Estados de pago')
+          .update({ 
+            Status: status,
+            Notes: notes || null
+          })
+          .eq('id', parseInt(paymentId));
+
+        if (error) {
+          console.error('❌ Error updating payment status:', error);
+          throw new Error(`Error al actualizar el estado del pago: ${error.message}`);
+        }
+
+        console.log(`✅ Payment status updated to ${status} successfully via direct client`);
+      }
     } finally {
       setLoading(false);
     }

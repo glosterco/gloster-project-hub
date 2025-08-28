@@ -296,7 +296,7 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
                   <Button
                     onClick={onConfirmApprove}
                     disabled={loading}
-                    className="bg-success hover:bg-success/90 text-success-foreground"
+                    className="bg-green-600 hover:bg-green-700 text-white"
                   >
                     {loading ? 'Procesando...' : 'Confirmar Aprobación'}
                   </Button>

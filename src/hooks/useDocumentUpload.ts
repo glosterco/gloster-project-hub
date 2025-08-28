@@ -103,7 +103,19 @@ export const useDocumentUpload = () => {
     
     const fileArray = Array.from(files);
     const validFiles = fileArray.filter(file => {
-      console.log(`🔍 Validating file: ${file.name}, type: ${file.type}, size: ${file.size}`);
+      console.log(`🔍 Validating file: ${file.name}, type: ${file.type}, size: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+      
+      // Check file size (limit to 25MB in frontend to leave room for base64 expansion)
+      const fileSizeMB = file.size / (1024 * 1024);
+      if (fileSizeMB > 25) {
+        console.error(`❌ File too large: ${file.name} (${fileSizeMB.toFixed(2)}MB)`);
+        toast({
+          title: "Archivo demasiado grande",
+          description: `El archivo ${file.name} (${fileSizeMB.toFixed(2)}MB) excede el límite de 25MB.`,
+          variant: "destructive",
+        });
+        return false;
+      }
       
       if (!allowedTypes.includes(file.type)) {
         console.error(`❌ Invalid file format: ${file.name} (${file.type})`);
@@ -115,7 +127,7 @@ export const useDocumentUpload = () => {
         return false;
       }
       
-      console.log(`✅ File format valid: ${file.name}`);
+      console.log(`✅ File valid: ${file.name}`);
       return true;
     });
 

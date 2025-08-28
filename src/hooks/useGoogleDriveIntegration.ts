@@ -164,7 +164,13 @@ export const useGoogleDriveIntegration = () => {
             const file = realFiles[i];
             if (file && file instanceof File) {
               try {
-                console.log(`🔄 Converting file ${file.name} to base64...`);
+                // Check file size before converting (limit to 30MB)
+                const fileSizeMB = file.size / (1024 * 1024);
+                if (fileSizeMB > 30) {
+                  throw new Error(`Archivo ${file.name} es demasiado grande (${fileSizeMB.toFixed(2)}MB). Tamaño máximo permitido: 30MB`);
+                }
+                
+                console.log(`🔄 Converting file ${file.name} (${fileSizeMB.toFixed(2)}MB) to base64...`);
                 const base64Content = await convertFileToBase64(file);
                 
                 if (base64Content && base64Content.trim() !== '') {
@@ -282,6 +288,13 @@ const convertFileToBase64 = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     if (!file || !(file instanceof File)) {
       reject(new Error('Archivo inválido'));
+      return;
+    }
+
+    // Check file size (limit to 30MB for frontend processing)
+    const fileSizeMB = file.size / (1024 * 1024);
+    if (fileSizeMB > 30) {
+      reject(new Error(`Archivo demasiado grande (${fileSizeMB.toFixed(2)}MB). Máximo permitido: 30MB`));
       return;
     }
 

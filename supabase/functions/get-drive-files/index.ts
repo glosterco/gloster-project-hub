@@ -66,7 +66,31 @@ const searchFileInFolder = async (accessToken: string, folderId: string, fileNam
   return data.files || [];
 };
 
-const downloadFileContent = async (accessToken: string, fileId: string): Promise<string> => {
+const downloadFileContent = async (accessToken: string, fileId: string, fileName: string): Promise<string> => {
+  console.log(`📥 Starting download for: ${fileName}`);
+  
+  // Get file metadata first to check size
+  const metadataResponse = await fetch(
+    `https://www.googleapis.com/drive/v3/files/${fileId}?fields=size,mimeType`,
+    {
+      headers: {
+        "Authorization": `Bearer ${accessToken}`,
+      },
+    }
+  );
+
+  if (metadataResponse.ok) {
+    const metadata = await metadataResponse.json();
+    const fileSizeBytes = parseInt(metadata.size || '0');
+    const fileSizeMB = fileSizeBytes / (1024 * 1024);
+    
+    if (fileSizeMB > 50) {
+      throw new Error(`File ${fileName} is too large (${fileSizeMB.toFixed(2)}MB). Maximum size allowed is 50MB.`);
+    }
+    
+    console.log(`📊 File ${fileName} size: ${fileSizeMB.toFixed(2)}MB`);
+  }
+
   const response = await fetch(
     `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
     {
@@ -83,13 +107,21 @@ const downloadFileContent = async (accessToken: string, fileId: string): Promise
   const arrayBuffer = await response.arrayBuffer();
   const bytes = new Uint8Array(arrayBuffer);
   
+  // Log memory usage
+  console.log(`💾 Downloaded ${fileName}: ${(bytes.length / 1024 / 1024).toFixed(2)}MB in memory`);
+  
   // Convertir a base64
   let binary = '';
   const len = bytes.byteLength;
   for (let i = 0; i < len; i++) {
     binary += String.fromCharCode(bytes[i]);
   }
-  return btoa(binary);
+  const base64 = btoa(binary);
+  
+  // Force cleanup
+  if (globalThis.gc) globalThis.gc();
+  
+  return base64;
 };
 
 const downloadFolderAsZip = async (accessToken: string, folderId: string, folderName: string): Promise<string> => {
@@ -121,7 +153,7 @@ const downloadFolderAsZip = async (accessToken: string, folderId: string, folder
   for (const file of files) {
     if (file.mimeType !== 'application/vnd.google-apps.folder') {
       try {
-        const fileContent = await downloadFileContent(accessToken, file.id);
+        const fileContent = await downloadFileContent(accessToken, file.id, file.name);
         const binaryString = atob(fileContent);
         const bytes = new Uint8Array(binaryString.length);
         for (let i = 0; i < binaryString.length; i++) {
@@ -233,7 +265,7 @@ const handler = async (req: Request): Promise<Response> => {
       if (downloadContent) {
         try {
           console.log(`📥 Downloading content for: ${file.name}`);
-          const content = await downloadFileContent(accessToken, file.id);
+          const content = await downloadFileContent(accessToken, file.id, file.name);
           fileData.content = content;
           console.log(`✅ Content downloaded for: ${file.name}`);
         } catch (contentError) {

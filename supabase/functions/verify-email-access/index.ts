@@ -94,20 +94,6 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Fetch payment data to check token validity
-    const { data: payment, error: paymentError } = await supabaseAdmin
-      .from('Estados de pago')
-      .select('URLContratista, URLMandante, Notes, Project')
-      .eq('id', paymentId)
-      .single();
-
-    if (paymentError) {
-      return new Response(
-        JSON.stringify({ error: 'Pago no encontrado' }),
-        { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
-    // Fetch payment data to check token validity
     const { data: paymentData, error: paymentError } = await supabaseAdmin
       .from('Estados de pago')
       .select('URLContratista, URLMandante, Notes, Project')

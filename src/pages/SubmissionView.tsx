@@ -38,7 +38,9 @@ const SubmissionView = () => {
           setHasPreAccess(true);
         }
       } else if (contractorAccess) {
-        setHasPreAccess(true); // Los contratistas pueden acceder
+        // Bloquear acceso de contratistas a submission view
+        navigate('/');
+        return;
       } else {
         setHasPreAccess(true); // Usuario autenticado normal
       }

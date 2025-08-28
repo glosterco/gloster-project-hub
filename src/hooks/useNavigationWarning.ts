@@ -8,7 +8,7 @@ interface UseNavigationWarningProps {
 
 export const useNavigationWarning = ({ 
   shouldWarn, 
-  message = "¿Estás seguro de que quieres salir? La notificación no ha sido enviada al mandante." 
+  message = "¿Estás seguro de que quieres salir? La notificación no ha sido enviada al mandante. Se perderán todos los avances y archivos guardados." 
 }: UseNavigationWarningProps) => {
 
   const handleBeforeUnload = useCallback((e: BeforeUnloadEvent) => {

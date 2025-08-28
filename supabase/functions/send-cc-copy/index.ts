@@ -79,11 +79,11 @@ const handler = async (req: Request): Promise<Response> => {
     const ccEmail = contractor.CCEmail;
     const contractorEmail = contractor.ContactEmail;
 
-    // Check if we have at least one email to send to
-    if (!ccEmail && !contractorEmail) {
-      console.log('No CC email or contractor contact email found for contractor:', contractor.id);
+    // Check if we have CC email to send to
+    if (!ccEmail) {
+      console.log('No CC email found for contractor:', contractor.id);
       return new Response(
-        JSON.stringify({ message: 'No CC email or contractor contact email configured for this contractor' }),
+        JSON.stringify({ message: 'No CC email configured for this contractor' }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
@@ -239,13 +239,11 @@ const handler = async (req: Request): Promise<Response> => {
           <body>
             <div class="container">
               <div class="header">
-                <div class="logo">G</div>
                 <h2>Notificacion de Estado de Pago Enviado</h2>
                 <p>Se ha enviado un estado de pago al mandante</p>
               </div>
               
               <div class="content">
-                <p>Estimado/a equipo CC,</p>
                 
                 <p>Te informamos que se ha enviado un estado de pago al mandante <strong>${mandante.CompanyName}</strong> correspondiente al proyecto:</p>
                 
@@ -279,7 +277,7 @@ const handler = async (req: Request): Promise<Response> => {
       `;
     };
 
-    // Prepare emails to send
+    // Prepare emails to send - only CC email
     const emailsToSend = [];
     
     // Add CC email if exists
@@ -289,21 +287,13 @@ const handler = async (req: Request): Promise<Response> => {
         type: 'CC'
       });
     }
-    
-    // Add contractor contact email if exists and different from CC
-    if (contractorEmail && contractorEmail !== ccEmail) {
-      emailsToSend.push({
-        email: contractorEmail,
-        type: 'Contractor'
-      });
-    }
 
     if (emailsToSend.length === 0) {
-      console.log('ℹ️ No emails to send (no CC or contractor email configured)');
+      console.log('ℹ️ No emails to send (no CC email configured)');
       return new Response(
         JSON.stringify({ 
           success: true, 
-          message: 'No CC or contractor email configured'
+          message: 'No CC email configured'
         }),
         {
           status: 200,

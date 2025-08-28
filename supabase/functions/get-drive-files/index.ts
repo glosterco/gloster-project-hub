@@ -84,11 +84,18 @@ const downloadFileContent = async (accessToken: string, fileId: string, fileName
     const fileSizeBytes = parseInt(metadata.size || '0');
     const fileSizeMB = fileSizeBytes / (1024 * 1024);
     
-    if (fileSizeMB > 50) {
-      throw new Error(`File ${fileName} is too large (${fileSizeMB.toFixed(2)}MB). Maximum size allowed is 50MB.`);
+    // Reduced limit for downloads to prevent memory issues
+    if (fileSizeMB > 25) {
+      throw new Error(`File ${fileName} is too large (${fileSizeMB.toFixed(2)}MB). Maximum download size is 25MB due to memory limitations.`);
     }
     
     console.log(`📊 File ${fileName} size: ${fileSizeMB.toFixed(2)}MB`);
+    
+    // Log memory usage before download
+    if (typeof Deno !== 'undefined' && Deno.memoryUsage) {
+      const memBefore = Deno.memoryUsage();
+      console.log(`🧠 Memory before download: ${(memBefore.heapUsed / 1024 / 1024).toFixed(2)}MB`);
+    }
   }
 
   const response = await fetch(
@@ -104,23 +111,46 @@ const downloadFileContent = async (accessToken: string, fileId: string, fileName
     throw new Error(`Failed to download file: ${response.status}`);
   }
 
+  console.log(`📦 Downloading ${fileName} content...`);
   const arrayBuffer = await response.arrayBuffer();
   const bytes = new Uint8Array(arrayBuffer);
   
-  // Log memory usage
+  // Log memory usage after download
   console.log(`💾 Downloaded ${fileName}: ${(bytes.length / 1024 / 1024).toFixed(2)}MB in memory`);
   
-  // Convertir a base64
-  let binary = '';
-  const len = bytes.byteLength;
-  for (let i = 0; i < len; i++) {
-    binary += String.fromCharCode(bytes[i]);
+  if (typeof Deno !== 'undefined' && Deno.memoryUsage) {
+    const memAfter = Deno.memoryUsage();
+    console.log(`🧠 Memory after download: ${(memAfter.heapUsed / 1024 / 1024).toFixed(2)}MB`);
   }
+  
+  // Convertir a base64 de manera más eficiente
+  console.log(`🔄 Converting ${fileName} to base64...`);
+  
+  // Use chunks to avoid memory spikes
+  const chunkSize = 8192;
+  let binary = '';
+  
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.slice(i, i + chunkSize);
+    let chunkBinary = '';
+    for (let j = 0; j < chunk.length; j++) {
+      chunkBinary += String.fromCharCode(chunk[j]);
+    }
+    binary += chunkBinary;
+  }
+  
   const base64 = btoa(binary);
   
-  // Force cleanup
-  if (globalThis.gc) globalThis.gc();
+  // Clear references immediately
+  bytes.fill(0);
   
+  // Force cleanup
+  if (globalThis.gc) {
+    globalThis.gc();
+    console.log(`🗑️ Forced garbage collection after ${fileName}`);
+  }
+  
+  console.log(`✅ Base64 conversion completed for ${fileName}`);
   return base64;
 };
 
@@ -250,9 +280,20 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    // Si se solicita contenido, descargarlo
+    // Si se solicita contenido, descargarlo SECUENCIALMENTE para evitar problemas de memoria
     const filesWithContent = [];
+    
+    if (downloadContent && files.length > 1) {
+      console.log(`⚠️ Multiple files detected (${files.length}). Processing sequentially to prevent memory issues.`);
+    }
+    
     for (const file of files) {
+      // Log memory before processing each file
+      if (typeof Deno !== 'undefined' && Deno.memoryUsage) {
+        const memBefore = Deno.memoryUsage();
+        console.log(`🧠 Memory before processing ${file.name}: ${(memBefore.heapUsed / 1024 / 1024).toFixed(2)}MB`);
+      }
+      
       const fileData = {
         id: file.id,
         name: file.name,
@@ -264,10 +305,17 @@ const handler = async (req: Request): Promise<Response> => {
 
       if (downloadContent) {
         try {
-          console.log(`📥 Downloading content for: ${file.name}`);
+          console.log(`📥 Processing file ${files.indexOf(file) + 1}/${files.length}: ${file.name}`);
           const content = await downloadFileContent(accessToken, file.id, file.name);
           fileData.content = content;
           console.log(`✅ Content downloaded for: ${file.name}`);
+          
+          // Force garbage collection between files
+          if (globalThis.gc && files.length > 1) {
+            globalThis.gc();
+            console.log(`🗑️ Forced cleanup between files`);
+          }
+          
         } catch (contentError) {
           console.error(`❌ Error downloading content for ${file.name}:`, contentError);
           // Continuar sin el contenido si hay error
@@ -275,6 +323,12 @@ const handler = async (req: Request): Promise<Response> => {
       }
 
       filesWithContent.push(fileData);
+      
+      // Log memory after processing each file
+      if (typeof Deno !== 'undefined' && Deno.memoryUsage) {
+        const memAfter = Deno.memoryUsage();
+        console.log(`🧠 Memory after processing ${file.name}: ${(memAfter.heapUsed / 1024 / 1024).toFixed(2)}MB`);
+      }
     }
 
     return new Response(

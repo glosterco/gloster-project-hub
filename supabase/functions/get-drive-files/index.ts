@@ -84,8 +84,8 @@ const downloadFileContent = async (accessToken: string, fileId: string, fileName
     const fileSizeBytes = parseInt(metadata.size || '0');
     const fileSizeMB = fileSizeBytes / (1024 * 1024);
     
-    // Límite muy restrictivo debido a limitaciones de memoria de edge functions
-    if (fileSizeMB > 5) {
+    // Límite ajustado considerando el pico de memoria durante conversión base64
+    if (fileSizeMB > 8) {
       console.warn(`⚠️ File ${fileName} is too large (${fileSizeMB.toFixed(2)}MB) for content download. Providing download link only.`);
       throw new Error(`LARGE_FILE:${fileSizeMB.toFixed(2)}`);
     }

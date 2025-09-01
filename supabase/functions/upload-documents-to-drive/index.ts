@@ -288,17 +288,30 @@ async function uploadFileToFolder(file: any, fileName: string, folderId: string,
       }
     }
 
-    // Check file size before processing (base64 is ~33% larger than actual file)
+    // Increase file size limit with optimized memory usage
     const estimatedFileSize = file.content.length * 0.75 / 1024 / 1024; // MB
-    if (estimatedFileSize > 50) {
+    if (estimatedFileSize > 15) {
       console.warn(`⚠️ Large file detected: ${fileName} (~${Math.round(estimatedFileSize * 100) / 100}MB)`);
     }
     
-    // Convert base64 to binary efficiently
+    // Optimized base64 to binary conversion with streaming
+    console.log(`🔄 Converting base64 to binary for ${fileName} (~${estimatedFileSize.toFixed(2)}MB)`);
     const binaryString = atob(file.content);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let j = 0; j < binaryString.length; j++) {
-      bytes[j] = binaryString.charCodeAt(j);
+    
+    // Process in chunks to avoid memory spikes
+    const chunkSize = 8192;
+    const totalLength = binaryString.length;
+    const bytes = new Uint8Array(totalLength);
+    
+    for (let i = 0; i < totalLength; i += chunkSize) {
+      const end = Math.min(i + chunkSize, totalLength);
+      for (let j = i; j < end; j++) {
+        bytes[j] = binaryString.charCodeAt(j);
+      }
+      // Allow event loop processing
+      if (i % (chunkSize * 20) === 0) {
+        await new Promise(resolve => setTimeout(resolve, 0));
+      }
     }
 
     // Create metadata

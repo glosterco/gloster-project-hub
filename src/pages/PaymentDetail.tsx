@@ -1003,9 +1003,14 @@ const PaymentDetail = () => {
           {/* Documents List - Para todos los casos donde no es "Enviado" o "Aprobado" */}
           {!shouldShowDriveFiles() && (
             <div className="space-y-4 mb-8">
-              <h3 className="text-lg md:text-xl font-bold text-slate-800 font-rubik">
-                Documentos Cargados
-              </h3>
+              <div className="flex flex-col gap-1">
+                <h3 className="text-lg md:text-xl font-bold text-slate-800 font-rubik">
+                  Documentos Cargados
+                </h3>
+                <p className="text-xs text-slate-500 font-rubik">
+                  Tamaño máximo por archivo: 12MB
+                </p>
+              </div>
               {canUploadDocuments() && (
                 <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
                   <p className="text-yellow-800 font-rubik text-sm">

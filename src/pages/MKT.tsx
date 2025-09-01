@@ -65,7 +65,7 @@ const MKT = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <Card className="border-destructive/20 bg-destructive/5">
+            <Card className="border-destructive/30 bg-destructive/5">
               <CardHeader>
                 <Clock className="w-12 h-12 text-destructive mb-4" />
                 <CardTitle className="text-destructive">Retrasos Constantes</CardTitle>

@@ -230,7 +230,7 @@ const MKT = () => {
                 <div>
                   <h3 className="text-xl font-bold mb-2">Carga de Documentos Simplificada</h3>
                   <p className="text-muted-foreground">
-                    Prepara los estados de pago, consigue y carga la documentación complementaria directamente desde <b>un solo lugar.</b>
+                    Prepara los estados de pago, consigue y carga la documentación complementaria desde <b>un solo lugar.</b>
                   </p>
                 </div>
               </div>

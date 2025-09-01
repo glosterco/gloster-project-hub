@@ -169,7 +169,7 @@ const MKT = () => {
                   <CheckCircle className="w-6 h-6 text-brand-yellow flex-shrink-0 mt-1" />
                   <div>
                     <h4 className="font-semibold mb-1">Notificaciones Automáticas</h4>
-                    <p className="text-muted-foreground">Manten una comunicación clara entre mandante y contratisa notificando automáticamente sobre estados de pago y documentos requeridos.</p>
+                    <p className="text-muted-foreground">Manten una comunicación clara entre mandante y contratisa notificando automáticamente sobre los estados de pago.</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -231,7 +231,6 @@ const MKT = () => {
                   <h3 className="text-xl font-bold mb-2">Carga de Documentos Simplificada</h3>
                   <p className="text-muted-foreground">
                     Prepara los estados de pago, consigue y carga todos los documentos complementarios directamente desde <b>un solo lugar.</b>
-                    El sistema valida automáticamente formatos y tamaños.
                   </p>
                 </div>
               </div>
@@ -256,8 +255,8 @@ const MKT = () => {
                 <div>
                   <h3 className="text-xl font-bold mb-2">Seguimiento en Tiempo Real</h3>
                   <p className="text-muted-foreground">
-                    Recibe <b>notificaciones instantáneas</b> sobre cambios de estado, aprobaciones 
-                    y requerimientos adicionales de documentación.
+                    Recibe <b>notificaciones instantáneas</b> sobre cambios de estado 
+                    y/o requerimientos adicionales de documentación.
                   </p>
                 </div>
               </div>
@@ -350,8 +349,7 @@ const MKT = () => {
                 <div>
                   <h3 className="text-xl font-bold mb-2">Aprobaciones Inteligentes</h3>
                   <p className="text-muted-foreground">
-                    Sistema de aprobación de estados de pago pagos con múltiples niveles de autorización, 
-                    validación automática y notificaciones automáticas.
+                    Sistema de aprobación de estados de pago con niveles de autorización y notificaciones automáticas.
                   </p>
                 </div>
               </div>
@@ -363,7 +361,7 @@ const MKT = () => {
                 <div>
                   <h3 className="text-xl font-bold mb-2">Reportes Ejecutivos</h3>
                   <p className="text-muted-foreground">
-                    Resúmenes ejecutivos con métricas clave, tendencias de pago, registro histórico de documentación y
+                    Resúmenes ejecutivos con métricas clave, registro histórico de documentación y
                     análisis por proyecto y contratista.
                   </p>
                 </div>

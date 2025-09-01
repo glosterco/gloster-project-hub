@@ -146,7 +146,7 @@ const MKT = () => {
                   <CheckCircle className="w-6 h-6 text-brand-yellow flex-shrink-0 mt-1" />
                   <div>
                     <h4 className="font-semibold mb-1">Gestión de Documentos</h4>
-                    <p className="text-muted-foreground">Carga, organización y descarga automática de documentos con integración directa a Google Drive.</p>
+                    <p className="text-muted-foreground">Carga, organización y descarga automática de documentos con registro historico de la información.</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -201,7 +201,7 @@ const MKT = () => {
                 <div>
                   <h3 className="text-xl font-bold mb-2">Carga de Documentos Simplificada</h3>
                   <p className="text-muted-foreground">
-                    Prepara los estados de pago, consigue y carga todos los documentos complementarios directamente desde un <b>solo lugar</b>. 
+                    Prepara los estados de pago, consigue y carga todos los documentos complementarios directamente desde <b>un solo lugar.</b>
                     El sistema valida automáticamente formatos y tamaños.
                   </p>
                 </div>
@@ -215,7 +215,7 @@ const MKT = () => {
                   <h3 className="text-xl font-bold mb-2">Dashboard de Proyectos</h3>
                   <p className="text-muted-foreground">
                     Visualiza todos tus proyectos, estados de pago pendientes, aprobados y rechazados 
-                    en una interfaz clara e intuitiva.
+                    en una <b>interfaz clara e intuitiva.</b>
                   </p>
                 </div>
               </div>
@@ -227,7 +227,7 @@ const MKT = () => {
                 <div>
                   <h3 className="text-xl font-bold mb-2">Seguimiento en Tiempo Real</h3>
                   <p className="text-muted-foreground">
-                    Recibe notificaciones instantáneas sobre cambios de estado, aprobaciones 
+                    Recibe <b>notificaciones instantáneas</b> sobre cambios de estado, aprobaciones 
                     y requerimientos adicionales de documentación.
                   </p>
                 </div>

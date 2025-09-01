@@ -340,11 +340,11 @@ const MKT = () => {
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
             <Button size="lg" className="bg-brand-yellow text-brand-yellow-foreground hover:bg-brand-yellow/90 px-8 py-4 text-lg">
-              Solicitar Demo Personalizada
+              Conocer la plataforma
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
             <Button size="lg" variant="outline" className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary px-8 py-4 text-lg">
-              Conocer Precios
+              Ver Demo
             </Button>
           </div>
 

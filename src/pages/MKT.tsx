@@ -102,7 +102,7 @@ const MKT = () => {
               <CardContent>
                 <p className="text-muted-foreground">
                   Semanas esperando aprobaciones, documentos perdidos en emails, 
-                  y procesos manuales que enlentecen todo el flujo de trabajo.
+                  y procesos manuales que retrasan el flujo de trabajo.
                 </p>
               </CardContent>
             </Card>
@@ -230,7 +230,7 @@ const MKT = () => {
                 <div>
                   <h3 className="text-xl font-bold mb-2">Carga de Documentos Simplificada</h3>
                   <p className="text-muted-foreground">
-                    Prepara los estados de pago, consigue y carga todos los documentos complementarios directamente desde <b>un solo lugar.</b>
+                    Prepara los estados de pago, consigue y carga la documentación complementaria directamente desde <b>un solo lugar.</b>
                   </p>
                 </div>
               </div>

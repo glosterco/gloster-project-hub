@@ -267,7 +267,7 @@ const MKT = () => {
               Control Total de tus Proyectos
             </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Herramientas avanzadas para recibir, revistar y gestionar estados de pagos de múltiples proyectos
+              Herramientas avanzadas para recibir, revisar y gestionar estados de pagos de múltiples proyectos
             </p>
           </div>
 

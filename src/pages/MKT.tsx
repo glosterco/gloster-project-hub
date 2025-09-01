@@ -2,15 +2,16 @@ import { Building, FileText, Clock, Shield, Users, CheckCircle, ArrowRight, BarC
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { useState } from "react";
 import ContactModal from "@/components/ContactModal";
 
 // URLs de las imágenes subidas
 const homeImage = "/lovable-uploads/4e1775b7-5550-4e5a-a78b-261535b4c52b.png";
-const dashboardContratistaImage = "/lovable-uploads/738b7efd-f5c6-4b53-8582-f2641f50675e.png";
+const dashboardContratistaImage = "/lovable-uploads/4e1775b7-5550-4e5a-a78b-261535b4c52b.png";
 const payment1Image = "/lovable-uploads/fc73cc7b-9b91-43d6-a910-2c7ada490b57.png";
 const dashboardMandanteImage = "/lovable-uploads/13012c60-5258-4c3f-b6ba-fa85b2530748.png";
-const submissionImage = "/lovable-uploads/56ec2da3-35f4-4d8e-bbf7-cdf7224e6304.png";
+const submissionImage = "/lovable-uploads/736cf34a-679d-4c6a-bfaf-b1c2225022d9.png";
 
 const MKT = () => {
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
@@ -194,11 +195,11 @@ const MKT = () => {
                   <Monitor className="w-4 h-4 text-primary" />
                   <span className="text-sm font-medium">Dashboard Principal</span>
                 </div>
-                <div className="h-32 rounded overflow-hidden">
+                <div className="rounded overflow-hidden">
                   <img 
                     src={homeImage} 
                     alt="Dashboard Principal de la Plataforma"
-                    className="w-full h-full object-cover"
+                    className="w-full h-auto object-contain"
                   />
                 </div>
               </div>
@@ -267,22 +268,30 @@ const MKT = () => {
                 <h4 className="font-semibold">Panel de Contratista</h4>
                 <Badge variant="secondary">Vista Real</Badge>
               </div>
-              <div className="space-y-4">
-                <div className="rounded-lg overflow-hidden">
-                  <img 
-                    src={dashboardContratistaImage} 
-                    alt="Dashboard de Contratista"
-                    className="w-full h-auto object-cover"
-                  />
-                </div>
-                <div className="rounded-lg overflow-hidden">
-                  <img 
-                    src={payment1Image} 
-                    alt="Estado de Pago - Vista Contratista"
-                    className="w-full h-auto object-cover"
-                  />
-                </div>
-              </div>
+              <Carousel className="w-full">
+                <CarouselContent>
+                  <CarouselItem>
+                    <div className="rounded-lg overflow-hidden">
+                      <img 
+                        src={dashboardContratistaImage} 
+                        alt="Dashboard de Contratista"
+                        className="w-full h-auto object-contain"
+                      />
+                    </div>
+                  </CarouselItem>
+                  <CarouselItem>
+                    <div className="rounded-lg overflow-hidden">
+                      <img 
+                        src={payment1Image} 
+                        alt="Estado de Pago - Vista Contratista"
+                        className="w-full h-auto object-contain"
+                      />
+                    </div>
+                  </CarouselItem>
+                </CarouselContent>
+                <CarouselPrevious />
+                <CarouselNext />
+              </Carousel>
             </div>
           </div>
         </div>
@@ -307,22 +316,30 @@ const MKT = () => {
                 <h4 className="font-semibold">Dashboard Ejecutivo</h4>
                 <Badge variant="secondary">Vista Real</Badge>
               </div>
-              <div className="space-y-4">
-                <div className="rounded-lg overflow-hidden">
-                  <img 
-                    src={dashboardMandanteImage} 
-                    alt="Dashboard de Mandante"
-                    className="w-full h-auto object-cover"
-                  />
-                </div>
-                <div className="rounded-lg overflow-hidden">
-                  <img 
-                    src={submissionImage} 
-                    alt="Vista de Estado de Pago - Mandante"
-                    className="w-full h-auto object-cover"
-                  />
-                </div>
-              </div>
+              <Carousel className="w-full">
+                <CarouselContent>
+                  <CarouselItem>
+                    <div className="rounded-lg overflow-hidden">
+                      <img 
+                        src={dashboardMandanteImage} 
+                        alt="Dashboard de Mandante"
+                        className="w-full h-auto object-contain"
+                      />
+                    </div>
+                  </CarouselItem>
+                  <CarouselItem>
+                    <div className="rounded-lg overflow-hidden">
+                      <img 
+                        src={submissionImage} 
+                        alt="Vista de Estado de Pago - Mandante"
+                        className="w-full h-auto object-contain"
+                      />
+                    </div>
+                  </CarouselItem>
+                </CarouselContent>
+                <CarouselPrevious />
+                <CarouselNext />
+              </Carousel>
             </div>
 
             <div className="space-y-8">

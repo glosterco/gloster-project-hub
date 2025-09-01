@@ -103,6 +103,18 @@ const MKT = () => {
                 </p>
               </CardContent>
             </Card>
+            <Card className="border-destructive/20 bg-destructive/5">
+              <CardHeader>
+                <Users className="w-12 h-12 text-destructive mb-4" />
+                <CardTitle className="text-destructive">Comunicación Fragmentada</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">
+                  WhatsApp, emails, llamadas... Información dispersa que genera 
+                  malentendidos y errores costosos.
+                </p>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>

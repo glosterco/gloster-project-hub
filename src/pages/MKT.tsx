@@ -302,8 +302,8 @@ const MKT = () => {
                 <div>
                   <h3 className="text-xl font-bold mb-2">Aprobaciones Inteligentes</h3>
                   <p className="text-muted-foreground">
-                    Sistema de aprobación de pagos con múltiples niveles de autorización, 
-                    validación automática y registro de decisiones.
+                    Sistema de aprobación de estados de pago pagos con múltiples niveles de autorización, 
+                    validación automática y notificaciones automáticas.
                   </p>
                 </div>
               </div>
@@ -315,8 +315,8 @@ const MKT = () => {
                 <div>
                   <h3 className="text-xl font-bold mb-2">Reportes Ejecutivos</h3>
                   <p className="text-muted-foreground">
-                    Resúmenes ejecutivos con métricas clave, tendencias de pago y 
-                    análisis detallados por proyecto y contratista.
+                    Resúmenes ejecutivos con métricas clave, tendencias de pago, registro historico de documentación y
+                    análisis por proyecto y contratista.
                   </p>
                 </div>
               </div>
@@ -328,8 +328,7 @@ const MKT = () => {
                 <div>
                   <h3 className="text-xl font-bold mb-2">Gestión Financiera</h3>
                   <p className="text-muted-foreground">
-                    Control total sobre montos, fechas de pago, estados contables 
-                    y integración con sistemas financieros existentes.
+                    Control sobre montos totales, aprobados y rechazados y fechas de vencimiento.
                   </p>
                 </div>
               </div>
@@ -346,7 +345,7 @@ const MKT = () => {
             <span className="text-brand-yellow">Pagos en Construcción</span>
           </h2>
           <p className="text-xl text-primary-foreground/90 mb-8 max-w-2xl mx-auto">
-            Se parte de las empresas que ya optimizaron sus procesos de pago 
+            Únete a las empresas líderes que ya optimizaron sus procesos de pago 
             y mejoraron la eficiencia de sus proyectos.
           </p>
           

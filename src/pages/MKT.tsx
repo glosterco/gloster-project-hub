@@ -2,8 +2,25 @@ import { Building, FileText, Clock, Shield, Users, CheckCircle, ArrowRight, BarC
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useState } from "react";
+import ContactModal from "@/components/ContactModal";
+import homeImage from "@/assets/home.png";
+import dashboardContratistaImage from "@/assets/dashboard-contratista.png";
+import payment1Image from "@/assets/payment-1.png";
+import dashboardMandanteImage from "@/assets/dashboard-mandante.png";
+import submissionImage from "@/assets/submission.png";
 
 const MKT = () => {
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+
+  const handleDemoClick = () => {
+    window.open("https://www.loom.com/looms/videos/Gloster-a4fd94baeb5642bcb1339ced7936e4b5", "_blank");
+  };
+
+  const handleKnowPlatformClick = () => {
+    setIsContactModalOpen(true);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
@@ -24,11 +41,20 @@ const MKT = () => {
               Automatiza procesos, reduce tiempos y elimina errores.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" className="bg-brand-yellow text-brand-yellow-foreground hover:bg-brand-yellow/90 px-8 py-4 text-lg">
+              <Button 
+                size="lg" 
+                className="bg-brand-yellow text-brand-yellow-foreground hover:bg-brand-yellow/90 px-8 py-4 text-lg"
+                onClick={handleKnowPlatformClick}
+              >
                 Conocer la Plataforma
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
-              <Button size="lg" variant="outline" className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary px-8 py-4 text-lg">
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="border-primary-foreground text-brand-yellow hover:bg-primary-foreground hover:text-primary px-8 py-4 text-lg"
+                onClick={handleDemoClick}
+              >
                 Ver Demo
               </Button>
             </div>
@@ -64,7 +90,7 @@ const MKT = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <Card className="border-destructive/20 bg-destructive/5">
               <CardHeader>
                 <Clock className="w-12 h-12 text-destructive mb-4" />
@@ -103,9 +129,10 @@ const MKT = () => {
                 </p>
               </CardContent>
             </Card>
+            
             <Card className="border-destructive/20 bg-destructive/5">
               <CardHeader>
-                  <FolderTree className="w-12 h-12 text-destructive mb-4" />
+                <FolderTree className="w-12 h-12 text-destructive mb-4" />
                 <CardTitle className="text-destructive">Falta de trazabilidad</CardTitle>
               </CardHeader>
               <CardContent>
@@ -165,14 +192,13 @@ const MKT = () => {
                   <Monitor className="w-4 h-4 text-primary" />
                   <span className="text-sm font-medium">Dashboard Principal</span>
                 </div>
-                <div className="h-32 bg-gradient-to-r from-primary/10 to-brand-yellow/10 rounded"></div>
-              </div>
-              <div className="bg-white rounded-lg shadow-lg p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <FileText className="w-4 h-4 text-brand-yellow" />
-                  <span className="text-sm font-medium">Gestión de Documentos</span>
+                <div className="h-32 rounded overflow-hidden">
+                  <img 
+                    src={homeImage} 
+                    alt="Dashboard Principal de la Plataforma"
+                    className="w-full h-full object-cover"
+                  />
                 </div>
-                <div className="h-20 bg-gradient-to-r from-brand-yellow/10 to-primary/10 rounded"></div>
               </div>
             </div>
           </div>
@@ -237,20 +263,22 @@ const MKT = () => {
             <div className="bg-white rounded-2xl shadow-lg p-6 border">
               <div className="flex items-center justify-between mb-4">
                 <h4 className="font-semibold">Panel de Contratista</h4>
-                <Badge variant="secondary">En Vivo</Badge>
+                <Badge variant="secondary">Vista Real</Badge>
               </div>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                  <span className="text-sm">Proyecto Torre Norte</span>
-                  <Badge className="bg-brand-yellow text-brand-yellow-foreground">Pendiente</Badge>
+              <div className="space-y-4">
+                <div className="rounded-lg overflow-hidden">
+                  <img 
+                    src={dashboardContratistaImage} 
+                    alt="Dashboard de Contratista"
+                    className="w-full h-auto object-cover"
+                  />
                 </div>
-                <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                  <span className="text-sm">Edificio Central</span>
-                  <Badge variant="secondary">Aprobado</Badge>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                  <span className="text-sm">Complejo Sur</span>
-                  <Badge variant="outline">En Revisión</Badge>
+                <div className="rounded-lg overflow-hidden">
+                  <img 
+                    src={payment1Image} 
+                    alt="Estado de Pago - Vista Contratista"
+                    className="w-full h-auto object-cover"
+                  />
                 </div>
               </div>
             </div>
@@ -275,22 +303,23 @@ const MKT = () => {
             <div className="bg-white rounded-2xl shadow-lg p-6 border">
               <div className="flex items-center justify-between mb-4">
                 <h4 className="font-semibold">Dashboard Ejecutivo</h4>
-                <Badge variant="secondary">Vista Gerencial</Badge>
+                <Badge variant="secondary">Vista Real</Badge>
               </div>
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Pagos Pendientes</span>
-                  <span className="font-bold text-lg">$2.4M</span>
+                <div className="rounded-lg overflow-hidden">
+                  <img 
+                    src={dashboardMandanteImage} 
+                    alt="Dashboard de Mandante"
+                    className="w-full h-auto object-cover"
+                  />
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Proyectos Activos</span>
-                  <span className="font-bold text-lg">12</span>
+                <div className="rounded-lg overflow-hidden">
+                  <img 
+                    src={submissionImage} 
+                    alt="Vista de Estado de Pago - Mandante"
+                    className="w-full h-auto object-cover"
+                  />
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Documentos por Revisar</span>
-                  <span className="font-bold text-lg">8</span>
-                </div>
-                <div className="h-20 bg-gradient-to-r from-primary/10 to-brand-yellow/10 rounded mt-4"></div>
               </div>
             </div>
 
@@ -350,11 +379,20 @@ const MKT = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <Button size="lg" className="bg-brand-yellow text-brand-yellow-foreground hover:bg-brand-yellow/90 px-8 py-4 text-lg">
+            <Button 
+              size="lg" 
+              className="bg-brand-yellow text-brand-yellow-foreground hover:bg-brand-yellow/90 px-8 py-4 text-lg"
+              onClick={handleKnowPlatformClick}
+            >
               Conocer la plataforma
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
-            <Button size="lg" variant="outline" className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary px-8 py-4 text-lg">
+            <Button 
+              size="lg" 
+              variant="outline" 
+              className="border-primary-foreground text-brand-yellow hover:bg-primary-foreground hover:text-primary px-8 py-4 text-lg"
+              onClick={handleDemoClick}
+            >
               Ver Demo
             </Button>
           </div>
@@ -395,6 +433,11 @@ const MKT = () => {
           </p>
         </div>
       </footer>
+      
+      <ContactModal 
+        isOpen={isContactModalOpen} 
+        onClose={() => setIsContactModalOpen(false)} 
+      />
     </div>
   );
 };

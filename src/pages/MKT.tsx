@@ -16,11 +16,11 @@ const MKT = () => {
               </div>
             </div>
             <h1 className="text-5xl md:text-6xl font-bold mb-6 leading-tight">
-              Gestión documental <br />
-              <span className="text-brand-yellow">Inteligente</span> para la Construcción
+              Gestión de Pagos <br />
+              <span className="text-brand-yellow">Inteligente</span> para Construcción
             </h1>
             <p className="text-xl md:text-2xl text-primary-foreground/90 mb-8 max-w-3xl mx-auto">
-              La plataforma que revoluciona la gestión de estados de pagos entre mandantes y contratistas. 
+              La plataforma que revoluciona la gestión de pagos entre mandantes y contratistas. 
               Automatiza procesos, reduce tiempos y elimina errores.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -60,7 +60,7 @@ const MKT = () => {
               ¿Te suena familiar?
             </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Los problemas más comunes en la gestión documental de estados de pagos en la construcción
+              Los problemas más comunes en la gestión de pagos de construcción
             </p>
           </div>
 
@@ -127,7 +127,7 @@ const MKT = () => {
               La Solución que Necesitas
             </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Una plataforma integral que centraliza, automatiza y optimiza toda la gestión de los estados de pagos
+              Una plataforma integral que centraliza, automatiza y optimiza toda la gestión de pagos
             </p>
           </div>
 
@@ -185,10 +185,10 @@ const MKT = () => {
           <div className="text-center mb-16">
             <Badge className="bg-brand-yellow text-brand-yellow-foreground mb-4">Para Contratistas</Badge>
             <h2 className="text-4xl font-bold text-foreground mb-6">
-              Simplifica tu Gestión de estados de pago
+              Simplifica tu Gestión de Cobros
             </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Herramientas diseñadas para que los contratistas gestionen sus estados de pagos de manera eficiente
+              Herramientas diseñadas para que los contratistas gestionen sus pagos de manera eficiente
             </p>
           </div>
 
@@ -267,7 +267,7 @@ const MKT = () => {
               Control Total de tus Proyectos
             </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Herramientas avanzadas para recibir, revistar y gestionar estados de pagos de múltiples proyectos
+              Herramientas avanzadas para supervisar, aprobar y gestionar pagos de múltiples proyectos
             </p>
           </div>
 
@@ -345,7 +345,7 @@ const MKT = () => {
             <span className="text-brand-yellow">Pagos en Construcción</span>
           </h2>
           <p className="text-xl text-primary-foreground/90 mb-8 max-w-2xl mx-auto">
-            Únete a las empresas líderes que ya optimizaron sus procesos de pago 
+            Únete a las empresas líderes que ya optimizaron su gestión documental 
             y mejoraron la eficiencia de sus proyectos.
           </p>
           

@@ -55,7 +55,7 @@ const MKT = () => {
               <Button 
                 size="lg" 
                 variant="outline" 
-                className="bg-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary px-8 py-4 text-lg"
+                className="border-primary-foreground text-primary hover:bg-primary-foreground hover:text-primary px-8 py-4 text-lg"
                 onClick={handleDemoClick}
               >
                 Ver Demo

@@ -139,7 +139,7 @@ const MKT = () => {
                   <CheckCircle className="w-6 h-6 text-brand-yellow flex-shrink-0 mt-1" />
                   <div>
                     <h4 className="font-semibold mb-1">Notificaciones Automáticas</h4>
-                    <p className="text-muted-foreground">Notifica automáticamente a todas las partes sobre estados de pago y documentos requeridos, para mantener una comunicación clara entre mandantes y contratistas</p>
+                    <p className="text-muted-foreground">Manten una comunicación clara entre mandante y contratisa notificando automáticamente a todas las partes sobre estados de pago y documentos requeridos.</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">

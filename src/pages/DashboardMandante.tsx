@@ -427,7 +427,7 @@ const DashboardMandante: React.FC = () => {
                 className="w-8 h-8"
               />
               <div>
-                <h1 className="text-xl font-bold text-slate-800 font-rubik">Dashboard Mandante</h1>
+                <h1 className="text-xl font-bold text-slate-800 font-rubik">Dashboard</h1>
                 <p className="text-sm text-gloster-gray font-rubik">
                   Gestiona tus proyectos y estados de pago
                 </p>

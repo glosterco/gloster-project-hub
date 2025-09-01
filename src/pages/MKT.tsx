@@ -37,15 +37,15 @@ const MKT = () => {
           {/* Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6">
-              <div className="text-3xl font-bold text-brand-yellow mb-2">95%</div>
-              <div className="text-sm text-primary-foreground/80">Reducción en tiempos de gestión</div>
+              <div className="text-3xl font-bold text-brand-yellow mb-2">Reduce</div>
+              <div className="text-sm text-primary-foreground/80">Tiempos de gestión y revisión</div>
             </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6">
-              <div className="text-3xl font-bold text-brand-yellow mb-2">100%</div>
-              <div className="text-sm text-primary-foreground/80">Trazabilidad de documentos</div>
+              <div className="text-3xl font-bold text-brand-yellow mb-2">Mejora</div>
+              <div className="text-sm text-primary-foreground/80">Trazabilidad y orden de documentos</div>
             </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6">
-              <div className="text-3xl font-bold text-brand-yellow mb-2">0</div>
+              <div className="text-3xl font-bold text-brand-yellow mb-2">Evita</div>
               <div className="text-sm text-primary-foreground/80">Errores de comunicación</div>
             </div>
           </div>
@@ -65,7 +65,7 @@ const MKT = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <Card className="border-destructive/30 bg-destructive/5">
+            <Card className="border-destructive/20 bg-destructive/5">
               <CardHeader>
                 <Clock className="w-12 h-12 text-destructive mb-4" />
                 <CardTitle className="text-destructive">Retrasos Constantes</CardTitle>

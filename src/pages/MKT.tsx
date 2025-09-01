@@ -328,7 +328,7 @@ const MKT = () => {
                 <div>
                   <h3 className="text-xl font-bold mb-2">Gestión Financiera</h3>
                   <p className="text-muted-foreground">
-                    Control sobre montos totales, aprobados y rechazados y fechas de vencimiento.
+                    Control sobre montos totales, aprobados, rechazados, fechas de vencimiento y notificaciones automáticas a contratistas.
                   </p>
                 </div>
               </div>

@@ -346,7 +346,7 @@ const MKT = () => {
             <span className="text-brand-yellow">Pagos en Construcción</span>
           </h2>
           <p className="text-xl text-primary-foreground/90 mb-8 max-w-2xl mx-auto">
-            Únete a las empresas líderes que ya optimizaron sus procesos de pago 
+            Se parte de las empresas que ya optimizaron sus procesos de pago 
             y mejoraron la eficiencia de sus proyectos.
           </p>
           

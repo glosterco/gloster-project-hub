@@ -146,7 +146,7 @@ const MKT = () => {
                   <CheckCircle className="w-6 h-6 text-brand-yellow flex-shrink-0 mt-1" />
                   <div>
                     <h4 className="font-semibold mb-1">Gestión de Documentos</h4>
-                    <p className="text-muted-foreground">Carga, organización y descarga automática de documentos con integración directa a Google Drive.</p>
+                    <p className="text-muted-foreground">Carga, organización y descarga automática de documentos con registro historico de la información.</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">

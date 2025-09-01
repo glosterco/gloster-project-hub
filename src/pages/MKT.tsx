@@ -42,7 +42,7 @@ const MKT = () => {
             </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6">
               <div className="text-3xl font-bold text-brand-yellow mb-2">Mejora</div>
-              <div className="text-sm text-primary-foreground/80">Trazabilidad y orden de documentos</div>
+              <div className="text-sm text-primary-foreground/80">Trazabilidad y orden documental</div>
             </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6">
               <div className="text-3xl font-bold text-brand-yellow mb-2">Evita</div>

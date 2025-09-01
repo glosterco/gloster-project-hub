@@ -176,7 +176,7 @@ const MKT = () => {
                   <CheckCircle className="w-6 h-6 text-brand-yellow flex-shrink-0 mt-1" />
                   <div>
                     <h4 className="font-semibold mb-1">Gestión de Documentos</h4>
-                    <p className="text-muted-foreground">Carga, organización y descarga automática de documentos con registro historico de la información.</p>
+                    <p className="text-muted-foreground">Carga, organización y descarga automática de documentos con registro histórico de la información.</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -363,7 +363,7 @@ const MKT = () => {
                 <div>
                   <h3 className="text-xl font-bold mb-2">Reportes Ejecutivos</h3>
                   <p className="text-muted-foreground">
-                    Resúmenes ejecutivos con métricas clave, tendencias de pago, registro historico de documentación y
+                    Resúmenes ejecutivos con métricas clave, tendencias de pago, registro histórico de documentación y
                     análisis por proyecto y contratista.
                   </p>
                 </div>
@@ -409,7 +409,7 @@ const MKT = () => {
             <Button 
               size="lg" 
               variant="outline" 
-              className="border-primary-foreground text-primary hover:bg-primary-foreground hover:text-primary px-8 py-4 text-lg"
+              className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary px-8 py-4 text-lg"
               onClick={handleDemoClick}
             >
               Ver Demo

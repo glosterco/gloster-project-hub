@@ -238,7 +238,7 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
               <CardContent className="p-6">
                 <h3 className="font-semibold text-lg mb-4 text-primary">Documentos Adicionales (Opcional)</h3>
                 <p className="text-muted-foreground mb-4">
-                  Puedes cargar documentos adicionales necesarios para la aprobación, como carátula firmada u otros documentos relevantes.
+                  Puedes cargar documentos adicionales necesarios para la aprobación, como documentos firmados u otros relevantes.
                 </p>
                 
                 {/* Upload Area */}

@@ -5,6 +5,13 @@ import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import ContactModal from "@/components/ContactModal";
 
+// URLs de las imágenes subidas
+const homeImage = "/lovable-uploads/4e1775b7-5550-4e5a-a78b-261535b4c52b.png";
+const dashboardContratistaImage = "/lovable-uploads/738b7efd-f5c6-4b53-8582-f2641f50675e.png";
+const payment1Image = "/lovable-uploads/fc73cc7b-9b91-43d6-a910-2c7ada490b57.png";
+const dashboardMandanteImage = "/lovable-uploads/13012c60-5258-4c3f-b6ba-fa85b2530748.png";
+const submissionImage = "/lovable-uploads/56ec2da3-35f4-4d8e-bbf7-cdf7224e6304.png";
+
 const MKT = () => {
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
 
@@ -187,17 +194,12 @@ const MKT = () => {
                   <Monitor className="w-4 h-4 text-primary" />
                   <span className="text-sm font-medium">Dashboard Principal</span>
                 </div>
-                <div className="h-32 bg-gradient-to-r from-primary/10 to-brand-yellow/10 rounded flex items-center justify-center">
-                  <span className="text-muted-foreground text-sm">Vista de la Plataforma</span>
-                </div>
-              </div>
-              <div className="bg-white rounded-lg shadow-lg p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <FileText className="w-4 h-4 text-brand-yellow" />
-                  <span className="text-sm font-medium">Gestión de Documentos</span>
-                </div>
-                <div className="h-20 bg-gradient-to-r from-brand-yellow/10 to-primary/10 rounded flex items-center justify-center">
-                  <span className="text-muted-foreground text-xs">Estados de Pago</span>
+                <div className="h-32 rounded overflow-hidden">
+                  <img 
+                    src={homeImage} 
+                    alt="Dashboard Principal de la Plataforma"
+                    className="w-full h-full object-cover"
+                  />
                 </div>
               </div>
             </div>
@@ -265,18 +267,20 @@ const MKT = () => {
                 <h4 className="font-semibold">Panel de Contratista</h4>
                 <Badge variant="secondary">Vista Real</Badge>
               </div>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                  <span className="text-sm">Proyecto Torre Norte</span>
-                  <Badge className="bg-brand-yellow text-brand-yellow-foreground">Pendiente</Badge>
+              <div className="space-y-4">
+                <div className="rounded-lg overflow-hidden">
+                  <img 
+                    src={dashboardContratistaImage} 
+                    alt="Dashboard de Contratista"
+                    className="w-full h-auto object-cover"
+                  />
                 </div>
-                <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                  <span className="text-sm">Edificio Central</span>
-                  <Badge variant="secondary">Aprobado</Badge>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                  <span className="text-sm">Complejo Sur</span>
-                  <Badge variant="outline">En Revisión</Badge>
+                <div className="rounded-lg overflow-hidden">
+                  <img 
+                    src={payment1Image} 
+                    alt="Estado de Pago - Vista Contratista"
+                    className="w-full h-auto object-cover"
+                  />
                 </div>
               </div>
             </div>
@@ -301,22 +305,23 @@ const MKT = () => {
             <div className="bg-white rounded-2xl shadow-lg p-6 border">
               <div className="flex items-center justify-between mb-4">
                 <h4 className="font-semibold">Dashboard Ejecutivo</h4>
-                <Badge variant="secondary">Vista Gerencial</Badge>
+                <Badge variant="secondary">Vista Real</Badge>
               </div>
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Pagos Pendientes</span>
-                  <span className="font-bold text-lg">$2.4M</span>
+                <div className="rounded-lg overflow-hidden">
+                  <img 
+                    src={dashboardMandanteImage} 
+                    alt="Dashboard de Mandante"
+                    className="w-full h-auto object-cover"
+                  />
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Proyectos Activos</span>
-                  <span className="font-bold text-lg">12</span>
+                <div className="rounded-lg overflow-hidden">
+                  <img 
+                    src={submissionImage} 
+                    alt="Vista de Estado de Pago - Mandante"
+                    className="w-full h-auto object-cover"
+                  />
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Documentos por Revisar</span>
-                  <span className="font-bold text-lg">8</span>
-                </div>
-                <div className="h-20 bg-gradient-to-r from-primary/10 to-brand-yellow/10 rounded mt-4"></div>
               </div>
             </div>
 

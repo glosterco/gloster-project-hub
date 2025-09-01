@@ -1,4 +1,4 @@
-import { Building, FileText, Clock, Shield, Users, CheckCircle, ArrowRight, BarChart3, Calendar, DollarSign, Download, Upload, Monitor, Smartphone } from "lucide-react";
+import { Building, FileText, Clock, Shield, Users, CheckCircle, ArrowRight, BarChart3, Calendar, DollarSign, Download, Upload, Monitor, Smartphone, FolderTree } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -86,7 +86,7 @@ const MKT = () => {
               <CardContent>
                 <p className="text-muted-foreground">
                   Facturas en diferentes formatos, estados de pago confusos, 
-                  y falta de trazabilidad en los documentos críticos.
+                  y desorden en los documentos críticos.
                 </p>
               </CardContent>
             </Card>
@@ -105,13 +105,13 @@ const MKT = () => {
             </Card>
             <Card className="border-destructive/20 bg-destructive/5">
               <CardHeader>
-                <Users className="w-12 h-12 text-destructive mb-4" />
-                <CardTitle className="text-destructive">Comunicación Fragmentada</CardTitle>
+                  <FolderTree className="w-12 h-12 text-destructive mb-4" />
+                <CardTitle className="text-destructive">Falta de trazabilidad</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground">
-                  WhatsApp, emails, llamadas... Información dispersa que genera 
-                  malentendidos y errores costosos.
+                  Muchas versiones y desorganización de la documentación. Envíos reiterados 
+                  de información pierden el orden y los registros
                 </p>
               </CardContent>
             </Card>

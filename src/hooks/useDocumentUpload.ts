@@ -111,7 +111,7 @@ export const useDocumentUpload = () => {
         console.error(`❌ File too large: ${file.name} (${fileSizeMB.toFixed(2)}MB)`);
         toast({
           title: "Archivo demasiado grande",
-          description: `El archivo ${file.name} (${fileSizeMB.toFixed(2)}MB) excede el límite de 5MB.`,
+          description: `El archivo ${file.name} (${fileSizeMB.toFixed(2)}MB) excede el límite de 5MB. Intenta comprimir el archivo o contactar soporte.`,
           variant: "destructive",
         });
         return false;
@@ -120,8 +120,8 @@ export const useDocumentUpload = () => {
       if (!allowedTypes.includes(file.type)) {
         console.error(`❌ Invalid file format: ${file.name} (${file.type})`);
         toast({
-          title: "Error de formato",
-          description: `El archivo ${file.name} no es un formato válido. Solo se aceptan: PDF, DOC, DOCX, XLS, XLSX, XLSM, JPG, PNG y CSV.`,
+          title: "Formato no válido",
+          description: `El archivo ${file.name} no tiene un formato aceptado. Formatos permitidos: PDF, DOC, DOCX, XLS, XLSX, XLSM, JPG, PNG y CSV (máx. 5MB).`,
           variant: "destructive",
         });
         return false;

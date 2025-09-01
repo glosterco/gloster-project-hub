@@ -79,7 +79,10 @@ const DocumentUploadCard: React.FC<DocumentUploadCardProps> = ({
                   </TooltipContent>
                 </Tooltip>
               </div>
-              <p className="text-gloster-gray text-sm font-rubik mb-3">{doc.description}</p>
+              <p className="text-gloster-gray text-sm font-rubik mb-2">{doc.description}</p>
+              <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded mb-3 font-rubik">
+                📁 Tamaño máximo: 5MB | Formatos: PDF, DOC, DOCX, XLS, XLSX, XLSM, JPG, PNG, CSV
+              </div>
               
               {/* Mostrar archivos cargados */}
               {uploadedFiles && uploadedFiles.length > 0 && (

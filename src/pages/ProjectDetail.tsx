@@ -240,7 +240,8 @@ const ProjectDetail = () => {
         .sort((a, b) => {
           switch (sortBy) {
             case 'month':
-              return new Date(b.ExpiryDate).getTime() - new Date(a.ExpiryDate).getTime();
+              // Cambiar a orden ascendente por fecha
+              return new Date(a.ExpiryDate).getTime() - new Date(b.ExpiryDate).getTime();
             case 'amount':
               const amountA = a.Total || 0;
               const amountB = b.Total || 0;

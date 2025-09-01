@@ -140,8 +140,6 @@ const ProjectDetail = () => {
         return 'bg-purple-100 text-purple-700';
       case 'rechazado':
         return 'bg-red-100 text-red-700';
-      case 'pendiente':
-        return 'bg-gloster-yellow/20 text-gloster-gray';
       case 'sin estado':
         return 'bg-gray-100 text-gray-700';
       default:

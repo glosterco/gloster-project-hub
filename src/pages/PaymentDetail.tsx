@@ -316,14 +316,14 @@ const PaymentDetail = () => {
     return [...matchedDocuments, ...otherDocuments];
   }, [payment?.projectData?.Requierment]);
 
-  // Auto-refresh project data every 30 seconds to catch requirement updates
+  // Auto-refresh project data every 5 seconds to catch requirement updates
   useEffect(() => {
     if (!payment?.id) return;
     
     const interval = setInterval(() => {
       console.log('🔄 Auto-refreshing payment data to check for requirement updates...');
       refetch();
-    }, 30000); // 30 seconds
+    }, 5000); // 5 seconds
     
     return () => clearInterval(interval);
   }, [payment?.id, refetch]);

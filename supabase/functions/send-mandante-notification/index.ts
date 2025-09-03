@@ -65,8 +65,14 @@ const getAccessToken = async (): Promise<string> => {
   return tokenResult.access_token;
 };
 
-const formatCurrency = (amount: number, currency?: string): string => {
-  console.log('💰 formatCurrency called with amount:', amount, 'currency:', currency);
+const formatCurrency = (amount: number, currency?: string, projectBudget?: number): string => {
+  console.log('💰 formatCurrency called with amount:', amount, 'currency:', currency, 'projectBudget:', projectBudget);
+  
+  // Si el proyecto tiene budget 0 o NULL, mostrar "sin informar"
+  if (projectBudget === 0 || projectBudget === null || projectBudget === undefined) {
+    console.log('💰 Project budget is 0/null/undefined, returning "sin informar"');
+    return "sin informar";
+  }
   
   // If amount is 0, return "sin informar"
   if (amount === 0) {
@@ -109,7 +115,7 @@ const formatCurrency = (amount: number, currency?: string): string => {
 };
 
 
-const createEmailHtml = (data: NotificationRequest): string => {
+const createEmailHtml = (data: NotificationRequest & { projectBudget?: number }): string => {
   const accessInstructions = `
           <div class="important-note">
             <strong>Nota Importante:</strong> Este enlace le dará acceso directo y seguro al estado de pago donde podrá revisar toda la documentación adjunta y proceder con la aprobación o solicitar modificaciones según corresponda.
@@ -270,7 +276,7 @@ const createEmailHtml = (data: NotificationRequest): string => {
               </tr>
               <tr>
                 <td class="info-label">Monto Solicitado:</td>
-                <td class="info-value amount">${formatCurrency(data.amount || 0, data.currency)}</td>
+                <td class="info-value amount">${formatCurrency(data.amount || 0, data.currency, data.projectBudget)}</td>
               </tr>
               <tr>
                 <td class="info-label">Fecha de Vencimiento:</td>
@@ -340,13 +346,15 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("💰 Validated amount:", validAmount);
 
-    // Get CC email from Mandantes table for this payment
+    // Get CC email and project budget from database for this payment
     let ccEmail = null;
+    let projectBudget = null;
     try {
       const { data: paymentData, error: paymentError } = await supabase
         .from('Estados de pago')
         .select(`
           Project (
+            Budget,
             Owner (
               CC
             )
@@ -355,12 +363,16 @@ const handler = async (req: Request): Promise<Response> => {
         .eq('id', data.paymentId)
         .single();
       
-      if (!paymentError && paymentData?.Project?.Owner?.CC) {
-        ccEmail = paymentData.Project.Owner.CC;
-        console.log('📧 Found CC email for mandante:', ccEmail);
+      if (!paymentError && paymentData?.Project) {
+        if (paymentData.Project.Owner?.CC) {
+          ccEmail = paymentData.Project.Owner.CC;
+          console.log('📧 Found CC email for mandante:', ccEmail);
+        }
+        projectBudget = paymentData.Project.Budget;
+        console.log('💰 Found project budget:', projectBudget);
       }
     } catch (ccError) {
-      console.log('⚠️ Could not retrieve CC email:', ccError);
+      console.log('⚠️ Could not retrieve CC email or project budget:', ccError);
       // Continue without CC, don't fail the main notification
     }
 
@@ -377,7 +389,8 @@ const handler = async (req: Request): Promise<Response> => {
       contractorCompany: data.contractorCompany || 'Empresa no especificada',
       mandanteCompany: data.mandanteCompany || 'Empresa no especificada',
       dueDate: data.dueDate || 'Fecha no especificada',
-      currency: data.currency || 'CLP'
+      currency: data.currency || 'CLP',
+      projectBudget: projectBudget
     };
 
     const emailHtml = createEmailHtml(emailData);

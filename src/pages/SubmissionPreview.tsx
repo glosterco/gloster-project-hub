@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { usePaymentDetail } from '@/hooks/usePaymentDetail';
 import { useNavigationWarning } from '@/hooks/useNavigationWarning';
 import { useSubmissionPreviewLogic } from '@/hooks/useSubmissionPreviewLogic';
+import { useDriveFiles } from '@/hooks/useDriveFiles';
 import SubmissionPreviewHeader from '@/components/submission/SubmissionPreviewHeader';
 import SubmissionPreviewContent from '@/components/submission/SubmissionPreviewContent';
 
@@ -13,6 +14,7 @@ const SubmissionPreview = () => {
   const [searchParams] = useSearchParams();
   const paymentId = searchParams.get('paymentId') || '11';
   const { payment, loading, error } = usePaymentDetail(paymentId, true);
+  const { driveFiles } = useDriveFiles(paymentId);
   
   // Verificar tipo de acceso desde sessionStorage
   const [accessData, setAccessData] = useState<any>(null);
@@ -117,6 +119,7 @@ const SubmissionPreview = () => {
       <SubmissionPreviewContent
         payment={payment}
         paymentId={paymentId}
+        driveFiles={driveFiles}
       />
     </div>
   );

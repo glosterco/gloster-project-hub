@@ -1,4 +1,3 @@
-
 import React from 'react';
 import EmailTemplate from '@/components/EmailTemplate';
 import { PaymentDetail } from '@/hooks/usePaymentDetail';
@@ -7,14 +6,36 @@ import { formatCurrency, getDocumentsFromPayment } from '@/utils/submissionPrevi
 interface SubmissionPreviewContentProps {
   payment: PaymentDetail;
   paymentId: string;
+  driveFiles?: { [key: string]: string[] };
 }
 
 const SubmissionPreviewContent: React.FC<SubmissionPreviewContentProps> = ({
   payment,
-  paymentId
+  paymentId,
+  driveFiles
 }) => {
-  // For preview, always use project requirements as no files are backed up yet
-  const documentsFromPayment = getDocumentsFromPayment(payment.projectData?.Requierment);
+  // Use actual backed up files instead of project requirements
+  const documentsFromDrive = React.useMemo(() => {
+    if (!driveFiles) return [];
+    
+    const contractorFiles: any[] = [];
+    Object.entries(driveFiles).forEach(([docId, files]) => {
+      if (docId !== 'mandante_docs' && files && files.length > 0) {
+        files.forEach((fileName, index) => {
+          contractorFiles.push({
+            id: `${docId}_${index}`,
+            name: fileName,
+            description: 'Documento respaldado en Drive',
+            uploaded: true
+          });
+        });
+      }
+    });
+    
+    return contractorFiles;
+  }, [driveFiles]);
+  
+  const documentsFromPayment = documentsFromDrive.length > 0 ? documentsFromDrive : getDocumentsFromPayment(payment.projectData?.Requierment);
 
   const emailTemplateData = {
     paymentState: {
@@ -50,6 +71,7 @@ const SubmissionPreviewContent: React.FC<SubmissionPreviewContentProps> = ({
           documents={emailTemplateData.documents}
           hideActionButtons={true}
           useDirectDownload={true}
+          driveFiles={driveFiles}
         />
       </div>
     </div>

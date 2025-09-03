@@ -9,6 +9,7 @@ interface Document {
   name: string;
   description: string;
   downloadUrl?: string | null;
+  externalLink?: string;
   required: boolean;
 }
 
@@ -112,11 +113,11 @@ const DriveFilesCard: React.FC<DriveFilesCardProps> = ({
                           : 'Descargar'}
                       </span>
                     </Button>
-                    {doc.downloadUrl && paymentStatus !== 'Enviado' && paymentStatus !== 'Aprobado' && (
+                    {(doc.externalLink || doc.downloadUrl) && paymentStatus !== 'Enviado' && paymentStatus !== 'Aprobado' && (
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => window.open(doc.downloadUrl, '_blank')}
+                        onClick={() => window.open(doc.externalLink || doc.downloadUrl, '_blank')}
                         className="flex-1"
                       >
                         <ExternalLink className="h-4 w-4 mr-1" />

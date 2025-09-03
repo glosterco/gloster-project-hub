@@ -13,6 +13,7 @@ const SubmissionPreviewContent: React.FC<SubmissionPreviewContentProps> = ({
   payment,
   paymentId
 }) => {
+  // For preview, always use project requirements as no files are backed up yet
   const documentsFromPayment = getDocumentsFromPayment(payment.projectData?.Requierment);
 
   const emailTemplateData = {

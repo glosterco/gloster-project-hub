@@ -143,7 +143,7 @@ const PaymentInfoStep: React.FC<PaymentInfoStepProps> = ({
         <div className="space-y-3">
           {documentsList.map((doc) => {
             const isRequired = doc === REQUIRED_DOCUMENT;
-            const isExternalDoc = doc === 'Libro de remuneraciones';
+            const isExternalDoc = false; // Removed external link logic
             
             return (
               <div key={doc} className={cn(
@@ -169,28 +169,7 @@ const PaymentInfoStep: React.FC<PaymentInfoStepProps> = ({
                       Obligatorio
                     </span>
                   )}
-                  {isExternalDoc && (
-                    <span className="ml-2 text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full">
-                      Enlace externo
-                    </span>
-                  )}
                 </Label>
-                {isExternalDoc && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const links = {
-                        'Libro de remuneraciones': 'https://midt.dirtrab.cl/empleador/lre'
-                      };
-                      window.open(links[doc as keyof typeof links], '_blank');
-                    }}
-                    className="text-xs"
-                  >
-                    Abrir enlace
-                  </Button>
-                )}
               </div>
             );
           })}

@@ -44,7 +44,28 @@ const SubmissionContent: React.FC<SubmissionContentProps> = ({
     contractorAddress: ''
   };
 
-  const documents = getDocumentsFromPayment(payment.projectData?.Requierment);
+  // Use actual backed up files instead of project requirements
+  const documentsFromDrive = React.useMemo(() => {
+    if (!driveFiles) return [];
+    
+    const contractorFiles: any[] = [];
+    Object.entries(driveFiles).forEach(([docId, files]) => {
+      if (docId !== 'mandante_docs' && files && files.length > 0) {
+        files.forEach((fileName, index) => {
+          contractorFiles.push({
+            id: `${docId}_${index}`,
+            name: fileName,
+            description: 'Documento respaldado en Drive',
+            uploaded: true
+          });
+        });
+      }
+    });
+    
+    return contractorFiles;
+  }, [driveFiles]);
+  
+  const documents = documentsFromDrive.length > 0 ? documentsFromDrive : getDocumentsFromPayment(payment.projectData?.Requierment);
 
   console.log('🏗️ SubmissionContent rendering:', { 
     paymentId, 

@@ -316,6 +316,18 @@ const PaymentDetail = () => {
     return [...matchedDocuments, ...otherDocuments];
   }, [payment?.projectData?.Requierment]);
 
+  // Auto-refresh project data every 30 seconds to catch requirement updates
+  useEffect(() => {
+    if (!payment?.id) return;
+    
+    const interval = setInterval(() => {
+      console.log('🔄 Auto-refreshing payment data to check for requirement updates...');
+      refetch();
+    }, 30000); // 30 seconds
+    
+    return () => clearInterval(interval);
+  }, [payment?.id, refetch]);
+
   console.log('📋 Final filtered documents:', documents.map(d => d.name));
 
   const getExamenesUrl = () => {
@@ -344,6 +356,11 @@ const PaymentDetail = () => {
 
   // NEW: Función para verificar si se pueden activar los botones según el estado
   const canActivateButtons = () => {
+    // Si el proyecto tiene budget 0 o NULL, permitir activar botones sin restricciones
+    if (payment?.projectData?.Budget === 0 || payment?.projectData?.Budget === null || payment?.projectData?.Budget === undefined) {
+      return true;
+    }
+    
     // Para estado "Rechazado": activar si hay al menos un documento cargado
     if (payment?.Status === 'Rechazado') {
       return hasDocumentsToUpload();

@@ -120,7 +120,7 @@ const DriveFilesCard: React.FC<DriveFilesCardProps> = ({
                         className="flex-1"
                       >
                         <ExternalLink className="h-4 w-4 mr-1" />
-                        <span className="text-xs">Visitar</span>
+                        <span className="text-xs">Visitar sitio</span>
                       </Button>
                     )}
                     {paymentStatus !== 'Enviado' && paymentStatus !== 'Aprobado' && (

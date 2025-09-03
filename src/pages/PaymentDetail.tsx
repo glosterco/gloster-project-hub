@@ -220,11 +220,11 @@ const PaymentDetail = () => {
       downloadUrl: 'https://midt.dirtrab.cl/empleador/certificadosLaboralesPrevisionales',
       uploaded: false,
       required: true,
-      helpText: 'Si tienes trabajadores extranjeros, debes generar este certificado adicional desde el mismo portal de la Dirección del Trabajo.'
+      helpText: 'Debes generar este certificado adicional desde el portal de la Dirección del Trabajo.'
     },
     {
       id: 'f29',
-      name: 'Formulario F29',
+      name: 'Certificado F29',
       description: 'Certificado de declaración jurada de impuestos mensuales',
       downloadUrl: 'https://www4.sii.cl/rfiInternet/index.html#rfiSelFormularioPeriodo',
       externalLink: 'https://www4.sii.cl/rfiInternet/index.html#rfiSelFormularioPeriodo',

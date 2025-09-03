@@ -185,18 +185,22 @@ const handler = async (req: Request): Promise<Response> => {
           userType = null;
         }
       } else if (accessType === 'mandante') {
-        // ESCENARIO 1: Verificar ContactEmail del mandante
+        // ESCENARIO 1: Verificar ContactEmail del mandante Y también el campo CC
         const { data: mandante } = await supabaseAdmin
           .from('Mandantes')
-          .select('ContactEmail')
+          .select('ContactEmail, CC')
           .eq('id', project.Owner)
           .single();
 
-        if (mandante?.ContactEmail && mandante.ContactEmail.toLowerCase().trim() === email.toLowerCase().trim()) {
+        const contactEmailMatch = mandante?.ContactEmail && mandante.ContactEmail.toLowerCase().trim() === email.toLowerCase().trim();
+        const ccEmailMatch = mandante?.CC && mandante.CC.toLowerCase().trim() === email.toLowerCase().trim();
+
+        if (contactEmailMatch || ccEmailMatch) {
           console.log('✅ Email MANDANTE verificado exitosamente');
         } else {
           console.log('❌ Email MANDANTE no coincide');
-          console.log('    Esperado:', mandante?.ContactEmail || 'null');
+          console.log('    ContactEmail esperado:', mandante?.ContactEmail || 'null');
+          console.log('    CC esperado:', mandante?.CC || 'null');
           console.log('    Recibido:', email);
           userType = null;
         }

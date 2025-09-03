@@ -224,7 +224,7 @@ const PaymentDetail = () => {
     },
     {
       id: 'f29',
-      name: 'Certificado F29',
+      name: 'Formulario F29',
       description: 'Certificado de declaración jurada de impuestos mensuales',
       downloadUrl: 'https://www4.sii.cl/rfiInternet/index.html#rfiSelFormularioPeriodo',
       externalLink: 'https://www4.sii.cl/rfiInternet/index.html#rfiSelFormularioPeriodo',

@@ -29,6 +29,7 @@ export const useDriveFiles = (paymentId: string | null, enabled: boolean = true)
         'Certificado de pago de cotizaciones', 
         'Certificado F30',
         'Certificado F30-1',
+        'Certificado F29',
         'Exámenes preocupacionales',
         'Finiquito/Anexo Traslado',
         'Factura',

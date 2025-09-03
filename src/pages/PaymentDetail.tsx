@@ -223,6 +223,24 @@ const PaymentDetail = () => {
       helpText: 'Si tienes trabajadores extranjeros, debes generar este certificado adicional desde el mismo portal de la Dirección del Trabajo.'
     },
     {
+      id: 'f29',
+      name: 'Certificado F29',
+      description: 'Certificado de declaración jurada de impuestos mensuales',
+      downloadUrl: 'https://www4.sii.cl/rfiInternet/index.html#rfiSelFormularioPeriodo',
+      uploaded: false,
+      required: true,
+      helpText: 'Accede al portal del SII con tu RUT y clave para generar el certificado F29 correspondiente al período.'
+    },
+    {
+      id: 'libro_remuneraciones',
+      name: 'Libro de remuneraciones',
+      description: 'Registro de remuneraciones de trabajadores',
+      downloadUrl: 'https://midt.dirtrab.cl/empleador/lre',
+      uploaded: false,
+      required: true,
+      helpText: 'Accede al portal de la Dirección del Trabajo para generar el libro de remuneraciones del período.'
+    },
+    {
       id: 'examenes',
       name: 'Exámenes preocupacionales',
       description: 'Certificado de examenes preventivos para trabajos en faena de cada trabajador que corresponda',
@@ -235,11 +253,11 @@ const PaymentDetail = () => {
     },
     {
       id: 'finiquito',
-      name: 'Finiquitos',
-      description: 'Finiquitos de trabajadores que terminaron en el período',
+      name: 'Finiquito/Anexo Traslado',
+      description: 'Documento de finiquito o anexo de traslado de trabajadores (opcional)',
       downloadUrl: 'https://midt.dirtrab.cl/empleador/finiquitos',
       uploaded: false,
-      required: true,
+      required: false,
       allowMultiple: true,
       helpText: 'Solo requerido si hubo trabajadores que terminaron su relación laboral en el período. Genera los finiquitos desde el portal de la Dirección del Trabajo.'
     },

@@ -124,7 +124,7 @@ export const useGoogleDriveIntegration = () => {
         f30: 'Certificado F30',
         f30_1: 'Certificado F30-1',
         examenes: 'Exámenes Preocupacionales',
-        finiquito: 'Finiquitos',
+        finiquito: 'Finiquito/Anexo Traslado',
         factura: 'Factura'
       };
 

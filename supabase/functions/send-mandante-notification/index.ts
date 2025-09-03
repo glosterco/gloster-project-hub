@@ -68,6 +68,12 @@ const getAccessToken = async (): Promise<string> => {
 const formatCurrency = (amount: number, currency?: string): string => {
   console.log('💰 formatCurrency called with amount:', amount, 'currency:', currency);
   
+  // If amount is 0, return "sin informar"
+  if (amount === 0) {
+    console.log('💰 Amount is zero, returning "sin informar"');
+    return "sin informar";
+  }
+  
   // Verificar si el amount es válido
   if (amount === null || amount === undefined || isNaN(amount)) {
     console.warn('⚠️ Invalid amount received:', amount);

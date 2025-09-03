@@ -30,7 +30,7 @@ export const useDriveFiles = (paymentId: string | null, enabled: boolean = true)
         'Certificado F30',
         'Certificado F30-1',
         'Exámenes preocupacionales',
-        'Finiquitos',
+        'Finiquito/Anexo Traslado',
         'Factura',
         'Carátula EEPP'
       ];
@@ -96,7 +96,7 @@ export const useDriveFiles = (paymentId: string | null, enabled: boolean = true)
           documentType = 'f30_1';
         } else if (fileName.includes('Exámenes preocupacionales') || fileName.includes('examenes')) {
           documentType = 'examenes';
-        } else if (fileName.includes('Finiquitos') || fileName.includes('finiquito')) {
+        } else if (fileName.includes('Finiquito/Anexo Traslado') || fileName.includes('finiquito') || fileName.includes('anexo traslado')) {
           documentType = 'finiquito';
         } else if (fileName.includes('Factura') || fileName.includes('factura')) {
           documentType = 'factura';

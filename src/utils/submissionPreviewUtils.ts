@@ -76,9 +76,9 @@ export const getDocumentsFromPayment = (projectRequirements?: string[]) => {
     },
     {
       id: 'f29',
-      name: 'Formulario F29',
-      description: 'Formulario de declaración jurada de impuestos mensuales',
-      keywords: ['formulario f29', 'f29', 'declaracion jurada'],
+      name: 'Certificado F29',
+      description: 'Certificado de declaración jurada de impuestos mensuales',
+      keywords: ['certificado f29', 'formulario f29', 'f29', 'declaracion jurada'],
       required: false,
       externalLink: 'https://www4.sii.cl/rfiInternet/index.html#rfiSelFormularioPeriodo'
     },

@@ -143,14 +143,12 @@ const PaymentInfoStep: React.FC<PaymentInfoStepProps> = ({
         <div className="space-y-3">
           {documentsList.map((doc) => {
             const isRequired = doc === REQUIRED_DOCUMENT;
-            const isExternalDoc = doc === 'Formulario F29' || doc === 'Libro de remuneraciones';
-            const isOptional = doc === 'Finiquito/Anexo Traslado';
+            const isExternalDoc = doc === 'Libro de remuneraciones';
             
             return (
               <div key={doc} className={cn(
                 "flex items-center space-x-2 p-2 rounded-lg",
-                isRequired && "bg-primary/5 border border-primary/20",
-                isOptional && "bg-muted/5 border border-muted/20"
+                isRequired && "bg-primary/5 border border-primary/20"
               )}>
                 <Checkbox
                   id={doc}
@@ -162,19 +160,13 @@ const PaymentInfoStep: React.FC<PaymentInfoStepProps> = ({
                   htmlFor={doc} 
                   className={cn(
                     "text-sm font-rubik flex-1",
-                    isRequired && "font-medium text-primary",
-                    isOptional && "text-muted-foreground"
+                    isRequired && "font-medium text-primary"
                   )}
                 >
                   {doc}
                   {isRequired && (
                     <span className="ml-2 text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
                       Obligatorio
-                    </span>
-                  )}
-                  {isOptional && (
-                    <span className="ml-2 text-xs bg-muted/10 text-muted-foreground px-2 py-1 rounded-full">
-                      Opcional
                     </span>
                   )}
                   {isExternalDoc && (
@@ -190,7 +182,6 @@ const PaymentInfoStep: React.FC<PaymentInfoStepProps> = ({
                     size="sm"
                     onClick={() => {
                       const links = {
-                        'Formulario F29': 'https://www4.sii.cl/rfiInternet/index.html#rfiSelFormularioPeriodo',
                         'Libro de remuneraciones': 'https://midt.dirtrab.cl/empleador/lre'
                       };
                       window.open(links[doc as keyof typeof links], '_blank');

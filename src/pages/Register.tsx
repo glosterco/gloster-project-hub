@@ -59,7 +59,7 @@ const Register = () => {
     'Certificado de pago de cotizaciones',
     'Certificado F30',
     'Certificado F30-1',
-    'Formulario F29',
+    'Certificado F29',
     'Libro de remuneraciones',
     'Exámenes preocupacionales',
     'Finiquito/Anexo Traslado',

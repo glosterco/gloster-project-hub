@@ -9,7 +9,8 @@ export const usePaymentValidation = (
   paymentStatus?: string,
   isAttemptingAction?: boolean,
   originalAmount?: number,
-  originalProgress?: number
+  originalProgress?: number,
+  projectBudget?: number | null
 ) => {
   const [hasUnsavedFiles, setHasUnsavedFiles] = useState(false);
 
@@ -32,6 +33,10 @@ export const usePaymentValidation = (
   };
 
   const areFieldsValidForActions = () => {
+    // Si el proyecto tiene monto 0 o NULL, no requerir validaciones de monto y porcentaje
+    if (projectBudget === 0 || projectBudget === null || projectBudget === undefined) {
+      return true;
+    }
     return isAmountValid() && isProgressValid();
   };
 
@@ -40,6 +45,10 @@ export const usePaymentValidation = (
   };
 
   const getValidationMessage = () => {
+    // Si el proyecto tiene monto 0 o NULL, no mostrar mensajes de validación
+    if (projectBudget === 0 || projectBudget === null || projectBudget === undefined) {
+      return "";
+    }
     if (!isAmountValid() && !isProgressValid()) {
       return "Por favor completa el monto y porcentaje antes de continuar";
     }

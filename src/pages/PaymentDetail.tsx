@@ -117,7 +117,7 @@ const PaymentDetail = () => {
     getValidationMessage,
     hasUnsavedFiles,
     shouldShowValidationErrors
-  } = usePaymentValidation(editableAmount, editablePercentage, documentStatus, payment?.Status, isAttemptingAction, payment?.Total, payment?.Progress);
+  } = usePaymentValidation(editableAmount, editablePercentage, documentStatus, payment?.Status, isAttemptingAction, payment?.Total, payment?.Progress, payment?.projectData?.Budget);
 
   // Use payment actions hook
   const {

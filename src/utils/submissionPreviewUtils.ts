@@ -75,11 +75,28 @@ export const getDocumentsFromPayment = (projectRequirements?: string[]) => {
       required: false
     },
     {
+      id: 'f29',
+      name: 'Formulario F29',
+      description: 'Formulario de declaración jurada de impuestos mensuales',
+      keywords: ['formulario f29', 'f29', 'declaracion jurada'],
+      required: false,
+      externalLink: 'https://www4.sii.cl/rfiInternet/index.html#rfiSelFormularioPeriodo'
+    },
+    {
+      id: 'libro_remuneraciones',
+      name: 'Libro de remuneraciones',
+      description: 'Registro de remuneraciones de trabajadores',
+      keywords: ['libro de remuneraciones', 'libro remuneraciones', 'remuneraciones'],
+      required: false,
+      externalLink: 'https://midt.dirtrab.cl/empleador/lre'
+    },
+    {
       id: 'finiquitos',
-      name: 'Finiquitos',
-      description: 'Documentos de finiquito de trabajadores',
-      keywords: ['finiquitos', 'finiquito'],
-      required: false
+      name: 'Finiquito/Anexo Traslado',
+      description: 'Documento de finiquito o anexo de traslado de trabajadores (opcional)',
+      keywords: ['finiquitos', 'finiquito', 'anexo traslado', 'anexo', 'traslado'],
+      required: false,
+      optional: true
     },
     {
       id: 'examenes',

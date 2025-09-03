@@ -334,6 +334,30 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("💰 Validated amount:", validAmount);
 
+    // Get CC email from Mandantes table for this payment
+    let ccEmail = null;
+    try {
+      const { data: paymentData, error: paymentError } = await supabase
+        .from('Estados de pago')
+        .select(`
+          Project (
+            Owner (
+              CC
+            )
+          )
+        `)
+        .eq('id', data.paymentId)
+        .single();
+      
+      if (!paymentError && paymentData?.Project?.Owner?.CC) {
+        ccEmail = paymentData.Project.Owner.CC;
+        console.log('📧 Found CC email for mandante:', ccEmail);
+      }
+    } catch (ccError) {
+      console.log('⚠️ Could not retrieve CC email:', ccError);
+      // Continue without CC, don't fail the main notification
+    }
+
     const accessToken = await getAccessToken();
     const fromEmail = Deno.env.get("GMAIL_FROM_EMAIL");
 
@@ -353,10 +377,17 @@ const handler = async (req: Request): Promise<Response> => {
     const emailHtml = createEmailHtml(emailData);
     const subject = `Estado de Pago ${emailData.mes} ${emailData.año} - ${emailData.proyecto}`;
     
+    // Prepare email recipients
+    let recipients = data.mandanteEmail;
+    if (ccEmail && isValidEmail(ccEmail)) {
+      recipients = `${data.mandanteEmail}, ${ccEmail}`;
+      console.log('📧 Adding CC recipient:', ccEmail);
+    }
+
     const emailPayload = {
       raw: encodeBase64UTF8(
         `From: Gloster Gestion de Proyectos <${fromEmail}>
-To: ${data.mandanteEmail}
+To: ${recipients}
 Subject: ${subject}
 Reply-To: soporte.gloster@gmail.com
 Content-Type: text/html; charset=utf-8

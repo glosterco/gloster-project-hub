@@ -230,7 +230,8 @@ const PaymentDetail = () => {
       externalLink: 'https://www4.sii.cl/rfiInternet/index.html#rfiSelFormularioPeriodo',
       uploaded: false,
       required: true,
-      helpText: 'Accede al portal del SII con tu RUT y clave para generar el certificado F29 correspondiente al período.'
+      helpText: 'Accede al portal del SII con tu RUT y clave para generar el certificado F29 correspondiente al período.',
+      showButtonWhen: ['Pendiente', 'Rechazado']
     },
     {
       id: 'libro_remuneraciones',
@@ -1060,6 +1061,7 @@ const PaymentDetail = () => {
                     setAchsSelection={setAchsSelection}
                     onDragOver={(e) => handleDragOver(e, doc.id)}
                     onDragLeave={(e) => handleDragLeave(e, doc.id)}
+                    paymentStatus={payment?.Status}
                     onDrop={(e) => handleDrop(e, doc.id, doc.allowMultiple)}
                     onDocumentUpload={() => handleDocumentUpload(doc.id)}
                     onFileRemove={(fileIndex) => handleFileRemove(doc.id, fileIndex)}

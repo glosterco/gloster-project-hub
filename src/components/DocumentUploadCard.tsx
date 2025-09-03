@@ -19,6 +19,8 @@ interface Document {
   helpText: string;
   hasDropdown?: boolean;
   allowMultiple?: boolean;
+  externalLink?: string;
+  showButtonWhen?: string[];
 }
 
 interface DocumentUploadCardProps {
@@ -34,6 +36,7 @@ interface DocumentUploadCardProps {
   onDocumentUpload: () => void;
   onFileRemove: (fileIndex: number) => void;
   getExamenesUrl: () => string;
+  paymentStatus?: string;
 }
 
 const DocumentUploadCard: React.FC<DocumentUploadCardProps> = ({
@@ -48,7 +51,8 @@ const DocumentUploadCard: React.FC<DocumentUploadCardProps> = ({
   onDrop,
   onDocumentUpload,
   onFileRemove,
-  getExamenesUrl
+  getExamenesUrl,
+  paymentStatus
 }) => {
   return (
     <Card 
@@ -119,11 +123,12 @@ const DocumentUploadCard: React.FC<DocumentUploadCardProps> = ({
           </div>
           
           <div className="flex flex-col sm:flex-row lg:flex-col gap-2 lg:min-w-max">
-            {/* Botón de descarga/visitar sitio - NO mostrar para documentos "otros" */}
-            {(doc.downloadUrl || doc.hasDropdown) && !(doc as any).isOtherDocument && (
+            {/* Botón de descarga/visitar sitio - Solo mostrar para estados específicos si se define showButtonWhen */}
+            {(doc.downloadUrl || doc.hasDropdown || doc.externalLink) && !(doc as any).isOtherDocument && 
+             (!doc.showButtonWhen || (paymentStatus && doc.showButtonWhen.includes(paymentStatus))) && (
               <Button
                 onClick={() => {
-                  const url = doc.hasDropdown ? getExamenesUrl() : doc.downloadUrl;
+                  const url = doc.hasDropdown ? getExamenesUrl() : (doc.externalLink || doc.downloadUrl);
                   if (url) {
                     window.open(url, '_blank');
                   }

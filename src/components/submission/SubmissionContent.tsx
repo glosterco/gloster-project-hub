@@ -66,7 +66,7 @@ const SubmissionContent: React.FC<SubmissionContentProps> = ({
           contractorFiles.push({
             id: `${docId}_${index}`,
             name: getFileNameWithoutExtension(fileName), // ✅ sin extensión
-            description: "Documento respaldado en Drive",
+            description: "Documento respaldado",
             uploaded: true,
           });
         });

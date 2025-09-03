@@ -121,11 +121,11 @@ export const useDriveFiles = (paymentId: string | null, enabled: boolean = true)
         allFiles['mandante_docs'] = mandanteFiles;
       }
 
-      console.log('📁 All drive files found:', allFiles);
+      console.log('📁 All files found:', allFiles);
       setDriveFiles(allFiles);
 
     } catch (error) {
-      console.error('❌ Error fetching drive files:', error);
+      console.error('❌ Error fetching files:', error);
     } finally {
       setLoading(false);
     }

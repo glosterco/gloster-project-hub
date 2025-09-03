@@ -38,8 +38,8 @@ export const useGoogleDriveIntegration = () => {
       let errorDetails = "No se pudo crear la carpeta del proyecto";
       
       if (error.message?.includes('Google Drive authentication failed')) {
-        errorMessage = "Error de autenticación con Google Drive";
-        errorDetails = "No se pudo autenticar con Google Drive. Contacte al administrador.";
+        errorMessage = "Error de autenticación";
+        errorDetails = "No se pudo autenticar. Contacte al administrador.";
       }
       
       toast({
@@ -95,9 +95,9 @@ export const useGoogleDriveIntegration = () => {
       let errorMessage = "Error al crear carpeta de respaldo";
       let errorDetails = "No se pudo crear la carpeta del estado de pago";
       
-      if (error.message?.includes('Google Drive authentication failed')) {
-        errorMessage = "Error de autenticación con Google Drive";
-        errorDetails = "No se pudo autenticar con Google Drive. Contacte al administrador.";
+      if (error.message?.includes('authentication failed')) {
+        errorMessage = "Error de autenticación con";
+        errorDetails = "No se pudo autenticar. Contacte al administrador.";
       }
       
       toast({
@@ -252,8 +252,8 @@ export const useGoogleDriveIntegration = () => {
         let errorMessage = "No se pudo subir los documentos";
         let errorDetails = error.message;
         
-        if (error.message?.includes('Google Drive authentication failed')) {
-          errorMessage = "Error de autenticación con Google Drive";
+        if (error.message?.includes('authentication failed')) {
+          errorMessage = "Error de autenticación con";
           errorDetails = "Los tokens de acceso han expirado. Por favor, contacte al administrador para renovar la conexión con Google Drive.";
         } else if (error.message?.includes('TOKEN_REFRESH_FAILED')) {
           errorMessage = "Error de conexión con Google Drive";

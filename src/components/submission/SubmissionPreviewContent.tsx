@@ -27,7 +27,7 @@ const SubmissionPreviewContent: React.FC<SubmissionPreviewContentProps> = ({
           contractorFiles.push({
             id: `${docId}_${index}`,
             name: nameWithoutExtension,
-            description: 'Documento respaldado en Drive',
+            description: 'Documento respaldado',
             uploaded: true
           });
         });

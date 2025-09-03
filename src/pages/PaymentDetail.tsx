@@ -316,17 +316,12 @@ const PaymentDetail = () => {
     return [...matchedDocuments, ...otherDocuments];
   }, [payment?.projectData?.Requierment]);
 
-  // Auto-refresh project data every 5 seconds to catch requirement updates
+  // Load project requirements on component mount
   useEffect(() => {
-    if (!payment?.id) return;
-    
-    const interval = setInterval(() => {
-      console.log('🔄 Auto-refreshing payment data to check for requirement updates...');
-      refetch();
-    }, 5000); // 5 seconds
-    
-    return () => clearInterval(interval);
-  }, [payment?.id, refetch]);
+    if (payment?.id) {
+      console.log('📄 Loading project requirements for payment:', payment.id);
+    }
+  }, [payment?.id]);
 
   console.log('📋 Final filtered documents:', documents.map(d => d.name));
 

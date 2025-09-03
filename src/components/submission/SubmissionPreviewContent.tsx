@@ -14,17 +14,19 @@ const SubmissionPreviewContent: React.FC<SubmissionPreviewContentProps> = ({
   paymentId,
   driveFiles
 }) => {
-  // Use actual backed up files instead of project requirements
+  // Use only actual backed up files from Drive
   const documentsFromDrive = React.useMemo(() => {
-    if (!driveFiles) return [];
+    if (!driveFiles || Object.keys(driveFiles).length === 0) return [];
     
     const contractorFiles: any[] = [];
     Object.entries(driveFiles).forEach(([docId, files]) => {
       if (docId !== 'mandante_docs' && files && files.length > 0) {
         files.forEach((fileName, index) => {
+          // Remove file extension from display name
+          const nameWithoutExtension = fileName.replace(/\.[^/.]+$/, "");
           contractorFiles.push({
             id: `${docId}_${index}`,
-            name: fileName,
+            name: nameWithoutExtension,
             description: 'Documento respaldado en Drive',
             uploaded: true
           });
@@ -34,8 +36,6 @@ const SubmissionPreviewContent: React.FC<SubmissionPreviewContentProps> = ({
     
     return contractorFiles;
   }, [driveFiles]);
-  
-  const documentsFromPayment = documentsFromDrive.length > 0 ? documentsFromDrive : getDocumentsFromPayment(payment.projectData?.Requierment);
 
   const emailTemplateData = {
     paymentState: {
@@ -58,7 +58,7 @@ const SubmissionPreviewContent: React.FC<SubmissionPreviewContentProps> = ({
       contractorPhone: payment.projectData?.Contratista?.ContactPhone?.toString() || '',
       contractorAddress: ''
     },
-    documents: documentsFromPayment
+    documents: documentsFromDrive
   };
 
   return (

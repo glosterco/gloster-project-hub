@@ -23,22 +23,23 @@ export const useDriveFiles = (paymentId: string | null, enabled: boolean = true)
     try {
       console.log('🔍 Fetching drive files for payment:', paymentId);
 
-      // Para obtener todos los archivos, buscaremos archivos con nombres conocidos
+      // Documentos conocidos
       const documentTypes = [
         'Avance del período',
         'Certificado de pago de cotizaciones', 
         'Certificado F30',
         'Certificado F30-1',
-        'Certificado F29',
         'Exámenes preocupacionales',
         'Finiquito/Anexo Traslado',
         'Factura',
-        'Carátula EEPP'
+        'Carátula EEPP',
+        'Certificado F29',
+        'Libro de remuneraciones'
       ];
 
       const allFiles: { [key: string]: string[] } = {};
 
-      // Crear todas las promesas en paralelo para mayor eficiencia
+      // Promesas para cada tipo de documento
       const documentPromises = documentTypes.map(async (docType) => {
         try {
           const { data } = await supabase.functions.invoke('get-drive-files', {
@@ -61,7 +62,7 @@ export const useDriveFiles = (paymentId: string | null, enabled: boolean = true)
         return [];
       });
 
-      // Buscar archivos del mandante en paralelo
+      // Buscar archivos del mandante en paralelo (sin cambios)
       const mandantePromise = supabase.functions.invoke('get-drive-files', {
         body: {
           paymentId: paymentId,
@@ -77,14 +78,14 @@ export const useDriveFiles = (paymentId: string | null, enabled: boolean = true)
         return [];
       }).catch(() => []);
 
-      // Ejecutar todas las promesas en paralelo
+      // Ejecutar promesas en paralelo
       const [documentResults, mandanteFiles] = await Promise.all([
         Promise.all(documentPromises),
         mandantePromise
       ]);
 
-      // Procesar resultados de documentos
-      documentResults.flat().forEach(({ fileName, docType }) => {
+      // Clasificar archivos
+      documentResults.flat().forEach(({ fileName }) => {
         let documentType = 'otros';
         
         if (fileName.includes('Avance del período') || fileName.includes('planilla')) {
@@ -103,6 +104,10 @@ export const useDriveFiles = (paymentId: string | null, enabled: boolean = true)
           documentType = 'factura';
         } else if (fileName.includes('Carátula EEPP') || fileName.includes('eepp')) {
           documentType = 'eepp';
+        } else if (fileName.includes('Certificado F29')) {
+          documentType = 'certificado_f29';
+        } else if (fileName.includes('Libro de remuneraciones')) {
+          documentType = 'libro_remuneraciones';
         }
 
         if (!allFiles[documentType]) {
@@ -111,7 +116,7 @@ export const useDriveFiles = (paymentId: string | null, enabled: boolean = true)
         allFiles[documentType].push(fileName);
       });
 
-      // Agregar archivos del mandante si existen
+      // Agregar archivos del mandante
       if (mandanteFiles.length > 0) {
         allFiles['mandante_docs'] = mandanteFiles;
       }
@@ -121,7 +126,6 @@ export const useDriveFiles = (paymentId: string | null, enabled: boolean = true)
 
     } catch (error) {
       console.error('❌ Error fetching drive files:', error);
-      // No mostrar toast error aquí ya que puede ser normal que no haya archivos
     } finally {
       setLoading(false);
     }

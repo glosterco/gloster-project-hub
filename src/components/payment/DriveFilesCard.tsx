@@ -15,8 +15,8 @@ interface Document {
 
 interface DriveFilesCardProps {
   documents: Document[];
-  downloadLoading?: boolean;
-  isDocumentLoading?: (docName: string) => boolean;
+  downloadLoading?: boolean; // Mantenido para compatibilidad
+  isDocumentLoading?: (docName: string) => boolean; // Nueva función para loading individual
   onDownloadFile: (fileName: string) => void;
   onDocumentUpload: (docId: string) => void;
   paymentStatus?: string;
@@ -34,23 +34,26 @@ const DriveFilesCard: React.FC<DriveFilesCardProps> = ({
   uploadedFiles,
   onFileRemove
 }) => {
-  // Documentos del mandante
+  // Filtrar documentos del mandante 
   const mandanteFiles = React.useMemo(() => {
     if (!uploadedFiles || !uploadedFiles['mandante_docs']) return [];
     return uploadedFiles['mandante_docs'];
   }, [uploadedFiles]);
 
-  // Documentos del contratista
+  // Filtrar documentos del contratista (todos excepto mandante_docs)
   const contractorFiles = React.useMemo(() => {
     if (!uploadedFiles) return {};
-    return Object.entries(uploadedFiles).reduce((acc, [docId, files]) => {
-      if (docId !== 'mandante_docs' && files?.length) {
-        acc[docId] = files;
+    
+    const contractorUploads: { [key: string]: string[] } = {};
+    
+    Object.entries(uploadedFiles).forEach(([docId, files]) => {
+      if (docId !== 'mandante_docs' && files && files.length > 0) {
+        contractorUploads[docId] = files;
       }
-      return acc;
-    }, {} as { [key: string]: string[] });
+    });
+    
+    return contractorUploads;
   }, [uploadedFiles]);
-
   return (
     <div className="space-y-6">
       {/* Documentos del Contratista */}
@@ -69,67 +72,63 @@ const DriveFilesCard: React.FC<DriveFilesCardProps> = ({
                   <div className="flex-1">
                     <h4 className="font-medium text-slate-800 font-rubik text-sm">{doc.name}</h4>
                     <p className="text-xs text-gloster-gray font-rubik mt-1">{doc.description}</p>
-
-                    {/* Archivos del contratista filtrados por coincidencia de nombre */}
+                  
+                    {/* Mostrar todos los archivos del contratista, incluso si no hay doc.id */}
                     {Object.entries(contractorFiles).map(([key, files]) =>
-                      files
-                        .filter(file => file.includes(doc.name))
-                        .map((file, index) => (
-                          <div key={`${key}-${file}`} className="flex items-center justify-between bg-green-50 p-2 rounded border border-green-200 mt-2">
-                            <span className="text-xs text-green-800 font-rubik truncate flex-1 pr-2">{file}</span>
-                            {onFileRemove && paymentStatus === 'Rechazado' && (
-                              <Button
-                                onClick={() => onFileRemove(key, index)}
-                                variant="ghost"
-                                size="sm"
-                                className="h-4 w-4 p-0 text-red-600 hover:text-red-800 hover:bg-red-100 shrink-0"
-                              >
-                                <X className="h-3 w-3" />
-                              </Button>
-                            )}
-                          </div>
-                        ))
+                      files.map((file, index) => (
+                        <div key={`${key}-${file}`} className="flex items-center justify-between bg-green-50 p-2 rounded border border-green-200 mt-2">
+                          <span className="text-xs text-green-800 font-rubik truncate flex-1 pr-2">{file}</span>
+                          {onFileRemove && paymentStatus === 'Rechazado' && (
+                            <Button
+                              onClick={() => onFileRemove(key, index)}
+                              variant="ghost"
+                              size="sm"
+                              className="h-4 w-4 p-0 text-red-600 hover:text-red-800 hover:bg-red-100 shrink-0"
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
+                      ))
                     )}
 
-                    {/* Botones de acción */}
-                    <div className="flex flex-wrap gap-2 mt-2">
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onDownloadFile(doc.name)}
+                      disabled={isDocumentLoading ? isDocumentLoading(doc.name) : downloadLoading}
+                      className="flex-1"
+                    >
+                      <Download className="h-4 w-4 mr-1" />
+                      <span className="text-xs">
+                        {(isDocumentLoading ? isDocumentLoading(doc.name) : downloadLoading) 
+                          ? 'Descargando...' 
+                          : 'Descargar'}
+                      </span>
+                    </Button>
+                    {(doc.externalLink || doc.downloadUrl) && paymentStatus !== 'Enviado' && paymentStatus !== 'Aprobado' && (
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => onDownloadFile(doc.name)}
-                        disabled={isDocumentLoading ? isDocumentLoading(doc.name) : downloadLoading}
+                        onClick={() => window.open(doc.externalLink || doc.downloadUrl, '_blank')}
                         className="flex-1"
                       >
-                        <Download className="h-4 w-4 mr-1" />
-                        <span className="text-xs">
-                          {(isDocumentLoading ? isDocumentLoading(doc.name) : downloadLoading) ? 'Descargando...' : 'Descargar'}
-                        </span>
+                        <ExternalLink className="h-4 w-4 mr-1" />
+                        <span className="text-xs">Visitar sitio</span>
                       </Button>
-
-                      {(doc.externalLink || doc.downloadUrl) && paymentStatus !== 'Enviado' && paymentStatus !== 'Aprobado' && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => window.open(doc.externalLink || doc.downloadUrl, '_blank')}
-                          className="flex-1"
-                        >
-                          <ExternalLink className="h-4 w-4 mr-1" />
-                          <span className="text-xs">Visitar sitio</span>
-                        </Button>
-                      )}
-
-                      {paymentStatus !== 'Enviado' && paymentStatus !== 'Aprobado' && (
-                        <Button
-                          size="sm"
-                          onClick={() => onDocumentUpload(doc.id)}
-                          className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black flex-1"
-                        >
-                          <Upload className="h-4 w-4 mr-1" />
-                          <span className="text-xs">Actualizar</span>
-                        </Button>
-                      )}
-                    </div>
-
+                    )}
+                    {paymentStatus !== 'Enviado' && paymentStatus !== 'Aprobado' && (
+                      <Button
+                        size="sm"
+                        onClick={() => onDocumentUpload(doc.id)}
+                        className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black flex-1"
+                      >
+                        <Upload className="h-4 w-4 mr-1" />
+                        <span className="text-xs">Actualizar</span>
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -138,7 +137,7 @@ const DriveFilesCard: React.FC<DriveFilesCardProps> = ({
         </CardContent>
       </Card>
 
-      {/* Documentos del Mandante */}
+      {/* Documentos del Mandante - Solo mostrar si hay archivos */}
       {mandanteFiles.length > 0 && (
         <Card className="mb-8 border-l-4 border-l-green-500">
           <CardHeader>
@@ -155,6 +154,7 @@ const DriveFilesCard: React.FC<DriveFilesCardProps> = ({
                     <div className="flex-1">
                       <h4 className="font-medium text-slate-800 font-rubik text-sm">Documentos Adicionales</h4>
                       <p className="text-xs text-gloster-gray font-rubik mt-1">Cargados por el mandante</p>
+                      
                       <div className="space-y-1 mt-2">
                         <div className="flex items-center justify-between bg-green-100 p-2 rounded border border-green-300">
                           <span className="text-xs text-green-800 font-rubik truncate flex-1 pr-2">{fileName}</span>
@@ -171,7 +171,9 @@ const DriveFilesCard: React.FC<DriveFilesCardProps> = ({
                       >
                         <Download className="h-4 w-4 mr-1" />
                         <span className="text-xs">
-                          {(isDocumentLoading ? isDocumentLoading(fileName) : downloadLoading) ? 'Descargando...' : 'Descargar'}
+                          {(isDocumentLoading ? isDocumentLoading(fileName) : downloadLoading) 
+                            ? 'Descargando...' 
+                            : 'Descargar'}
                         </span>
                       </Button>
                     </div>

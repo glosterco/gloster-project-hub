@@ -1050,7 +1050,7 @@ const PaymentDetail = () => {
               )}
               
               <div className="space-y-4">
-                {documents.map((doc) => doc.required ? (
+                {documents.map((doc) => (
                   <DocumentUploadCard
                     key={doc.id}
                     doc={doc}
@@ -1067,8 +1067,7 @@ const PaymentDetail = () => {
                     onFileRemove={(fileIndex) => handleFileRemove(doc.id, fileIndex)}
                     getExamenesUrl={getExamenesUrl}
                   />
-                ) : null
-                )}
+                ))}
               </div>
             </div>
           )}

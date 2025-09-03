@@ -2,6 +2,11 @@
 import { PaymentDetail } from '@/hooks/usePaymentDetail';
 
 export const formatCurrency = (amount: number, payment: PaymentDetail | null) => {
+  // Si el budget del proyecto es 0 o NULL, mostrar "sin informar"
+  if (payment?.projectData?.Budget === 0 || payment?.projectData?.Budget === null || payment?.projectData?.Budget === undefined) {
+    return 'Sin informar';
+  }
+
   if (!payment?.projectData?.Currency) {
     return new Intl.NumberFormat('es-CL', {
       style: 'currency',

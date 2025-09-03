@@ -25,7 +25,7 @@ const SubmissionContent: React.FC<SubmissionContentProps> = ({
   const paymentState = {
     month: `${payment.Mes} ${payment.Año}`,
     amount: payment.Total || 0,
-    formattedAmount: formatCurrency(payment.Total || 0, payment),
+    formattedAmount: payment?.projectData?.Budget === 0 || payment?.projectData?.Budget === null || payment?.projectData?.Budget === undefined ? 'Sin informar' : formatCurrency(payment.Total || 0, payment),
     dueDate: payment.ExpiryDate,
     projectName: payment.projectData?.Name || '',
     recipient: payment.projectData?.Owner?.ContactEmail || '',

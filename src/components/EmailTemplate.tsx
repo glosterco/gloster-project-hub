@@ -275,10 +275,10 @@ const EmailTemplate: React.FC<EmailTemplateProps> = ({
               <div key={`mandante-${index}`} className="border border-green-200 rounded-lg p-3 bg-white">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <div className="flex items-center mb-1">
-                      <FileText className="w-3 h-3 mr-2 text-green-500" />
-                      <p className="text-sm font-medium text-slate-800">{fileName}</p>
-                    </div>
+                  <div className="flex items-center mb-1">
+                    <FileText className="w-3 h-3 mr-2 text-green-500" />
+                    <p className="text-sm font-medium text-slate-800">{fileName.replace(/\.[^/.]+$/, "")}</p>
+                  </div>
                     <p className="text-xs text-gray-600 mb-2">Documento cargado por el mandante</p>
                     <div className="flex items-center justify-between">
                       {useDirectDownload && paymentId ? (

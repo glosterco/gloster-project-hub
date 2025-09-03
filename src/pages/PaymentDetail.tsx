@@ -227,6 +227,7 @@ const PaymentDetail = () => {
       name: 'Certificado F29',
       description: 'Certificado de declaración jurada de impuestos mensuales',
       downloadUrl: 'https://www4.sii.cl/rfiInternet/index.html#rfiSelFormularioPeriodo',
+      externalLink: 'https://www4.sii.cl/rfiInternet/index.html#rfiSelFormularioPeriodo',
       uploaded: false,
       required: true,
       helpText: 'Accede al portal del SII con tu RUT y clave para generar el certificado F29 correspondiente al período.'
@@ -236,6 +237,7 @@ const PaymentDetail = () => {
       name: 'Libro de remuneraciones',
       description: 'Registro de remuneraciones de trabajadores',
       downloadUrl: 'https://midt.dirtrab.cl/empleador/lre',
+      externalLink: 'https://midt.dirtrab.cl/empleador/lre',
       uploaded: false,
       required: true,
       helpText: 'Accede al portal de la Dirección del Trabajo para generar el libro de remuneraciones del período.'
@@ -284,9 +286,6 @@ const PaymentDetail = () => {
     
     // Filter predefined documents that match requirements
     const matchedDocuments = allDocuments.filter(doc => {
-      // Always include 'planilla' as it's always required
-      if (doc.id === 'planilla') return true;
-      
       // Filter based on project requirements - COMPARE WITH NAME FIELD
       const isRequiredByProject = projectRequirements.includes(doc.name);
       console.log(`📄 Document "${doc.name}" (${doc.id}): ${isRequiredByProject ? 'INCLUDED' : 'EXCLUDED'}`);

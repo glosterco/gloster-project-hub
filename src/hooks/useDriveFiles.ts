@@ -105,7 +105,7 @@ export const useDriveFiles = (paymentId: string | null, enabled: boolean = true)
         } else if (fileName.includes('Carátula EEPP') || fileName.includes('eepp')) {
           documentType = 'eepp';
         } else if (fileName.includes('Certificado F29')) {
-          documentType = 'certificado_f29';
+          documentType = 'f29';
         } else if (fileName.includes('Libro de remuneraciones')) {
           documentType = 'libro_remuneraciones';
         }

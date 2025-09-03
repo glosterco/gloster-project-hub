@@ -1,7 +1,9 @@
+
 import React from 'react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Download, Upload, ExternalLink, X } from 'lucide-react';
+import { Download, ExternalLink, Upload, X } from 'lucide-react';
+
 interface Document {
   id: string;
   name: string;
@@ -13,8 +15,8 @@ interface Document {
 
 interface DriveFilesCardProps {
   documents: Document[];
-  downloadLoading?: boolean;
-  isDocumentLoading?: (docName: string) => boolean;
+  downloadLoading?: boolean; // Mantenido para compatibilidad
+  isDocumentLoading?: (docName: string) => boolean; // Nueva función para loading individual
   onDownloadFile: (fileName: string) => void;
   onDocumentUpload: (docId: string) => void;
   paymentStatus?: string;
@@ -32,13 +34,26 @@ const DriveFilesCard: React.FC<DriveFilesCardProps> = ({
   uploadedFiles,
   onFileRemove
 }) => {
-
-  // Filtrar documentos del mandante
+  // Filtrar documentos del mandante 
   const mandanteFiles = React.useMemo(() => {
     if (!uploadedFiles || !uploadedFiles['mandante_docs']) return [];
     return uploadedFiles['mandante_docs'];
   }, [uploadedFiles]);
 
+  // Filtrar documentos del contratista (todos excepto mandante_docs)
+  const contractorFiles = React.useMemo(() => {
+    if (!uploadedFiles) return {};
+    
+    const contractorUploads: { [key: string]: string[] } = {};
+    
+    Object.entries(uploadedFiles).forEach(([docId, files]) => {
+      if (docId !== 'mandante_docs' && files && files.length > 0) {
+        contractorUploads[docId] = files;
+      }
+    });
+    
+    return contractorUploads;
+  }, [uploadedFiles]);
   return (
     <div className="space-y-6">
       {/* Documentos del Contratista */}
@@ -57,27 +72,26 @@ const DriveFilesCard: React.FC<DriveFilesCardProps> = ({
                   <div className="flex-1">
                     <h4 className="font-medium text-slate-800 font-rubik text-sm">{doc.name}</h4>
                     <p className="text-xs text-gloster-gray font-rubik mt-1">{doc.description}</p>
-                    
-                    {/* Mostrar archivos del contratista para todos los documentos requeridos */}
-                    {uploadedFiles?.[doc.id] && uploadedFiles[doc.id].length > 0 && (
-                      <div className="space-y-1 mt-2">
-                        {uploadedFiles[doc.id].map((file, index) => (
-                          <div key={index} className="flex items-center justify-between bg-green-50 p-2 rounded border border-green-200">
-                            <span className="text-xs text-green-800 font-rubik truncate flex-1 pr-2">{file}</span>
-                            {onFileRemove && paymentStatus === 'Rechazado' && (
-                              <Button
-                                onClick={() => onFileRemove(doc.id, index)}
-                                variant="ghost"
-                                size="sm"
-                                className="h-4 w-4 p-0 text-red-600 hover:text-red-800 hover:bg-red-100 shrink-0"
-                              >
-                                <X className="h-3 w-3" />
-                              </Button>
-                            )}
-                          </div>
-                        ))}
-                      </div>
+                  
+                    {/* Mostrar todos los archivos del contratista, incluso si no hay doc.id */}
+                    {Object.entries(contractorFiles).map(([key, files]) =>
+                      files.map((file, index) => (
+                        <div key={`${key}-${file}`} className="flex items-center justify-between bg-green-50 p-2 rounded border border-green-200 mt-2">
+                          <span className="text-xs text-green-800 font-rubik truncate flex-1 pr-2">{file}</span>
+                          {onFileRemove && paymentStatus === 'Rechazado' && (
+                            <Button
+                              onClick={() => onFileRemove(key, index)}
+                              variant="ghost"
+                              size="sm"
+                              className="h-4 w-4 p-0 text-red-600 hover:text-red-800 hover:bg-red-100 shrink-0"
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
+                      ))
                     )}
+
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <Button

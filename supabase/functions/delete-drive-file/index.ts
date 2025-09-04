@@ -41,8 +41,9 @@ const getFolderIdFromUrl = (driveUrl: string): string | null => {
 const searchFileInFolder = async (accessToken: string, folderId: string, fileName: string) => {
   console.log(`🔍 Searching for file "${fileName}" in folder ${folderId}`);
   
-  // Primero buscar por nombre exacto
-  let query = `name='${fileName}' and parents in '${folderId}' and trashed=false`;
+  // Primero buscar por nombre exacto (escapar caracteres especiales)
+  const escapedFileName = fileName.replace(/'/g, "\\'");
+  let query = `name='${escapedFileName}' and parents in '${folderId}' and trashed=false`;
   
   let response = await fetch(
     `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name)`,
@@ -63,8 +64,7 @@ const searchFileInFolder = async (accessToken: string, folderId: string, fileNam
   if (!data.files || data.files.length === 0) {
     console.log(`🔍 No exact match found, trying partial search for "${fileName}"`);
     
-    // Remover extensión para buscar archivos similares
-    const baseFileName = fileName.replace(/\.[^/.]+$/, "");
+    // Obtener todos los archivos de la carpeta para búsqueda más flexible
     query = `parents in '${folderId}' and trashed=false`;
     
     response = await fetch(
@@ -78,15 +78,47 @@ const searchFileInFolder = async (accessToken: string, folderId: string, fileNam
 
     if (response.ok) {
       data = await response.json();
-      // Filtrar archivos que coincidan parcialmente
-      const matchingFiles = data.files?.filter(file => {
-        const fileBaseName = file.name.replace(/\.[^/.]+$/, "").toLowerCase();
-        const searchBaseName = baseFileName.toLowerCase();
-        return fileBaseName.includes(searchBaseName) || searchBaseName.includes(fileBaseName);
-      }) || [];
+      
+      // Múltiples estrategias de búsqueda para archivos "otros"
+      const allFiles = data.files || [];
+      let matchingFiles = [];
+      
+      // 1. Coincidencia exacta de nombre (case insensitive)
+      matchingFiles = allFiles.filter(file => 
+        file.name.toLowerCase() === fileName.toLowerCase()
+      );
+      
+      if (matchingFiles.length === 0) {
+        // 2. Coincidencia sin extensión (case insensitive)
+        const baseFileName = fileName.replace(/\.[^/.]+$/, "").toLowerCase();
+        matchingFiles = allFiles.filter(file => {
+          const fileBaseName = file.name.replace(/\.[^/.]+$/, "").toLowerCase();
+          return fileBaseName === baseFileName;
+        });
+      }
+      
+      if (matchingFiles.length === 0) {
+        // 3. Búsqueda parcial mejorada para archivos "otros"
+        const cleanFileName = fileName.toLowerCase().trim();
+        matchingFiles = allFiles.filter(file => {
+          const cleanFileNameInDrive = file.name.toLowerCase().trim();
+          
+          // Coincidencia parcial en ambas direcciones
+          return cleanFileNameInDrive.includes(cleanFileName) || 
+                 cleanFileName.includes(cleanFileNameInDrive) ||
+                 // Coincidencia sin considerar espacios y caracteres especiales
+                 cleanFileNameInDrive.replace(/[\s\-\_\(\)]/g, '').includes(cleanFileName.replace(/[\s\-\_\(\)]/g, '')) ||
+                 cleanFileName.replace(/[\s\-\_\(\)]/g, '').includes(cleanFileNameInDrive.replace(/[\s\-\_\(\)]/g, ''));
+        });
+      }
       
       data.files = matchingFiles;
-      console.log(`📁 Found ${matchingFiles.length} files with partial match for "${fileName}"`);
+      console.log(`📁 Found ${matchingFiles.length} files with matching strategy for "${fileName}"`);
+      
+      // Log de archivos encontrados para debugging
+      if (matchingFiles.length > 0) {
+        console.log(`📄 Matching files found:`, matchingFiles.map(f => f.name));
+      }
     }
   }
 

@@ -20,6 +20,7 @@ interface DriveFilesCardProps {
   paymentStatus?: string;
   uploadedFiles?: { [key: string]: string[] };
   onFileRemove?: (docId: string, fileIndex: number) => void;
+  fileObjects?: { [key: string]: File[] };
 }
 
 const DriveFilesCard: React.FC<DriveFilesCardProps> = ({
@@ -30,7 +31,8 @@ const DriveFilesCard: React.FC<DriveFilesCardProps> = ({
   onDocumentUpload,
   paymentStatus,
   uploadedFiles,
-  onFileRemove
+  onFileRemove,
+  fileObjects
 }) => {
 
   // Filtrar documentos del mandante
@@ -38,6 +40,44 @@ const DriveFilesCard: React.FC<DriveFilesCardProps> = ({
     if (!uploadedFiles || !uploadedFiles['mandante_docs']) return [];
     return uploadedFiles['mandante_docs'];
   }, [uploadedFiles]);
+
+  // Función para obtener archivos específicos de un documento
+  const getDocumentFiles = (doc: Document) => {
+    let specificFiles: string[] = [];
+    
+    // 1. Archivos cargados localmente (fileObjects) - prioritarios para Rechazado
+    if (fileObjects?.[doc.id] && fileObjects[doc.id].length > 0) {
+      specificFiles = [...specificFiles, ...fileObjects[doc.id].map(file => file.name)];
+    }
+    
+    // 2. Archivos clasificados por ID exacto en el Drive
+    if (uploadedFiles?.[doc.id] && uploadedFiles[doc.id].length > 0) {
+      specificFiles = [...specificFiles, ...uploadedFiles[doc.id]];
+    }
+    
+    // 3. Buscar archivos que coincidan EXACTAMENTE con el nombre del documento
+    if (uploadedFiles) {
+      const otrosFiles = uploadedFiles.otros || [];
+      Object.entries(uploadedFiles).forEach(([category, files]) => {
+        if (category !== 'mandante_docs' && category !== 'otros' && category !== doc.id && files && files.length > 0) {
+          const matchingFiles = files.filter(fileName => {
+            // Verificar que el archivo no esté ya en "otros" para evitar duplicados
+            const isInOtros = otrosFiles.some(otroFile => otroFile === fileName);
+            if (isInOtros) return false;
+            
+            // Comparación EXACTA: quitar extensión y comparar nombres completos
+            const fileBaseName = fileName.replace(/\.[^/.]+$/, "").toLowerCase().trim();
+            const docName = doc.name.toLowerCase().trim();
+            return fileBaseName === docName;
+          });
+          specificFiles = [...specificFiles, ...matchingFiles];
+        }
+      });
+    }
+    
+    // Eliminar duplicados
+    return [...new Set(specificFiles)];
+  };
 
   return (
     <div className="space-y-6">
@@ -51,43 +91,19 @@ const DriveFilesCard: React.FC<DriveFilesCardProps> = ({
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {documents.filter(doc => doc.required).map((doc) => (
-              <div key={doc.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                <div className="flex flex-col space-y-3">
-                  <div className="flex-1">
-                    <h4 className="font-medium text-slate-800 font-rubik text-sm">{doc.name}</h4>
-                    <p className="text-xs text-gloster-gray font-rubik mt-1">{doc.description}</p>
-                    
-                    {/* Mostrar archivos específicos del documento - CORREGIDO */}
-                    {(() => {
-                      // Buscar archivos específicos para este documento
-                      let specificFiles = [];
+            {/* Mostrar TODAS las tarjetas de documentos requeridos */}
+            {documents.map((doc) => {
+              const specificFiles = getDocumentFiles(doc);
+              
+              return (
+                <div key={doc.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                  <div className="flex flex-col space-y-3">
+                    <div className="flex-1">
+                      <h4 className="font-medium text-slate-800 font-rubik text-sm">{doc.name}</h4>
+                      <p className="text-xs text-gloster-gray font-rubik mt-1">{doc.description}</p>
                       
-                      // Si hay archivos clasificados por ID exacto
-                      if (uploadedFiles?.[doc.id] && uploadedFiles[doc.id].length > 0) {
-                        specificFiles = uploadedFiles[doc.id];
-                      } 
-                      // Buscar archivos que coincidan EXACTAMENTE con el nombre del documento (sin incluir "otros")
-                      else if (uploadedFiles) {
-                        const otrosFiles = uploadedFiles.otros || [];
-                        Object.entries(uploadedFiles).forEach(([category, files]) => {
-                          if (category !== 'mandante_docs' && category !== 'otros' && files && files.length > 0) {
-                            const matchingFiles = files.filter(fileName => {
-                              // Verificar que el archivo no esté ya en "otros" para evitar duplicados
-                              const isInOtros = otrosFiles.some(otroFile => otroFile === fileName);
-                              if (isInOtros) return false;
-                              
-                              // Comparación EXACTA: quitar extensión y comparar nombres completos
-                              const fileBaseName = fileName.replace(/\.[^/.]+$/, "").toLowerCase().trim();
-                              const docName = doc.name.toLowerCase().trim();
-                              return fileBaseName === docName;
-                            });
-                            specificFiles = [...specificFiles, ...matchingFiles];
-                          }
-                        });
-                      }
-
-                      return specificFiles.length > 0 && (paymentStatus !== 'Enviado' && paymentStatus !== 'Aprobado') && (
+                      {/* Mostrar vista previa de archivos específicos del documento */}
+                      {specificFiles.length > 0 && paymentStatus !== 'Enviado' && paymentStatus !== 'Aprobado' && (
                         <div className="space-y-1 mt-2">
                           {specificFiles.map((file, index) => {
                             // Remove file extension from display name
@@ -110,103 +126,112 @@ const DriveFilesCard: React.FC<DriveFilesCardProps> = ({
                             );
                           })}
                         </div>
-                      );
-                    })()}
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => onDownloadFile(doc.name)}
-                      disabled={isDocumentLoading ? isDocumentLoading(doc.name) : downloadLoading}
-                      className="flex-1"
-                    >
-                      <Download className="h-4 w-4 mr-1" />
-                      <span className="text-xs">
-                        {(isDocumentLoading ? isDocumentLoading(doc.name) : downloadLoading) 
-                          ? 'Descargando...' 
-                          : 'Descargar'}
-                      </span>
-                    </Button>
-                    {(doc.externalLink || doc.downloadUrl) && paymentStatus !== 'Enviado' && paymentStatus !== 'Aprobado' && (
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => window.open(doc.externalLink || doc.downloadUrl, '_blank')}
+                        onClick={() => onDownloadFile(doc.name)}
+                        disabled={isDocumentLoading ? isDocumentLoading(doc.name) : downloadLoading}
                         className="flex-1"
                       >
-                        <ExternalLink className="h-4 w-4 mr-1" />
-                        <span className="text-xs">Visitar sitio</span>
+                        <Download className="h-4 w-4 mr-1" />
+                        <span className="text-xs">
+                          {(isDocumentLoading ? isDocumentLoading(doc.name) : downloadLoading) 
+                            ? 'Descargando...' 
+                            : 'Descargar'}
+                        </span>
                       </Button>
-                    )}
-                    {paymentStatus !== 'Enviado' && paymentStatus !== 'Aprobado' && (
+                      {(doc.externalLink || doc.downloadUrl) && paymentStatus !== 'Enviado' && paymentStatus !== 'Aprobado' && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => window.open(doc.externalLink || doc.downloadUrl, '_blank')}
+                          className="flex-1"
+                        >
+                          <ExternalLink className="h-4 w-4 mr-1" />
+                          <span className="text-xs">Visitar sitio</span>
+                        </Button>
+                      )}
+                      {paymentStatus !== 'Enviado' && paymentStatus !== 'Aprobado' && (
+                        <Button
+                          size="sm"
+                          onClick={() => onDocumentUpload(doc.id)}
+                          className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black flex-1"
+                        >
+                          <Upload className="h-4 w-4 mr-1" />
+                          <span className="text-xs">Actualizar</span>
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            
+            {/* Agregar tarjetas individuales para archivos "otros" - solo archivos no coincidentes */}
+            {uploadedFiles?.otros && uploadedFiles.otros
+              .filter(fileName => {
+                // Filtrar archivos "otros" que no coincidan exactamente con ningún documento requerido
+                const fileBaseName = fileName.replace(/\.[^/.]+$/, "").toLowerCase().trim();
+                const matchesRequiredDoc = documents.some(doc => 
+                  doc.name.toLowerCase().trim() === fileBaseName
+                );
+                return !matchesRequiredDoc;
+              })
+              .map((fileName, index) => (
+                <div key={`otros-${index}`} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                  <div className="flex flex-col space-y-3">
+                    <div className="flex-1">
+                      <h4 className="font-medium text-slate-800 font-rubik text-sm">{fileName.replace(/\.[^/.]+$/, "")}</h4>
+                      <p className="text-xs text-gloster-gray font-rubik mt-1">Documento adicional</p>
+                      
+                      {paymentStatus !== 'Enviado' && paymentStatus !== 'Aprobado' && (
+                        <div className="space-y-1 mt-2">
+                          <div className="flex items-center justify-between bg-green-50 p-2 rounded border border-green-200">
+                            <span className="text-xs text-green-800 font-rubik truncate flex-1 pr-2">{fileName.replace(/\.[^/.]+$/, "")}</span>
+                            {onFileRemove && (paymentStatus === 'Rechazado' || paymentStatus === 'Pendiente') && (
+                              <Button
+                                onClick={() => onFileRemove('otros', index)}
+                                variant="ghost"
+                                size="sm"
+                                className="h-4 w-4 p-0 text-red-600 hover:text-red-800 hover:bg-red-100 shrink-0"
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
                       <Button
                         size="sm"
-                        onClick={() => onDocumentUpload(doc.id)}
+                        variant="outline"
+                        onClick={() => onDownloadFile(fileName)}
+                        disabled={isDocumentLoading ? isDocumentLoading(fileName) : downloadLoading}
+                        className="flex-1"
+                      >
+                        <Download className="h-4 w-4 mr-1" />
+                        <span className="text-xs">
+                          {(isDocumentLoading ? isDocumentLoading(fileName) : downloadLoading) 
+                            ? 'Descargando...' 
+                            : 'Descargar'}
+                        </span>
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => onDocumentUpload('otros')}
                         className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black flex-1"
                       >
                         <Upload className="h-4 w-4 mr-1" />
                         <span className="text-xs">Actualizar</span>
                       </Button>
-                    )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-            
-            {/* Agregar tarjetas individuales para archivos "otros" */}
-            {uploadedFiles?.otros && uploadedFiles.otros.map((fileName, index) => (
-              <div key={`otros-${index}`} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                <div className="flex flex-col space-y-3">
-                  <div className="flex-1">
-                    <h4 className="font-medium text-slate-800 font-rubik text-sm">{fileName.replace(/\.[^/.]+$/, "")}</h4>
-                    <p className="text-xs text-gloster-gray font-rubik mt-1">Documento adicional</p>
-                    
-                    {paymentStatus !== 'Enviado' && paymentStatus !== 'Aprobado' && (
-                      <div className="space-y-1 mt-2">
-                        <div className="flex items-center justify-between bg-green-50 p-2 rounded border border-green-200">
-                          <span className="text-xs text-green-800 font-rubik truncate flex-1 pr-2">{fileName.replace(/\.[^/.]+$/, "")}</span>
-                          {onFileRemove && (paymentStatus === 'Rechazado' || paymentStatus === 'Pendiente') && (
-                            <Button
-                              onClick={() => onFileRemove('otros', index)}
-                              variant="ghost"
-                              size="sm"
-                              className="h-4 w-4 p-0 text-red-600 hover:text-red-800 hover:bg-red-100 shrink-0"
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => onDownloadFile(fileName)}
-                      disabled={isDocumentLoading ? isDocumentLoading(fileName) : downloadLoading}
-                      className="flex-1"
-                    >
-                      <Download className="h-4 w-4 mr-1" />
-                      <span className="text-xs">
-                        {(isDocumentLoading ? isDocumentLoading(fileName) : downloadLoading) 
-                          ? 'Descargando...' 
-                          : 'Descargar'}
-                      </span>
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => onDocumentUpload('otros')}
-                      className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black flex-1"
-                    >
-                      <Upload className="h-4 w-4 mr-1" />
-                      <span className="text-xs">Actualizar</span>
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ))}
+              ))}
           </div>
         </CardContent>
       </Card>

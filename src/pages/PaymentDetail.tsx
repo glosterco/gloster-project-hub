@@ -1053,6 +1053,7 @@ const PaymentDetail = () => {
               paymentStatus={payment?.Status}
               uploadedFiles={driveFiles} // Usar archivos del Drive en lugar de archivos locales
               onFileRemove={handleDriveFileRemove}
+              fileObjects={fileObjects} // Pasar archivos cargados localmente para vista previa
             />
           )}
 

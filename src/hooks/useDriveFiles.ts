@@ -65,37 +65,38 @@ export const useDriveFiles = (paymentId: string | null, enabled: boolean = true)
 
       console.log('📁 All contractor files found:', allContractorFiles);
 
-      // NUEVO: Clasificar TODOS los archivos encontrados
-      allContractorFiles.forEach((fileName) => {
-        let documentType = 'otros';
-        
-        if (fileName.includes('Avance del período') || fileName.includes('planilla')) {
-          documentType = 'planilla';
-        } else if (fileName.includes('Certificado de pago de cotizaciones') || fileName.includes('cotizaciones')) {
-          documentType = 'cotizaciones';
-        } else if (fileName.includes('Certificado F30') && !fileName.includes('F30-1')) {
-          documentType = 'f30';
-        } else if (fileName.includes('F30-1') || fileName.includes('F301')) {
-          documentType = 'f30_1';
-        } else if (fileName.includes('Exámenes preocupacionales') || fileName.includes('examenes')) {
-          documentType = 'examenes';
-        } else if (fileName.includes('Finiquito/Anexo Traslado') || fileName.includes('finiquito') || fileName.includes('anexo traslado')) {
-          documentType = 'finiquito';
-        } else if (fileName.includes('Factura') || fileName.includes('factura')) {
-          documentType = 'factura';
-        } else if (fileName.includes('Carátula EEPP') || fileName.includes('eepp')) {
-          documentType = 'eepp';
-        } else if (fileName.includes('Certificado F29')) {
-          documentType = 'f29';
-        } else if (fileName.includes('Libro de remuneraciones')) {
-          documentType = 'libro_remuneraciones';
-        }
+    // NUEVO: Clasificar TODOS los archivos encontrados
+    allContractorFiles.forEach((fileName) => {
+      let documentType = 'otros';
+      const fileBaseName = fileName.replace(/\.[^/.]+$/, "").toLowerCase();
+      
+      if (fileName.includes('Avance del período') || fileName.includes('planilla') || fileBaseName.includes('avance')) {
+        documentType = 'planilla';
+      } else if (fileName.includes('Certificado de pago de cotizaciones') || fileName.includes('cotizaciones') || fileBaseName.includes('cotizacion')) {
+        documentType = 'cotizaciones';
+      } else if ((fileName.includes('Certificado F30') && !fileName.includes('F30-1')) || (fileBaseName.includes('f30') && !fileBaseName.includes('f30-1'))) {
+        documentType = 'f30';
+      } else if (fileName.includes('F30-1') || fileName.includes('F301') || fileBaseName.includes('f30-1') || fileBaseName.includes('f301')) {
+        documentType = 'f30_1';
+      } else if (fileName.includes('Exámenes preocupacionales') || fileName.includes('examenes') || fileBaseName.includes('examen')) {
+        documentType = 'examenes';
+      } else if (fileName.includes('Finiquito/Anexo Traslado') || fileName.includes('finiquito') || fileName.includes('anexo traslado') || fileBaseName.includes('finiquito')) {
+        documentType = 'finiquito';
+      } else if (fileName.includes('Factura') || fileName.includes('factura') || fileBaseName.includes('factura')) {
+        documentType = 'factura';
+      } else if (fileName.includes('Carátula EEPP') || fileName.includes('eepp') || fileBaseName.includes('eepp') || fileBaseName.includes('caratula')) {
+        documentType = 'eepp';
+      } else if (fileName.includes('Certificado F29') || fileBaseName.includes('certificado f29')) {
+        documentType = 'f29';
+      } else if (fileName.includes('Libro de remuneraciones') || fileBaseName.includes('libro de remuneraciones')) {
+        documentType = 'libro_remuneraciones';
+      }
 
-        if (!allFiles[documentType]) {
-          allFiles[documentType] = [];
-        }
-        allFiles[documentType].push(fileName);
-      });
+      if (!allFiles[documentType]) {
+        allFiles[documentType] = [];
+      }
+      allFiles[documentType].push(fileName);
+    });
 
       // Agregar archivos del mandante
       if (mandanteFiles.length > 0) {

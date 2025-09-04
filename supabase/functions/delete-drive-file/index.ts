@@ -41,9 +41,10 @@ const getFolderIdFromUrl = (driveUrl: string): string | null => {
 const searchFileInFolder = async (accessToken: string, folderId: string, fileName: string) => {
   console.log(`🔍 Searching for file "${fileName}" in folder ${folderId}`);
   
-  const query = `name='${fileName}' and parents in '${folderId}' and trashed=false`;
+  // Primero buscar por nombre exacto
+  let query = `name='${fileName}' and parents in '${folderId}' and trashed=false`;
   
-  const response = await fetch(
+  let response = await fetch(
     `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name)`,
     {
       headers: {
@@ -56,7 +57,39 @@ const searchFileInFolder = async (accessToken: string, folderId: string, fileNam
     throw new Error(`Drive API search error: ${response.status}`);
   }
 
-  const data = await response.json();
+  let data = await response.json();
+  
+  // Si no encuentra archivos con nombre exacto, buscar por coincidencia parcial
+  if (!data.files || data.files.length === 0) {
+    console.log(`🔍 No exact match found, trying partial search for "${fileName}"`);
+    
+    // Remover extensión para buscar archivos similares
+    const baseFileName = fileName.replace(/\.[^/.]+$/, "");
+    query = `parents in '${folderId}' and trashed=false`;
+    
+    response = await fetch(
+      `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name)`,
+      {
+        headers: {
+          "Authorization": `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    if (response.ok) {
+      data = await response.json();
+      // Filtrar archivos que coincidan parcialmente
+      const matchingFiles = data.files?.filter(file => {
+        const fileBaseName = file.name.replace(/\.[^/.]+$/, "").toLowerCase();
+        const searchBaseName = baseFileName.toLowerCase();
+        return fileBaseName.includes(searchBaseName) || searchBaseName.includes(fileBaseName);
+      }) || [];
+      
+      data.files = matchingFiles;
+      console.log(`📁 Found ${matchingFiles.length} files with partial match for "${fileName}"`);
+    }
+  }
+
   console.log(`📁 Found ${data.files?.length || 0} files matching "${fileName}"`);
   return data.files || [];
 };

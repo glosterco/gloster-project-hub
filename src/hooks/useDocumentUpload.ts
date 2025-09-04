@@ -195,7 +195,10 @@ export const useDocumentUpload = (onUploadComplete?: () => void) => {
 
     // Llamar callback si se proporciona (para refrescar archivos del Drive)
     if (onUploadComplete) {
-      onUploadComplete();
+      // Ejecutar callback después de un pequeño delay para asegurar que el estado se actualice
+      setTimeout(() => {
+        onUploadComplete();
+      }, 100);
     }
   };
 

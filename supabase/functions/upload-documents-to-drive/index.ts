@@ -142,6 +142,8 @@ serve(async (req) => {
         subfolderName = 'Exámenes Preocupacionales';
       } else if (docType === 'finiquito') {
         subfolderName = 'Finiquitos';
+      } else if (docType === 'f29') {
+        subfolderName = 'Certificado F29';
       }
       
       // For "other" documents, use the actual document name from requirements

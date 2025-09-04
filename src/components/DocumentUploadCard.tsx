@@ -86,13 +86,13 @@ const DocumentUploadCard: React.FC<DocumentUploadCardProps> = ({
               <p className="text-gloster-gray text-sm font-rubik mb-3">{doc.description}</p>
               
               {/* Mostrar archivos cargados - Solo para estados Rechazado */}
-              {uploadedFiles && uploadedFiles.length > 0 && paymentStatus === 'Rechazado' && (
+              {paymentStatus === 'Rechazado' && (
                 <div className="space-y-2 mb-3">
-                  {uploadedFiles.map((file, index) => {
+                  {uploadedFiles && uploadedFiles.length > 0 && uploadedFiles.map((file, index) => {
                     // Remove file extension from display name
                     const fileNameWithoutExtension = file.replace(/\.[^/.]+$/, "");
                     return (
-                      <div key={index} className="flex items-center justify-between bg-green-50 p-2 rounded border border-green-200">
+                      <div key={`local-${index}`} className="flex items-center justify-between bg-green-50 p-2 rounded border border-green-200">
                         <span className="text-sm text-green-800 font-rubik truncate flex-1 pr-2">{fileNameWithoutExtension}</span>
                         <Button
                           onClick={() => onFileRemove(index)}

@@ -275,7 +275,7 @@ const PaymentDetail = () => {
     }
   ];
 
-  // Filter documents based on project requirements - CORRECTED LOGIC
+  // Filter documents based on project requirements and available files
   const documents = React.useMemo(() => {
     if (!payment?.projectData?.Requierment || !Array.isArray(payment.projectData.Requierment)) {
       return allDocuments.filter(doc => doc.required);
@@ -284,13 +284,10 @@ const PaymentDetail = () => {
     const projectRequirements = payment.projectData.Requierment;
     console.log('🔍 Project requirements:', projectRequirements);
     
-    
     // Filter predefined documents that match requirements
     const matchedDocuments = allDocuments.filter(doc => {
-      // Filter based on project requirements - COMPARE WITH NAME FIELD
       const isRequiredByProject = projectRequirements.includes(doc.name);
       console.log(`📄 Document "${doc.name}" (${doc.id}): ${isRequiredByProject ? 'INCLUDED' : 'EXCLUDED'}`);
-      
       return isRequiredByProject;
     });
 
@@ -309,13 +306,36 @@ const PaymentDetail = () => {
         allowMultiple: false,
         helpText: 'Este documento ha sido especificado como requerimiento específico del proyecto.',
         isOtherDocument: true,
-        showButtonWhen: ['Pendiente', 'Rechazado'] // Solo mostrar botones en estados específicos
+        showButtonWhen: ['Pendiente', 'Rechazado']
       }));
 
     console.log('📄 Other documents found:', otherDocuments.map(d => d.name));
 
-    return [...matchedDocuments, ...otherDocuments];
-  }, [payment?.projectData?.Requierment]);
+    const allRequiredDocs = [...matchedDocuments, ...otherDocuments];
+
+    // NUEVO: Para estados "Enviado" y "Aprobado", solo mostrar documentos que realmente tienen archivos
+    if (payment?.Status === 'Enviado' || payment?.Status === 'Aprobado') {
+      const documentsWithFiles = allRequiredDocs.filter(doc => {
+        // Verificar si hay archivos para este documento
+        const hasFilesById = driveFiles[doc.id] && driveFiles[doc.id].length > 0;
+        const hasFilesByCategory = Object.entries(driveFiles).some(([category, files]) => {
+          if (category === 'mandante_docs' || !files || files.length === 0) return false;
+          return files.some(fileName => {
+            const baseFileName = fileName.replace(/\.[^/.]+$/, "").toLowerCase();
+            const docNameLower = doc.name.toLowerCase();
+            return baseFileName.includes(docNameLower) || docNameLower.includes(baseFileName);
+          });
+        });
+        
+        return hasFilesById || hasFilesByCategory;
+      });
+      
+      console.log(`📄 Filtered documents for ${payment.Status} status:`, documentsWithFiles.map(d => d.name));
+      return documentsWithFiles;
+    }
+
+    return allRequiredDocs;
+  }, [payment?.projectData?.Requierment, payment?.Status, driveFiles]);
 
   // Load project requirements on component mount
   useEffect(() => {

@@ -90,7 +90,7 @@ const DriveFilesCard: React.FC<DriveFilesCardProps> = ({
                               <div key={index} className="flex items-center justify-between bg-green-50 p-2 rounded border border-green-200">
                                 <span className="text-xs text-green-800 font-rubik truncate flex-1 pr-2">{fileNameWithoutExtension}</span>
                                 {/* Solo mostrar botón de eliminar para estado Rechazado */}
-                                {onFileRemove && paymentStatus === 'Rechazado' && (
+                                {onFileRemove && (paymentStatus === 'Rechazado' || paymentStatus === 'Pendiente') && (
                                   <Button
                                     onClick={() => onFileRemove(doc.id, index)}
                                     variant="ghost"

@@ -57,7 +57,7 @@ const SubmissionContent: React.FC<SubmissionContentProps> = ({
 
   // Use actual backed up files instead of project requirements
   const documentsFromDrive = React.useMemo(() => {
-    if (!driveFiles) return [];
+    if (!driveFiles || Object.keys(driveFiles).length === 0) return [];
 
     const contractorFiles: any[] = [];
     Object.entries(driveFiles).forEach(([docId, files]) => {
@@ -65,7 +65,7 @@ const SubmissionContent: React.FC<SubmissionContentProps> = ({
         files.forEach((fileName, index) => {
           contractorFiles.push({
             id: `${docId}_${index}`,
-            name: getFileNameWithoutExtension(fileName), // ✅ sin extensión
+            name: getFileNameWithoutExtension(fileName),
             description: "Documento respaldado",
             uploaded: true,
           });
@@ -76,10 +76,10 @@ const SubmissionContent: React.FC<SubmissionContentProps> = ({
     return contractorFiles;
   }, [driveFiles]);
 
-  const documents =
-    documentsFromDrive.length > 0
-      ? documentsFromDrive
-      : getDocumentsFromPayment(payment.projectData?.Requierment);
+  // CORREGIDO: Siempre mostrar archivos del Drive si existen, sino usar requirements
+  const documents = documentsFromDrive.length > 0
+    ? documentsFromDrive
+    : getDocumentsFromPayment(payment.projectData?.Requierment);
 
   console.log("🏗️ SubmissionContent rendering:", {
     paymentId,

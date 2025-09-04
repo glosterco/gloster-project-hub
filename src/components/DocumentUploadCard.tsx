@@ -85,7 +85,7 @@ const DocumentUploadCard: React.FC<DocumentUploadCardProps> = ({
               </div>
               <p className="text-gloster-gray text-sm font-rubik mb-3">{doc.description}</p>
               
-              {/* Mostrar archivos cargados - Solo para estados Rechazado, no para Enviado */}
+              {/* Mostrar archivos cargados - Solo para estados Rechazado */}
               {uploadedFiles && uploadedFiles.length > 0 && paymentStatus === 'Rechazado' && (
                 <div className="space-y-2 mb-3">
                   {uploadedFiles.map((file, index) => {

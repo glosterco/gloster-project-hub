@@ -23,46 +23,25 @@ export const useDriveFiles = (paymentId: string | null, enabled: boolean = true)
     try {
       console.log('🔍 Fetching drive files for payment:', paymentId);
 
-      // Documentos conocidos
-      const documentTypes = [
-        'Avance del período',
-        'Certificado de pago de cotizaciones', 
-        'Certificado F30',
-        'Certificado F30-1',
-        'Exámenes preocupacionales',
-        'Finiquito/Anexo Traslado',
-        'Factura',
-        'Carátula EEPP',
-        'Certificado F29',
-        'Libro de remuneraciones'
-      ];
-
       const allFiles: { [key: string]: string[] } = {};
 
-      // Promesas para cada tipo de documento
-      const documentPromises = documentTypes.map(async (docType) => {
-        try {
-          const { data } = await supabase.functions.invoke('get-drive-files', {
-            body: {
-              paymentId: paymentId,
-              documentName: docType,
-              downloadContent: false
-            }
-          });
-
-          if (data && data.success && data.files && data.files.length > 0) {
-            return data.files.map((file: DriveFile) => ({
-              fileName: file.name,
-              docType
-            }));
-          }
-        } catch (docError) {
-          console.warn(`No files found for ${docType}:`, docError);
+      // NUEVO: Buscar TODOS los archivos del contratista (sin filtro específico)
+      const allContractorFilesPromise = supabase.functions.invoke('get-drive-files', {
+        body: {
+          paymentId: paymentId,
+          documentName: '', // Búsqueda general
+          downloadContent: false
+        }
+      }).then(({ data }) => {
+        if (data && data.success && data.files && data.files.length > 0) {
+          return data.files
+            .filter((file: DriveFile) => !file.name.includes('- mandante'))
+            .map((file: DriveFile) => file.name);
         }
         return [];
-      });
+      }).catch(() => []);
 
-      // Buscar archivos del mandante en paralelo (sin cambios)
+      // Buscar archivos del mandante
       const mandantePromise = supabase.functions.invoke('get-drive-files', {
         body: {
           paymentId: paymentId,
@@ -79,13 +58,15 @@ export const useDriveFiles = (paymentId: string | null, enabled: boolean = true)
       }).catch(() => []);
 
       // Ejecutar promesas en paralelo
-      const [documentResults, mandanteFiles] = await Promise.all([
-        Promise.all(documentPromises),
+      const [allContractorFiles, mandanteFiles] = await Promise.all([
+        allContractorFilesPromise,
         mandantePromise
       ]);
 
-      // Clasificar archivos
-      documentResults.flat().forEach(({ fileName }) => {
+      console.log('📁 All contractor files found:', allContractorFiles);
+
+      // NUEVO: Clasificar TODOS los archivos encontrados
+      allContractorFiles.forEach((fileName) => {
         let documentType = 'otros';
         
         if (fileName.includes('Avance del período') || fileName.includes('planilla')) {
@@ -121,7 +102,7 @@ export const useDriveFiles = (paymentId: string | null, enabled: boolean = true)
         allFiles['mandante_docs'] = mandanteFiles;
       }
 
-      console.log('📁 All files found:', allFiles);
+      console.log('📁 All files classified:', allFiles);
       setDriveFiles(allFiles);
 
     } catch (error) {

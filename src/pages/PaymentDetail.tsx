@@ -85,7 +85,7 @@ const PaymentDetail = () => {
   );
   const { deleteFileFromDrive, loading: deleteLoading } = useDriveFileManagement();
 
-  // Use the document upload hook
+  // Use the document upload hook with callback para refrescar archivos del Drive
   const {
     documentStatus,
     uploadedFiles,
@@ -98,7 +98,7 @@ const PaymentDetail = () => {
     handleDragLeave,
     handleDrop,
     handleDocumentUpload,
-  } = useDocumentUpload();
+  } = useDocumentUpload(refetchDriveFiles);
 
   const [achsSelection, setAchsSelection] = useState('');
   const [isUploading, setIsUploading] = useState(false);
@@ -308,7 +308,8 @@ const PaymentDetail = () => {
         isUploadOnly: true,
         allowMultiple: false,
         helpText: 'Este documento ha sido especificado como requerimiento específico del proyecto.',
-        isOtherDocument: true
+        isOtherDocument: true,
+        showButtonWhen: ['Pendiente', 'Rechazado'] // Solo mostrar botones en estados específicos
       }));
 
     console.log('📄 Other documents found:', otherDocuments.map(d => d.name));
@@ -419,6 +420,9 @@ const PaymentDetail = () => {
       }
 
       console.log('✅ Documents uploaded successfully for resubmission');
+      
+      // IMPORTANTE: Refrescar archivos del Drive después del upload
+      await refetchDriveFiles();
 
       // Usar el sistema de enlace único
       const accessUrl = await ensureUniqueAccessUrl(payment.id);
@@ -686,6 +690,9 @@ const PaymentDetail = () => {
       }
 
       console.log('✅ Documents uploaded successfully');
+      
+      // IMPORTANTE: Refrescar archivos del Drive después del upload
+      await refetchDriveFiles();
 
       // Usar el sistema de enlace único
       const accessUrl = await ensureUniqueAccessUrl(payment.id);

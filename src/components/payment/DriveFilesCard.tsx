@@ -58,26 +58,53 @@ const DriveFilesCard: React.FC<DriveFilesCardProps> = ({
                     <h4 className="font-medium text-slate-800 font-rubik text-sm">{doc.name}</h4>
                     <p className="text-xs text-gloster-gray font-rubik mt-1">{doc.description}</p>
                     
-                    {/* Mostrar archivos del contratista para todos los documentos requeridos */}
-                    {uploadedFiles?.[doc.id] && uploadedFiles[doc.id].length > 0 && (
-                      <div className="space-y-1 mt-2">
-                        {uploadedFiles[doc.id].map((file, index) => (
-                          <div key={index} className="flex items-center justify-between bg-green-50 p-2 rounded border border-green-200">
-                            <span className="text-xs text-green-800 font-rubik truncate flex-1 pr-2">{file}</span>
-                            {onFileRemove && paymentStatus === 'Rechazado' && (
-                              <Button
-                                onClick={() => onFileRemove(doc.id, index)}
-                                variant="ghost"
-                                size="sm"
-                                className="h-4 w-4 p-0 text-red-600 hover:text-red-800 hover:bg-red-100 shrink-0"
-                              >
-                                <X className="h-3 w-3" />
-                              </Button>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    {/* Mostrar archivos específicos del documento - CORREGIDO */}
+                    {(() => {
+                      // Buscar archivos específicos para este documento
+                      let specificFiles = [];
+                      
+                      // Si hay archivos clasificados por ID exacto
+                      if (uploadedFiles?.[doc.id] && uploadedFiles[doc.id].length > 0) {
+                        specificFiles = uploadedFiles[doc.id];
+                      } 
+                      // Si no, buscar archivos que coincidan con el nombre del documento
+                      else if (uploadedFiles) {
+                        Object.entries(uploadedFiles).forEach(([category, files]) => {
+                          if (category !== 'mandante_docs' && files && files.length > 0) {
+                            const matchingFiles = files.filter(fileName => {
+                              // Buscar coincidencias con el nombre del documento
+                              return fileName.toLowerCase().includes(doc.name.toLowerCase()) ||
+                                     doc.name.toLowerCase().includes(fileName.toLowerCase().split('.')[0]);
+                            });
+                            specificFiles = [...specificFiles, ...matchingFiles];
+                          }
+                        });
+                      }
+
+                      return specificFiles.length > 0 && (
+                        <div className="space-y-1 mt-2">
+                          {specificFiles.map((file, index) => {
+                            // Remove file extension from display name
+                            const fileNameWithoutExtension = file.replace(/\.[^/.]+$/, "");
+                            return (
+                              <div key={index} className="flex items-center justify-between bg-green-50 p-2 rounded border border-green-200">
+                                <span className="text-xs text-green-800 font-rubik truncate flex-1 pr-2">{fileNameWithoutExtension}</span>
+                                {onFileRemove && paymentStatus === 'Rechazado' && (
+                                  <Button
+                                    onClick={() => onFileRemove(doc.id, index)}
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-4 w-4 p-0 text-red-600 hover:text-red-800 hover:bg-red-100 shrink-0"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <Button

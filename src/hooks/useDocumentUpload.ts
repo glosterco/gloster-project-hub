@@ -40,7 +40,7 @@ export interface DragStates {
   factura: boolean;
 }
 
-export const useDocumentUpload = () => {
+export const useDocumentUpload = (onUploadComplete?: () => void) => {
   const { toast } = useToast();
   const fileInputRefs = useRef<{[key: string]: HTMLInputElement | null}>({});
 
@@ -192,6 +192,11 @@ export const useDocumentUpload = () => {
       title: `Documento(s) ${action}(s)`,
       description: `${validFiles.length} archivo(s) se han ${action} exitosamente${requiresSingleFile ? ' (documento de archivo único)' : ''}`,
     });
+
+    // Llamar callback si se proporciona (para refrescar archivos del Drive)
+    if (onUploadComplete) {
+      onUploadComplete();
+    }
   };
 
   const handleFileRemove = (documentId: string, fileIndex: number) => {

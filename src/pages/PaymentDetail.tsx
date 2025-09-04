@@ -313,29 +313,45 @@ const PaymentDetail = () => {
 
     const allRequiredDocs = [...matchedDocuments, ...otherDocuments];
 
-    // NUEVO: Para estados "Enviado" y "Aprobado", solo mostrar documentos que realmente tienen archivos
-    if (payment?.Status === 'Enviado' || payment?.Status === 'Aprobado') {
-      const documentsWithFiles = allRequiredDocs.filter(doc => {
-        // Verificar si hay archivos para este documento
-        const hasFilesById = driveFiles[doc.id] && driveFiles[doc.id].length > 0;
-        const hasFilesByCategory = Object.entries(driveFiles).some(([category, files]) => {
-          if (category === 'mandante_docs' || !files || files.length === 0) return false;
-          return files.some(fileName => {
-            const baseFileName = fileName.replace(/\.[^/.]+$/, "").toLowerCase();
-            const docNameLower = doc.name.toLowerCase();
-            return baseFileName.includes(docNameLower) || docNameLower.includes(baseFileName);
-          });
-        });
-        
-        return hasFilesById || hasFilesByCategory;
-      });
-      
-      console.log(`📄 Filtered documents for ${payment.Status} status:`, documentsWithFiles.map(d => d.name));
-      return documentsWithFiles;
-    }
+    const filteredDocuments = useMemo(() => {
+  if (!allRequiredDocs || !driveFiles) return [];
 
-    return allRequiredDocs;
-  }, [payment?.projectData?.Requierment, payment?.Status, driveFiles]);
+  // Normaliza nombres para comparación exacta
+  function normalizeName(name: string) {
+    return name
+      .trim()                       // eliminar espacios al inicio y fin
+      .toLowerCase()                // convertir todo a minúsculas
+      .replace(/[\s_]+/g, ' ')      // reemplazar espacios múltiples o _ por un solo espacio
+      .replace(/[^\w\s]/g, '');     // eliminar caracteres especiales
+  }
+
+  if (payment?.Status === 'Enviado' || payment?.Status === 'Aprobado') {
+    const documentsWithFiles = allRequiredDocs.filter(doc => {
+      const docNameNormalized = normalizeName(doc.name);
+
+      // Verificar si hay archivos asociados por ID
+      const hasFilesById = driveFiles[doc.id] && driveFiles[doc.id].length > 0;
+
+      // Verificar archivos por categoría
+      const hasFilesByCategory = Object.entries(driveFiles).some(([category, files]) => {
+        if (category === 'mandante_docs' || !files || files.length === 0) return false;
+
+        return files.some(fileName => {
+          const baseFileName = normalizeName(fileName.replace(/\.[^/.]+$/, "")); // quitar extensión y normalizar
+          return baseFileName === docNameNormalized; // comparación exacta
+        });
+      });
+
+      return hasFilesById || hasFilesByCategory;
+    });
+
+    console.log(`📄 Filtered documents for ${payment.Status} status:`, documentsWithFiles.map(d => d.name));
+    return documentsWithFiles;
+  }
+
+  return allRequiredDocs;
+}, [payment?.projectData?.Requierment, payment?.Status, driveFiles]);
+
 
   // Load project requirements on component mount
   useEffect(() => {

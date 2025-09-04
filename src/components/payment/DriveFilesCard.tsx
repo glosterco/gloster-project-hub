@@ -67,7 +67,7 @@ const DriveFilesCard: React.FC<DriveFilesCardProps> = ({
                       if (uploadedFiles?.[doc.id] && uploadedFiles[doc.id].length > 0) {
                         specificFiles = uploadedFiles[doc.id];
                       } 
-                      // Si no, buscar archivos que coincidan con el nombre del documento o estén en "otros"
+                      // Si no, buscar archivos que coincidan con el nombre del documento
                       else if (uploadedFiles) {
                         Object.entries(uploadedFiles).forEach(([category, files]) => {
                           if (category !== 'mandante_docs' && files && files.length > 0) {
@@ -76,28 +76,23 @@ const DriveFilesCard: React.FC<DriveFilesCardProps> = ({
                               return fileName.toLowerCase().includes(doc.name.toLowerCase()) ||
                                      doc.name.toLowerCase().includes(fileName.toLowerCase().split('.')[0]);
                             });
-                            // Guardar también la categoría original para la eliminación
-                            matchingFiles.forEach(file => {
-                              specificFiles.push({ fileName: file, category: category });
-                            });
+                            specificFiles = [...specificFiles, ...matchingFiles];
                           }
                         });
                       }
 
                       return specificFiles.length > 0 && (paymentStatus !== 'Enviado' && paymentStatus !== 'Aprobado') && (
                         <div className="space-y-1 mt-2">
-                          {specificFiles.map((fileData, index) => {
-                            const fileName = typeof fileData === 'string' ? fileData : fileData.fileName;
-                            const category = typeof fileData === 'string' ? doc.id : fileData.category;
+                          {specificFiles.map((file, index) => {
                             // Remove file extension from display name
-                            const fileNameWithoutExtension = fileName.replace(/\.[^/.]+$/, "");
+                            const fileNameWithoutExtension = file.replace(/\.[^/.]+$/, "");
                             return (
                               <div key={index} className="flex items-center justify-between bg-green-50 p-2 rounded border border-green-200">
                                 <span className="text-xs text-green-800 font-rubik truncate flex-1 pr-2">{fileNameWithoutExtension}</span>
                                 {/* Solo mostrar botón de eliminar para estado Rechazado */}
                                 {onFileRemove && (paymentStatus === 'Rechazado' || paymentStatus === 'Pendiente') && (
                                   <Button
-                                    onClick={() => onFileRemove(category, index)}
+                                    onClick={() => onFileRemove(doc.id, index)}
                                     variant="ghost"
                                     size="sm"
                                     className="h-4 w-4 p-0 text-red-600 hover:text-red-800 hover:bg-red-100 shrink-0"
@@ -148,6 +143,60 @@ const DriveFilesCard: React.FC<DriveFilesCardProps> = ({
                         <span className="text-xs">Actualizar</span>
                       </Button>
                     )}
+                  </div>
+                </div>
+              </div>
+            ))}
+            
+            {/* Agregar tarjetas individuales para archivos "otros" */}
+            {uploadedFiles?.otros && uploadedFiles.otros.map((fileName, index) => (
+              <div key={`otros-${index}`} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div className="flex flex-col space-y-3">
+                  <div className="flex-1">
+                    <h4 className="font-medium text-slate-800 font-rubik text-sm">{fileName.replace(/\.[^/.]+$/, "")}</h4>
+                    <p className="text-xs text-gloster-gray font-rubik mt-1">Documento adicional</p>
+                    
+                    {paymentStatus !== 'Enviado' && paymentStatus !== 'Aprobado' && (
+                      <div className="space-y-1 mt-2">
+                        <div className="flex items-center justify-between bg-slate-50 p-2 rounded border border-slate-200">
+                          <span className="text-xs text-slate-800 font-rubik truncate flex-1 pr-2">{fileName.replace(/\.[^/.]+$/, "")}</span>
+                          {onFileRemove && (paymentStatus === 'Rechazado' || paymentStatus === 'Pendiente') && (
+                            <Button
+                              onClick={() => onFileRemove('otros', index)}
+                              variant="ghost"
+                              size="sm"
+                              className="h-4 w-4 p-0 text-red-600 hover:text-red-800 hover:bg-red-100 shrink-0"
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onDownloadFile(fileName)}
+                      disabled={isDocumentLoading ? isDocumentLoading(fileName) : downloadLoading}
+                      className="flex-1"
+                    >
+                      <Download className="h-4 w-4 mr-1" />
+                      <span className="text-xs">
+                        {(isDocumentLoading ? isDocumentLoading(fileName) : downloadLoading) 
+                          ? 'Descargando...' 
+                          : 'Descargar'}
+                      </span>
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => onDocumentUpload('otros')}
+                      className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black flex-1"
+                    >
+                      <Upload className="h-4 w-4 mr-1" />
+                      <span className="text-xs">Actualizar</span>
+                    </Button>
                   </div>
                 </div>
               </div>

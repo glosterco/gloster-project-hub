@@ -321,9 +321,8 @@ const PaymentDetail = () => {
         const hasFilesByCategory = Object.entries(driveFiles).some(([category, files]) => {
           if (category === 'mandante_docs' || !files || files.length === 0) return false;
           return files.some(fileName => {
-            const baseFileName = fileName.replace(/\.[^/.]+$/, "").toLowerCase();
-            const docNameLower = doc.name.toLowerCase();
-            return baseFileName.includes(docNameLower) || docNameLower.includes(baseFileName);
+            const baseFileName = fileName.replace(/\.[^/.]+$/, "").toLowerCase(); // quitar extensión
+            return baseFileName === doc.name.toLowerCase(); // comparación exacta
           });
         });
         

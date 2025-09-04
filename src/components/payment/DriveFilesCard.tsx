@@ -67,11 +67,16 @@ const DriveFilesCard: React.FC<DriveFilesCardProps> = ({
                       if (uploadedFiles?.[doc.id] && uploadedFiles[doc.id].length > 0) {
                         specificFiles = uploadedFiles[doc.id];
                       } 
-                      // Si no, buscar archivos que coincidan con el nombre del documento
+                      // Si no, buscar archivos que coincidan con el nombre del documento (excluyendo los que ya están en "otros")
                       else if (uploadedFiles) {
+                        const otrosFiles = uploadedFiles.otros || [];
                         Object.entries(uploadedFiles).forEach(([category, files]) => {
-                          if (category !== 'mandante_docs' && files && files.length > 0) {
+                          if (category !== 'mandante_docs' && category !== 'otros' && files && files.length > 0) {
                             const matchingFiles = files.filter(fileName => {
+                              // Verificar que el archivo no esté ya en "otros" para evitar duplicados
+                              const isInOtros = otrosFiles.some(otroFile => otroFile === fileName);
+                              if (isInOtros) return false;
+                              
                               // Buscar coincidencias con el nombre del documento
                               return fileName.toLowerCase().includes(doc.name.toLowerCase()) ||
                                      doc.name.toLowerCase().includes(fileName.toLowerCase().split('.')[0]);
@@ -158,8 +163,8 @@ const DriveFilesCard: React.FC<DriveFilesCardProps> = ({
                     
                     {paymentStatus !== 'Enviado' && paymentStatus !== 'Aprobado' && (
                       <div className="space-y-1 mt-2">
-                        <div className="flex items-center justify-between bg-slate-50 p-2 rounded border border-slate-200">
-                          <span className="text-xs text-slate-800 font-rubik truncate flex-1 pr-2">{fileName.replace(/\.[^/.]+$/, "")}</span>
+                        <div className="flex items-center justify-between bg-green-50 p-2 rounded border border-green-200">
+                          <span className="text-xs text-green-800 font-rubik truncate flex-1 pr-2">{fileName.replace(/\.[^/.]+$/, "")}</span>
                           {onFileRemove && (paymentStatus === 'Rechazado' || paymentStatus === 'Pendiente') && (
                             <Button
                               onClick={() => onFileRemove('otros', index)}

@@ -51,7 +51,7 @@ const PaymentDetail = () => {
       } catch (error) {
         console.error('Error parsing contractorAccess:', error);
       }
-    };
+    }
     
     // También verificar acceso de mandante
     const mandanteAccess = sessionStorage.getItem('mandanteAccess');
@@ -279,7 +279,7 @@ const PaymentDetail = () => {
   const documents = React.useMemo(() => {
     if (!payment?.projectData?.Requierment || !Array.isArray(payment.projectData.Requierment)) {
       return allDocuments.filter(doc => doc.required);
-    }
+    };
 
     const projectRequirements = payment.projectData.Requierment;
     console.log('🔍 Project requirements:', projectRequirements);

@@ -81,7 +81,7 @@ const DriveFilesCard: React.FC<DriveFilesCardProps> = ({
                         });
                       }
 
-                      return specificFiles.length > 0 && (
+                      return specificFiles.length > 0 && (paymentStatus !== 'Enviado' && paymentStatus !== 'Aprobado') && (
                         <div className="space-y-1 mt-2">
                           {specificFiles.map((file, index) => {
                             // Remove file extension from display name

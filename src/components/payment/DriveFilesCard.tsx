@@ -147,6 +147,52 @@ const DriveFilesCard: React.FC<DriveFilesCardProps> = ({
                 </div>
               </div>
             ))}
+            
+            {/* Agregar documentos "otros" junto con los documentos del contratista */}
+            {uploadedFiles.otros && uploadedFiles.otros.length > 0 && uploadedFiles.otros.map((fileName, index) => (
+              <div key={`otros-${index}`} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div className="flex flex-col space-y-3">
+                  <div className="flex-1">
+                    <h4 className="font-medium text-slate-800 font-rubik text-sm">Documento Adicional</h4>
+                    <p className="text-xs text-gloster-gray font-rubik mt-1">Archivo cargado</p>
+                    
+                    {paymentStatus !== 'Enviado' && paymentStatus !== 'Aprobado' && (
+                      <div className="space-y-1 mt-2">
+                        <div className="flex items-center justify-between bg-slate-100 p-2 rounded border border-slate-300">
+                          <span className="text-xs text-slate-800 font-rubik truncate flex-1 pr-2">{fileName}</span>
+                          {paymentStatus === 'Rechazado' && onFileRemove && (
+                            <Button
+                              onClick={() => onFileRemove('otros', index)}
+                              variant="ghost"
+                              size="sm"
+                              className="h-4 w-4 p-0 text-red-600 hover:text-red-800 hover:bg-red-100 shrink-0"
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onDownloadFile(fileName)}
+                      disabled={isDocumentLoading ? isDocumentLoading(fileName) : downloadLoading}
+                      className="flex-1"
+                    >
+                      <Download className="h-4 w-4 mr-1" />
+                      <span className="text-xs">
+                        {(isDocumentLoading ? isDocumentLoading(fileName) : downloadLoading) 
+                          ? 'Descargando...' 
+                          : 'Descargar'}
+                      </span>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
@@ -174,66 +220,6 @@ const DriveFilesCard: React.FC<DriveFilesCardProps> = ({
                           <span className="text-xs text-green-800 font-rubik truncate flex-1 pr-2">{fileName}</span>
                         </div>
                       </div>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => onDownloadFile(fileName)}
-                        disabled={isDocumentLoading ? isDocumentLoading(fileName) : downloadLoading}
-                        className="flex-1"
-                      >
-                        <Download className="h-4 w-4 mr-1" />
-                        <span className="text-xs">
-                          {(isDocumentLoading ? isDocumentLoading(fileName) : downloadLoading) 
-                            ? 'Descargando...' 
-                            : 'Descargar'}
-                        </span>
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Documentos de categoría "Otros" - Mostrar si hay archivos */}
-      {uploadedFiles.otros && uploadedFiles.otros.length > 0 && (
-        <Card className="mb-8 border-l-4 border-l-orange-500">
-          <CardHeader>
-            <CardTitle className="font-rubik text-lg text-slate-800">Otros Documentos</CardTitle>
-            <CardDescription className="font-rubik">
-              Documentos adicionales no categorizados que han sido cargados.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {uploadedFiles.otros.map((fileName, index) => (
-                <div key={`otros-${index}`} className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-orange-50">
-                  <div className="flex flex-col space-y-3">
-                    <div className="flex-1">
-                      <h4 className="font-medium text-slate-800 font-rubik text-sm">Documento Adicional</h4>
-                      <p className="text-xs text-gloster-gray font-rubik mt-1">Archivo cargado</p>
-                      
-                      {paymentStatus !== 'Enviado' && paymentStatus !== 'Aprobado' && (
-                        <div className="space-y-1 mt-2">
-                          <div className="flex items-center justify-between bg-orange-100 p-2 rounded border border-orange-300">
-                            <span className="text-xs text-orange-800 font-rubik truncate flex-1 pr-2">{fileName}</span>
-                            {paymentStatus === 'Rechazado' && onFileRemove && (
-                              <Button
-                                onClick={() => onFileRemove('otros', index)}
-                                variant="ghost"
-                                size="sm"
-                                className="h-4 w-4 p-0 text-red-600 hover:text-red-800 hover:bg-red-100 shrink-0"
-                              >
-                                <X className="h-3 w-3" />
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      )}
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <Button

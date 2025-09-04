@@ -133,22 +133,55 @@ serve(async (req) => {
     
     for (const [docType, docData] of Object.entries(documents)) {
       console.log(`📤 Processing ${docType} with ${docData.files.length} files (Memory optimization: sequential processing)`);
+      console.log(`📋 Document data for ${docType}:`, { documentName: docData.documentName, files: docData.files.map(f => f.name) });
       
       // Determine proper folder name based on document type
       let subfolderName = docData.documentName;
       
-      // Handle specific known document types
+      // Handle specific known document types with exact names
       if (docType === 'examenes') {
         subfolderName = 'Exámenes Preocupacionales';
       } else if (docType === 'finiquito') {
         subfolderName = 'Finiquitos';
       } else if (docType === 'f29') {
         subfolderName = 'Certificado F29';
+      } else if (docType === 'libro_remuneraciones') {
+        subfolderName = 'Libro de remuneraciones';
+      } else if (docType === 'eepp') {
+        subfolderName = 'Carátula EEPP';
+      } else if (docType === 'planilla') {
+        subfolderName = 'Avance del período';
+      } else if (docType === 'cotizaciones') {
+        subfolderName = 'Certificado de pago de cotizaciones';
+      } else if (docType === 'f30') {
+        subfolderName = 'Certificado F30';
+      } else if (docType === 'f30_1') {
+        subfolderName = 'Certificado F30-1';
+      } else if (docType === 'factura') {
+        subfolderName = 'Factura';
       }
       
-      // For "other" documents, use the actual document name from requirements
+      // For "other" documents, ensure we use the exact document name from requirements
       if (docType.startsWith('other_')) {
-        subfolderName = docData.documentName; // This should already contain the custom name
+        if (!docData.documentName || docData.documentName === docType) {
+          console.error(`❌ Missing or invalid documentName for ${docType}:`, docData.documentName);
+          // Try to extract from the files if available
+          if (docData.files && docData.files.length > 0) {
+            // Use the filename without extension as fallback
+            subfolderName = docData.files[0].name.replace(/\.[^/.]+$/, "");
+          } else {
+            subfolderName = docType; // Last resort fallback
+          }
+        } else {
+          subfolderName = docData.documentName;
+        }
+        console.log(`📋 Using subfolder name for ${docType}: "${subfolderName}"`);
+      }
+      
+      // Ensure subfolder name is not empty or invalid
+      if (!subfolderName || subfolderName.trim() === '') {
+        console.error(`❌ Empty subfolder name for ${docType}, using fallback`);
+        subfolderName = docType;
       }
       
       // Handle multiple files (create subfolder)

@@ -123,6 +123,8 @@ export const useGoogleDriveIntegration = () => {
         cotizaciones: 'Certificado de pago de cotizaciones',
         f30: 'Certificado F30',
         f30_1: 'Certificado F30-1',
+        f29: 'Certificado F29',
+        libro_remuneraciones: 'Libro de remuneraciones',
         examenes: 'Exámenes Preocupacionales',
         finiquito: 'Finiquito/Anexo Traslado',
         factura: 'Factura'
@@ -134,12 +136,17 @@ export const useGoogleDriveIntegration = () => {
         !predefinedNames.includes(req) && req.trim() && req !== 'Avance del período'
       );
       
-      // Add dynamic mappings for other documents
+      console.log('📋 Predefined document names:', predefinedNames);
+      console.log('📋 Other requirements found:', otherRequirements);
+      
+      // Add dynamic mappings for other documents - ensure exact matching with component IDs
       otherRequirements.forEach((req, index) => {
-        documentNames[`other_${index}`] = req;
+        const otherId = `other_${index}`;
+        documentNames[otherId] = req;
+        console.log(`📋 Mapped ${otherId} -> "${req}"`);
       });
 
-      console.log('📋 Document name mappings:', documentNames);
+      console.log('📋 Final document name mappings:', documentNames);
 
       // Prepare documents data with real file content
       const documents = {};

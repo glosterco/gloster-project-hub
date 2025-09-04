@@ -67,7 +67,7 @@ const DriveFilesCard: React.FC<DriveFilesCardProps> = ({
                       if (uploadedFiles?.[doc.id] && uploadedFiles[doc.id].length > 0) {
                         specificFiles = uploadedFiles[doc.id];
                       } 
-                      // Si no, buscar archivos que coincidan con el nombre del documento (excluyendo los que ya están en "otros")
+                      // Buscar archivos que coincidan EXACTAMENTE con el nombre del documento (sin incluir "otros")
                       else if (uploadedFiles) {
                         const otrosFiles = uploadedFiles.otros || [];
                         Object.entries(uploadedFiles).forEach(([category, files]) => {
@@ -77,9 +77,10 @@ const DriveFilesCard: React.FC<DriveFilesCardProps> = ({
                               const isInOtros = otrosFiles.some(otroFile => otroFile === fileName);
                               if (isInOtros) return false;
                               
-                              // Buscar coincidencias con el nombre del documento
-                              return fileName.toLowerCase().includes(doc.name.toLowerCase()) ||
-                                     doc.name.toLowerCase().includes(fileName.toLowerCase().split('.')[0]);
+                              // Comparación EXACTA: quitar extensión y comparar nombres completos
+                              const fileBaseName = fileName.replace(/\.[^/.]+$/, "").toLowerCase().trim();
+                              const docName = doc.name.toLowerCase().trim();
+                              return fileBaseName === docName;
                             });
                             specificFiles = [...specificFiles, ...matchingFiles];
                           }

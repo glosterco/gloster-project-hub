@@ -343,16 +343,21 @@ const PaymentDetail = () => {
       return isRequiredByProject;
     });
 
-    // Identify "other" documents that don't match predefined ones
-    const predefinedNames = allDocuments.map(doc => doc.name);
-    const otherDocuments = projectRequirements
-      .filter(req => !predefinedNames.includes(req) && req.trim() && req !== 'Avance del período')
+    // Process UNMATCHED requirements (those not found in allDocuments)
+    const unmatchedRequirements = projectRequirements.filter(req => {
+      const isAlreadyMatched = matchedDocuments.some(doc => doc.name === req);
+      const shouldProcess = !isAlreadyMatched && req.trim() && req !== 'Avance del período';
+      console.log(`🔍 Requirement "${req}": already matched = ${isAlreadyMatched}, will process = ${shouldProcess}`);
+      return shouldProcess;
+    });
+
+    const otherDocuments = unmatchedRequirements
       .sort() // IMPORTANT: Sort to ensure consistent mapping with useGoogleDriveIntegration.ts
       .map((req, index) => {
         // Try to find a matching document from catalog first
         const matchedDoc = matchRequirementToDocument(req);
         if (matchedDoc) {
-          console.log(`✅ Matched requirement "${req}" to catalog document "${matchedDoc.name}" (id: ${matchedDoc.id})`);
+          console.log(`✅ Matched UNMATCHED requirement "${req}" to catalog document "${matchedDoc.name}" (id: ${matchedDoc.id})`);
           return {
             id: matchedDoc.id, // Use the correct catalog ID (e.g., 'comprobante_cotizaciones')
             name: matchedDoc.name,

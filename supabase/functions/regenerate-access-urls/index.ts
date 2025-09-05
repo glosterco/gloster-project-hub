@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 interface RegenerateUrlsRequest {
-  baseUrl: 'https://gloster-project-hub.lovable.app'; // New base URL to use
+  baseUrl: string; // Base URL to use for regenerating access URLs
 }
 
 const handler = async (req: Request): Promise<Response> => {

@@ -65,6 +65,7 @@ const Register = () => {
     'Libro de asistencia',
     'Liquidaciones de sueldo',
     'Nómina de trabajadores',
+    'TGR',
     'Exámenes preocupacionales',
     'Finiquito/Anexo Traslado',
     'Factura'

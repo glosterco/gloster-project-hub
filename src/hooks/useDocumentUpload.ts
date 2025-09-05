@@ -4,6 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 export interface DocumentStatus {
   eepp: boolean;
   planilla: boolean;
+  comprobante_cotizaciones: boolean;
   cotizaciones: boolean;
   f30: boolean;
   f30_1: boolean;
@@ -16,6 +17,7 @@ export interface DocumentStatus {
 export interface UploadedFiles {
   eepp: string[];
   planilla: string[];
+  comprobante_cotizaciones: string[];
   cotizaciones: string[];
   f30: string[];
   f30_1: string[];
@@ -26,12 +28,22 @@ export interface UploadedFiles {
 }
 
 export interface FileObjects {
+  eepp: File[];
+  planilla: File[];
+  comprobante_cotizaciones: File[];
+  cotizaciones: File[];
+  f30: File[];
+  f30_1: File[];
+  examenes: File[];
+  finiquito: File[];
+  factura: File[];
   [key: string]: File[];
 }
 
 export interface DragStates {
   eepp: boolean;
   planilla: boolean;
+  comprobante_cotizaciones: boolean;
   cotizaciones: boolean;
   f30: boolean;
   f30_1: boolean;
@@ -47,6 +59,7 @@ export const useDocumentUpload = (onUploadComplete?: () => void) => {
   const [documentStatus, setDocumentStatus] = useState<DocumentStatus>({
     eepp: false,
     planilla: false,
+    comprobante_cotizaciones: false,
     cotizaciones: false,
     f30: false,
     f30_1: false,
@@ -58,6 +71,7 @@ export const useDocumentUpload = (onUploadComplete?: () => void) => {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFiles>({
     eepp: [],
     planilla: [],
+    comprobante_cotizaciones: [],
     cotizaciones: [],
     f30: [],
     f30_1: [],
@@ -69,6 +83,7 @@ export const useDocumentUpload = (onUploadComplete?: () => void) => {
   const [fileObjects, setFileObjects] = useState<FileObjects>({
     eepp: [],
     planilla: [],
+    comprobante_cotizaciones: [],
     cotizaciones: [],
     f30: [],
     f30_1: [],
@@ -80,6 +95,7 @@ export const useDocumentUpload = (onUploadComplete?: () => void) => {
   const [dragStates, setDragStates] = useState<DragStates>({
     eepp: false,
     planilla: false,
+    comprobante_cotizaciones: false,
     cotizaciones: false,
     f30: false,
     f30_1: false,
@@ -141,7 +157,7 @@ export const useDocumentUpload = (onUploadComplete?: () => void) => {
     if (validFiles.length === 0) return;
 
     // Documentos que requieren UN solo archivo
-    const singleFileDocuments = ['eepp', 'cotizaciones', 'f30', 'f30_1', 'factura'];
+    const singleFileDocuments = ['eepp', 'comprobante_cotizaciones', 'cotizaciones', 'f30', 'f30_1', 'factura'];
     const requiresSingleFile = singleFileDocuments.includes(documentId);
     
     console.log(`📁 Uploading ${validFiles.length} files for ${documentId} (single file required: ${requiresSingleFile}):`, validFiles.map(f => f.name));

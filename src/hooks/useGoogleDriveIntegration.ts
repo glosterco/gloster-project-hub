@@ -120,6 +120,7 @@ export const useGoogleDriveIntegration = () => {
       const documentNames = {
         eepp: 'Carátula EEPP',
         planilla: 'Avance del período',
+        comprobante_cotizaciones: 'Comprobante de pago de cotizaciones',
         cotizaciones: 'Certificado de pago de cotizaciones',
         f30: 'Certificado F30',
         f30_1: 'Certificado F30-1',

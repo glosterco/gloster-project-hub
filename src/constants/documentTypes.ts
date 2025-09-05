@@ -13,6 +13,12 @@ export const documentsFromPayment = [
     uploaded: true
   },
   {
+    id: 'comprobante_cotizaciones',
+    name: 'Comprobante de pago de cotizaciones',
+    description: 'Comprobante de pago de cotizaciones previsionales',
+    uploaded: true
+  },
+  {
     id: 'cotizaciones',
     name: 'Certificado de pago de cotizaciones',
     description: 'Certificado de cumplimiento de obligaciones previsionales',

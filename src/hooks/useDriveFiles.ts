@@ -72,7 +72,9 @@ export const useDriveFiles = (paymentId: string | null, enabled: boolean = true)
       
       if (fileName.includes('Avance del período') || fileName.includes('planilla') || fileBaseName.includes('avance')) {
         documentType = 'planilla';
-      } else if (fileName.includes('Certificado de pago de cotizaciones') || fileName.includes('cotizaciones') || fileBaseName.includes('cotizacion')) {
+      } else if (fileName.includes('Comprobante de pago de cotizaciones') || (fileName.includes('comprobante') && fileName.includes('pago') && fileName.includes('cotizaciones')) || fileBaseName === 'comprobante de pago de cotizaciones') {
+        documentType = 'comprobante_cotizaciones';
+      } else if (fileName.includes('Certificado de pago de cotizaciones') || (fileName.includes('certificado') && fileName.includes('pago') && fileName.includes('cotizaciones')) || fileBaseName === 'certificado de pago de cotizaciones') {
         documentType = 'cotizaciones';
       } else if ((fileName.includes('Certificado F30') && !fileName.includes('F30-1')) || (fileBaseName.includes('f30') && !fileBaseName.includes('f30-1'))) {
         documentType = 'f30';

@@ -279,7 +279,7 @@ const PaymentDetail = () => {
       description: 'Comprobante de pago de cotizaciones previsionales',
       downloadUrl: null,
       uploaded: false,
-      required: false,
+      required: true,
       isUploadOnly: true,
       helpText: 'Documento que acredita el pago de cotizaciones previsionales del período correspondiente.'
     },
@@ -289,7 +289,7 @@ const PaymentDetail = () => {
       description: 'Registro de asistencia de trabajadores',
       downloadUrl: null,
       uploaded: false,
-      required: false,
+      required: true,
       isUploadOnly: true,
       helpText: 'Libro que registra la asistencia diaria de los trabajadores en la obra.'
     },
@@ -299,7 +299,7 @@ const PaymentDetail = () => {
       description: 'Liquidaciones de sueldo de trabajadores',
       downloadUrl: null,
       uploaded: false,
-      required: false,
+      required: true,
       isUploadOnly: true,
       allowMultiple: true,
       helpText: 'Liquidaciones de sueldo individuales de todos los trabajadores del período.'
@@ -310,7 +310,7 @@ const PaymentDetail = () => {
       description: 'Nómina completa de trabajadores',
       downloadUrl: null,
       uploaded: false,
-      required: false,
+      required: true,
       isUploadOnly: true,
       helpText: 'Lista oficial de todos los trabajadores que participaron en el proyecto durante el período.'
     },
@@ -320,7 +320,7 @@ const PaymentDetail = () => {
       description: 'Documento de Tesorería General de la República',
       downloadUrl: null,
       uploaded: false,
-      required: false,
+      required: true,
       isUploadOnly: true,
       helpText: 'Documento relacionado con obligaciones ante la Tesorería General de la República.'
     }

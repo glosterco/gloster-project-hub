@@ -23,83 +23,84 @@ export const useUniqueAccessUrl = () => {
         throw new Error('ID de pago inválido');
       }
 
-      console.log('🔍 Checking existing access URL for payment:', numericPaymentId);
+      console.log('🔍 Ensuring access URL for payment:', numericPaymentId);
 
-      // Verificar si ya existe un enlace para este pago
-      const { data: existingPayment, error: fetchError } = await supabase
-        .from('Estados de pago')
-        .select('URLMandante')
-        .eq('id', numericPaymentId)
-        .single();
+      // Check if user is authenticated first
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        // Authenticated user: try direct database access
+        const { data: existingPayment, error: fetchError } = await supabase
+          .from('Estados de pago')
+          .select('URLMandante')
+          .eq('id', numericPaymentId)
+          .single();
 
-      if (fetchError) {
-        console.warn('⚠️ RLS prevented direct fetch of URLMandante, trying public fallback via edge function:', fetchError);
-
-        // Try public fallback using access token from sessionStorage
-        try {
-          const contractorAccess = sessionStorage.getItem('contractorAccess');
-          const mandanteAccess = sessionStorage.getItem('mandanteAccess');
-          const accessInfo = contractorAccess
-            ? JSON.parse(contractorAccess)
-            : (mandanteAccess ? JSON.parse(mandanteAccess) : null);
-          const accessToken = accessInfo?.accessToken;
-
-          if (!accessToken) {
-            throw new Error('No se encontró token de acceso para generar el enlace');
+        if (!fetchError && existingPayment?.URLMandante) {
+          const currentBaseUrl = getBaseUrl();
+          try {
+            const existingUrl = new URL(existingPayment.URLMandante);
+            const currentUrlObj = new URL(currentBaseUrl);
+            
+            // Si el dominio coincide con el correcto, reutilizar el enlace existente
+            if (existingUrl.origin === currentUrlObj.origin) {
+              console.log('✅ Reusing existing mandante access URL:', existingPayment.URLMandante);
+              return existingPayment.URLMandante;
+            }
+          } catch (urlError) {
+            console.warn('Invalid URL in database, will generate new one:', urlError);
           }
-
-          const { data: fnData, error: fnError } = await supabase.functions.invoke('ensure-unique-access-url', {
-            body: { paymentId: numericPaymentId, token: accessToken }
-          });
-
-          if (fnError) {
-            console.error('❌ Edge function ensure-unique-access-url error:', fnError);
-            throw new Error('Error al verificar el enlace existente');
-          }
-
-          if (fnData?.accessUrl) {
-            console.log('✅ Access URL ensured via edge function:', fnData.accessUrl);
-            return fnData.accessUrl;
-          }
-        } catch (fallbackErr) {
-          console.error('❌ Public fallback failed:', fallbackErr);
-          throw new Error('Error al verificar el enlace existente');
         }
-      }
 
-      // Si ya existe un enlace válido, verificar si el dominio es correcto
-      if (existingPayment?.URLMandante) {
-        const currentBaseUrl = getBaseUrl();
-        const existingUrl = new URL(existingPayment.URLMandante);
-        const currentUrlObj = new URL(currentBaseUrl);
+        // Generate new URL for authenticated user
+        console.log('🔄 Generating new unique access URL for authenticated user...');
+        const uniqueToken = crypto.randomUUID();
+        const baseUrl = getBaseUrl();
+        const newAccessUrl = `${baseUrl}/email-access?paymentId=${numericPaymentId}&token=${uniqueToken}`;
+
+        const { error: updateError } = await supabase
+          .from('Estados de pago')
+          .update({ URLMandante: newAccessUrl })
+          .eq('id', numericPaymentId);
+
+        if (updateError) {
+          console.error('Error updating URLMandante:', updateError);
+          throw new Error('Error al guardar el enlace único');
+        }
+
+        console.log('✅ New access URL generated and saved:', newAccessUrl);
+        return newAccessUrl;
+      } else {
+        // Non-authenticated user: ALWAYS use edge function
+        console.log('🔐 Non-authenticated user, using edge function...');
         
-        // Si el dominio coincide con el correcto, reutilizar el enlace existente
-        if (existingUrl.origin === currentUrlObj.origin) {
-          console.log('✅ Reusing existing mandante access URL:', existingPayment.URLMandante);
-          return existingPayment.URLMandante;
+        const contractorAccess = sessionStorage.getItem('contractorAccess');
+        const mandanteAccess = sessionStorage.getItem('mandanteAccess');
+        const accessInfo = contractorAccess
+          ? JSON.parse(contractorAccess)
+          : (mandanteAccess ? JSON.parse(mandanteAccess) : null);
+        const accessToken = accessInfo?.accessToken;
+
+        if (!accessToken) {
+          throw new Error('No se encontró token de acceso para generar el enlace');
+        }
+
+        const { data: fnData, error: fnError } = await supabase.functions.invoke('ensure-unique-access-url', {
+          body: { paymentId: numericPaymentId, token: accessToken }
+        });
+
+        if (fnError) {
+          console.error('❌ Edge function ensure-unique-access-url error:', fnError);
+          throw new Error(`Error al verificar el enlace: ${fnError.message}`);
+        }
+
+        if (fnData?.accessUrl) {
+          console.log('✅ Access URL ensured via edge function:', fnData.accessUrl);
+          return fnData.accessUrl;
         } else {
-          console.log('🔄 Domain incorrect, generating new mandante URL...');
+          throw new Error('La función edge no devolvió un enlace válido');
         }
       }
-
-      console.log('🔄 Generating new unique access URL...');
-      const uniqueToken = crypto.randomUUID();
-      const baseUrl = getBaseUrl();
-      const newAccessUrl = `${baseUrl}/email-access?paymentId=${numericPaymentId}&token=${uniqueToken}`;
-
-      // Guardar el nuevo enlace en la base de datos
-      const { error: updateError } = await supabase
-        .from('Estados de pago')
-        .update({ URLMandante: newAccessUrl })
-        .eq('id', numericPaymentId);
-
-      if (updateError) {
-        console.error('Error updating URLMandante:', updateError);
-        throw new Error('Error al guardar el enlace único');
-      }
-
-      console.log('✅ New access URL generated and saved:', newAccessUrl);
-      return newAccessUrl;
 
     } catch (error) {
       console.error('Error in ensureUniqueAccessUrl:', error);

@@ -334,7 +334,8 @@ const PaymentDetail = () => {
     }
 
     const projectRequirements = payment.projectData.Requierment;
-    console.log('🔍 Project requirements:', projectRequirements);
+    console.log('🚨 FORCE DEBUG: Project requirements:', projectRequirements);
+    alert('DEBUGGING: Project requirements: ' + JSON.stringify(projectRequirements));
     
     // Filter predefined documents that match requirements
     const matchedDocuments = allDocuments.filter(doc => {

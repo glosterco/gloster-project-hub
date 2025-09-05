@@ -57,7 +57,7 @@ export const DOCUMENT_CATALOG: DocumentDefinition[] = [
       'comprobante cotizaciones',
       'comprobante pago cotizaciones'
     ],
-    required: true
+    required: false
   },
   {
     id: 'f30',
@@ -130,7 +130,7 @@ export const DOCUMENT_CATALOG: DocumentDefinition[] = [
       'libro_asistencia',
       'libro de asistencia de trabajadores'
     ],
-    required: true
+    required: false
   },
   {
     id: 'liquidaciones_sueldo',
@@ -147,7 +147,7 @@ export const DOCUMENT_CATALOG: DocumentDefinition[] = [
       'liquidación de sueldo',
       'liquidación sueldo'
     ],
-    required: true
+    required: false
   },
   {
     id: 'nomina_trabajadores',
@@ -164,7 +164,7 @@ export const DOCUMENT_CATALOG: DocumentDefinition[] = [
       'nomina_trabajadores',
       'lista de trabajadores'
     ],
-    required: true
+    required: false
   },
   {
     id: 'tgr',

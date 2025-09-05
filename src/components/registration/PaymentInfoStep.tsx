@@ -39,13 +39,9 @@ const PaymentInfoStep: React.FC<PaymentInfoStepProps> = ({
   setOtherDocuments,
   documentsList,
 }) => {
-  // Documentos obligatorios que no se pueden deseleccionar
+  // Solo "Avance del período" es obligatorio
   const REQUIRED_DOCUMENTS = [
-    "Avance del período",
-    "Comprobante de pago de cotizaciones", 
-    "Libro de asistencia",
-    "Liquidaciones de sueldo",
-    "Nómina de trabajadores"
+    "Avance del período"
   ];
   
   // Asegurar que los documentos obligatorios estén seleccionados por defecto
@@ -60,14 +56,10 @@ const PaymentInfoStep: React.FC<PaymentInfoStepProps> = ({
   }, [documentsList, requiredDocuments, setRequiredDocuments]);
 
   const handleDocumentChange = (document: string, checked: boolean) => {
-    // Si se intenta deseleccionar un documento obligatorio, mostrar mensaje y no permitirlo
-    if (!checked && REQUIRED_DOCUMENTS.includes(document)) {
-      const documentType = document === "Avance del período" 
-        ? "avance de proyecto" 
-        : "documento esencial";
-      
+    // Si se intenta deseleccionar el documento obligatorio, mostrar mensaje y no permitirlo
+    if (!checked && document === "Avance del período") {
       toast.error("Documento obligatorio", {
-        description: `${document} es un ${documentType} obligatorio para todos los contratos y no puede ser removido.`,
+        description: "El avance de proyecto es obligatorio para todos los contratos y no puede ser removido.",
         icon: <AlertCircle className="h-4 w-4" />,
         duration: 4000,
       });

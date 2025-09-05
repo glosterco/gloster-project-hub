@@ -272,6 +272,57 @@ const PaymentDetail = () => {
       uploaded: false,
       required: true,
       helpText: 'Accede al portal del SII con tu RUT y clave, dirígete a "Facturación electrónica" y emite la factura correspondiente al período de trabajo.'
+    },
+    {
+      id: 'comprobante_cotizaciones',
+      name: 'Comprobante de pago de cotizaciones',
+      description: 'Comprobante de pago de cotizaciones previsionales',
+      downloadUrl: null,
+      uploaded: false,
+      required: false,
+      isUploadOnly: true,
+      helpText: 'Documento que acredita el pago de cotizaciones previsionales del período correspondiente.'
+    },
+    {
+      id: 'libro_asistencia',
+      name: 'Libro de asistencia',
+      description: 'Registro de asistencia de trabajadores',
+      downloadUrl: null,
+      uploaded: false,
+      required: false,
+      isUploadOnly: true,
+      helpText: 'Libro que registra la asistencia diaria de los trabajadores en la obra.'
+    },
+    {
+      id: 'liquidaciones_sueldo',
+      name: 'Liquidaciones de sueldo',
+      description: 'Liquidaciones de sueldo de trabajadores',
+      downloadUrl: null,
+      uploaded: false,
+      required: false,
+      isUploadOnly: true,
+      allowMultiple: true,
+      helpText: 'Liquidaciones de sueldo individuales de todos los trabajadores del período.'
+    },
+    {
+      id: 'nomina_trabajadores',
+      name: 'Nómina de trabajadores',
+      description: 'Nómina completa de trabajadores',
+      downloadUrl: null,
+      uploaded: false,
+      required: false,
+      isUploadOnly: true,
+      helpText: 'Lista oficial de todos los trabajadores que participaron en el proyecto durante el período.'
+    },
+    {
+      id: 'tgr',
+      name: 'TGR',
+      description: 'Documento de Tesorería General de la República',
+      downloadUrl: null,
+      uploaded: false,
+      required: false,
+      isUploadOnly: true,
+      helpText: 'Documento relacionado con obligaciones ante la Tesorería General de la República.'
     }
   ];
 

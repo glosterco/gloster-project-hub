@@ -258,6 +258,9 @@ serve(async (req) => {
       if (docType.startsWith('mandante_doc_')) {
         // For mandante docs, the file name should already include "- mandante" from frontend
         fileName = file.name.includes('- mandante') ? file.name : `${file.name} - mandante`;
+      } else if (docType.startsWith('other_') && subfolderName && subfolderName !== docType) {
+        // For "other" documents, use the proper document name from requirements
+        fileName = `${subfolderName}.${file.name.split('.').pop()}`;
       } else {
         fileName = `${subfolderName}.${file.name.split('.').pop()}`;
       }

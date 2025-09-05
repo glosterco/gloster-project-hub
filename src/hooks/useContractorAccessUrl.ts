@@ -37,19 +37,10 @@ export const useContractorAccessUrl = () => {
         throw new Error('Error al verificar el enlace existente');
       }
 
-      // Si ya existe un enlace válido, verificar si el dominio coincide con el actual
+      // Si ya existe un enlace válido, reutilizarlo siempre (no regenerar)
       if ((existingPayment as any)?.URLContratista) {
-        const currentBaseUrl = getBaseUrl();
-        const existingUrl = new URL((existingPayment as any).URLContratista);
-        const currentUrlObj = new URL(currentBaseUrl);
-        
-        // Si el dominio coincide, reutilizar el enlace existente
-        if (existingUrl.origin === currentUrlObj.origin) {
-          console.log('✅ Reusing existing contractor access URL:', (existingPayment as any).URLContratista);
-          return (existingPayment as any).URLContratista;
-        } else {
-          console.log('🔄 Domain changed, generating new contractor URL...');
-        }
+        console.log('✅ Reusing existing contractor access URL:', (existingPayment as any).URLContratista);
+        return (existingPayment as any).URLContratista;
       }
 
       // Si no existe o el dominio cambió, generar uno nuevo

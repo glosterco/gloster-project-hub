@@ -605,18 +605,37 @@ const PaymentDetail = () => {
       return;
     }
 
-    if (payment?.Status !== 'Rechazado') {
+    if (payment?.Status !== 'Rechazado' && payment?.Status !== 'Pendiente') {
       toast({
         title: "Acción no permitida",
-        description: "Solo puedes eliminar archivos cuando el estado de pago está Rechazado",
+        description: "Solo puedes eliminar archivos cuando el estado de pago está Rechazado o Pendiente",
         variant: "destructive"
       });
       return;
     }
 
-    // Get the filename from driveFiles
-    const docFiles = driveFiles[docId];
-    if (!docFiles || !docFiles[fileIndex]) {
+    // Get the filename from uploadedFiles (local) or driveFiles (Drive)
+    const localFiles = uploadedFiles[docId];
+    const driveFilesList = driveFiles[docId];
+    
+    // Determine if this is a local file or a Drive file
+    let fileName: string;
+    let isLocalFile = false;
+    
+    if (localFiles && localFiles[fileIndex]) {
+      // File exists in local uploaded files
+      fileName = localFiles[fileIndex];
+      isLocalFile = true;
+      
+      // Check if this local file also exists in Drive by comparing names
+      if (driveFilesList && driveFilesList.includes(fileName)) {
+        isLocalFile = false; // It's actually in Drive too
+      }
+    } else if (driveFilesList && driveFilesList[fileIndex]) {
+      // File only exists in Drive
+      fileName = driveFilesList[fileIndex];
+      isLocalFile = false;
+    } else {
       console.error(`File not found: docId=${docId}, fileIndex=${fileIndex}`);
       toast({
         title: "Error",
@@ -626,13 +645,22 @@ const PaymentDetail = () => {
       return;
     }
 
-    const fileName = docFiles[fileIndex];
-    console.log(`🗑️ Removing file from Drive: ${fileName}`);
+    console.log(`🗑️ Removing file: ${fileName} (local: ${isLocalFile})`);
 
-    const success = await deleteFileFromDrive(payment.id.toString(), fileName);
-    if (success) {
-      // Refresh drive files after successful deletion
-      await refetchDriveFiles();
+    if (isLocalFile) {
+      // Remove only from local state (frontend)
+      handleFileRemove(docId, fileIndex);
+      toast({
+        title: "Archivo eliminado",
+        description: "El archivo se eliminó del frontend exitosamente",
+      });
+    } else {
+      // Remove from Drive
+      const success = await deleteFileFromDrive(payment.id.toString(), fileName);
+      if (success) {
+        // Refresh drive files after successful deletion
+        await refetchDriveFiles();
+      }
     }
   };
 

@@ -200,28 +200,31 @@ export const extractNameFromOtherId = (otherId: string): string => {
 };
 
 export const matchRequirementToDocument = (requirement: string): DocumentDefinition | null => {
-  const reqNormalized = normalizeText(requirement);
+  // Normalize requirement: lowercase and trim spaces
+  const normalizedRequirement = requirement.toLowerCase().trim();
   
-  // First try exact name match (case insensitive)
+  // First priority: exact match with document name (normalized)
   const exactNameMatch = DOCUMENT_CATALOG.find(doc => 
-    normalizeText(doc.name) === reqNormalized
+    doc.name.toLowerCase().trim() === normalizedRequirement
   );
   
   if (exactNameMatch) {
+    console.log(`✅ Exact name match: "${requirement}" → "${exactNameMatch.name}" (id: ${exactNameMatch.id})`);
     return exactNameMatch;
   }
   
-  // Then try keyword matching
-  return DOCUMENT_CATALOG.find(doc => {
-    return doc.keywords.some(keyword => {
-      const keywordNormalized = normalizeText(keyword);
-      const exactMatch = reqNormalized === keywordNormalized;
-      const containsMatch = reqNormalized.includes(keywordNormalized);
-      const reverseContainsMatch = keywordNormalized.includes(reqNormalized);
-      
-      return exactMatch || containsMatch || reverseContainsMatch;
-    });
-  }) || null;
+  // Second priority: exact match with any keyword (normalized)
+  const exactKeywordMatch = DOCUMENT_CATALOG.find(doc => 
+    doc.keywords.some(keyword => keyword.toLowerCase().trim() === normalizedRequirement)
+  );
+  
+  if (exactKeywordMatch) {
+    console.log(`✅ Exact keyword match: "${requirement}" → "${exactKeywordMatch.name}" (id: ${exactKeywordMatch.id})`);
+    return exactKeywordMatch;
+  }
+  
+  console.log(`❌ No match found for requirement: "${requirement}"`);
+  return null;
 };
 
 export const getDocumentsFromRequirements = (projectRequirements?: string[]) => {
@@ -238,6 +241,9 @@ export const getDocumentsFromRequirements = (projectRequirements?: string[]) => 
   
   if (projectRequirements && projectRequirements.length > 0) {
     projectRequirements.forEach(requirement => {
+      // Skip empty or whitespace-only requirements
+      if (!requirement.trim()) return;
+      
       const matchedDoc = matchRequirementToDocument(requirement);
       if (matchedDoc) {
         matchedDocuments.add(matchedDoc);
@@ -248,28 +254,26 @@ export const getDocumentsFromRequirements = (projectRequirements?: string[]) => 
       }
     });
 
-    // TEMPORARILY DISABLED: Create "other" documents for unmatched requirements
-    // const otherDocuments = projectRequirements
-    //   .filter(req => !matchedRequirements.has(req) && req.trim())
-    //   .sort() // Stable sorting for consistent IDs
-    //   .map(req => ({
-    //     id: buildOtherIdFromName(req),
-    //     name: req,
-    //     description: 'Documento requerido específico del proyecto',
-    //     keywords: [req.toLowerCase()],
-    //     required: false,
-    //     uploaded: true,
-    //     isOtherDocument: true
-    //   }));
+    // Create "other" documents for truly unmatched requirements
+    const otherDocuments = projectRequirements
+      .filter(req => !matchedRequirements.has(req) && req.trim()) // Only non-matched, non-empty requirements
+      .sort() // Stable sorting for consistent IDs
+      .map(req => ({
+        id: buildOtherIdFromName(req),
+        name: req,
+        description: 'Documento requerido específico del proyecto',
+        keywords: [req.toLowerCase()],
+        required: false,
+        uploaded: true,
+        isOtherDocument: true
+      }));
 
-    // TEMPORARILY DISABLED: Other documents
-    const otherDocuments = []; // Empty array - no other documents
-    console.log('🚫 TEMPORARILY DISABLED: Other documents creation');
+    console.log('📄 Other documents created:', otherDocuments.map(d => ({ id: d.id, name: d.name })));
 
     // Combine all documents and mark as uploaded for the view
     const allDocuments = [
-      ...Array.from(matchedDocuments).map(doc => ({ ...doc, uploaded: true }))
-      // ...otherDocuments // DISABLED
+      ...Array.from(matchedDocuments).map(doc => ({ ...doc, uploaded: true })),
+      ...otherDocuments
     ];
 
     console.log('🔍 Final document list:', allDocuments.map(d => ({ id: d.id, name: d.name })));

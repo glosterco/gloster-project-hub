@@ -16,14 +16,10 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { baseUrl }: RegenerateUrlsRequest = await req.json();
-
-    if (!baseUrl) {
-      return new Response(JSON.stringify({ error: 'BaseUrl es requerido' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      });
-    }
+    // Force the correct domain regardless of what's passed
+    const baseUrl = 'https://gloster-project-hub.lovable.app';
+    
+    console.log('🔧 Using hardcoded correct baseUrl:', baseUrl);
 
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',

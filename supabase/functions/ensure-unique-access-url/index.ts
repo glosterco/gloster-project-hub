@@ -58,11 +58,12 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    // If URLMandante exists and matches origin, reuse it
+    // If URLMandante exists and matches correct origin, reuse it
+    const correctBaseUrl = 'https://gloster-project-hub.lovable.app';
     if (paymentUrls.URLMandante) {
       try {
         const existing = new URL(paymentUrls.URLMandante);
-        const target = new URL(baseUrl);
+        const target = new URL(correctBaseUrl);
         if (existing.origin === target.origin) {
           return new Response(JSON.stringify({ accessUrl: paymentUrls.URLMandante }), {
             status: 200,
@@ -74,9 +75,10 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    // Generate new URLMandante with new token
+    // Generate new URLMandante with new token - ALWAYS use correct domain
     const newToken = crypto.randomUUID();
-    const accessUrl = `${baseUrl}/email-access?paymentId=${paymentId}&token=${newToken}`;
+    const correctBaseUrl = 'https://gloster-project-hub.lovable.app';
+    const accessUrl = `${correctBaseUrl}/email-access?paymentId=${paymentId}&token=${newToken}`;
 
     const { error: updateError } = await supabaseAdmin
       .from('Estados de pago')

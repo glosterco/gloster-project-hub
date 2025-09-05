@@ -192,12 +192,17 @@ serve(async (req) => {
       let subfolderName = docData.documentName;
       let namingReason = 'provided';
       
-      // Priority 1: Use provided documentName if available and valid
+      // Priority 1: Use provided documentName if available and valid (this is the correct name from frontend)
       if (docData.documentName && docData.documentName !== docType && docData.documentName.trim() !== '') {
         subfolderName = docData.documentName;
         namingReason = 'provided-documentName';
       }
-      // Priority 2: For other_ documents, use filename fallback directly  
+      // Priority 2: For predefined documents, use documentName from frontend (not the mapping here)
+      else if (documentNameMap[docType] && docData.documentName) {
+        subfolderName = docData.documentName; // Use frontend's documentName, not our mapping
+        namingReason = 'frontend-documentName';
+      }
+      // Priority 3: For other_ documents, use filename fallback directly  
       else if (docType.startsWith('other_')) {
         // Use filename without extension as the name
         if (docData.files && docData.files.length > 0) {
@@ -210,10 +215,10 @@ serve(async (req) => {
           console.error(`❌ No files available for ${docType}, using docType as name`);
         }
       }
-      // Priority 4: For predefined documents, use mapping
+      // Priority 4: Last resort - use mapping or docType
       else {
-        subfolderName = documentNameMap[docType] || docData.documentName || docType;
-        namingReason = documentNameMap[docType] ? 'predefined-mapping' : 'fallback';
+        subfolderName = documentNameMap[docType] || docType;
+        namingReason = documentNameMap[docType] ? 'predefined-mapping' : 'final-fallback';
       }
 
       console.log(`📋 Final naming for ${docType}: "${subfolderName}" (reason: ${namingReason})`);
@@ -222,14 +227,11 @@ serve(async (req) => {
         console.warn(`⚠️ Document ${docType} using fallback naming strategy: ${namingReason}`);
       }
       
-      // For "other" documents, ensure we use the exact document name from requirements
-      // Additional validation for other documents
-      if (docType.startsWith('other_') && (!subfolderName || subfolderName === docType)) {
-        if (docData.documentName && docData.documentName !== docType && docData.documentName.trim() !== '') {
-          subfolderName = docData.documentName;
-          namingReason = 'override-from-documentName';
-          console.log(`📋 Override using documentName for ${docType}: "${subfolderName}"`);
-        }
+      // Additional validation: always prioritize documentName from frontend when available
+      if (docData.documentName && docData.documentName !== docType && docData.documentName.trim() !== '') {
+        subfolderName = docData.documentName;
+        namingReason = 'override-from-documentName';
+        console.log(`📋 Final override using documentName for ${docType}: "${subfolderName}"`);
       }
       
       // Final validation: ensure subfolder name is not empty or invalid

@@ -92,6 +92,14 @@ export const useDriveFiles = (paymentId: string | null, enabled: boolean = true)
         documentType = 'f29';
       } else if (fileName.includes('Libro de remuneraciones') || fileBaseName.includes('libro de remuneraciones')) {
         documentType = 'libro_remuneraciones';
+      } else if (fileName.includes('Libro de asistencia') || fileBaseName.includes('libro de asistencia')) {
+        documentType = 'libro_asistencia';
+      } else if (fileName.includes('Liquidaciones de sueldo') || fileBaseName.includes('liquidaciones de sueldo')) {
+        documentType = 'liquidaciones_sueldo';
+      } else if (fileName.includes('Nómina de trabajadores') || fileBaseName.includes('nómina de trabajadores') || fileBaseName.includes('nomina de trabajadores')) {
+        documentType = 'nomina_trabajadores';
+      } else if (fileName.includes('TGR') || fileBaseName.includes('tgr')) {
+        documentType = 'tgr';
       }
 
       if (!allFiles[documentType]) {

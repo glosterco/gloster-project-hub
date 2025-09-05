@@ -7,10 +7,10 @@ export const useUniqueAccessUrl = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  // Use the production domain consistently
+  // Use the current domain for email links
   const getBaseUrl = () => {
-    // Always use the production domain for email links
-    return 'https://b7846f9a-a454-43f5-8060-670f4c2f860a.lovableproject.com';
+    // Use the current domain to ensure proper redirection
+    return window.location.origin;
   };
 
   const ensureUniqueAccessUrl = async (paymentId: string | number) => {

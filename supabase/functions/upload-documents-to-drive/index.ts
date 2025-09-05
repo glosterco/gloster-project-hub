@@ -14,6 +14,10 @@ const DOCUMENT_CATALOG = [
   { id: 'f30', name: 'Certificado F30', keywords: ['f30', 'formulario 30'] },
   { id: 'f30_1', name: 'Certificado F30-1', keywords: ['f30-1', 'formulario 30-1'] },
   { id: 'factura', name: 'Factura', keywords: ['factura'] },
+  { id: 'libro_asistencia', name: 'Libro de asistencia', keywords: ['libro', 'asistencia'] },
+  { id: 'liquidaciones_sueldo', name: 'Liquidaciones de sueldo', keywords: ['liquidacion', 'liquidaciones', 'sueldo'] },
+  { id: 'nomina_trabajadores', name: 'Nómina de trabajadores', keywords: ['nomina', 'nómina', 'trabajadores'] },
+  { id: 'tgr', name: 'TGR', keywords: ['tgr', 'tesoreria'] },
 ];
 
 // Helper functions

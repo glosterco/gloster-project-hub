@@ -16,7 +16,8 @@ export const documentsFromPayment = [
     id: 'comprobante_cotizaciones',
     name: 'Comprobante de pago de cotizaciones',
     description: 'Comprobante de pago de cotizaciones previsionales',
-    uploaded: true
+    uploaded: true,
+    allowMultiple: true
   },
   {
     id: 'cotizaciones',
@@ -61,6 +62,31 @@ export const documentsFromPayment = [
     id: 'factura',
     name: 'Factura',
     description: 'Factura del período correspondiente',
+    uploaded: true
+  },
+  {
+    id: 'libro_asistencia',
+    name: 'Libro de asistencia',
+    description: 'Registro de asistencia de trabajadores al proyecto',
+    uploaded: true
+  },
+  {
+    id: 'liquidaciones_sueldo',
+    name: 'Liquidaciones de sueldo',
+    description: 'Liquidaciones de sueldo de trabajadores',
+    uploaded: true,
+    allowMultiple: true
+  },
+  {
+    id: 'nomina_trabajadores',
+    name: 'Nómina de trabajadores',
+    description: 'Lista oficial de trabajadores del proyecto',
+    uploaded: true
+  },
+  {
+    id: 'tgr',
+    name: 'TGR',
+    description: 'Documento de Tesorería General de la República',
     uploaded: true
   }
 ];

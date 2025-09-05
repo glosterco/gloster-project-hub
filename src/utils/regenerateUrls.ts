@@ -2,8 +2,8 @@ import { supabase } from '@/integrations/supabase/client';
 
 export const regenerateAllAccessUrls = async () => {
   try {
-    // Always use production domain for consistency
-    const baseUrl = 'https://gloster.cl';
+    // Always use the correct Lovable staging domain
+    const baseUrl = 'https://gloster-project-hub.lovable.app';
     
     console.log('🔄 Starting URL regeneration process for all existing data...');
     

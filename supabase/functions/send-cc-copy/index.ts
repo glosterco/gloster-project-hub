@@ -135,7 +135,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Generate access URL for executive summary
     const token = crypto.randomUUID();
-    const baseUrl = 'https://gloster.cl';
+    const baseUrl = 'https://gloster-project-hub.lovable.app';
     const accessUrl = `${baseUrl}/email-access?paymentId=${paymentId}&token=${token}&redirect=/executive-summary`;
 
     // Update payment with CC access token

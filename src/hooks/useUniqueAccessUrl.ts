@@ -7,14 +7,9 @@ export const useUniqueAccessUrl = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  // Use the current domain for email links
   const getBaseUrl = () => {
-    // For production URLs that will be sent via email, use the production domain
-    // Check if we're in development or production
-    if (window.location.hostname.includes('lovable') || window.location.hostname.includes('localhost')) {
-      return 'https://gloster.cl';
-    }
-    return window.location.origin;
+    // Always use the correct Lovable staging domain
+    return 'https://gloster-project-hub.lovable.app';
   };
 
   const ensureUniqueAccessUrl = async (paymentId: string | number) => {

@@ -187,7 +187,7 @@ export const getDocumentsFromPayment = (projectRequirements?: string[]) => {
   // Agregar documentos "otros" que no coincidieron con los predefinidos
   const otherDocuments = projectRequirements.filter(req => 
     !matchedRequirements.has(req) && req.trim()
-  ).sort().map((req, index) => ({ // IMPORTANT: Sort to ensure consistent mapping
+  ).map((req, index) => ({
     id: `other_${index}`,
     name: req,
     description: 'Documento requerido específico del proyecto',

@@ -295,7 +295,6 @@ const PaymentDetail = () => {
     const predefinedNames = allDocuments.map(doc => doc.name);
     const otherDocuments = projectRequirements
       .filter(req => !predefinedNames.includes(req) && req.trim() && req !== 'Avance del período')
-      .sort() // IMPORTANT: Sort to ensure consistent mapping with useGoogleDriveIntegration.ts
       .map((req, index) => ({
         id: `other_${index}`,
         name: req,

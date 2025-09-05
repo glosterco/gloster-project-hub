@@ -141,9 +141,7 @@ export const useGoogleDriveIntegration = () => {
       console.log('📋 Other requirements found:', otherRequirements);
       
       // Add dynamic mappings for other documents - ensure exact matching with component IDs
-      // IMPORTANT: Sort otherRequirements to ensure consistent mapping with PaymentDetail.tsx
-      const sortedOtherRequirements = otherRequirements.sort();
-      sortedOtherRequirements.forEach((req, index) => {
+      otherRequirements.forEach((req, index) => {
         const otherId = `other_${index}`;
         documentNames[otherId] = req;
         console.log(`📋 Mapped ${otherId} -> "${req}"`);

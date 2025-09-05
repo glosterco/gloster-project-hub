@@ -180,22 +180,17 @@ const DriveFilesCard: React.FC<DriveFilesCardProps> = ({
               );
             })}
             
-            {/* Agregar tarjetas individuales para archivos "otros" - usar categorías other_X */}
-            {uploadedFiles && Object.entries(uploadedFiles)
-              .filter(([category, files]) => {
-                // Solo mostrar categorías que empiecen con "other_" y tengan archivos
-                return category.startsWith('other_') && Array.isArray(files) && files.length > 0;
+            {/* Agregar tarjetas individuales para archivos "otros" - solo archivos no coincidentes */}
+            {uploadedFiles?.otros && uploadedFiles.otros
+              .filter(fileName => {
+                // Filtrar archivos "otros" que no coincidan exactamente con ningún documento requerido
+                const fileBaseName = fileName.replace(/\.[^/.]+$/, "").toLowerCase().trim();
+                const matchesRequiredDoc = documents.some(doc => 
+                  doc.name.toLowerCase().trim() === fileBaseName
+                );
+                return !matchesRequiredDoc;
               })
-              .flatMap(([category, files]) => files as string[])
-              .filter((fileName: string) => {
-                // Filtrar archivos que no estén ya siendo mostrados en las tarjetas de documentos requeridos
-                const isAlreadyShown = documents.some(doc => {
-                  const specificFiles = getDocumentFiles(doc);
-                  return specificFiles.includes(fileName);
-                });
-                return !isAlreadyShown;
-              })
-              .map((fileName: string, index: number) => (
+              .map((fileName, index) => (
                 <div key={`otros-${index}`} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
                   <div className="flex flex-col space-y-3">
                     <div className="flex-1">

@@ -3,7 +3,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 // Document catalog constants (shared with frontend)
 const DOCUMENT_CATALOG = [
-  { id: 'examenes', name: 'Exámenes Preocupacionales', keywords: ['examen', 'preocupacional', 'medico', 'salud'] },
+  { id: 'examenes', name: 'Exámenes preocupacionales', keywords: ['examen', 'preocupacional', 'medico', 'salud'] },
   { id: 'finiquito', name: 'Finiquito/Anexo Traslado', keywords: ['finiquito', 'anexo', 'traslado', 'liquidacion'] },
   { id: 'f29', name: 'Certificado F29', keywords: ['f29', 'formulario 29'] },
   { id: 'libro_remuneraciones', name: 'Libro de remuneraciones', keywords: ['libro', 'remuneracion', 'sueldo'] },
@@ -14,9 +14,9 @@ const DOCUMENT_CATALOG = [
   { id: 'f30', name: 'Certificado F30', keywords: ['f30', 'formulario 30'] },
   { id: 'f30_1', name: 'Certificado F30-1', keywords: ['f30-1', 'formulario 30-1'] },
   { id: 'factura', name: 'Factura', keywords: ['factura'] },
-  { id: 'libro_asistencia', name: 'Libro de asistencia', keywords: ['libro', 'asistencia'] },
-  { id: 'liquidaciones_sueldo', name: 'Liquidaciones de sueldo', keywords: ['liquidacion', 'liquidaciones', 'sueldo'] },
-  { id: 'nomina_trabajadores', name: 'Nómina de trabajadores', keywords: ['nomina', 'nómina', 'trabajadores'] },
+  { id: 'libro_asistencia', name: 'Libro de asistencia', keywords: ['libro', 'asistencia', 'libro_asistencia'] },
+  { id: 'liquidaciones_sueldo', name: 'Liquidaciones de sueldo', keywords: ['liquidacion', 'liquidaciones', 'sueldo', 'liquidaciones_sueldo'] },
+  { id: 'nomina_trabajadores', name: 'Nómina de trabajadores', keywords: ['nomina', 'nómina', 'trabajadores', 'nomina_trabajadores'] },
   { id: 'tgr', name: 'TGR', keywords: ['tgr', 'tesoreria'] },
 ];
 

@@ -115,14 +115,15 @@ export const useDocumentUpload = (onUploadComplete?: () => void, projectRequirem
       return;
     }
 
+    // Support multiple files - append to existing files instead of replacing
     setUploadedFiles(prev => ({
       ...prev,
-      [docId]: validFiles.map(file => file.name)
+      [docId]: [...(prev[docId] || []), ...validFiles.map(file => file.name)]
     }));
 
     setFileObjects(prev => ({
       ...prev,
-      [docId]: validFiles
+      [docId]: [...(prev[docId] || []), ...validFiles]
     }));
 
     setDocumentStatus(prev => ({

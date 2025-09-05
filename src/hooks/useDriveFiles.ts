@@ -70,13 +70,13 @@ export const useDriveFiles = (paymentId: string | null, enabled: boolean = true)
       let documentType = 'otros';
       const fileBaseName = fileName.replace(/\.[^/.]+$/, "").toLowerCase();
       
-      if (fileName.includes('Avance del período') || fileName.includes('planilla') || fileBaseName.includes('avance')) {
+      if (fileName.includes('Avance del período') || fileName.includes('planilla') || fileBaseName.includes('avance') || fileBaseName.includes('planilla')) {
         documentType = 'planilla';
-      } else if (fileName.includes('Comprobante de pago de cotizaciones') || (fileName.includes('comprobante') && fileName.includes('pago') && fileName.includes('cotizaciones')) || fileBaseName === 'comprobante de pago de cotizaciones') {
+      } else if (fileName.includes('Comprobante de pago de cotizaciones') || fileName.includes('comprobante_cotizaciones') || (fileName.includes('comprobante') && fileName.includes('cotizaciones'))) {
         documentType = 'comprobante_cotizaciones';
-      } else if (fileName.includes('Certificado de pago de cotizaciones') || (fileName.includes('certificado') && fileName.includes('pago') && fileName.includes('cotizaciones')) || fileBaseName === 'certificado de pago de cotizaciones') {
+      } else if (fileName.includes('Certificado de pago de cotizaciones') || (fileName.includes('certificado') && fileName.includes('cotizaciones') && !fileName.includes('comprobante'))) {
         documentType = 'cotizaciones';
-      } else if ((fileName.includes('Certificado F30') && !fileName.includes('F30-1')) || (fileBaseName.includes('f30') && !fileBaseName.includes('f30-1'))) {
+      } else if ((fileName.includes('Certificado F30') && !fileName.includes('F30-1')) || (fileBaseName.includes('f30') && !fileBaseName.includes('f30-1') && !fileBaseName.includes('f301'))) {
         documentType = 'f30';
       } else if (fileName.includes('F30-1') || fileName.includes('F301') || fileBaseName.includes('f30-1') || fileBaseName.includes('f301')) {
         documentType = 'f30_1';
@@ -84,19 +84,19 @@ export const useDriveFiles = (paymentId: string | null, enabled: boolean = true)
         documentType = 'examenes';
       } else if (fileName.includes('Finiquito/Anexo Traslado') || fileName.includes('finiquito') || fileName.includes('anexo traslado') || fileBaseName.includes('finiquito')) {
         documentType = 'finiquito';
-      } else if (fileName.includes('Factura') || fileName.includes('factura') || fileBaseName.includes('factura')) {
+      } else if (fileName.includes('Factura') || fileBaseName.includes('factura')) {
         documentType = 'factura';
       } else if (fileName.includes('Carátula EEPP') || fileName.includes('eepp') || fileBaseName.includes('eepp') || fileBaseName.includes('caratula')) {
         documentType = 'eepp';
-      } else if (fileName.includes('Certificado F29') || fileBaseName.includes('certificado f29')) {
+      } else if (fileName.includes('Certificado F29') || fileName.includes('f29') || fileBaseName.includes('f29')) {
         documentType = 'f29';
-      } else if (fileName.includes('Libro de remuneraciones') || fileBaseName.includes('libro de remuneraciones')) {
+      } else if (fileName.includes('Libro de remuneraciones') || fileName.includes('libro_remuneraciones') || fileBaseName.includes('libro de remuneraciones') || fileBaseName.includes('remuneraciones')) {
         documentType = 'libro_remuneraciones';
-      } else if (fileName.includes('Libro de asistencia') || fileBaseName.includes('libro de asistencia')) {
+      } else if (fileName.includes('Libro de asistencia') || fileName.includes('libro_asistencia') || fileBaseName.includes('libro de asistencia') || fileBaseName.includes('asistencia')) {
         documentType = 'libro_asistencia';
-      } else if (fileName.includes('Liquidaciones de sueldo') || fileBaseName.includes('liquidaciones de sueldo')) {
+      } else if (fileName.includes('Liquidaciones de sueldo') || fileName.includes('liquidaciones_sueldo') || fileBaseName.includes('liquidaciones') || fileBaseName.includes('liquidaciones de sueldo')) {
         documentType = 'liquidaciones_sueldo';
-      } else if (fileName.includes('Nómina de trabajadores') || fileBaseName.includes('nómina de trabajadores') || fileBaseName.includes('nomina de trabajadores')) {
+      } else if (fileName.includes('Nómina de trabajadores') || fileName.includes('nomina_trabajadores') || fileBaseName.includes('nómina de trabajadores') || fileBaseName.includes('nomina de trabajadores') || fileBaseName.includes('nomina') || fileBaseName.includes('nómina')) {
         documentType = 'nomina_trabajadores';
       } else if (fileName.includes('TGR') || fileBaseName.includes('tgr')) {
         documentType = 'tgr';

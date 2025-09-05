@@ -122,28 +122,63 @@ export const DOCUMENT_CATALOG: DocumentDefinition[] = [
     id: 'libro_asistencia',
     name: 'Libro de asistencia',
     description: 'Registro de asistencia de trabajadores al proyecto',
-    keywords: ['libro de asistencia', 'libro asistencia', 'asistencia', 'asistencia trabajadores'],
+    keywords: [
+      'libro de asistencia', 
+      'libro asistencia', 
+      'asistencia', 
+      'asistencia trabajadores',
+      'libro_asistencia',
+      'libro de asistencia de trabajadores'
+    ],
     required: false
   },
   {
     id: 'liquidaciones_sueldo',
     name: 'Liquidaciones de sueldo',
     description: 'Liquidaciones de sueldo de trabajadores',
-    keywords: ['liquidaciones de sueldo', 'liquidaciones sueldo', 'liquidacion sueldo', 'liquidaciones', 'sueldo'],
+    keywords: [
+      'liquidaciones de sueldo', 
+      'liquidaciones sueldo', 
+      'liquidacion sueldo', 
+      'liquidaciones', 
+      'sueldo',
+      'liquidaciones_sueldo',
+      'liquidacion de sueldo',
+      'liquidación de sueldo',
+      'liquidación sueldo'
+    ],
     required: false
   },
   {
     id: 'nomina_trabajadores',
     name: 'Nómina de trabajadores',
     description: 'Lista oficial de trabajadores del proyecto',
-    keywords: ['nomina de trabajadores', 'nómina de trabajadores', 'nomina trabajadores', 'nómina trabajadores', 'nomina', 'nómina', 'lista trabajadores'],
+    keywords: [
+      'nomina de trabajadores', 
+      'nómina de trabajadores', 
+      'nomina trabajadores', 
+      'nómina trabajadores', 
+      'nomina', 
+      'nómina', 
+      'lista trabajadores',
+      'nomina_trabajadores',
+      'lista de trabajadores'
+    ],
     required: false
   },
   {
     id: 'tgr',
     name: 'TGR',
     description: 'Documento de Tesorería General de la República',
-    keywords: ['tgr', 'tesoreria general', 'tesorería general', 'tesoreria', 'tesorería'],
+    keywords: [
+      'tgr', 
+      'tesoreria general', 
+      'tesorería general', 
+      'tesoreria', 
+      'tesorería',
+      'tesoreria general de la republica',
+      'tesorería general de la república'
+    ],
     required: false
   }
 ];

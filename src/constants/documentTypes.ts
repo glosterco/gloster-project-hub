@@ -1,16 +1,17 @@
-
 export const documentsFromPayment = [
   {
     id: 'eepp',
     name: 'Carátula EEPP',
     description: 'Presentación y resumen del estado de pago',
-    uploaded: true
+    uploaded: true,
+    allowMultiple: true
   },
   {
     id: 'planilla',
     name: 'Avance del período',
     description: 'Planilla detallada del avance de obras del período',
-    uploaded: true
+    uploaded: true,
+    allowMultiple: true
   },
   {
     id: 'comprobante_cotizaciones',
@@ -23,25 +24,29 @@ export const documentsFromPayment = [
     id: 'cotizaciones',
     name: 'Certificado de pago de cotizaciones',
     description: 'Certificado de cumplimiento de obligaciones previsionales',
-    uploaded: true
+    uploaded: true,
+    allowMultiple: true
   },
   {
     id: 'f30',
     name: 'Certificado F30',
     description: 'Certificado de antecedentes laborales y previsionales',
-    uploaded: true
+    uploaded: true,
+    allowMultiple: true
   },
   {
     id: 'f30_1',
     name: 'Certificado F30-1',
     description: 'Certificado de cumplimiento de obligaciones laborales y previsionales',
-    uploaded: true
+    uploaded: true,
+    allowMultiple: true
   },
   {
     id: 'f29',
     name: 'Certificado F29',
     description: 'Certificado de declaración jurada de impuestos mensuales',
     uploaded: true,
+    allowMultiple: true,
     externalLink: 'https://www4.sii.cl/rfiInternet/index.html#rfiSelFormularioPeriodo'
   },
   {
@@ -49,6 +54,7 @@ export const documentsFromPayment = [
     name: 'Libro de remuneraciones',
     description: 'Registro de remuneraciones de trabajadores',
     uploaded: true,
+    allowMultiple: true,
     externalLink: 'https://midt.dirtrab.cl/empleador/lre'
   },
   {
@@ -56,19 +62,22 @@ export const documentsFromPayment = [
     name: 'Finiquito/Anexo Traslado',
     description: 'Documento de finiquito o anexo de traslado de trabajadores (opcional)',
     uploaded: true,
+    allowMultiple: true,
     optional: true
   },
   {
     id: 'factura',
     name: 'Factura',
     description: 'Factura del período correspondiente',
-    uploaded: true
+    uploaded: true,
+    allowMultiple: true
   },
   {
     id: 'libro_asistencia',
     name: 'Libro de asistencia',
     description: 'Registro de asistencia de trabajadores al proyecto',
-    uploaded: true
+    uploaded: true,
+    allowMultiple: true
   },
   {
     id: 'liquidaciones_sueldo',
@@ -81,12 +90,14 @@ export const documentsFromPayment = [
     id: 'nomina_trabajadores',
     name: 'Nómina de trabajadores',
     description: 'Lista oficial de trabajadores del proyecto',
-    uploaded: true
+    uploaded: true,
+    allowMultiple: true
   },
   {
     id: 'tgr',
     name: 'TGR',
     description: 'Documento de Tesorería General de la República',
-    uploaded: true
+    uploaded: true,
+    allowMultiple: true
   }
 ];

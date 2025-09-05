@@ -1,6 +1,51 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
+// Document catalog constants (shared with frontend)
+const DOCUMENT_CATALOG = [
+  { id: 'examenes', name: 'Exámenes Preocupacionales', keywords: ['examen', 'preocupacional', 'medico', 'salud'] },
+  { id: 'finiquito', name: 'Finiquito/Anexo Traslado', keywords: ['finiquito', 'anexo', 'traslado', 'liquidacion'] },
+  { id: 'f29', name: 'Certificado F29', keywords: ['f29', 'formulario 29'] },
+  { id: 'libro_remuneraciones', name: 'Libro de remuneraciones', keywords: ['libro', 'remuneracion', 'sueldo'] },
+  { id: 'eepp', name: 'Carátula EEPP', keywords: ['eepp', 'caratula', 'estado', 'pago'] },
+  { id: 'planilla', name: 'Avance del período', keywords: ['planilla', 'avance', 'periodo'] },
+  { id: 'cotizaciones', name: 'Certificado de pago de cotizaciones', keywords: ['cotizacion', 'pago', 'certificado'] },
+  { id: 'comprobante_cotizaciones', name: 'Comprobante de pago de cotizaciones', keywords: ['comprobante', 'cotizacion', 'pago'] },
+  { id: 'f30', name: 'Certificado F30', keywords: ['f30', 'formulario 30'] },
+  { id: 'f30_1', name: 'Certificado F30-1', keywords: ['f30-1', 'formulario 30-1'] },
+  { id: 'factura', name: 'Factura', keywords: ['factura'] },
+];
+
+// Helper functions
+function normalizeText(text) {
+  return text.toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function slugify(text) {
+  return normalizeText(text).replace(/\s+/g, '-');
+}
+
+function extractNameFromOtherId(otherId) {
+  if (!otherId.startsWith('other_')) {
+    throw new Error('Not an other_ document');
+  }
+  
+  const slug = otherId.replace('other_', '');
+  // Convert slug back to readable name
+  return slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+}
+
+// Create document name map from catalog
+const documentNameMap = {};
+DOCUMENT_CATALOG.forEach(doc => {
+  documentNameMap[doc.id] = doc.name;
+});
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',

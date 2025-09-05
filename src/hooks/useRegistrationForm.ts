@@ -35,7 +35,13 @@ export const useRegistrationForm = () => {
   const [firstPaymentDate, setFirstPaymentDate] = useState<Date | undefined>(undefined);
   const [paymentPeriod, setPaymentPeriod] = useState('');
   const [customPeriod, setCustomPeriod] = useState('');
-  const [requiredDocuments, setRequiredDocuments] = useState<string[]>(['Avance del período']); // Pre-seleccionado
+  const [requiredDocuments, setRequiredDocuments] = useState<string[]>([
+    'Avance del período', // Pre-seleccionado
+    'Comprobante de pago de cotizaciones', // Documento esencial
+    'Libro de asistencia', // Documento esencial  
+    'Liquidaciones de sueldo', // Documento esencial
+    'Nómina de trabajadores' // Documento esencial
+  ]);
   const [otherDocuments, setOtherDocuments] = useState<string[]>(['']);
 
   return {

@@ -27,12 +27,25 @@ export const useRegistrationData = () => {
                             formData.paymentPeriod === 'quincenal' ? '15' : 
                             formData.customPeriod || '30';
 
-    // Ensure "Avance del período" is always included in requirements
-    let finalRequiredDocuments = [...formData.requiredDocuments];
-    if (!finalRequiredDocuments.includes('Avance del período')) {
-      finalRequiredDocuments.push('Avance del período');
-      console.log('🔧 Auto-adding "Avance del período" to project requirements');
-    }
+    // Define essential documents that must always be included
+    const essentialDocuments = [
+      'Avance del período',
+      'Comprobante de pago de cotizaciones',
+      'Libro de asistencia', 
+      'Liquidaciones de sueldo',
+      'Nómina de trabajadores'
+    ];
+
+    // Start with user-selected documents
+    let finalRequiredDocuments = [...(formData.requiredDocuments || [])];
+    
+    // Ensure all essential documents are included
+    essentialDocuments.forEach(doc => {
+      if (!finalRequiredDocuments.includes(doc)) {
+        finalRequiredDocuments.push(doc);
+        console.log(`🔧 Auto-adding essential document "${doc}" to project requirements`);
+      }
+    });
 
     // Add other documents if specified
     if (formData.otherDocuments && Array.isArray(formData.otherDocuments)) {

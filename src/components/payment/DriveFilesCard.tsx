@@ -180,17 +180,23 @@ const DriveFilesCard: React.FC<DriveFilesCardProps> = ({
               );
             })}
             
-            {/* Agregar tarjetas individuales para archivos "otros" - solo archivos no coincidentes */}
-            {uploadedFiles?.otros && uploadedFiles.otros
-              .filter(fileName => {
-                // Filtrar archivos "otros" que no coincidan exactamente con ningún documento requerido
+            {/* Agregar tarjetas individuales para archivos "otros" - archivos de categorías no predefinidas */}
+            {uploadedFiles && Object.entries(uploadedFiles)
+              .filter(([category, files]) => {
+                // Solo mostrar categorías "otros" que no sean de documentos predefinidos
+                const predefinedCategories = ['eepp', 'planilla', 'comprobante_cotizaciones', 'cotizaciones', 'f30', 'f30_1', 'f29', 'libro_remuneraciones', 'examenes', 'finiquito', 'factura', 'mandante_docs'];
+                return !predefinedCategories.includes(category) && Array.isArray(files) && files.length > 0;
+              })
+              .flatMap(([category, files]) => files as string[])
+              .filter((fileName: string) => {
+                // Filtrar archivos que no coincidan exactamente con ningún documento requerido de la lista
                 const fileBaseName = fileName.replace(/\.[^/.]+$/, "").toLowerCase().trim();
                 const matchesRequiredDoc = documents.some(doc => 
                   doc.name.toLowerCase().trim() === fileBaseName
                 );
                 return !matchesRequiredDoc;
               })
-              .map((fileName, index) => (
+              .map((fileName: string, index: number) => (
                 <div key={`otros-${index}`} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
                   <div className="flex flex-col space-y-3">
                     <div className="flex-1">

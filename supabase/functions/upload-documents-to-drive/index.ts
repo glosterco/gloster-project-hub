@@ -163,19 +163,21 @@ serve(async (req) => {
       
       // For "other" documents, ensure we use the exact document name from requirements
       if (docType.startsWith('other_')) {
-        if (!docData.documentName || docData.documentName === docType) {
+        if (docData.documentName && docData.documentName !== docType && docData.documentName.trim() !== '') {
+          subfolderName = docData.documentName;
+          console.log(`📋 Using documentName for ${docType}: "${subfolderName}"`);
+        } else {
           console.error(`❌ Missing or invalid documentName for ${docType}:`, docData.documentName);
           // Try to extract from the files if available
           if (docData.files && docData.files.length > 0) {
             // Use the filename without extension as fallback
             subfolderName = docData.files[0].name.replace(/\.[^/.]+$/, "");
+            console.log(`📋 Using filename fallback for ${docType}: "${subfolderName}"`);
           } else {
             subfolderName = docType; // Last resort fallback
+            console.log(`📋 Using docType fallback for ${docType}: "${subfolderName}"`);
           }
-        } else {
-          subfolderName = docData.documentName;
         }
-        console.log(`📋 Using subfolder name for ${docType}: "${subfolderName}"`);
       }
       
       // Ensure subfolder name is not empty or invalid

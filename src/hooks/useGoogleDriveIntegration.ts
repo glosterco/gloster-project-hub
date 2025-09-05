@@ -142,12 +142,6 @@ export const useGoogleDriveIntegration = () => {
       
       // Process each document type
       for (const [docType, files] of Object.entries(uploadedFiles)) {
-        // TEMPORARILY DISABLE: Skip all "other_" documents
-        if (docType.startsWith('other_')) {
-          console.log(`🚫 TEMPORARILY DISABLED: Skipping other document: ${docType}`);
-          continue;
-        }
-        
         if (documentStatus[docType] && files && Array.isArray(files) && files.length > 0) {
           console.log(`📋 Processing ${docType} with ${files.length} files`);
           
@@ -196,25 +190,20 @@ export const useGoogleDriveIntegration = () => {
           }
 
           if (fileData.length > 0) {
-            const finalDocumentName = documentNames[docType] || docType;
-            console.log(`📋 Creating document entry for ${docType}:`, {
-              docType,
-              mappedName: documentNames[docType],
-              finalDocumentName,
-              fileCount: fileData.length,
-              isOtherDocument: docType.startsWith('other_'),
-              documentNameFromCatalog: documentNames[docType] ? 'FOUND' : 'NOT_FOUND'
+            // NUEVA LÓGICA: Usar directamente el nombre del documento como docType
+            // Buscar el nombre real del documento en el catálogo
+            const catalogDocument = documentNames[docType];
+            const finalDocumentName = catalogDocument || docType;
+            
+            console.log(`📋 SIMPLIFIED: Using document name directly:`, {
+              originalDocType: docType,
+              catalogName: catalogDocument,
+              finalDocumentName: finalDocumentName,
+              willSendAsDocType: finalDocumentName // Enviar el nombre directamente
             });
             
-            // CRITICAL DEBUG: Log exactly what will be sent to backend
-            console.log(`🚨 CRITICAL: Will send to backend:`, {
-              docType: docType,
-              documentName: finalDocumentName,
-              'docType===comprobante_cotizaciones': docType === 'comprobante_cotizaciones',
-              'finalDocumentName===Comprobante de pago de cotizaciones': finalDocumentName === 'Comprobante de pago de cotizaciones'
-            });
-            
-            documents[docType] = {
+            // Usar el nombre del documento como key en lugar del ID
+            documents[finalDocumentName] = {
               files: fileData,
               documentName: finalDocumentName
             };

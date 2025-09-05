@@ -34,21 +34,22 @@ function slugify(text) {
   return normalizeText(text).replace(/\s+/g, '-');
 }
 
+// Helper function - no longer needed for other_ documents
 function extractNameFromOtherId(otherId) {
-  if (!otherId.startsWith('other_')) {
-    throw new Error('Not an other_ document');
-  }
-  
-  const slug = otherId.replace('other_', '');
-  // Convert slug back to readable name
-  return slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  // Legacy function - should not be used anymore
+  console.warn('⚠️ extractNameFromOtherId called - this should not happen with new logic');
+  return otherId;
 }
 
-// Create document name map from catalog
+// Create document name map from catalog (for reverse lookup if needed)
 const documentNameMap = {};
 DOCUMENT_CATALOG.forEach(doc => {
   documentNameMap[doc.id] = doc.name;
+  // Also add reverse mapping (name -> id) for better matching
+  documentNameMap[doc.name] = doc.name;
 });
+
+console.log('📋 Document name mappings initialized:', Object.keys(documentNameMap));
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -181,78 +182,22 @@ serve(async (req) => {
     console.log(`🔄 Processing ${Object.keys(documents).length} document types sequentially to avoid memory overflow`);
     
     for (const [docType, docData] of Object.entries(documents)) {
-      console.log(`📤 Processing ${docType} with ${docData.files.length} files (Memory optimization: sequential processing)`);
-      console.log(`📋 Document data for ${docType}:`, { 
+      console.log(`📤 Processing document: "${docType}" with ${docData.files.length} files`);
+      console.log(`📋 Document data:`, { 
         documentName: docData.documentName, 
-        files: docData.files.map(f => f.name),
-        isOther: docType.startsWith('other_')
+        files: docData.files.map(f => f.name)
       });
       
-      // CRITICAL DEBUG: Show exact docType received
-      console.log(`🚨 CRITICAL BACKEND DEBUG:`, {
-        'received_docType': docType,
-        'received_documentName': docData.documentName,
-        'docType===comprobante_cotizaciones': docType === 'comprobante_cotizaciones',
-        'docType_startsWith_other': docType.startsWith('other_'),
-        'documentNameMap_has_docType': documentNameMap.hasOwnProperty(docType)
-      });
+      // SIMPLIFIED LOGIC: Use the document name directly as subfolder name
+      // No more "other_" logic - just use the document name as provided
+      const subfolderName = docData.documentName || docType;
       
-      // Create normalized version of documentNameMap for better matching
-      const normalizedDocType = docType.toLowerCase().trim();
-      const normalizedMap = Object.fromEntries(
-        Object.entries(documentNameMap).map(([k, v]) => [k.toLowerCase().trim(), v])
-      );
+      console.log(`📋 Using document name directly: "${subfolderName}"`);
       
-      console.log(`🔍 Checking mapping for "${docType}" (normalized: "${normalizedDocType}")`);
-      console.log(`🗺️ Available normalized keys:`, Object.keys(normalizedMap));
-      console.log(`🎯 Found mapping:`, normalizedMap[normalizedDocType] || 'NOT FOUND');
-      
-      // CRITICAL: Always prioritize the documentName from frontend first
-      let subfolderName;
-      let namingReason;
-      
-      // Priority 1: Use predefined mapping for known document types (with normalization)
-      if (normalizedMap[normalizedDocType]) {
-        subfolderName = normalizedMap[normalizedDocType];
-        namingReason = 'predefined-mapping';
-        console.log(`📋 Using predefined mapping for ${docType}: "${subfolderName}"`);
-      }
-      // Priority 2: Use documentName from frontend if available and different from docType
-      else if (docData.documentName && docData.documentName.trim() !== '' && docData.documentName !== docType) {
-        subfolderName = docData.documentName;
-        namingReason = 'frontend-documentName';
-        console.log(`📋 Using frontend documentName for ${docType}: "${subfolderName}"`);
-      }
-      // Priority 3: For other_ documents, use filename fallback
-      else if (docType.startsWith('other_')) {
-        if (docData.files && docData.files.length > 0) {
-          subfolderName = docData.files[0].name.replace(/\.[^/.]+$/, '');
-          namingReason = 'filename-fallback';
-          console.log(`📋 Using filename fallback for ${docType}: "${subfolderName}"`);
-        } else {
-          subfolderName = extractNameFromOtherId(docType);
-          namingReason = 'extracted-other-name';
-          console.log(`📋 Using extracted name for ${docType}: "${subfolderName}"`);
-        }
-      }
-      // Priority 4: Final fallback
-      else {
-        subfolderName = docType;
-        namingReason = 'doctype-fallback';
-        console.warn(`⚠️ Using docType fallback for ${docType}: "${subfolderName}"`);
-      }
-
-      console.log(`📋 Final naming for ${docType}: "${subfolderName}" (reason: ${namingReason})`);
-      
-      if (namingReason === 'doctype-fallback') {
-        console.warn(`⚠️ Document ${docType} using fallback naming strategy: ${namingReason}`);
-      }
-      
-      // Final validation: ensure subfolder name is not empty or invalid
+      // Final validation: ensure subfolder name is not empty
       if (!subfolderName || subfolderName.trim() === '') {
-        console.error(`❌ Empty subfolder name for ${docType}, using ultimate fallback`);
-        subfolderName = normalizedMap[normalizedDocType] || extractNameFromOtherId(docType) || docType;
-        namingReason = 'ultimate-fallback';
+        console.error(`❌ Empty document name for ${docType}, skipping`);
+        continue;
       }
       
       // Handle multiple files (create subfolder)

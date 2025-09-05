@@ -180,21 +180,20 @@ const DriveFilesCard: React.FC<DriveFilesCardProps> = ({
               );
             })}
             
-            {/* Agregar tarjetas individuales para archivos "otros" - archivos de categorías no predefinidas */}
+            {/* Agregar tarjetas individuales para archivos "otros" - usar categorías other_X */}
             {uploadedFiles && Object.entries(uploadedFiles)
               .filter(([category, files]) => {
-                // Solo mostrar categorías "otros" que no sean de documentos predefinidos
-                const predefinedCategories = ['eepp', 'planilla', 'comprobante_cotizaciones', 'cotizaciones', 'f30', 'f30_1', 'f29', 'libro_remuneraciones', 'examenes', 'finiquito', 'factura', 'mandante_docs'];
-                return !predefinedCategories.includes(category) && Array.isArray(files) && files.length > 0;
+                // Solo mostrar categorías que empiecen con "other_" y tengan archivos
+                return category.startsWith('other_') && Array.isArray(files) && files.length > 0;
               })
               .flatMap(([category, files]) => files as string[])
               .filter((fileName: string) => {
-                // Filtrar archivos que no coincidan exactamente con ningún documento requerido de la lista
-                const fileBaseName = fileName.replace(/\.[^/.]+$/, "").toLowerCase().trim();
-                const matchesRequiredDoc = documents.some(doc => 
-                  doc.name.toLowerCase().trim() === fileBaseName
-                );
-                return !matchesRequiredDoc;
+                // Filtrar archivos que no estén ya siendo mostrados en las tarjetas de documentos requeridos
+                const isAlreadyShown = documents.some(doc => {
+                  const specificFiles = getDocumentFiles(doc);
+                  return specificFiles.includes(fileName);
+                });
+                return !isAlreadyShown;
               })
               .map((fileName: string, index: number) => (
                 <div key={`otros-${index}`} className="border rounded-lg p-4 hover:shadow-md transition-shadow">

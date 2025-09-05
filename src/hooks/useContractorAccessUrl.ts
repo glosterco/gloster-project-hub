@@ -8,7 +8,11 @@ export const useContractorAccessUrl = () => {
 
   // Use the current domain for email links
   const getBaseUrl = () => {
-    // Use the current domain to ensure proper redirection
+    // For production URLs that will be sent via email, use the production domain
+    // Check if we're in development or production
+    if (window.location.hostname.includes('lovable') || window.location.hostname.includes('localhost')) {
+      return 'https://gloster.cl';
+    }
     return window.location.origin;
   };
 

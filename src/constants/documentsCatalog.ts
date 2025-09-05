@@ -228,7 +228,9 @@ export const matchRequirementToDocument = (requirement: string): DocumentDefinit
 };
 
 export const getDocumentsFromRequirements = (projectRequirements?: string[]) => {
-  console.log('🔍 Project requirements:', projectRequirements);
+  console.log('🔍 DEBUG - Project requirements received:', projectRequirements);
+  console.log('🔍 DEBUG - Type of projectRequirements:', typeof projectRequirements);
+  console.log('🔍 DEBUG - Is array:', Array.isArray(projectRequirements));
 
   // Always include documents marked as required (core documents)
   const requiredDocuments = DOCUMENT_CATALOG.filter(doc => doc.required);
@@ -240,9 +242,21 @@ export const getDocumentsFromRequirements = (projectRequirements?: string[]) => 
   const matchedRequirements = new Set<string>();
   
   if (projectRequirements && projectRequirements.length > 0) {
-    projectRequirements.forEach(requirement => {
+    console.log('🔍 DEBUG - Processing', projectRequirements.length, 'requirements');
+    
+    projectRequirements.forEach((requirement, index) => {
+      console.log(`🔍 DEBUG - Processing requirement ${index + 1}:`, {
+        raw: requirement,
+        type: typeof requirement,
+        trimmed: requirement?.trim(),
+        length: requirement?.length
+      });
+      
       // Skip empty or whitespace-only requirements
-      if (!requirement.trim()) return;
+      if (!requirement.trim()) {
+        console.log(`⚠️ DEBUG - Skipping empty requirement at index ${index}`);
+        return;
+      }
       
       const matchedDoc = matchRequirementToDocument(requirement);
       if (matchedDoc) {
@@ -251,6 +265,8 @@ export const getDocumentsFromRequirements = (projectRequirements?: string[]) => 
         console.log(`✅ Document "${matchedDoc.name}" (id: ${matchedDoc.id}) matched for requirement "${requirement}"`);
       } else {
         console.warn(`⚠️ No document found for requirement "${requirement}"`);
+        console.log('🔍 DEBUG - Available document names:', DOCUMENT_CATALOG.map(d => d.name));
+        console.log('🔍 DEBUG - Available keywords for debugging:', DOCUMENT_CATALOG.find(d => d.name.toLowerCase().includes('libro'))?.keywords);
       }
     });
 

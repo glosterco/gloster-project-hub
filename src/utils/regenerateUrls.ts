@@ -2,7 +2,8 @@ import { supabase } from '@/integrations/supabase/client';
 
 export const regenerateAllAccessUrls = async () => {
   try {
-    const baseUrl = window.location.origin;
+    // Always use production domain for consistency
+    const baseUrl = 'https://gloster.cl';
     
     console.log('🔄 Starting URL regeneration process for all existing data...');
     

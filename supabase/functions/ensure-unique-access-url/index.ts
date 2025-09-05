@@ -9,7 +9,7 @@ const corsHeaders = {
 interface EnsureUrlRequest {
   paymentId: string | number;
   token: string; // token from contractor email-access URL
-  baseUrl: string; // origin to build URL
+  // NO LONGER NEEDED: baseUrl is hardcoded to correct domain
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -18,9 +18,9 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { paymentId, token, baseUrl }: EnsureUrlRequest = await req.json();
+    const { paymentId, token }: EnsureUrlRequest = await req.json();
 
-    if (!paymentId || !token || !baseUrl) {
+    if (!paymentId || !token) {
       return new Response(JSON.stringify({ error: 'Faltan parámetros' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
@@ -75,9 +75,8 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    // Generate new URLMandante with new token - ALWAYS use correct domain
+    // Generate new URLMandante with new token - ALWAYS use correct hardcoded domain
     const newToken = crypto.randomUUID();
-    const correctBaseUrl = 'https://gloster-project-hub.lovable.app';
     const accessUrl = `${correctBaseUrl}/email-access?paymentId=${paymentId}&token=${newToken}`;
 
     const { error: updateError } = await supabaseAdmin

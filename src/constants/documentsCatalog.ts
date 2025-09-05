@@ -248,26 +248,28 @@ export const getDocumentsFromRequirements = (projectRequirements?: string[]) => 
       }
     });
 
-    // Create "other" documents for unmatched requirements
-    const otherDocuments = projectRequirements
-      .filter(req => !matchedRequirements.has(req) && req.trim())
-      .sort() // Stable sorting for consistent IDs
-      .map(req => ({
-        id: buildOtherIdFromName(req),
-        name: req,
-        description: 'Documento requerido específico del proyecto',
-        keywords: [req.toLowerCase()],
-        required: false,
-        uploaded: true,
-        isOtherDocument: true
-      }));
+    // TEMPORARILY DISABLED: Create "other" documents for unmatched requirements
+    // const otherDocuments = projectRequirements
+    //   .filter(req => !matchedRequirements.has(req) && req.trim())
+    //   .sort() // Stable sorting for consistent IDs
+    //   .map(req => ({
+    //     id: buildOtherIdFromName(req),
+    //     name: req,
+    //     description: 'Documento requerido específico del proyecto',
+    //     keywords: [req.toLowerCase()],
+    //     required: false,
+    //     uploaded: true,
+    //     isOtherDocument: true
+    //   }));
 
-    console.log('🔍 Other documents found:', otherDocuments.map(d => d.name));
+    // TEMPORARILY DISABLED: Other documents
+    const otherDocuments = []; // Empty array - no other documents
+    console.log('🚫 TEMPORARILY DISABLED: Other documents creation');
 
     // Combine all documents and mark as uploaded for the view
     const allDocuments = [
-      ...Array.from(matchedDocuments).map(doc => ({ ...doc, uploaded: true })),
-      ...otherDocuments
+      ...Array.from(matchedDocuments).map(doc => ({ ...doc, uploaded: true }))
+      // ...otherDocuments // DISABLED
     ];
 
     console.log('🔍 Final document list:', allDocuments.map(d => ({ id: d.id, name: d.name })));

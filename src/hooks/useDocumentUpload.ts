@@ -56,64 +56,6 @@ export const useDocumentUpload = (onUploadComplete?: () => void, projectRequirem
 
   const validateFiles = (files: FileList | File[]) => {
     const allowedTypes = [
-import { useState, useRef, useEffect } from 'react';
-import { useToast } from '@/hooks/use-toast';
-import { getDocumentsFromRequirements } from '@/constants/documentsCatalog';
-
-export interface DocumentStatus {
-  [key: string]: boolean;
-}
-
-export interface UploadedFiles {
-  [key: string]: string[];
-}
-
-export interface FileObjects {
-  [key: string]: File[];
-}
-
-export interface DragStates {
-  [key: string]: boolean;
-}
-
-export const useDocumentUpload = (onUploadComplete?: () => void, projectRequirements?: string[]) => {
-  const { toast } = useToast();
-  const fileInputRefs = useRef<{[key: string]: HTMLInputElement | null}>({});
-
-  const [documentStatus, setDocumentStatus] = useState<DocumentStatus>({});
-  const [uploadedFiles, setUploadedFiles] = useState<UploadedFiles>({});
-  const [fileObjects, setFileObjects] = useState<FileObjects>({});
-  const [dragStates, setDragStates] = useState<DragStates>({});
-
-  // Initialize states based on project requirements
-  useEffect(() => {
-    if (!projectRequirements || projectRequirements.length === 0) return;
-
-    console.log('🔄 Initializing document states for requirements:', projectRequirements);
-    
-    const documents = getDocumentsFromRequirements(projectRequirements);
-    const initialDocumentStatus: DocumentStatus = {};
-    const initialUploadedFiles: UploadedFiles = {};
-    const initialFileObjects: FileObjects = {};
-    const initialDragStates: DragStates = {};
-
-    documents.forEach(doc => {
-      initialDocumentStatus[doc.id] = false;
-      initialUploadedFiles[doc.id] = [];
-      initialFileObjects[doc.id] = [];
-      initialDragStates[doc.id] = false;
-    });
-
-    console.log('📋 Initialized document IDs:', Object.keys(initialDocumentStatus));
-
-    setDocumentStatus(initialDocumentStatus);
-    setUploadedFiles(initialUploadedFiles);
-    setFileObjects(initialFileObjects);
-    setDragStates(initialDragStates);
-  }, [projectRequirements]);
-
-  const validateFiles = (files: FileList | File[]) => {
-    const allowedTypes = [
       'application/pdf', // PDF
       'text/csv', // CSV
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // XLSX

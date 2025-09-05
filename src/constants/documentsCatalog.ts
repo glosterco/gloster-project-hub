@@ -227,59 +227,57 @@ export const matchRequirementToDocument = (requirement: string): DocumentDefinit
 export const getDocumentsFromRequirements = (projectRequirements?: string[]) => {
   console.log('🔍 Project requirements:', projectRequirements);
 
-  // Siempre incluir documentos requeridos del catálogo
+  // Always include documents marked as required (core documents)
   const requiredDocuments = DOCUMENT_CATALOG.filter(doc => doc.required);
   const matchedDocuments = new Set<DocumentDefinition>(requiredDocuments);
-
+  
   console.log('📋 Always required documents:', requiredDocuments.map(d => d.name));
 
+  // If we have project requirements, match them to additional documents
   const matchedRequirements = new Set<string>();
-
+  
   if (projectRequirements && projectRequirements.length > 0) {
     projectRequirements.forEach(requirement => {
-      const normalizedRequirement = requirement.toLowerCase().trim();
-
-      // Buscar coincidencia con alguna keyword del catálogo
-      const matchedDoc = DOCUMENT_CATALOG.find(doc =>
-        doc.keywords.some(keyword => keyword.toLowerCase().trim() === normalizedRequirement)
-      );
-
+      const matchedDoc = matchRequirementToDocument(requirement);
       if (matchedDoc) {
         matchedDocuments.add(matchedDoc);
         matchedRequirements.add(requirement);
-        console.log(`✅ Requirement "${requirement}" matched to doc "${matchedDoc.name}" (id: ${matchedDoc.id})`);
+        console.log(`✅ Document "${matchedDoc.name}" (id: ${matchedDoc.id}) matched for requirement "${requirement}"`);
       } else {
-        console.warn(`⚠️ No document found for requirement "${requirement}", will create as 'other'`);
+        console.warn(`⚠️ No document found for requirement "${requirement}"`);
       }
     });
 
-    // Crear documentos "otros" para requirements sin coincidencia
-    const otherDocuments = projectRequirements
-      .filter(req => !matchedRequirements.has(req) && req.trim())
-      .sort()
-      .map(req => ({
-        id: buildOtherIdFromName(req),
-        name: req,
-        description: 'Documento requerido específico del proyecto',
-        keywords: [req.toLowerCase()],
-        required: false,
-        uploaded: true,
-        isOtherDocument: true
-      }));
+    // TEMPORARILY DISABLED: Create "other" documents for unmatched requirements
+    // const otherDocuments = projectRequirements
+    //   .filter(req => !matchedRequirements.has(req) && req.trim())
+    //   .sort() // Stable sorting for consistent IDs
+    //   .map(req => ({
+    //     id: buildOtherIdFromName(req),
+    //     name: req,
+    //     description: 'Documento requerido específico del proyecto',
+    //     keywords: [req.toLowerCase()],
+    //     required: false,
+    //     uploaded: true,
+    //     isOtherDocument: true
+    //   }));
 
-    console.log('🔍 Other documents created:', otherDocuments.map(d => d.id));
+    // TEMPORARILY DISABLED: Other documents
+    const otherDocuments = []; // Empty array - no other documents
+    console.log('🚫 TEMPORARILY DISABLED: Other documents creation');
 
+    // Combine all documents and mark as uploaded for the view
     const allDocuments = [
-      ...Array.from(matchedDocuments).map(doc => ({ ...doc, uploaded: true })),
-      ...otherDocuments
+      ...Array.from(matchedDocuments).map(doc => ({ ...doc, uploaded: true }))
+      // ...otherDocuments // DISABLED
     ];
 
-    console.log('🔍 Final allDocuments list:', allDocuments.map(d => ({ id: d.id, name: d.name })));
+    console.log('🔍 Final document list:', allDocuments.map(d => ({ id: d.id, name: d.name })));
     return allDocuments;
   }
 
-  // Si no hay projectRequirements, solo retornar documentos requeridos
+  // If no project requirements, return only required documents
   const allDocuments = Array.from(matchedDocuments).map(doc => ({ ...doc, uploaded: true }));
-  console.log('🔍 Final allDocuments list (required only):', allDocuments.map(d => ({ id: d.id, name: d.name })));
+  console.log('🔍 Final document list (required only):', allDocuments.map(d => ({ id: d.id, name: d.name })));
   return allDocuments;
 };

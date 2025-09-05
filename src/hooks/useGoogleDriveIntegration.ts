@@ -52,59 +52,6 @@ export const useGoogleDriveIntegration = () => {
       setLoading(false);
     }
   };
-import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-
-export const useGoogleDriveIntegration = () => {
-  const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
-
-  const createProjectFolder = async (projectId: number, projectName: string) => {
-    setLoading(true);
-    try {
-      console.log('Creating folder for project:', { projectId, projectName });
-
-      const { data, error } = await supabase.functions.invoke('google-drive-integration', {
-        body: {
-          type: 'project',
-          projectId,
-          projectName,
-        },
-      });
-
-      if (error) {
-        console.error('Error calling function:', error);
-        throw error;
-      }
-
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to create folder');
-      }
-
-      console.log('✅ Project folder created:', data);
-      return { success: true, folderId: data.folderId, folderName: data.folderName, fullUrl: data.fullUrl };
-    } catch (error) {
-      console.error('Error creating project folder:', error);
-      
-      let errorMessage = "Error al crear carpeta de respaldo";
-      let errorDetails = "No se pudo crear la carpeta del proyecto";
-      
-      if (error.message?.includes('Google Drive authentication failed')) {
-        errorMessage = "Error de autenticación";
-        errorDetails = "No se pudo autenticar. Contacte al administrador.";
-      }
-      
-      toast({
-        title: errorMessage,
-        description: errorDetails,
-        variant: "destructive",
-      });
-      return { success: false, error: error.message };
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const createPaymentStateFolder = async (
     paymentStateName: string,
@@ -243,15 +190,20 @@ export const useGoogleDriveIntegration = () => {
           }
 
           if (fileData.length > 0) {
-            const finalDocumentName = documentNames[docType] || docType;
-            console.log(`📋 Creating document entry for ${docType}:`, {
-              docType,
-              mappedName: documentNames[docType],
-              finalDocumentName,
-              fileCount: fileData.length
+            // NUEVA LÓGICA: Usar directamente el nombre del documento como docType
+            // Buscar el nombre real del documento en el catálogo
+            const catalogDocument = documentNames[docType];
+            const finalDocumentName = catalogDocument || docType;
+            
+            console.log(`📋 SIMPLIFIED: Using document name directly:`, {
+              originalDocType: docType,
+              catalogName: catalogDocument,
+              finalDocumentName: finalDocumentName,
+              willSendAsDocType: finalDocumentName // Enviar el nombre directamente
             });
             
-            documents[docType] = {
+            // Usar el nombre del documento como key en lugar del ID
+            documents[finalDocumentName] = {
               files: fileData,
               documentName: finalDocumentName
             };

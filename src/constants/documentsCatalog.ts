@@ -185,7 +185,12 @@ export const DOCUMENT_CATALOG: DocumentDefinition[] = [
 
 // Utility functions
 export const normalizeText = (text: string): string => 
-  text.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, ' ').trim();
+  text.toLowerCase()
+    .normalize('NFD') // Decompose accented characters
+    .replace(/[\u0300-\u036f]/g, '') // Remove accent marks
+    .replace(/[^\w\s-]/g, '') // Remove special characters except word chars, spaces, hyphens
+    .replace(/\s+/g, ' ') // Normalize multiple spaces to single space
+    .trim();
 
 export const slugify = (text: string): string => 
   normalizeText(text).replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
@@ -200,13 +205,18 @@ export const extractNameFromOtherId = (otherId: string): string => {
 };
 
 export const matchRequirementToDocument = (requirement: string): DocumentDefinition | null => {
-  // Normalize requirement: lowercase and trim spaces
-  const normalizedRequirement = requirement.toLowerCase().trim();
+  console.log(`🔍 MATCHING - Requirement: "${requirement}"`);
+  
+  // Normalize requirement: remove accents, lowercase, trim spaces
+  const normalizedRequirement = normalizeText(requirement);
+  console.log(`🔍 MATCHING - Normalized requirement: "${normalizedRequirement}"`);
   
   // First priority: exact match with document name (normalized)
-  const exactNameMatch = DOCUMENT_CATALOG.find(doc => 
-    doc.name.toLowerCase().trim() === normalizedRequirement
-  );
+  const exactNameMatch = DOCUMENT_CATALOG.find(doc => {
+    const normalizedDocName = normalizeText(doc.name);
+    console.log(`🔍 COMPARING - "${normalizedRequirement}" vs doc.name "${normalizedDocName}"`);
+    return normalizedDocName === normalizedRequirement;
+  });
   
   if (exactNameMatch) {
     console.log(`✅ Exact name match: "${requirement}" → "${exactNameMatch.name}" (id: ${exactNameMatch.id})`);
@@ -214,16 +224,64 @@ export const matchRequirementToDocument = (requirement: string): DocumentDefinit
   }
   
   // Second priority: exact match with any keyword (normalized)
-  const exactKeywordMatch = DOCUMENT_CATALOG.find(doc => 
-    doc.keywords.some(keyword => keyword.toLowerCase().trim() === normalizedRequirement)
-  );
+  const exactKeywordMatch = DOCUMENT_CATALOG.find(doc => {
+    const matchedKeyword = doc.keywords.find(keyword => {
+      const normalizedKeyword = normalizeText(keyword);
+      console.log(`🔍 COMPARING - "${normalizedRequirement}" vs keyword "${normalizedKeyword}"`);
+      return normalizedKeyword === normalizedRequirement;
+    });
+    if (matchedKeyword) {
+      console.log(`🎯 Keyword match found: "${matchedKeyword}" in doc "${doc.name}"`);
+    }
+    return !!matchedKeyword;
+  });
   
   if (exactKeywordMatch) {
     console.log(`✅ Exact keyword match: "${requirement}" → "${exactKeywordMatch.name}" (id: ${exactKeywordMatch.id})`);
     return exactKeywordMatch;
   }
   
+  // Third priority: partial matches (contains)
+  const partialNameMatch = DOCUMENT_CATALOG.find(doc => {
+    const normalizedDocName = normalizeText(doc.name);
+    const isPartialMatch = normalizedDocName.includes(normalizedRequirement) || normalizedRequirement.includes(normalizedDocName);
+    if (isPartialMatch) {
+      console.log(`🔍 PARTIAL MATCH - "${normalizedRequirement}" partially matches doc.name "${normalizedDocName}"`);
+    }
+    return isPartialMatch;
+  });
+  
+  if (partialNameMatch) {
+    console.log(`⚠️ Partial name match: "${requirement}" → "${partialNameMatch.name}" (id: ${partialNameMatch.id})`);
+    return partialNameMatch;
+  }
+  
+  // Fourth priority: partial keyword matches
+  const partialKeywordMatch = DOCUMENT_CATALOG.find(doc => {
+    const matchedKeyword = doc.keywords.find(keyword => {
+      const normalizedKeyword = normalizeText(keyword);
+      const isPartialMatch = normalizedKeyword.includes(normalizedRequirement) || normalizedRequirement.includes(normalizedKeyword);
+      if (isPartialMatch) {
+        console.log(`🔍 PARTIAL KEYWORD MATCH - "${normalizedRequirement}" partially matches keyword "${normalizedKeyword}"`);
+      }
+      return isPartialMatch;
+    });
+    return !!matchedKeyword;
+  });
+  
+  if (partialKeywordMatch) {
+    console.log(`⚠️ Partial keyword match: "${requirement}" → "${partialKeywordMatch.name}" (id: ${partialKeywordMatch.id})`);
+    return partialKeywordMatch;
+  }
+  
   console.log(`❌ No match found for requirement: "${requirement}"`);
+  console.log(`🔍 DEBUG - Available documents:`, DOCUMENT_CATALOG.map(d => ({
+    name: d.name,
+    normalizedName: normalizeText(d.name),
+    id: d.id,
+    keywords: d.keywords.map(k => normalizeText(k))
+  })));
+  
   return null;
 };
 
@@ -259,6 +317,10 @@ export const getDocumentsFromRequirements = (projectRequirements?: string[]) => 
       }
       
       const matchedDoc = matchRequirementToDocument(requirement);
+      
+      // Log específico solicitado por el usuario
+      console.log('Requirement:', requirement, 'Matched document:', matchedDoc?.name || 'NONE');
+      
       if (matchedDoc) {
         matchedDocuments.add(matchedDoc);
         matchedRequirements.add(requirement);

@@ -139,8 +139,44 @@ serve(async (req) => {
         isOther: docType.startsWith('other_')
       });
       
-      // Determine proper folder name based on document type
+      // Enhanced naming logic with better fallbacks and logging
       let subfolderName = docData.documentName;
+      let namingReason = 'provided';
+      
+      // Priority 1: Use provided documentName if available and valid
+      if (docData.documentName && docData.documentName !== docType && docData.documentName.trim() !== '') {
+        subfolderName = docData.documentName;
+        namingReason = 'provided-documentName';
+      }
+      // Priority 2: For other_ documents, try to extract from ID
+      else if (docType.startsWith('other_')) {
+        try {
+          subfolderName = extractNameFromOtherId(docType);
+          namingReason = 'extracted-from-id';
+        } catch (error) {
+          // Priority 3: Use filename without extension
+          if (docData.files && docData.files.length > 0) {
+            subfolderName = docData.files[0].name.replace(/\.[^/.]+$/, '');
+            namingReason = 'filename-fallback';
+            console.warn(`⚠️ Could not extract name from ${docType}, using filename: "${subfolderName}"`);
+          } else {
+            subfolderName = docType;
+            namingReason = 'doctype-fallback';
+            console.error(`❌ No files available for ${docType}, using docType as name`);
+          }
+        }
+      }
+      // Priority 4: For predefined documents, use mapping
+      else {
+        subfolderName = documentNameMap[docType] || docData.documentName || docType;
+        namingReason = documentNameMap[docType] ? 'predefined-mapping' : 'fallback';
+      }
+
+      console.log(`📋 Final naming for ${docType}: "${subfolderName}" (reason: ${namingReason})`);
+      
+      if (namingReason === 'doctype-fallback' || namingReason === 'filename-fallback') {
+        console.warn(`⚠️ Document ${docType} using fallback naming strategy: ${namingReason}`);
+      }
       
       // Handle specific known document types with exact names
       if (docType === 'examenes') {

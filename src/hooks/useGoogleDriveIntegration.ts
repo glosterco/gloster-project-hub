@@ -116,37 +116,18 @@ export const useGoogleDriveIntegration = () => {
     try {
       console.log('🚀 Starting document upload:', { paymentId });
 
-      // Document name mapping for predefined documents
-      const documentNames = {
-        eepp: 'Carátula EEPP',
-        planilla: 'Avance del período',
-        comprobante_cotizaciones: 'Comprobante de pago de cotizaciones',
-        cotizaciones: 'Certificado de pago de cotizaciones',
-        f30: 'Certificado F30',
-        f30_1: 'Certificado F30-1',
-        f29: 'Certificado F29',
-        libro_remuneraciones: 'Libro de remuneraciones',
-        examenes: 'Exámenes Preocupacionales',
-        finiquito: 'Finiquito/Anexo Traslado',
-        factura: 'Factura'
-      };
+      // Import the unified document catalog
+      const { getDocumentsFromRequirements } = await import('@/constants/documentsCatalog');
 
-      // Create dynamic mapping for "other" documents based on project requirements
-      const predefinedNames = Object.values(documentNames);
-      const otherRequirements = projectRequirements.filter(req => 
-        !predefinedNames.includes(req) && req.trim() && req !== 'Avance del período'
-      );
+      // Get all documents (predefined + others) using the same logic as the UI
+      const allDocuments = getDocumentsFromRequirements(projectRequirements);
       
-      console.log('📋 Predefined document names:', predefinedNames);
-      console.log('📋 Other requirements found:', otherRequirements);
+      // Create mappings for document names - this ensures 100% consistency with UI
+      const documentNames: {[key: string]: string} = {};
       
-      // Add dynamic mappings for other documents - ensure exact matching with component IDs
-      // IMPORTANT: Sort otherRequirements to ensure consistent mapping with PaymentDetail.tsx
-      const sortedOtherRequirements = otherRequirements.sort();
-      sortedOtherRequirements.forEach((req, index) => {
-        const otherId = `other_${index}`;
-        documentNames[otherId] = req;
-        console.log(`📋 Mapped ${otherId} -> "${req}"`);
+      allDocuments.forEach(doc => {
+        documentNames[doc.id] = doc.name;
+        console.log(`📋 Document mapping: ${doc.id} -> "${doc.name}"`);
       });
 
       console.log('📋 Final document name mappings:', documentNames);

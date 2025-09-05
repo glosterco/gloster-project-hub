@@ -130,7 +130,7 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
       currency: paymentData.projectData.Currency || 'CLP',
       status: status,
       rejectionReason: rejectionReason || '',
-      platformUrl: `${window.location.origin}/contractor-access/${paymentId}`,
+      platformUrl: `https://gloster-project-hub.lovable.app/contractor-access/${paymentId}`,
     };
 
     console.log('📤 Invoking send-contractor-notification with data:', contractorNotificationData);

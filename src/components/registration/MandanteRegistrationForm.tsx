@@ -95,7 +95,7 @@ const MandanteRegistrationForm: React.FC<MandanteRegistrationFormProps> = ({ onB
           email: formData.contactEmail,
           password: formData.password,
           options: {
-            emailRedirectTo: `${window.location.origin}/`
+            emailRedirectTo: `https://gloster-project-hub.lovable.app/`
           }
         });
 
@@ -138,7 +138,7 @@ const MandanteRegistrationForm: React.FC<MandanteRegistrationFormProps> = ({ onB
           email: formData.contactEmail,
           password: formData.password,
           options: {
-            emailRedirectTo: `${window.location.origin}/`
+            emailRedirectTo: `https://gloster-project-hub.lovable.app/`
           }
         });
 

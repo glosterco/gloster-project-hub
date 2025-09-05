@@ -403,6 +403,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      ensure_mandante_urls: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       get_user_mandante_ids: {
         Args: { user_id: string }
         Returns: number[]

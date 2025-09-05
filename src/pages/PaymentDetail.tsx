@@ -343,69 +343,74 @@ const PaymentDetail = () => {
       return isRequiredByProject;
     });
 
-    // Process UNMATCHED requirements (those not found in allDocuments)
-    const unmatchedRequirements = projectRequirements.filter(req => {
-      const isAlreadyMatched = matchedDocuments.some(doc => doc.name === req);
-      const shouldProcess = !isAlreadyMatched && req.trim() && req !== 'Avance del período';
-      console.log(`🔍 Requirement "${req}": already matched = ${isAlreadyMatched}, will process = ${shouldProcess}`);
-      return shouldProcess;
-    });
+    // TEMPORARILY DISABLED: Process UNMATCHED requirements (those not found in allDocuments)
+    // const unmatchedRequirements = projectRequirements.filter(req => {
+    //   const isAlreadyMatched = matchedDocuments.some(doc => doc.name === req);
+    //   const shouldProcess = !isAlreadyMatched && req.trim() && req !== 'Avance del período';
+    //   console.log(`🔍 Requirement "${req}": already matched = ${isAlreadyMatched}, will process = ${shouldProcess}`);
+    //   return shouldProcess;
+    // });
 
-    const otherDocuments = unmatchedRequirements
-      .sort() // IMPORTANT: Sort to ensure consistent mapping with useGoogleDriveIntegration.ts
-      .map((req, index) => {
-        // Try to find a matching document from catalog first
-        const matchedDoc = matchRequirementToDocument(req);
-        if (matchedDoc) {
-          console.log(`✅ CRITICAL FIX: Matched requirement "${req}" to catalog document "${matchedDoc.name}" (id: ${matchedDoc.id})`);
-          // ESTE ES EL FIX: Devolver el documento del catálogo que YA EXISTE en allDocuments
-          // En lugar de crear uno nuevo, debemos buscar el que ya existe y marcarlo como matched
-          const existingDoc = allDocuments.find(doc => doc.id === matchedDoc.id);
-          if (existingDoc) {
-            console.log(`🔄 USING EXISTING DOC from allDocuments: ${existingDoc.id} -> ${existingDoc.name}`);
-            return {
-              ...existingDoc,
-              isOtherDocument: false, // This is a cataloged document, not other
-            };
-          } else {
-            console.log(`⚠️ Creating new doc for catalog match: ${matchedDoc.id} -> ${matchedDoc.name}`);
-            return {
-              id: matchedDoc.id, // Use the correct catalog ID (e.g., 'comprobante_cotizaciones')
-              name: matchedDoc.name,
-              description: matchedDoc.description || 'Documento requerido específico del proyecto',
-              downloadUrl: null,
-              uploaded: false,
-              required: true,
-              isUploadOnly: true,
-              allowMultiple: false,
-              helpText: 'Este documento ha sido especificado como requerimiento específico del proyecto.',
-              isOtherDocument: false,
-              showButtonWhen: ['Pendiente', 'Rechazado']
-            };
-          }
-        }
-        
-        // If no match found, create as other document with proper ID
-        const otherId = buildOtherIdFromName(req);
-        console.log(`⚠️ No match found for requirement "${req}", creating other document with id: ${otherId}`);
-        return {
-          id: otherId, // This will be something like 'other_documento-especial'
-          name: req,
-          description: 'Documento requerido específico del proyecto',
-          downloadUrl: null,
-          uploaded: false,
-          required: true,
-          isUploadOnly: true,
-          allowMultiple: false,
-          helpText: 'Este documento ha sido especificado como requerimiento específico del proyecto.',
-          isOtherDocument: true,
-          showButtonWhen: ['Pendiente', 'Rechazado']
-        };
-      });
+    // TEMPORARILY DISABLED: Other documents logic
+    const otherDocuments = []; // Empty array - no other documents will be processed
+    
+    // ORIGINAL CODE (DISABLED):
+    // const otherDocuments = unmatchedRequirements
+    //   .sort() // IMPORTANT: Sort to ensure consistent mapping with useGoogleDriveIntegration.ts
+    //   .map((req, index) => {
+    //     // Try to find a matching document from catalog first
+    //     const matchedDoc = matchRequirementToDocument(req);
+    //     if (matchedDoc) {
+    //       console.log(`✅ CRITICAL FIX: Matched requirement "${req}" to catalog document "${matchedDoc.name}" (id: ${matchedDoc.id})`);
+    //       // ESTE ES EL FIX: Devolver el documento del catálogo que YA EXISTE en allDocuments
+    //       // En lugar de crear uno nuevo, debemos buscar el que ya existe y marcarlo como matched
+    //       const existingDoc = allDocuments.find(doc => doc.id === matchedDoc.id);
+    //       if (existingDoc) {
+    //         console.log(`🔄 USING EXISTING DOC from allDocuments: ${existingDoc.id} -> ${existingDoc.name}`);
+    //         return {
+    //           ...existingDoc,
+    //           isOtherDocument: false, // This is a cataloged document, not other
+    //         };
+    //       } else {
+    //         console.log(`⚠️ Creating new doc for catalog match: ${matchedDoc.id} -> ${matchedDoc.name}`);
+    //         return {
+    //           id: matchedDoc.id, // Use the correct catalog ID (e.g., 'comprobante_cotizaciones')
+    //           name: matchedDoc.name,
+    //           description: matchedDoc.description || 'Documento requerido específico del proyecto',
+    //           downloadUrl: null,
+    //           uploaded: false,
+    //           required: true,
+    //           isUploadOnly: true,
+    //           allowMultiple: false,
+    //           helpText: 'Este documento ha sido especificado como requerimiento específico del proyecto.',
+    //           isOtherDocument: false,
+    //           showButtonWhen: ['Pendiente', 'Rechazado']
+    //         };
+    //       }
+    //     }
+    //     
+    //     // If no match found, create as other document with proper ID
+    //     const otherId = buildOtherIdFromName(req);
+    //     console.log(`⚠️ No match found for requirement "${req}", creating other document with id: ${otherId}`);
+    //     return {
+    //       id: otherId, // This will be something like 'other_documento-especial'
+    //       name: req,
+    //       description: 'Documento requerido específico del proyecto',
+    //       downloadUrl: null,
+    //       uploaded: false,
+    //       required: true,
+    //       isUploadOnly: true,
+    //       allowMultiple: false,
+    //       helpText: 'Este documento ha sido especificado como requerimiento específico del proyecto.',
+    //       isOtherDocument: true,
+    //       showButtonWhen: ['Pendiente', 'Rechazado']
+    //     };
+    //   });
 
-    console.log('🔍 DEBUGGING OTHER DOCS:', otherDocuments.map(d => ({ id: d.id, name: d.name, isOther: d.isOtherDocument })));
+    console.log('🚫 TEMPORARILY DISABLED: Other documents logic - only catalog documents will be processed');
+    console.log('🔍 DEBUGGING MATCHED DOCS:', matchedDocuments.map(d => ({ id: d.id, name: d.name })));
 
-    const allRequiredDocs = [...matchedDocuments, ...otherDocuments];
+    const allRequiredDocs = [...matchedDocuments]; // Only matched documents, no others
     console.log('🔍 DEBUGGING FINAL DOCS:', allRequiredDocs.map(d => ({ id: d.id, name: d.name, isOther: (d as any).isOtherDocument || false })));
 
     // NUEVO: Para estados "Enviado" y "Aprobado", solo mostrar documentos que realmente tienen archivos

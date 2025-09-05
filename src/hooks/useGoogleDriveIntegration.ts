@@ -142,6 +142,12 @@ export const useGoogleDriveIntegration = () => {
       
       // Process each document type
       for (const [docType, files] of Object.entries(uploadedFiles)) {
+        // TEMPORARILY DISABLE: Skip all "other_" documents
+        if (docType.startsWith('other_')) {
+          console.log(`🚫 TEMPORARILY DISABLED: Skipping other document: ${docType}`);
+          continue;
+        }
+        
         if (documentStatus[docType] && files && Array.isArray(files) && files.length > 0) {
           console.log(`📋 Processing ${docType} with ${files.length} files`);
           

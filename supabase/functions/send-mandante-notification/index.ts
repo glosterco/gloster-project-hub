@@ -320,7 +320,7 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const data: NotificationRequest = await req.json();
-    console.log("📧 Sending mandante notification with data:", JSON.stringify(data, null, 2));
+    console.log("📧 Sending mandante notification with data:", JSON.stringify({...data, accessUrl: data.accessUrl ? data.accessUrl.replace(/https:\/\/.*?(?=\/email-access)/, 'https://gloster-project-hub.lovable.app') : data.accessUrl}, null, 2));
 
     // Validar que tenemos los datos mínimos necesarios
     if (!data.paymentId) {

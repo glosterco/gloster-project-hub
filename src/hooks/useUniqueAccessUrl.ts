@@ -83,7 +83,6 @@ export const useUniqueAccessUrl = () => {
         }
       }
 
-      // Si no existe o el dominio cambió, generar uno nuevo
       console.log('🔄 Generating new unique access URL...');
       const uniqueToken = crypto.randomUUID();
       const baseUrl = getBaseUrl();

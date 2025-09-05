@@ -52,7 +52,6 @@ export const useContractorAccessUrl = () => {
         }
       }
 
-      // Si no existe o el dominio cambió, generar uno nuevo
       console.log('🔄 Generating new unique contractor access URL...');
       const uniqueToken = crypto.randomUUID();
       const baseUrl = getBaseUrl();

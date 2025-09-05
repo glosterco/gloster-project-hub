@@ -193,22 +193,17 @@ serve(async (req) => {
         subfolderName = docData.documentName;
         namingReason = 'provided-documentName';
       }
-      // Priority 2: For other_ documents, try to extract from ID
+      // Priority 2: For other_ documents, use filename fallback directly  
       else if (docType.startsWith('other_')) {
-        try {
-          subfolderName = extractNameFromOtherId(docType);
-          namingReason = 'extracted-from-id';
-        } catch (error) {
-          // Priority 3: Use filename without extension
-          if (docData.files && docData.files.length > 0) {
-            subfolderName = docData.files[0].name.replace(/\.[^/.]+$/, '');
-            namingReason = 'filename-fallback';
-            console.warn(`⚠️ Could not extract name from ${docType}, using filename: "${subfolderName}"`);
-          } else {
-            subfolderName = docType;
-            namingReason = 'doctype-fallback';
-            console.error(`❌ No files available for ${docType}, using docType as name`);
-          }
+        // Use filename without extension as the name
+        if (docData.files && docData.files.length > 0) {
+          subfolderName = docData.files[0].name.replace(/\.[^/.]+$/, '');
+          namingReason = 'filename-fallback';
+          console.log(`📋 Using filename fallback for ${docType}: "${subfolderName}"`);
+        } else {
+          subfolderName = docType;
+          namingReason = 'doctype-fallback';
+          console.error(`❌ No files available for ${docType}, using docType as name`);
         }
       }
       // Priority 4: For predefined documents, use mapping

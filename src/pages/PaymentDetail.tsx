@@ -352,8 +352,9 @@ const PaymentDetail = () => {
         // Try to find a matching document from catalog first
         const matchedDoc = matchRequirementToDocument(req);
         if (matchedDoc) {
+          console.log(`✅ Matched requirement "${req}" to catalog document "${matchedDoc.name}" (id: ${matchedDoc.id})`);
           return {
-            id: matchedDoc.id,
+            id: matchedDoc.id, // Use the correct catalog ID (e.g., 'comprobante_cotizaciones')
             name: matchedDoc.name,
             description: matchedDoc.description || 'Documento requerido específico del proyecto',
             downloadUrl: null,
@@ -362,13 +363,16 @@ const PaymentDetail = () => {
             isUploadOnly: true,
             allowMultiple: false,
             helpText: 'Este documento ha sido especificado como requerimiento específico del proyecto.',
-            isOtherDocument: false
+            isOtherDocument: false,
+            showButtonWhen: ['Pendiente', 'Rechazado']
           };
         }
         
-        // If no match found, create as other document
+        // If no match found, create as other document with proper ID
+        const otherId = buildOtherIdFromName(req);
+        console.log(`⚠️ No match found for requirement "${req}", creating other document with id: ${otherId}`);
         return {
-          id: buildOtherIdFromName(req),
+          id: otherId, // This will be something like 'other_documento-especial'
           name: req,
           description: 'Documento requerido específico del proyecto',
           downloadUrl: null,
@@ -377,7 +381,8 @@ const PaymentDetail = () => {
           isUploadOnly: true,
           allowMultiple: false,
           helpText: 'Este documento ha sido especificado como requerimiento específico del proyecto.',
-          isOtherDocument: true
+          isOtherDocument: true,
+          showButtonWhen: ['Pendiente', 'Rechazado']
         };
       });
 

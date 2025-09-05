@@ -195,7 +195,9 @@ export const useGoogleDriveIntegration = () => {
               docType,
               mappedName: documentNames[docType],
               finalDocumentName,
-              fileCount: fileData.length
+              fileCount: fileData.length,
+              isOtherDocument: docType.startsWith('other_'),
+              documentNameFromCatalog: documentNames[docType] ? 'FOUND' : 'NOT_FOUND'
             });
             
             documents[docType] = {

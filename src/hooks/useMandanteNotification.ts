@@ -27,8 +27,8 @@ export const useMandanteNotification = () => {
   const sendNotificationToMandante = async (data: MandanteNotificationData) => {
     setLoading(true);
     try {
-      // Use consistent production domain for email links
-      const baseUrl = 'https://b7846f9a-a454-43f5-8060-670f4c2f860a.lovableproject.com';
+      // Use consistent staging domain for email links
+      const baseUrl = 'https://gloster-project-hub.lovable.app';
       const computedAccessUrl = data.accessUrl || `${baseUrl}/email-access?paymentId=${data.paymentId}`;
 
       console.log('🚀 Sending mandante notification with data:', data);

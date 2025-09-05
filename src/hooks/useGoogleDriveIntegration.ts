@@ -116,18 +116,23 @@ export const useGoogleDriveIntegration = () => {
     try {
       console.log('🚀 Starting document upload:', { paymentId });
 
-      // Import the unified document catalog
-      const { getDocumentsFromRequirements } = await import('@/constants/documentsCatalog');
+      // Import both catalogs to ensure we have complete mapping
+      const { DOCUMENT_CATALOG } = await import('@/constants/documentsCatalog');
+      const { documentsFromPayment } = await import('@/constants/documentTypes');
 
-      // Get all documents (predefined + others) using the same logic as the UI
-      const allDocuments = getDocumentsFromRequirements(projectRequirements);
-      
-      // Create mappings for document names - this ensures 100% consistency with UI
+      // Create mappings for document names from both sources
       const documentNames: {[key: string]: string} = {};
       
-      allDocuments.forEach(doc => {
+      // First, add all documents from the main catalog
+      DOCUMENT_CATALOG.forEach(doc => {
         documentNames[doc.id] = doc.name;
-        console.log(`📋 Document mapping: ${doc.id} -> "${doc.name}"`);
+        console.log(`📋 Document mapping (catalog): ${doc.id} -> "${doc.name}"`);
+      });
+      
+      // Then, add all documents from the payment types (ensures we cover all frontend IDs)
+      documentsFromPayment.forEach(doc => {
+        documentNames[doc.id] = doc.name;
+        console.log(`📋 Document mapping (payment): ${doc.id} -> "${doc.name}"`);
       });
 
       console.log('📋 Final document name mappings:', documentNames);

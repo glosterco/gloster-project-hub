@@ -334,8 +334,7 @@ const PaymentDetail = () => {
     }
 
     const projectRequirements = payment.projectData.Requierment;
-    console.log('🚨 FORCE DEBUG: Project requirements:', projectRequirements);
-    alert('DEBUGGING: Project requirements: ' + JSON.stringify(projectRequirements));
+    console.log('🔍 Project requirements:', projectRequirements);
     
     // Filter predefined documents that match requirements
     const matchedDocuments = allDocuments.filter(doc => {
@@ -358,20 +357,32 @@ const PaymentDetail = () => {
         // Try to find a matching document from catalog first
         const matchedDoc = matchRequirementToDocument(req);
         if (matchedDoc) {
-          console.log(`✅ Matched UNMATCHED requirement "${req}" to catalog document "${matchedDoc.name}" (id: ${matchedDoc.id})`);
-          return {
-            id: matchedDoc.id, // Use the correct catalog ID (e.g., 'comprobante_cotizaciones')
-            name: matchedDoc.name,
-            description: matchedDoc.description || 'Documento requerido específico del proyecto',
-            downloadUrl: null,
-            uploaded: false,
-            required: true,
-            isUploadOnly: true,
-            allowMultiple: false,
-            helpText: 'Este documento ha sido especificado como requerimiento específico del proyecto.',
-            isOtherDocument: false,
-            showButtonWhen: ['Pendiente', 'Rechazado']
-          };
+          console.log(`✅ CRITICAL FIX: Matched requirement "${req}" to catalog document "${matchedDoc.name}" (id: ${matchedDoc.id})`);
+          // ESTE ES EL FIX: Devolver el documento del catálogo que YA EXISTE en allDocuments
+          // En lugar de crear uno nuevo, debemos buscar el que ya existe y marcarlo como matched
+          const existingDoc = allDocuments.find(doc => doc.id === matchedDoc.id);
+          if (existingDoc) {
+            console.log(`🔄 USING EXISTING DOC from allDocuments: ${existingDoc.id} -> ${existingDoc.name}`);
+            return {
+              ...existingDoc,
+              isOtherDocument: false, // This is a cataloged document, not other
+            };
+          } else {
+            console.log(`⚠️ Creating new doc for catalog match: ${matchedDoc.id} -> ${matchedDoc.name}`);
+            return {
+              id: matchedDoc.id, // Use the correct catalog ID (e.g., 'comprobante_cotizaciones')
+              name: matchedDoc.name,
+              description: matchedDoc.description || 'Documento requerido específico del proyecto',
+              downloadUrl: null,
+              uploaded: false,
+              required: true,
+              isUploadOnly: true,
+              allowMultiple: false,
+              helpText: 'Este documento ha sido especificado como requerimiento específico del proyecto.',
+              isOtherDocument: false,
+              showButtonWhen: ['Pendiente', 'Rechazado']
+            };
+          }
         }
         
         // If no match found, create as other document with proper ID

@@ -57,7 +57,7 @@ export const DOCUMENT_CATALOG: DocumentDefinition[] = [
       'comprobante cotizaciones',
       'comprobante pago cotizaciones'
     ],
-    required: false
+    required: true
   },
   {
     id: 'f30',
@@ -130,7 +130,7 @@ export const DOCUMENT_CATALOG: DocumentDefinition[] = [
       'libro_asistencia',
       'libro de asistencia de trabajadores'
     ],
-    required: false
+    required: true
   },
   {
     id: 'liquidaciones_sueldo',
@@ -147,7 +147,7 @@ export const DOCUMENT_CATALOG: DocumentDefinition[] = [
       'liquidación de sueldo',
       'liquidación sueldo'
     ],
-    required: false
+    required: true
   },
   {
     id: 'nomina_trabajadores',
@@ -164,7 +164,7 @@ export const DOCUMENT_CATALOG: DocumentDefinition[] = [
       'nomina_trabajadores',
       'lista de trabajadores'
     ],
-    required: false
+    required: true
   },
   {
     id: 'tgr',
@@ -225,50 +225,57 @@ export const matchRequirementToDocument = (requirement: string): DocumentDefinit
 };
 
 export const getDocumentsFromRequirements = (projectRequirements?: string[]) => {
-  if (!projectRequirements || projectRequirements.length === 0) {
-    return [];
-  }
-
   console.log('🔍 Project requirements:', projectRequirements);
 
-  // Find predefined documents that match requirements
-  const matchedDocuments = new Set<DocumentDefinition>();
+  // Always include documents marked as required (core documents)
+  const requiredDocuments = DOCUMENT_CATALOG.filter(doc => doc.required);
+  const matchedDocuments = new Set<DocumentDefinition>(requiredDocuments);
+  
+  console.log('📋 Always required documents:', requiredDocuments.map(d => d.name));
+
+  // If we have project requirements, match them to additional documents
   const matchedRequirements = new Set<string>();
+  
+  if (projectRequirements && projectRequirements.length > 0) {
+    projectRequirements.forEach(requirement => {
+      const matchedDoc = matchRequirementToDocument(requirement);
+      if (matchedDoc) {
+        matchedDocuments.add(matchedDoc);
+        matchedRequirements.add(requirement);
+        console.log(`✅ Document "${matchedDoc.name}" (id: ${matchedDoc.id}) matched for requirement "${requirement}"`);
+      } else {
+        console.warn(`⚠️ No document found for requirement "${requirement}"`);
+      }
+    });
 
-  projectRequirements.forEach(requirement => {
-    const matchedDoc = matchRequirementToDocument(requirement);
-    if (matchedDoc) {
-      matchedDocuments.add(matchedDoc);
-      matchedRequirements.add(requirement);
-      console.log(`✅ Document "${matchedDoc.name}" (id: ${matchedDoc.id}) matched for requirement "${requirement}"`);
-    } else {
-      console.warn(`⚠️ No document found for requirement "${requirement}"`);
-    }
-  });
+    // Create "other" documents for unmatched requirements
+    const otherDocuments = projectRequirements
+      .filter(req => !matchedRequirements.has(req) && req.trim())
+      .sort() // Stable sorting for consistent IDs
+      .map(req => ({
+        id: buildOtherIdFromName(req),
+        name: req,
+        description: 'Documento requerido específico del proyecto',
+        keywords: [req.toLowerCase()],
+        required: false,
+        uploaded: true,
+        isOtherDocument: true
+      }));
 
-  // Create "other" documents for unmatched requirements
-  const otherDocuments = projectRequirements
-    .filter(req => !matchedRequirements.has(req) && req.trim())
-    .sort() // Stable sorting for consistent IDs
-    .map(req => ({
-      id: buildOtherIdFromName(req),
-      name: req,
-      description: 'Documento requerido específico del proyecto',
-      keywords: [req.toLowerCase()],
-      required: false,
-      uploaded: true,
-      isOtherDocument: true
-    }));
+    console.log('🔍 Other documents found:', otherDocuments.map(d => d.name));
 
-  console.log('🔍 Other documents found:', otherDocuments.map(d => d.name));
+    // Combine all documents and mark as uploaded for the view
+    const allDocuments = [
+      ...Array.from(matchedDocuments).map(doc => ({ ...doc, uploaded: true })),
+      ...otherDocuments
+    ];
 
-  // Combine all documents and mark as uploaded for the view
-  const allDocuments = [
-    ...Array.from(matchedDocuments).map(doc => ({ ...doc, uploaded: true })),
-    ...otherDocuments
-  ];
+    console.log('🔍 Final document list:', allDocuments.map(d => ({ id: d.id, name: d.name })));
+    return allDocuments;
+  }
 
-  console.log('🔍 Final document list:', allDocuments.map(d => ({ id: d.id, name: d.name })));
-
+  // If no project requirements, return only required documents
+  const allDocuments = Array.from(matchedDocuments).map(doc => ({ ...doc, uploaded: true }));
+  console.log('🔍 Final document list (required only):', allDocuments.map(d => ({ id: d.id, name: d.name })));
   return allDocuments;
 };

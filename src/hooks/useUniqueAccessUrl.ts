@@ -49,7 +49,7 @@ export const useUniqueAccessUrl = () => {
           }
 
           const { data: fnData, error: fnError } = await supabase.functions.invoke('ensure-unique-access-url', {
-            body: { paymentId: numericPaymentId, token: accessToken, baseUrl: getBaseUrl() }
+            body: { paymentId: numericPaymentId, token: accessToken }
           });
 
           if (fnError) {

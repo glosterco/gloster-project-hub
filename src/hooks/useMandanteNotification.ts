@@ -27,9 +27,10 @@ export const useMandanteNotification = () => {
   const sendNotificationToMandante = async (data: MandanteNotificationData) => {
     setLoading(true);
     try {
-      // Use consistent staging domain for email links
-      const baseUrl = 'https://gloster-project-hub.lovable.app';
-      const computedAccessUrl = data.accessUrl || `${baseUrl}/email-access?paymentId=${data.paymentId}`;
+      // CRÍTICO: NUNCA generar URLs manualmente - siempre usar la que viene en data.accessUrl
+      if (!data.accessUrl) {
+        throw new Error('accessUrl es requerido - debe generarse previamente con tokens de autenticación');
+      }
 
       console.log('🚀 Sending mandante notification with data:', data);
 
@@ -44,7 +45,7 @@ export const useMandanteNotification = () => {
         contractorCompany: data.contractorCompany,
         amount: data.amount,
         dueDate: data.dueDate,
-        accessUrl: computedAccessUrl,
+        accessUrl: data.accessUrl, // Usar SIEMPRE la URL que viene con tokens válidos
         currency: data.currency
       };
 

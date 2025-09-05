@@ -188,13 +188,23 @@ serve(async (req) => {
         isOther: docType.startsWith('other_')
       });
       
+      // Create normalized version of documentNameMap for better matching
+      const normalizedDocType = docType.toLowerCase().trim();
+      const normalizedMap = Object.fromEntries(
+        Object.entries(documentNameMap).map(([k, v]) => [k.toLowerCase().trim(), v])
+      );
+      
+      console.log(`🔍 Checking mapping for "${docType}" (normalized: "${normalizedDocType}")`);
+      console.log(`🗺️ Available normalized keys:`, Object.keys(normalizedMap));
+      console.log(`🎯 Found mapping:`, normalizedMap[normalizedDocType] || 'NOT FOUND');
+      
       // CRITICAL: Always prioritize the documentName from frontend first
       let subfolderName;
       let namingReason;
       
-      // Priority 1: Use predefined mapping for known document types (ALWAYS use if available)
-      if (documentNameMap[docType]) {
-        subfolderName = documentNameMap[docType];
+      // Priority 1: Use predefined mapping for known document types (with normalization)
+      if (normalizedMap[normalizedDocType]) {
+        subfolderName = normalizedMap[normalizedDocType];
         namingReason = 'predefined-mapping';
         console.log(`📋 Using predefined mapping for ${docType}: "${subfolderName}"`);
       }
@@ -225,14 +235,14 @@ serve(async (req) => {
 
       console.log(`📋 Final naming for ${docType}: "${subfolderName}" (reason: ${namingReason})`);
       
-      if (namingReason === 'doctype-fallback' || namingReason === 'filename-fallback') {
+      if (namingReason === 'doctype-fallback') {
         console.warn(`⚠️ Document ${docType} using fallback naming strategy: ${namingReason}`);
       }
       
       // Final validation: ensure subfolder name is not empty or invalid
       if (!subfolderName || subfolderName.trim() === '') {
         console.error(`❌ Empty subfolder name for ${docType}, using ultimate fallback`);
-        subfolderName = documentNameMap[docType] || extractNameFromOtherId(docType) || docType;
+        subfolderName = normalizedMap[normalizedDocType] || extractNameFromOtherId(docType) || docType;
         namingReason = 'ultimate-fallback';
       }
       

@@ -206,6 +206,14 @@ export const useGoogleDriveIntegration = () => {
               documentNameFromCatalog: documentNames[docType] ? 'FOUND' : 'NOT_FOUND'
             });
             
+            // CRITICAL DEBUG: Log exactly what will be sent to backend
+            console.log(`🚨 CRITICAL: Will send to backend:`, {
+              docType: docType,
+              documentName: finalDocumentName,
+              'docType===comprobante_cotizaciones': docType === 'comprobante_cotizaciones',
+              'finalDocumentName===Comprobante de pago de cotizaciones': finalDocumentName === 'Comprobante de pago de cotizaciones'
+            });
+            
             documents[docType] = {
               files: fileData,
               documentName: finalDocumentName

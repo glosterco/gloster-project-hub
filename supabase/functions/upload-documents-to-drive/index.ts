@@ -188,6 +188,15 @@ serve(async (req) => {
         isOther: docType.startsWith('other_')
       });
       
+      // CRITICAL DEBUG: Show exact docType received
+      console.log(`🚨 CRITICAL BACKEND DEBUG:`, {
+        'received_docType': docType,
+        'received_documentName': docData.documentName,
+        'docType===comprobante_cotizaciones': docType === 'comprobante_cotizaciones',
+        'docType_startsWith_other': docType.startsWith('other_'),
+        'documentNameMap_has_docType': documentNameMap.hasOwnProperty(docType)
+      });
+      
       // Create normalized version of documentNameMap for better matching
       const normalizedDocType = docType.toLowerCase().trim();
       const normalizedMap = Object.fromEntries(

@@ -1,108 +1,58 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { getDocumentsFromRequirements } from '@/constants/documentsCatalog';
 
 export interface DocumentStatus {
-  eepp: boolean;
-  planilla: boolean;
-  comprobante_cotizaciones: boolean;
-  cotizaciones: boolean;
-  f30: boolean;
-  f30_1: boolean;
-  examenes: boolean;
-  finiquito: boolean;
-  factura: boolean;
-  [key: string]: boolean; // Add index signature for compatibility
+  [key: string]: boolean;
 }
 
 export interface UploadedFiles {
-  eepp: string[];
-  planilla: string[];
-  comprobante_cotizaciones: string[];
-  cotizaciones: string[];
-  f30: string[];
-  f30_1: string[];
-  examenes: string[];
-  finiquito: string[];
-  factura: string[];
-  [key: string]: string[]; // Add index signature for compatibility
+  [key: string]: string[];
 }
 
 export interface FileObjects {
-  eepp: File[];
-  planilla: File[];
-  comprobante_cotizaciones: File[];
-  cotizaciones: File[];
-  f30: File[];
-  f30_1: File[];
-  examenes: File[];
-  finiquito: File[];
-  factura: File[];
   [key: string]: File[];
 }
 
 export interface DragStates {
-  eepp: boolean;
-  planilla: boolean;
-  comprobante_cotizaciones: boolean;
-  cotizaciones: boolean;
-  f30: boolean;
-  f30_1: boolean;
-  examenes: boolean;
-  finiquito: boolean;
-  factura: boolean;
+  [key: string]: boolean;
 }
 
-export const useDocumentUpload = (onUploadComplete?: () => void) => {
+export const useDocumentUpload = (onUploadComplete?: () => void, projectRequirements?: string[]) => {
   const { toast } = useToast();
   const fileInputRefs = useRef<{[key: string]: HTMLInputElement | null}>({});
 
-  const [documentStatus, setDocumentStatus] = useState<DocumentStatus>({
-    eepp: false,
-    planilla: false,
-    comprobante_cotizaciones: false,
-    cotizaciones: false,
-    f30: false,
-    f30_1: false,
-    examenes: false,
-    finiquito: false,
-    factura: false
-  });
+  const [documentStatus, setDocumentStatus] = useState<DocumentStatus>({});
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFiles>({});
+  const [fileObjects, setFileObjects] = useState<FileObjects>({});
+  const [dragStates, setDragStates] = useState<DragStates>({});
 
-  const [uploadedFiles, setUploadedFiles] = useState<UploadedFiles>({
-    eepp: [],
-    planilla: [],
-    comprobante_cotizaciones: [],
-    cotizaciones: [],
-    f30: [],
-    f30_1: [],
-    examenes: [],
-    finiquito: [],
-    factura: []
-  });
+  // Initialize states based on project requirements
+  useEffect(() => {
+    if (!projectRequirements || projectRequirements.length === 0) return;
 
-  const [fileObjects, setFileObjects] = useState<FileObjects>({
-    eepp: [],
-    planilla: [],
-    comprobante_cotizaciones: [],
-    cotizaciones: [],
-    f30: [],
-    f30_1: [],
-    examenes: [],
-    finiquito: [],
-    factura: []
-  });
+    console.log('🔄 Initializing document states for requirements:', projectRequirements);
+    
+    const documents = getDocumentsFromRequirements(projectRequirements);
+    const initialDocumentStatus: DocumentStatus = {};
+    const initialUploadedFiles: UploadedFiles = {};
+    const initialFileObjects: FileObjects = {};
+    const initialDragStates: DragStates = {};
 
-  const [dragStates, setDragStates] = useState<DragStates>({
-    eepp: false,
-    planilla: false,
-    comprobante_cotizaciones: false,
-    cotizaciones: false,
-    f30: false,
-    f30_1: false,
-    examenes: false,
-    finiquito: false,
-    factura: false
-  });
+    documents.forEach(doc => {
+      initialDocumentStatus[doc.id] = false;
+      initialUploadedFiles[doc.id] = [];
+      initialFileObjects[doc.id] = [];
+      initialDragStates[doc.id] = false;
+    });
+
+    console.log('📋 Initialized document IDs:', Object.keys(initialDocumentStatus));
+
+    setDocumentStatus(initialDocumentStatus);
+    setUploadedFiles(initialUploadedFiles);
+    setFileObjects(initialFileObjects);
+    setDragStates(initialDragStates);
+  }, [projectRequirements]);
 
   const validateFiles = (files: FileList | File[]) => {
     const allowedTypes = [
@@ -150,138 +100,96 @@ export const useDocumentUpload = (onUploadComplete?: () => void) => {
     return validFiles;
   };
 
-  const handleFileUpload = (documentId: string, files: FileList | File[] | null, allowMultiple: boolean = false) => {
-    if (!files || files.length === 0) return;
+  const handleFileUpload = (files: File[], docId: string) => {
+    console.log(`📤 Starting file upload for ${docId}:`, files.map(f => f.name));
+    
+    if (!docId || !files.length) {
+      console.error('❌ Invalid parameters for file upload:', { docId, filesCount: files.length });
+      return;
+    }
 
     const validFiles = validateFiles(files);
-    if (validFiles.length === 0) return;
-
-    // Documentos que requieren UN solo archivo
-    const singleFileDocuments = ['eepp', 'comprobante_cotizaciones', 'cotizaciones', 'f30', 'f30_1', 'factura'];
-    const requiresSingleFile = singleFileDocuments.includes(documentId);
     
-    console.log(`📁 Uploading ${validFiles.length} files for ${documentId} (single file required: ${requiresSingleFile}):`, validFiles.map(f => f.name));
+    if (validFiles.length === 0) {
+      console.log('❌ No valid files to upload');
+      return;
+    }
+
+    setUploadedFiles(prev => ({
+      ...prev,
+      [docId]: validFiles.map(file => file.name)
+    }));
+
+    setFileObjects(prev => ({
+      ...prev,
+      [docId]: validFiles
+    }));
 
     setDocumentStatus(prev => ({
       ...prev,
-      [documentId]: true
+      [docId]: true
     }));
 
-    const fileNames = validFiles.map(file => file.name);
-    setUploadedFiles(prev => {
-      const currentFiles = prev[documentId as keyof UploadedFiles] || [];
-      
-      // Si requiere un solo archivo, reemplazar siempre
-      // Si permite múltiples y allowMultiple es true, agregar
-      // Si permite múltiples pero allowMultiple es false, reemplazar
-      const shouldReplace = requiresSingleFile || !allowMultiple;
-      
-      if (shouldReplace && currentFiles.length > 0) {
-        console.log(`🔄 Replacing existing files for ${documentId}: ${currentFiles.join(', ')} -> ${fileNames.join(', ')}`);
-      }
-      
-      return {
-        ...prev,
-        [documentId]: shouldReplace ? fileNames : [...currentFiles, ...fileNames]
-      };
-    });
+    console.log(`✅ Files uploaded for ${docId}:`, validFiles.map(f => f.name));
 
-    setFileObjects(prev => {
-      const currentFiles = prev[documentId] || [];
-      const shouldReplace = requiresSingleFile || !allowMultiple;
-      
-      return {
-        ...prev,
-        [documentId]: shouldReplace ? validFiles : [...currentFiles, ...validFiles]
-      };
-    });
-
-    // Clear the file input to allow re-upload of same file
-    const input = fileInputRefs.current[documentId];
-    if (input) {
-      input.value = '';
-    }
-
-    const action = requiresSingleFile && uploadedFiles[documentId as keyof UploadedFiles]?.length > 0 ? "reemplazado" : "cargado";
-    
-    toast({
-      title: `Documento(s) ${action}(s)`,
-      description: `${validFiles.length} archivo(s) se han ${action} exitosamente${requiresSingleFile ? ' (documento de archivo único)' : ''}`,
-    });
-
-    // Llamar callback si se proporciona (para refrescar archivos del Drive)
     if (onUploadComplete) {
-      // Ejecutar callback después de un pequeño delay para asegurar que el estado se actualice
-      setTimeout(() => {
-        onUploadComplete();
-      }, 100);
+      onUploadComplete();
     }
   };
 
-  const handleFileRemove = (documentId: string, fileIndex: number) => {
-    console.log(`🗑️ Removing file at index ${fileIndex} from ${documentId}`);
+  const handleFileRemove = (docId: string, fileName: string) => {
+    console.log(`🗑️ Removing file ${fileName} from ${docId}`);
 
-    // Update uploaded files
     setUploadedFiles(prev => {
-      const currentFiles = prev[documentId as keyof UploadedFiles] || [];
-      const newFiles = [...currentFiles];
-      newFiles.splice(fileIndex, 1);
-      return {
-        ...prev,
-        [documentId]: newFiles
-      };
+      const newFiles = prev[docId]?.filter(name => name !== fileName) || [];
+      return { ...prev, [docId]: newFiles };
     });
 
-    // Update file objects
     setFileObjects(prev => {
-      const currentFiles = prev[documentId] || [];
-      const newFiles = [...currentFiles];
-      newFiles.splice(fileIndex, 1);
-      return {
-        ...prev,
-        [documentId]: newFiles
-      };
+      const newFiles = prev[docId]?.filter(file => file.name !== fileName) || [];
+      return { ...prev, [docId]: newFiles };
     });
 
-    // Update document status - set to false only if no files left
     setDocumentStatus(prev => {
-      const currentFiles = uploadedFiles[documentId as keyof UploadedFiles] || [];
-      const willHaveFiles = currentFiles.length > 1; // Will have files after removal
-      return {
-        ...prev,
-        [documentId]: willHaveFiles
-      };
+      const hasFiles = (prev[docId] && fileObjects[docId]?.length > 1);
+      return { ...prev, [docId]: hasFiles };
     });
 
-    toast({
-      title: "Archivo eliminado",
-      description: "El archivo ha sido eliminado exitosamente",
-    });
+    console.log(`✅ File ${fileName} removed from ${docId}`);
   };
 
-  const handleDragOver = (e: React.DragEvent, documentId: string) => {
+  const handleDragOver = (e: React.DragEvent, docId: string) => {
     e.preventDefault();
-    setDragStates(prev => ({ ...prev, [documentId]: true }));
+    setDragStates(prev => ({ ...prev, [docId]: true }));
   };
 
-  const handleDragLeave = (e: React.DragEvent, documentId: string) => {
+  const handleDragLeave = (e: React.DragEvent, docId: string) => {
     e.preventDefault();
-    setDragStates(prev => ({ ...prev, [documentId]: false }));
+    setDragStates(prev => ({ ...prev, [docId]: false }));
   };
 
-  const handleDrop = (e: React.DragEvent, documentId: string, allowMultiple: boolean = false) => {
+  const handleDrop = (e: React.DragEvent, docId: string) => {
     e.preventDefault();
-    setDragStates(prev => ({ ...prev, [documentId]: false }));
+    setDragStates(prev => ({ ...prev, [docId]: false }));
     
-    const files = e.dataTransfer.files;
-    handleFileUpload(documentId, files, allowMultiple);
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      handleFileUpload(files, docId);
+    }
   };
 
-  const handleDocumentUpload = (documentId: string) => {
-    const input = fileInputRefs.current[documentId];
+  const handleDocumentUpload = (docId: string) => {
+    const input = fileInputRefs.current[docId];
     if (input) {
       input.click();
     }
+  };
+
+  const resetUploadStates = () => {
+    setDocumentStatus({});
+    setUploadedFiles({});
+    setFileObjects({});
+    setDragStates({});
   };
 
   return {
@@ -296,6 +204,7 @@ export const useDocumentUpload = (onUploadComplete?: () => void) => {
     handleDragLeave,
     handleDrop,
     handleDocumentUpload,
-    setDragStates
+    resetUploadStates,
+    validateFiles,
   };
 };

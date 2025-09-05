@@ -34,7 +34,7 @@ interface DocumentUploadCardProps {
   onDragLeave: (e: React.DragEvent) => void;
   onDrop: (e: React.DragEvent) => void;
   onDocumentUpload: () => void;
-  onFileRemove: (fileIndex: number) => void;
+  onFileRemove: (fileName: string) => void;
   getExamenesUrl: () => string;
   paymentStatus?: string;
 }
@@ -95,7 +95,7 @@ const DocumentUploadCard: React.FC<DocumentUploadCardProps> = ({
                       <div key={`local-${index}`} className="flex items-center justify-between bg-green-50 p-2 rounded border border-green-200">
                         <span className="text-sm text-green-800 font-rubik truncate flex-1 pr-2">{fileNameWithoutExtension}</span>
                         <Button
-                          onClick={() => onFileRemove(index)}
+                          onClick={() => onFileRemove(file)}
                           variant="ghost"
                           size="sm"
                           className="h-6 w-6 p-0 text-red-600 hover:text-red-800 hover:bg-red-100 shrink-0"

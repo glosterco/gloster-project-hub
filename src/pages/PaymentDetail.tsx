@@ -98,7 +98,7 @@ const PaymentDetail = () => {
     handleDragLeave,
     handleDrop,
     handleDocumentUpload,
-  } = useDocumentUpload(refetchDriveFiles);
+  } = useDocumentUpload(refetchDriveFiles, payment?.projectData?.Requierment);
 
   const [achsSelection, setAchsSelection] = useState('');
   const [isUploading, setIsUploading] = useState(false);
@@ -650,7 +650,7 @@ const PaymentDetail = () => {
 
     if (isLocalFile) {
       // Remove only from local state (frontend)
-      handleFileRemove(docId, fileIndex);
+      handleFileRemove(docId, fileName);
       toast({
         title: "Archivo eliminado",
         description: "El archivo se eliminó del frontend exitosamente",
@@ -984,7 +984,7 @@ const PaymentDetail = () => {
             key={doc.id}
             type="file"
             ref={el => fileInputRefs.current[doc.id] = el}
-            onChange={e => handleFileUpload(doc.id, e.target.files, doc.allowMultiple)}
+            onChange={e => e.target.files && handleFileUpload(Array.from(e.target.files), doc.id)}
             accept=".pdf,.doc,.docx,.xls,.xlsx,.xlsm,.jpg,.jpeg,.png,.csv"
             multiple={doc.allowMultiple}
             style={{ display: 'none' }}
@@ -1118,9 +1118,9 @@ const PaymentDetail = () => {
                     onDragOver={(e) => handleDragOver(e, doc.id)}
                     onDragLeave={(e) => handleDragLeave(e, doc.id)}
                     paymentStatus={payment?.Status}
-                    onDrop={(e) => handleDrop(e, doc.id, doc.allowMultiple)}
+                    onDrop={(e) => handleDrop(e, doc.id)}
                     onDocumentUpload={() => handleDocumentUpload(doc.id)}
-                    onFileRemove={(fileIndex) => handleFileRemove(doc.id, fileIndex)}
+                    onFileRemove={(fileName) => handleFileRemove(doc.id, fileName)}
                     getExamenesUrl={getExamenesUrl}
                   />
                 ))}

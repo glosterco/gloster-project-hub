@@ -48,6 +48,18 @@ export const DOCUMENT_CATALOG: DocumentDefinition[] = [
     required: false
   },
   {
+    id: 'comprobante_cotizaciones', 
+    name: 'Comprobante de pago de cotizaciones',
+    description: 'Comprobante de cumplimiento de obligaciones previsionales',
+    keywords: [
+      'comprobante de pago de cotizaciones',
+      'comprobante de cotizaciones', 
+      'comprobante cotizaciones',
+      'comprobante pago cotizaciones'
+    ],
+    required: false
+  },
+  {
     id: 'f30',
     name: 'Certificado F30',
     description: 'Certificado de antecedentes laborales y previsionales',

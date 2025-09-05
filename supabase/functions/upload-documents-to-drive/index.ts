@@ -223,52 +223,26 @@ serve(async (req) => {
         console.warn(`⚠️ Document ${docType} using fallback naming strategy: ${namingReason}`);
       }
       
-      // Handle specific known document types with exact names
-      if (docType === 'examenes') {
-        subfolderName = 'Exámenes Preocupacionales';
-      } else if (docType === 'finiquito') {
-        subfolderName = 'Finiquitos';
-      } else if (docType === 'f29') {
-        subfolderName = 'Certificado F29';
-      } else if (docType === 'libro_remuneraciones') {
-        subfolderName = 'Libro de remuneraciones';
-      } else if (docType === 'eepp') {
-        subfolderName = 'Carátula EEPP';
-      } else if (docType === 'planilla') {
-        subfolderName = 'Avance del período';
-      } else if (docType === 'cotizaciones') {
-        subfolderName = 'Certificado de pago de cotizaciones';
-      } else if (docType === 'f30') {
-        subfolderName = 'Certificado F30';
-      } else if (docType === 'f30_1') {
-        subfolderName = 'Certificado F30-1';
-      } else if (docType === 'factura') {
-        subfolderName = 'Factura';
-      }
-      
       // For "other" documents, ensure we use the exact document name from requirements
-      if (docType.startsWith('other_')) {
+      // Additional validation for other documents
+      if (docType.startsWith('other_') && (!subfolderName || subfolderName === docType)) {
         if (docData.documentName && docData.documentName !== docType && docData.documentName.trim() !== '') {
           subfolderName = docData.documentName;
-          console.log(`📋 Using documentName for ${docType}: "${subfolderName}"`);
-        } else {
-          console.error(`❌ Missing or invalid documentName for ${docType}:`, docData.documentName);
-          // Try to extract from the files if available
-          if (docData.files && docData.files.length > 0) {
-            // Use the filename without extension as fallback
-            subfolderName = docData.files[0].name.replace(/\.[^/.]+$/, "");
-            console.log(`📋 Using filename fallback for ${docType}: "${subfolderName}"`);
-          } else {
-            subfolderName = docType; // Last resort fallback
-            console.log(`📋 Using docType fallback for ${docType}: "${subfolderName}"`);
-          }
+          namingReason = 'override-from-documentName';
+          console.log(`📋 Override using documentName for ${docType}: "${subfolderName}"`);
         }
       }
       
-      // Ensure subfolder name is not empty or invalid
-      if (!subfolderName || subfolderName.trim() === '') {
-        console.error(`❌ Empty subfolder name for ${docType}, using fallback`);
-        subfolderName = docType;
+      // Final validation: ensure subfolder name is not empty or invalid
+      if (!subfolderName || subfolderName.trim() === '' || subfolderName === docType) {
+        console.error(`❌ Empty or invalid subfolder name for ${docType}, using ultimate fallback`);
+        if (docData.files && docData.files.length > 0) {
+          subfolderName = docData.files[0].name.replace(/\.[^/.]+$/, '');
+          namingReason = 'ultimate-filename-fallback';
+        } else {
+          subfolderName = docType.replace('other_', '').replace(/-/g, ' ');
+          namingReason = 'ultimate-doctype-fallback';
+        }
       }
       
       // Handle multiple files (create subfolder)

@@ -133,7 +133,11 @@ serve(async (req) => {
     
     for (const [docType, docData] of Object.entries(documents)) {
       console.log(`📤 Processing ${docType} with ${docData.files.length} files (Memory optimization: sequential processing)`);
-      console.log(`📋 Document data for ${docType}:`, { documentName: docData.documentName, files: docData.files.map(f => f.name) });
+      console.log(`📋 Document data for ${docType}:`, { 
+        documentName: docData.documentName, 
+        files: docData.files.map(f => f.name),
+        isOther: docType.startsWith('other_')
+      });
       
       // Determine proper folder name based on document type
       let subfolderName = docData.documentName;

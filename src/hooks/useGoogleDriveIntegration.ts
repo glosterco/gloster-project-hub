@@ -204,9 +204,17 @@ export const useGoogleDriveIntegration = () => {
           }
 
           if (fileData.length > 0) {
+            const finalDocumentName = documentNames[docType] || docType;
+            console.log(`📋 Creating document entry for ${docType}:`, {
+              docType,
+              mappedName: documentNames[docType],
+              finalDocumentName,
+              fileCount: fileData.length
+            });
+            
             documents[docType] = {
               files: fileData,
-              documentName: documentNames[docType] || docType
+              documentName: finalDocumentName
             };
           }
         }

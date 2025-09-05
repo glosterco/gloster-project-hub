@@ -167,6 +167,16 @@ export const extractNameFromOtherId = (otherId: string): string => {
 export const matchRequirementToDocument = (requirement: string): DocumentDefinition | null => {
   const reqNormalized = normalizeText(requirement);
   
+  // First try exact name match (case insensitive)
+  const exactNameMatch = DOCUMENT_CATALOG.find(doc => 
+    normalizeText(doc.name) === reqNormalized
+  );
+  
+  if (exactNameMatch) {
+    return exactNameMatch;
+  }
+  
+  // Then try keyword matching
   return DOCUMENT_CATALOG.find(doc => {
     return doc.keywords.some(keyword => {
       const keywordNormalized = normalizeText(keyword);
@@ -195,7 +205,9 @@ export const getDocumentsFromRequirements = (projectRequirements?: string[]) => 
     if (matchedDoc) {
       matchedDocuments.add(matchedDoc);
       matchedRequirements.add(requirement);
-      console.log(`✅ Document "${matchedDoc.name}" matched for requirement "${requirement}"`);
+      console.log(`✅ Document "${matchedDoc.name}" (id: ${matchedDoc.id}) matched for requirement "${requirement}"`);
+    } else {
+      console.warn(`⚠️ No document found for requirement "${requirement}"`);
     }
   });
 

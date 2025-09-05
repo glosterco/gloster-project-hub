@@ -188,37 +188,39 @@ serve(async (req) => {
         isOther: docType.startsWith('other_')
       });
       
-      // Enhanced naming logic with better fallbacks and logging
-      let subfolderName = docData.documentName;
-      let namingReason = 'provided';
+      // CRITICAL: Always prioritize the documentName from frontend first
+      let subfolderName;
+      let namingReason;
       
-      // Priority 1: Use provided documentName if available and valid (this is the correct name from frontend)
-      if (docData.documentName && docData.documentName !== docType && docData.documentName.trim() !== '') {
+      // Priority 1: Use documentName from frontend if available and not the same as docType
+      if (docData.documentName && docData.documentName.trim() !== '' && docData.documentName !== docType) {
         subfolderName = docData.documentName;
-        namingReason = 'provided-documentName';
-      }
-      // Priority 2: For predefined documents, use documentName from frontend (not the mapping here)
-      else if (documentNameMap[docType] && docData.documentName) {
-        subfolderName = docData.documentName; // Use frontend's documentName, not our mapping
         namingReason = 'frontend-documentName';
+        console.log(`📋 Using frontend documentName for ${docType}: "${subfolderName}"`);
       }
-      // Priority 3: For other_ documents, use filename fallback directly  
+      // Priority 2: Use predefined mapping for known document types
+      else if (documentNameMap[docType]) {
+        subfolderName = documentNameMap[docType];
+        namingReason = 'predefined-mapping';
+        console.log(`📋 Using predefined mapping for ${docType}: "${subfolderName}"`);
+      }
+      // Priority 3: For other_ documents, use filename fallback
       else if (docType.startsWith('other_')) {
-        // Use filename without extension as the name
         if (docData.files && docData.files.length > 0) {
           subfolderName = docData.files[0].name.replace(/\.[^/.]+$/, '');
           namingReason = 'filename-fallback';
           console.log(`📋 Using filename fallback for ${docType}: "${subfolderName}"`);
         } else {
-          subfolderName = docType;
-          namingReason = 'doctype-fallback';
-          console.error(`❌ No files available for ${docType}, using docType as name`);
+          subfolderName = extractNameFromOtherId(docType);
+          namingReason = 'extracted-other-name';
+          console.log(`📋 Using extracted name for ${docType}: "${subfolderName}"`);
         }
       }
-      // Priority 4: Last resort - use mapping or docType
+      // Priority 4: Final fallback
       else {
-        subfolderName = documentNameMap[docType] || docType;
-        namingReason = documentNameMap[docType] ? 'predefined-mapping' : 'final-fallback';
+        subfolderName = docType;
+        namingReason = 'doctype-fallback';
+        console.warn(`⚠️ Using docType fallback for ${docType}: "${subfolderName}"`);
       }
 
       console.log(`📋 Final naming for ${docType}: "${subfolderName}" (reason: ${namingReason})`);
@@ -227,23 +229,11 @@ serve(async (req) => {
         console.warn(`⚠️ Document ${docType} using fallback naming strategy: ${namingReason}`);
       }
       
-      // Additional validation: always prioritize documentName from frontend when available
-      if (docData.documentName && docData.documentName !== docType && docData.documentName.trim() !== '') {
-        subfolderName = docData.documentName;
-        namingReason = 'override-from-documentName';
-        console.log(`📋 Final override using documentName for ${docType}: "${subfolderName}"`);
-      }
-      
       // Final validation: ensure subfolder name is not empty or invalid
-      if (!subfolderName || subfolderName.trim() === '' || subfolderName === docType) {
-        console.error(`❌ Empty or invalid subfolder name for ${docType}, using ultimate fallback`);
-        if (docData.files && docData.files.length > 0) {
-          subfolderName = docData.files[0].name.replace(/\.[^/.]+$/, '');
-          namingReason = 'ultimate-filename-fallback';
-        } else {
-          subfolderName = docType.replace('other_', '').replace(/-/g, ' ');
-          namingReason = 'ultimate-doctype-fallback';
-        }
+      if (!subfolderName || subfolderName.trim() === '') {
+        console.error(`❌ Empty subfolder name for ${docType}, using ultimate fallback`);
+        subfolderName = documentNameMap[docType] || extractNameFromOtherId(docType) || docType;
+        namingReason = 'ultimate-fallback';
       }
       
       // Handle multiple files (create subfolder)
@@ -309,15 +299,16 @@ serve(async (req) => {
       // Single file (upload directly to main folder)
       const file = docData.files[0];
       
-      // Special handling for mandante documents - use original name with suffix
+      // Generate proper filename based on document type and naming strategy
       let fileName;
       if (docType.startsWith('mandante_doc_')) {
         // For mandante docs, the file name should already include "- mandante" from frontend
         fileName = file.name.includes('- mandante') ? file.name : `${file.name} - mandante`;
-      } else if (docType.startsWith('other_') && subfolderName && subfolderName !== docType) {
-        // For "other" documents, use the proper document name from requirements
-        fileName = `${subfolderName}.${file.name.split('.').pop()}`;
+      } else if (namingReason === 'filename-fallback') {
+        // For documents using filename fallback, keep original filename
+        fileName = file.name;
       } else {
+        // For all other cases, use the proper document name with original extension
         fileName = `${subfolderName}.${file.name.split('.').pop()}`;
       }
       

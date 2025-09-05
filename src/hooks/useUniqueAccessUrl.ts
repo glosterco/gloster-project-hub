@@ -68,10 +68,19 @@ export const useUniqueAccessUrl = () => {
         }
       }
 
-      // Si ya existe un enlace válido, reutilizarlo siempre (no regenerar)
+      // Si ya existe un enlace válido, verificar si el dominio es correcto
       if (existingPayment?.URLMandante) {
-        console.log('✅ Reusing existing mandante access URL:', existingPayment.URLMandante);
-        return existingPayment.URLMandante;
+        const currentBaseUrl = getBaseUrl();
+        const existingUrl = new URL(existingPayment.URLMandante);
+        const currentUrlObj = new URL(currentBaseUrl);
+        
+        // Si el dominio coincide con el correcto, reutilizar el enlace existente
+        if (existingUrl.origin === currentUrlObj.origin) {
+          console.log('✅ Reusing existing mandante access URL:', existingPayment.URLMandante);
+          return existingPayment.URLMandante;
+        } else {
+          console.log('🔄 Domain incorrect, generating new mandante URL...');
+        }
       }
 
       // Si no existe o el dominio cambió, generar uno nuevo

@@ -26,6 +26,7 @@ import PaymentSummaryCard from '@/components/payment/PaymentSummaryCard';
 import ValidationWarningCard from '@/components/payment/ValidationWarningCard';
 import DriveFilesCard from '@/components/payment/DriveFilesCard';
 import SendDocumentsBanner from '@/components/payment/SendDocumentsBanner';
+import { DOCUMENT_CATALOG, DocumentDefinition, matchRequirementToDocument, buildOtherIdFromName } from '@/constants/documentsCatalog';
 
 const PaymentDetail = () => {
   const { id } = useParams();
@@ -347,19 +348,38 @@ const PaymentDetail = () => {
     const otherDocuments = projectRequirements
       .filter(req => !predefinedNames.includes(req) && req.trim() && req !== 'Avance del período')
       .sort() // IMPORTANT: Sort to ensure consistent mapping with useGoogleDriveIntegration.ts
-      .map((req, index) => ({
-        id: `other_${index}`,
-        name: req,
-        description: 'Documento requerido específico del proyecto',
-        downloadUrl: null,
-        uploaded: false,
-        required: true,
-        isUploadOnly: true,
-        allowMultiple: false,
-        helpText: 'Este documento ha sido especificado como requerimiento específico del proyecto.',
-        isOtherDocument: true,
-        showButtonWhen: ['Pendiente', 'Rechazado']
-      }));
+      .map((req, index) => {
+        // Try to find a matching document from catalog first
+        const matchedDoc = matchRequirementToDocument(req);
+        if (matchedDoc) {
+          return {
+            id: matchedDoc.id,
+            name: matchedDoc.name,
+            description: matchedDoc.description || 'Documento requerido específico del proyecto',
+            downloadUrl: null,
+            uploaded: false,
+            required: true,
+            isUploadOnly: true,
+            allowMultiple: false,
+            helpText: 'Este documento ha sido especificado como requerimiento específico del proyecto.',
+            isOtherDocument: false
+          };
+        }
+        
+        // If no match found, create as other document
+        return {
+          id: buildOtherIdFromName(req),
+          name: req,
+          description: 'Documento requerido específico del proyecto',
+          downloadUrl: null,
+          uploaded: false,
+          required: true,
+          isUploadOnly: true,
+          allowMultiple: false,
+          helpText: 'Este documento ha sido especificado como requerimiento específico del proyecto.',
+          isOtherDocument: true
+        };
+      });
 
     console.log('📄 Other documents found:', otherDocuments.map(d => d.name));
 

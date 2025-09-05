@@ -39,21 +39,35 @@ const PaymentInfoStep: React.FC<PaymentInfoStepProps> = ({
   setOtherDocuments,
   documentsList,
 }) => {
-  // Documento obligatorio que no se puede deseleccionar
-  const REQUIRED_DOCUMENT = "Avance del período";
+  // Documentos obligatorios que no se pueden deseleccionar
+  const REQUIRED_DOCUMENTS = [
+    "Avance del período",
+    "Comprobante de pago de cotizaciones", 
+    "Libro de asistencia",
+    "Liquidaciones de sueldo",
+    "Nómina de trabajadores"
+  ];
   
-  // Asegurar que el documento obligatorio esté seleccionado por defecto
+  // Asegurar que los documentos obligatorios estén seleccionados por defecto
   useEffect(() => {
-    if (documentsList.includes(REQUIRED_DOCUMENT) && !requiredDocuments.includes(REQUIRED_DOCUMENT)) {
-      setRequiredDocuments([...requiredDocuments, REQUIRED_DOCUMENT]);
+    const missingRequired = REQUIRED_DOCUMENTS.filter(doc => 
+      documentsList.includes(doc) && !requiredDocuments.includes(doc)
+    );
+    
+    if (missingRequired.length > 0) {
+      setRequiredDocuments([...requiredDocuments, ...missingRequired]);
     }
   }, [documentsList, requiredDocuments, setRequiredDocuments]);
 
   const handleDocumentChange = (document: string, checked: boolean) => {
-    // Si se intenta deseleccionar el documento obligatorio, mostrar mensaje y no permitirlo
-    if (!checked && document === REQUIRED_DOCUMENT) {
+    // Si se intenta deseleccionar un documento obligatorio, mostrar mensaje y no permitirlo
+    if (!checked && REQUIRED_DOCUMENTS.includes(document)) {
+      const documentType = document === "Avance del período" 
+        ? "avance de proyecto" 
+        : "documento esencial";
+      
       toast.error("Documento obligatorio", {
-        description: "El avance de proyecto es obligatorio para todos los contratos y no puede ser removido.",
+        description: `${document} es un ${documentType} obligatorio para todos los contratos y no puede ser removido.`,
         icon: <AlertCircle className="h-4 w-4" />,
         duration: 4000,
       });
@@ -142,7 +156,7 @@ const PaymentInfoStep: React.FC<PaymentInfoStepProps> = ({
         <Label>Documentación Requerida</Label>
         <div className="space-y-3">
           {documentsList.map((doc) => {
-            const isRequired = doc === REQUIRED_DOCUMENT;
+            const isRequired = REQUIRED_DOCUMENTS.includes(doc);
             const isExternalDoc = false; // Removed external link logic
             
             return (

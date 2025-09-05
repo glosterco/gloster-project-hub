@@ -339,7 +339,7 @@ const PaymentDetail = () => {
     // Filter predefined documents that match requirements
     const matchedDocuments = allDocuments.filter(doc => {
       const isRequiredByProject = projectRequirements.includes(doc.name);
-      console.log(`📄 Document "${doc.name}" (${doc.id}): ${isRequiredByProject ? 'INCLUDED' : 'EXCLUDED'}`);
+      console.log(`🔍 DEBUGGING MATCH: Document "${doc.name}" (${doc.id}): required=${isRequiredByProject}, in requirements=${projectRequirements.includes(doc.name)}`);
       return isRequiredByProject;
     });
 
@@ -391,9 +391,10 @@ const PaymentDetail = () => {
         };
       });
 
-    console.log('📄 Other documents found:', otherDocuments.map(d => d.name));
+    console.log('🔍 DEBUGGING OTHER DOCS:', otherDocuments.map(d => ({ id: d.id, name: d.name, isOther: d.isOtherDocument })));
 
     const allRequiredDocs = [...matchedDocuments, ...otherDocuments];
+    console.log('🔍 DEBUGGING FINAL DOCS:', allRequiredDocs.map(d => ({ id: d.id, name: d.name, isOther: (d as any).isOtherDocument || false })));
 
     // NUEVO: Para estados "Enviado" y "Aprobado", solo mostrar documentos que realmente tienen archivos
     if (payment?.Status === 'Enviado' || payment?.Status === 'Aprobado') {

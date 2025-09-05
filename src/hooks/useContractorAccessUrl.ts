@@ -6,17 +6,10 @@ export const useContractorAccessUrl = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  // Detectar automáticamente el dominio base
+  // Use the production domain consistently
   const getBaseUrl = () => {
-    const currentUrl = window.location.origin;
-    
-    // Para desarrollo local, usar la URL actual
-    if (currentUrl.includes('localhost') || currentUrl.includes('127.0.0.1')) {
-      return currentUrl;
-    }
-    
-    // Para producción (Lovable o cualquier otro dominio), usar la URL actual
-    return currentUrl;
+    // Always use the production domain for email links
+    return 'https://b7846f9a-a454-43f5-8060-670f4c2f860a.lovableproject.com';
   };
 
   const ensureContractorAccessUrl = async (paymentId: string | number) => {

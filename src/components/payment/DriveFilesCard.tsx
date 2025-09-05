@@ -50,39 +50,19 @@ const DriveFilesCard: React.FC<DriveFilesCardProps> = ({
       specificFiles = [...specificFiles, ...fileObjects[doc.id].map(file => file.name)];
     }
     
-    // 2. Archivos clasificados por ID exacto en el Drive
+    // 2. SOLO archivos clasificados por ID exacto en el Drive
     if (uploadedFiles?.[doc.id] && uploadedFiles[doc.id].length > 0) {
-      specificFiles = [...specificFiles, ...uploadedFiles[doc.id]];
-    }
-    
-    // 3. Buscar archivos que coincidan EXACTAMENTE con el nombre del documento
-    if (uploadedFiles) {
-      const otrosFiles = uploadedFiles.otros || [];
-      Object.entries(uploadedFiles).forEach(([category, files]) => {
-        if (category !== 'mandante_docs' && category !== 'otros' && category !== doc.id && files && files.length > 0) {
-          const matchingFiles = files.filter(fileName => {
-            // Verificar que el archivo no esté ya en "otros" para evitar duplicados
-            const isInOtros = otrosFiles.some(otroFile => otroFile === fileName);
-            if (isInOtros) return false;
-            
-            // Comparación EXACTA: quitar extensión y comparar nombres completos
-            const fileBaseName = fileName.replace(/\.[^/.]+$/, "").toLowerCase().trim();
-            const docName = doc.name.toLowerCase().trim();
-            const isMatch = fileBaseName === docName;
-            
-            // Debug para entender qué archivos se están matcheando
-            if (isMatch) {
-              console.log(`🔍 Match found: "${fileName}" matches document "${doc.name}"`);
-            }
-            
-            return isMatch;
-          });
-          if (matchingFiles.length > 0) {
-            console.log(`📄 Document "${doc.name}" matched with files:`, matchingFiles);
-          }
-          specificFiles = [...specificFiles, ...matchingFiles];
-        }
+      // Filtrar solo archivos que coincidan exactamente con el nombre del documento
+      const exactMatches = uploadedFiles[doc.id].filter(fileName => {
+        const fileBaseName = fileName.replace(/\.[^/.]+$/, "").toLowerCase().trim();
+        const docName = doc.name.toLowerCase().trim();
+        return fileBaseName === docName;
       });
+      specificFiles = [...specificFiles, ...exactMatches];
+      
+      if (exactMatches.length > 0) {
+        console.log(`📄 Document "${doc.name}" matched with exact files:`, exactMatches);
+      }
     }
     
     // Eliminar duplicados

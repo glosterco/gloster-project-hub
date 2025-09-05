@@ -68,8 +68,18 @@ const DriveFilesCard: React.FC<DriveFilesCardProps> = ({
             // Comparación EXACTA: quitar extensión y comparar nombres completos
             const fileBaseName = fileName.replace(/\.[^/.]+$/, "").toLowerCase().trim();
             const docName = doc.name.toLowerCase().trim();
-            return fileBaseName === docName;
+            const isMatch = fileBaseName === docName;
+            
+            // Debug para entender qué archivos se están matcheando
+            if (isMatch) {
+              console.log(`🔍 Match found: "${fileName}" matches document "${doc.name}"`);
+            }
+            
+            return isMatch;
           });
+          if (matchingFiles.length > 0) {
+            console.log(`📄 Document "${doc.name}" matched with files:`, matchingFiles);
+          }
           specificFiles = [...specificFiles, ...matchingFiles];
         }
       });

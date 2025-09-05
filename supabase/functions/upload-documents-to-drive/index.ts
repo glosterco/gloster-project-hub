@@ -192,17 +192,17 @@ serve(async (req) => {
       let subfolderName;
       let namingReason;
       
-      // Priority 1: Use documentName from frontend if available and not the same as docType
-      if (docData.documentName && docData.documentName.trim() !== '' && docData.documentName !== docType) {
-        subfolderName = docData.documentName;
-        namingReason = 'frontend-documentName';
-        console.log(`📋 Using frontend documentName for ${docType}: "${subfolderName}"`);
-      }
-      // Priority 2: Use predefined mapping for known document types
-      else if (documentNameMap[docType]) {
+      // Priority 1: Use predefined mapping for known document types (ALWAYS use if available)
+      if (documentNameMap[docType]) {
         subfolderName = documentNameMap[docType];
         namingReason = 'predefined-mapping';
         console.log(`📋 Using predefined mapping for ${docType}: "${subfolderName}"`);
+      }
+      // Priority 2: Use documentName from frontend if available and different from docType
+      else if (docData.documentName && docData.documentName.trim() !== '' && docData.documentName !== docType) {
+        subfolderName = docData.documentName;
+        namingReason = 'frontend-documentName';
+        console.log(`📋 Using frontend documentName for ${docType}: "${subfolderName}"`);
       }
       // Priority 3: For other_ documents, use filename fallback
       else if (docType.startsWith('other_')) {
@@ -304,11 +304,8 @@ serve(async (req) => {
       if (docType.startsWith('mandante_doc_')) {
         // For mandante docs, the file name should already include "- mandante" from frontend
         fileName = file.name.includes('- mandante') ? file.name : `${file.name} - mandante`;
-      } else if (namingReason === 'filename-fallback') {
-        // For documents using filename fallback, keep original filename
-        fileName = file.name;
       } else {
-        // For all other cases, use the proper document name with original extension
+        // For all cases, use the proper document name with original extension
         fileName = `${subfolderName}.${file.name.split('.').pop()}`;
       }
       

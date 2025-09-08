@@ -122,8 +122,13 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error('No access token received from refresh');
     }
 
-    // Format currency
-    const formatCurrency = (amount: number, currency?: string): string => {
+    // Format currency - show "Sin informar" when project budget is 0
+    const formatCurrency = (amount: number, currency?: string, projectBudget?: number): string => {
+      // Si el budget del proyecto es 0 o NULL, mostrar "Sin informar"
+      if (projectBudget === 0 || projectBudget === null || projectBudget === undefined) {
+        return 'Sin informar';
+      }
+
       if (currency === 'UF') {
         return `${amount.toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} UF`;
       } else if (currency === 'USD') {
@@ -252,7 +257,7 @@ const handler = async (req: Request): Promise<Response> => {
                   <p><strong>Proyecto:</strong> ${payment.Proyectos.Name}</p>
                   <p><strong>Estado de Pago:</strong> ${payment.Name}</p>
                   <p><strong>Periodo:</strong> ${payment.Mes} ${payment.Año}</p>
-                  <p><strong>Monto:</strong> ${formatCurrency(payment.Total || 0, payment.Proyectos.Currency)}</p>
+                  <p><strong>Monto:</strong> ${formatCurrency(payment.Total || 0, payment.Proyectos.Currency, payment.Proyectos.Budget)}</p>
                   <p><strong>Fecha de Vencimiento:</strong> ${payment.ExpiryDate || 'No especificada'}</p>
                   <p><strong>Contratista:</strong> ${contractor.CompanyName}</p>
                   <p><strong>Mandante:</strong> ${mandante.CompanyName}</p>

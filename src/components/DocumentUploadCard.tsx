@@ -155,7 +155,7 @@ const DocumentUploadCard: React.FC<DocumentUploadCardProps> = ({
                 className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik whitespace-nowrap"
               >
                 <Upload className="h-4 w-4 mr-2" />
-                {doc.allowMultiple ? 'Cargar Más' : 'Cargar'} 
+                {uploadedFiles && uploadedFiles.length > 0 ? 'Cargar Más' : 'Cargar'} 
               </Button>
               {documentStatus && (
                 <div className="flex items-center space-x-1 text-green-600">

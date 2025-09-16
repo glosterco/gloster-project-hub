@@ -1085,7 +1085,7 @@ const PaymentDetail = () => {
             ref={el => fileInputRefs.current[doc.id] = el}
             onChange={e => e.target.files && handleFileUpload(Array.from(e.target.files), doc.id)}
             accept=".pdf,.doc,.docx,.xls,.xlsx,.xlsm,.jpg,.jpeg,.png,.csv"
-            multiple={doc.allowMultiple}
+            multiple={true}
             style={{ display: 'none' }}
           />
         ))}

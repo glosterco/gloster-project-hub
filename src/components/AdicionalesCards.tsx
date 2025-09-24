@@ -43,10 +43,18 @@ const getStatusColor = (status: string) => {
   }
 };
 
+interface AdicionalesCardsProps {
+  adicionales: Adicional[];
+  loading: boolean;
+  currency?: string;
+  onCardClick?: (adicional: Adicional) => void;
+}
+
 export const AdicionalesCards: React.FC<AdicionalesCardsProps> = ({
   adicionales,
   loading,
-  currency = 'CLP'
+  currency = 'CLP',
+  onCardClick
 }) => {
   if (loading) {
     return (
@@ -101,7 +109,8 @@ export const AdicionalesCards: React.FC<AdicionalesCardsProps> = ({
           {adicionales.map((adicional) => (
             <Card 
               key={adicional.id} 
-              className="hover:shadow-xl transition-all duration-300 border-muted hover:border-primary/50 group"
+              className="hover:shadow-xl transition-all duration-300 border-muted hover:border-primary/50 group cursor-pointer"
+              onClick={() => onCardClick?.(adicional)}
             >
               <CardHeader className="pb-4">
                 <div className="flex items-start justify-between">
@@ -135,8 +144,8 @@ export const AdicionalesCards: React.FC<AdicionalesCardsProps> = ({
                     <span className="text-sm font-medium text-muted-foreground font-rubik">Monto</span>
                   </div>
                   <span className="font-bold text-slate-800 font-rubik">
-                    {adicional.Monto ? 
-                      formatCurrency(adicional.Monto, currency) : 
+                    {adicional.Monto_presentado ? 
+                      formatCurrency(adicional.Monto_presentado, currency) : 
                       'No especificado'
                     }
                   </span>

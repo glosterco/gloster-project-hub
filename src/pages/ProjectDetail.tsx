@@ -17,6 +17,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAdicionales } from '@/hooks/useAdicionales';
 import { AdicionalesCards } from '@/components/AdicionalesCards';
+import { AdicionalesForm } from '@/components/AdicionalesForm';
+import { AdicionalesDetailModal } from '@/components/AdicionalesDetailModal';
 
 const ProjectDetail = () => {
   console.log('🎨 ProjectDetail component rendering with SECURE MODE...');
@@ -28,7 +30,19 @@ const ProjectDetail = () => {
   const [sortBy, setSortBy] = useState('month');
   const [filterBy, setFilterBy] = useState('all');
   const [activeTab, setActiveTab] = useState('estados-pago');
-  const { adicionales, loading: adicionalesLoading } = useAdicionales(id || '');
+  const [showAdicionalesForm, setShowAdicionalesForm] = useState(false);
+  const [selectedAdicional, setSelectedAdicional] = useState<any>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const { adicionales, loading: adicionalesLoading, refetch: refetchAdicionales } = useAdicionales(id || '');
+  
+  const handleAdicionalesSuccess = () => {
+    refetchAdicionales();
+  };
+
+  const handleCardClick = (adicional: any) => {
+    setSelectedAdicional(adicional);
+    setShowDetailModal(true);
+  };
   
   useEffect(() => {
     if (activeTab === 'estados-pago' && adicionales.length > 0) {
@@ -567,11 +581,24 @@ const ProjectDetail = () => {
               </TabsContent>
               
               <TabsContent value="adicionales" className="mt-6">
-                <AdicionalesCards 
-                  adicionales={adicionales}
-                  loading={adicionalesLoading}
-                  currency={project?.Currency}
-                />
+                <div className="space-y-6">
+                  {userType === 'contratista' && (
+                    <div className="flex justify-end">
+                      <Button 
+                        onClick={() => setShowAdicionalesForm(true)}
+                        className="font-rubik"
+                      >
+                        Presentar Nuevo Adicional
+                      </Button>
+                    </div>
+                  )}
+                  <AdicionalesCards 
+                    adicionales={adicionales}
+                    loading={adicionalesLoading}
+                    currency={project?.Currency}
+                    onCardClick={handleCardClick}
+                  />
+                </div>
               </TabsContent>
             </Tabs>
           ) : (
@@ -621,6 +648,22 @@ const ProjectDetail = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Modales */}
+      <AdicionalesForm
+        open={showAdicionalesForm}
+        onOpenChange={setShowAdicionalesForm}
+        projectId={id!}
+        onSuccess={handleAdicionalesSuccess}
+        currency={project?.Currency}
+      />
+
+      <AdicionalesDetailModal
+        open={showDetailModal}
+        onOpenChange={setShowDetailModal}
+        adicional={selectedAdicional}
+        currency={project?.Currency}
+      />
     </div>
   );
 };

@@ -6,8 +6,13 @@ export interface Adicional {
   id: number;
   Status: string;
   Proyecto: number;
-  Monto: number | null;
+  Categoria: string | null;
+  Titulo: string | null;
+  Descripcion: string | null;
+  Monto_presentado: number | null;
+  Monto_aprobado: number | null;
   Vencimiento: string | null;
+  GG: number | null;
   URL: string | null;
   created_at: string;
 }

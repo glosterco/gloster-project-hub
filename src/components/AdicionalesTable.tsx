@@ -78,8 +78,8 @@ export const AdicionalesTable: React.FC<AdicionalesTableProps> = ({
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {adicional.Monto ? 
-                      formatCurrency(adicional.Monto, currency) : 
+                    {adicional.Monto_presentado ? 
+                      formatCurrency(adicional.Monto_presentado, currency) : 
                       'No especificado'
                     }
                   </TableCell>

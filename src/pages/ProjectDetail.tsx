@@ -30,6 +30,12 @@ const ProjectDetail = () => {
   const [activeTab, setActiveTab] = useState('estados-pago');
   const { adicionales, loading: adicionalesLoading } = useAdicionales(id || '');
   
+  useEffect(() => {
+    if (activeTab === 'estados-pago' && adicionales.length > 0) {
+      setActiveTab('adicionales');
+    }
+  }, [adicionales]);
+  
   console.log('📊 Project ID from params:', id);
   
   const { user } = useAuth();

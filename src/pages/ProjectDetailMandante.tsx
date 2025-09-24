@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -26,6 +26,12 @@ const ProjectDetailMandante = () => {
   const [filterBy, setFilterBy] = useState('all');
   const [activeTab, setActiveTab] = useState('estados-pago');
   const { adicionales, loading: adicionalesLoading } = useAdicionales(id || '');
+  
+  useEffect(() => {
+    if (activeTab === 'estados-pago' && adicionales.length > 0) {
+      setActiveTab('adicionales');
+    }
+  }, [adicionales]);
   
   const { project, loading, refetch, mandante } = useProjectDetailMandante(id || '');
   const { sendContractorPaymentNotification, loading: notificationLoading } = useContractorNotification();

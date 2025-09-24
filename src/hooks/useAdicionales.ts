@@ -20,13 +20,20 @@ export const useAdicionales = (projectId: string) => {
   const fetchAdicionales = async () => {
     if (!projectId) return;
     
+    const pid = parseInt(projectId);
+    if (Number.isNaN(pid)) {
+      console.warn('⚠️ useAdicionales: projectId inválido:', projectId);
+      return;
+    }
+    
     setLoading(true);
     
     try {
+      console.log('🔎 Fetching adicionales for projectId:', pid);
       const { data: adicionalesData, error } = await supabase
         .from('Adicionales' as any)
         .select('*')
-        .eq('Proyecto', parseInt(projectId))
+        .eq('Proyecto', pid)
         .order('created_at', { ascending: false });
         
       if (error) {
@@ -39,8 +46,8 @@ export const useAdicionales = (projectId: string) => {
         return;
       }
       
+      console.log('✅ Fetched adicionales:', Array.isArray(adicionalesData) ? adicionalesData.length : 0);
       setAdicionales((adicionalesData as any) || []);
-      
     } catch (error) {
       console.error('❌ CRITICAL ERROR in fetchAdicionales:', error);
       toast({

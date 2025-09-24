@@ -14,6 +14,8 @@ import { useProjectDetailMandante } from '@/hooks/useProjectDetailMandante';
 import { useContractorNotification } from '@/hooks/useContractorNotification';
 import { formatCurrency } from '@/utils/currencyUtils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAdicionales } from '@/hooks/useAdicionales';
+import { AdicionalesTable } from '@/components/AdicionalesTable';
 
 const ProjectDetailMandante = () => {
   const { id } = useParams();
@@ -23,6 +25,7 @@ const ProjectDetailMandante = () => {
   const [sortBy, setSortBy] = useState('month');
   const [filterBy, setFilterBy] = useState('all');
   const [activeTab, setActiveTab] = useState('estados-pago');
+  const { adicionales, loading: adicionalesLoading } = useAdicionales(id || '');
   
   const { project, loading, refetch, mandante } = useProjectDetailMandante(id || '');
   const { sendContractorPaymentNotification, loading: notificationLoading } = useContractorNotification();
@@ -284,17 +287,19 @@ const ProjectDetailMandante = () => {
 
         {/* Estados de Pago - Con pestañas si tiene adicionales */}
         <div className="space-y-6">
-          {(() => {
-            console.log('🔍 DEBUG: mandante?.Adicionales =', (mandante as any)?.Adicionales, 'type:', typeof (mandante as any)?.Adicionales);
-            return null;
-          })()}
           {((mandante as any)?.Adicionales === true) ? (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 bg-slate-100">
-                <TabsTrigger value="estados-pago" className="font-rubik">
+              <TabsList className="grid w-full grid-cols-2 bg-card/50 backdrop-blur-sm border border-border/50 rounded-lg p-1">
+                <TabsTrigger 
+                  value="estados-pago" 
+                  className="font-rubik font-medium transition-all duration-200 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm data-[state=active]:font-semibold"
+                >
                   Estados de Pago
                 </TabsTrigger>
-                <TabsTrigger value="adicionales" className="font-rubik">
+                <TabsTrigger 
+                  value="adicionales" 
+                  className="font-rubik font-medium transition-all duration-200 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm data-[state=active]:font-semibold"
+                >
                   Adicionales
                 </TabsTrigger>
               </TabsList>
@@ -469,13 +474,12 @@ const ProjectDetailMandante = () => {
                 )}
               </TabsContent>
               
-              <TabsContent value="adicionales" className="space-y-6">
-                <Card className="p-8 text-center">
-                  <CardContent>
-                    <h3 className="text-xl font-bold text-slate-800 mb-4 font-rubik">Estados de Pago Adicionales</h3>
-                    <p className="text-gloster-gray font-rubik">Esta sección estará disponible próximamente para gestionar estados de pago adicionales.</p>
-                  </CardContent>
-                </Card>
+              <TabsContent value="adicionales" className="mt-6">
+                <AdicionalesTable 
+                  adicionales={adicionales}
+                  loading={adicionalesLoading}
+                  currency={project?.Currency}
+                />
               </TabsContent>
             </Tabs>
           ) : (

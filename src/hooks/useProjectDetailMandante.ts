@@ -41,6 +41,7 @@ export interface ProjectDetail {
 
 export const useProjectDetailMandante = (projectId: string) => {
   const [project, setProject] = useState<ProjectDetail | null>(null);
+  const [mandante, setMandante] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -157,6 +158,7 @@ export const useProjectDetailMandante = (projectId: string) => {
 
       console.log('✅ MANDANTE MODE: Setting project state');
       setProject(projectWithDetails);
+      setMandante(mandanteData);
       
     } catch (error) {
       console.error('❌ CRITICAL ERROR in mandante fetchProjectDetail:', error);
@@ -177,6 +179,7 @@ export const useProjectDetailMandante = (projectId: string) => {
 
   return {
     project,
+    mandante,
     loading,
     refetch: fetchProjectDetailMandante
   };

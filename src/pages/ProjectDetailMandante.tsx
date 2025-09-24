@@ -13,6 +13,7 @@ import PageHeader from '@/components/PageHeader';
 import { useProjectDetailMandante } from '@/hooks/useProjectDetailMandante';
 import { useContractorNotification } from '@/hooks/useContractorNotification';
 import { formatCurrency } from '@/utils/currencyUtils';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const ProjectDetailMandante = () => {
   const { id } = useParams();
@@ -21,8 +22,9 @@ const ProjectDetailMandante = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('month');
   const [filterBy, setFilterBy] = useState('all');
+  const [activeTab, setActiveTab] = useState('estados-pago');
   
-  const { project, loading, refetch } = useProjectDetailMandante(id || '');
+  const { project, loading, refetch, mandante } = useProjectDetailMandante(id || '');
   const { sendContractorPaymentNotification, loading: notificationLoading } = useContractorNotification();
 
   const getPaymentStatus = (payment: any) => {
@@ -280,212 +282,369 @@ const ProjectDetailMandante = () => {
           </CardContent>
         </Card>
 
-        {/* Estados de Pago */}
+        {/* Estados de Pago - Con pestañas si tiene adicionales */}
         <div className="space-y-6">
-          <h3 className="text-2xl font-bold text-slate-800 mb-6 font-rubik">Estados de Pago</h3>
+          {mandante?.Adicionales ? (
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-2 bg-slate-100">
+                <TabsTrigger value="estados-pago" className="font-rubik">
+                  Estados de Pago
+                </TabsTrigger>
+                <TabsTrigger value="adicionales" className="font-rubik">
+                  Adicionales
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="estados-pago" className="space-y-6">
+                {/* Contenido de Estados de Pago */}
           
-          {/* Search, Filter and Sort Controls */}
-          <div className="mb-6 p-4 bg-white rounded-lg border border-gloster-gray/20">
-            <div className="flex items-center gap-4 w-full">
-              <div className="relative flex-1 min-w-0">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gloster-gray h-4 w-4" />
-                <Input
-                  placeholder="Buscar estados de pago..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 font-rubik"
-                />
-              </div>
-              
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-40 font-rubik">
-                  <SelectValue placeholder="Ordenar por" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="month">Fecha</SelectItem>
-                  <SelectItem value="amount">Monto</SelectItem>
-                  <SelectItem value="status">Estado</SelectItem>
-                </SelectContent>
-              </Select>
+                {/* Search, Filter and Sort Controls */}
+                <div className="mb-6 p-4 bg-white rounded-lg border border-gloster-gray/20">
+                  <div className="flex items-center gap-4 w-full">
+                    <div className="relative flex-1 min-w-0">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gloster-gray h-4 w-4" />
+                      <Input
+                        placeholder="Buscar estados de pago..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10 font-rubik"
+                      />
+                    </div>
+                    
+                    <Select value={sortBy} onValueChange={setSortBy}>
+                      <SelectTrigger className="w-40 font-rubik">
+                        <SelectValue placeholder="Ordenar por" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="month">Fecha</SelectItem>
+                        <SelectItem value="amount">Monto</SelectItem>
+                        <SelectItem value="status">Estado</SelectItem>
+                      </SelectContent>
+                    </Select>
 
-              <Select value={filterBy} onValueChange={setFilterBy}>
-                <SelectTrigger className="w-44 font-rubik">
-                  <Filter className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Filtrar por estado" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="aprobado">Aprobado</SelectItem>
-                  <SelectItem value="enviado">Recibido</SelectItem>
-                  <SelectItem value="rechazado">Rechazado</SelectItem>
-                  <SelectItem value="pendiente">Pendiente</SelectItem> {/* ✅ CORREGIDO: Filtro correcto */}
-                  <SelectItem value="programado">Programado</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-          {filteredAndSortedPayments.length === 0 ? (
-            <Card className="p-8 text-center">
-              <CardContent>
-                <p className="text-gloster-gray font-rubik">No hay estados de pago para este proyecto.</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredAndSortedPayments.map((payment) => {
-                const status = getPaymentStatus(payment);
-                const displayStatus = getDisplayStatus(status);
-                
-                return (
-                  <Card 
-                    key={payment.id} 
-                    className="hover:shadow-xl transition-all duration-300 border-gloster-gray/20 hover:border-gloster-yellow/50 h-full"
-                  >
-                    <CardContent className="p-4 md:p-6 h-full flex flex-col">
-                      <div className="space-y-4 flex-1">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex items-center space-x-3 min-w-0 flex-1">
-                            <div className="w-10 h-10 bg-gloster-yellow/20 rounded-lg flex items-center justify-center shrink-0">
-                              <Calendar className="h-5 w-5 text-gloster-gray" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <h4 className="font-semibold text-slate-800 font-rubik text-sm md:text-base">
-                                {payment.Name}
-                              </h4>
-                              <p className="text-gloster-gray text-xs md:text-sm font-rubik">
-                                {payment.Mes} {payment.Año}
-                              </p>
-                              <p className="text-gloster-gray text-xs md:text-sm font-rubik">
-                                Vencimiento: {new Date(payment.ExpiryDate).toLocaleDateString('es-CL')}
-                              </p>
-                            </div>
-                          </div>
-                          <Badge variant="secondary" className={`${getStatusColor(status)} text-xs shrink-0`}>
-                            {displayStatus}
-                          </Badge>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <div className="flex justify-between items-center">
-                            <span className="text-gloster-gray text-xs md:text-sm font-rubik">Monto:</span>
-                            <span className="font-bold text-slate-800 text-sm md:text-base font-rubik">
-                              {formatCurrency(payment.Total || 0, project.Currency || 'CLP')}
-                            </span>
-                          </div>
-                          
-                        </div>
-                      </div>
-                      
-                      {/* Action Buttons */}
-                      <div className="mt-4 pt-4 border-t border-gloster-gray/20">
-                        <div className="flex gap-2 mb-2">
-                          {canViewPayment(status) && (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => handlePaymentAction(payment, 'view')}
-                                    className="flex-1 border-gloster-yellow text-gloster-gray hover:bg-gloster-yellow/10"
-                                  >
-                                    <Eye className="h-4 w-4 mr-1" />
-                                    Ver
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Ver los documentos enviados por el contratista para este estado de pago</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          )}
-                          
-                          {canManagePayment(status) && (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    size="sm"
-                                    onClick={() => handlePaymentAction(payment, 'manage')}
-                                    className="flex-1 bg-gloster-yellow hover:bg-gloster-yellow/90 text-black"
-                                  >
-                                    <Settings className="h-4 w-4 mr-1" />
-                                    Gestionar
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Revisar y aprobar/rechazar los documentos del estado de pago</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          )}
-                          
-                          {!canViewPayment(status) && !canManagePayment(status) && !shouldShowNotifyButton(payment) && (
-                            <div className="flex-1 text-center text-xs text-gloster-gray py-2">
-                              Sin acciones disponibles
-                            </div>
-                          )}
-                        </div>
-                        
-                        {/* Botón Notificar - Solo si hay pagos elegibles */}
-                        {shouldShowNotifyButton(payment) && (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleNotifyContractor(payment)}
-                                  disabled={notificationLoading}
-                                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-rubik"
-                                >
-                                  <Bell className="h-4 w-4 mr-1" />
-                                  {notificationLoading ? 'Enviando...' : 'Notificar'}
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Enviar recordatorio al contratista sobre este estado de pago</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
-          
-          {/* Project Info Banner */}
-          {project && (
-            <Card className="mt-8 border-l-4 border-l-blue-500 bg-blue-50/50">
-              <CardHeader>
-                <CardTitle className="text-lg font-rubik text-slate-800">Información del Proyecto</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-gloster-gray font-rubik">Contacto:</p>
-                    <p className="font-semibold text-slate-800 font-rubik">{project.Contratista?.ContactName}</p>
-                  </div>
-                  <div>
-                    <p className="text-gloster-gray font-rubik">Email de Contacto:</p>
-                    <p className="font-semibold text-slate-800 font-rubik">{project.Contratista?.ContactEmail}</p>
-                  </div>
-                  <div>
-                    <p className="text-gloster-gray font-rubik">Fecha de Inicio:</p>
-                    <p className="font-semibold text-slate-800 font-rubik">
-                      {new Date(project.StartDate).toLocaleDateString('es-CL')}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-gloster-gray font-rubik">Duración:</p>
-                    <p className="font-semibold text-slate-800 font-rubik">{project.Duration} días</p>
+                    <Select value={filterBy} onValueChange={setFilterBy}>
+                      <SelectTrigger className="w-44 font-rubik">
+                        <Filter className="h-4 w-4 mr-2" />
+                        <SelectValue placeholder="Filtrar por estado" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todos</SelectItem>
+                        <SelectItem value="aprobado">Aprobado</SelectItem>
+                        <SelectItem value="enviado">Recibido</SelectItem>
+                        <SelectItem value="rechazado">Rechazado</SelectItem>
+                        <SelectItem value="pendiente">Pendiente</SelectItem>
+                        <SelectItem value="programado">Programado</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+                
+                {filteredAndSortedPayments.length === 0 ? (
+                  <Card className="p-8 text-center">
+                    <CardContent>
+                      <p className="text-gloster-gray font-rubik">No hay estados de pago para este proyecto.</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredAndSortedPayments.map((payment) => {
+                      const status = getPaymentStatus(payment);
+                      const displayStatus = getDisplayStatus(status);
+                      
+                      return (
+                        <Card 
+                          key={payment.id} 
+                          className="hover:shadow-xl transition-all duration-300 border-gloster-gray/20 hover:border-gloster-yellow/50 h-full"
+                        >
+                          <CardContent className="p-4 md:p-6 h-full flex flex-col">
+                            <div className="space-y-4 flex-1">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex items-center space-x-3 min-w-0 flex-1">
+                                  <div className="w-10 h-10 bg-gloster-yellow/20 rounded-lg flex items-center justify-center shrink-0">
+                                    <Calendar className="h-5 w-5 text-gloster-gray" />
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <h4 className="font-semibold text-slate-800 font-rubik text-sm md:text-base">
+                                      {payment.Name}
+                                    </h4>
+                                    <p className="text-gloster-gray text-xs md:text-sm font-rubik">
+                                      {payment.Mes} {payment.Año}
+                                    </p>
+                                    <p className="text-gloster-gray text-xs md:text-sm font-rubik">
+                                      Vencimiento: {new Date(payment.ExpiryDate).toLocaleDateString('es-CL')}
+                                    </p>
+                                  </div>
+                                </div>
+                                <Badge variant="secondary" className={`${getStatusColor(status)} text-xs shrink-0`}>
+                                  {displayStatus}
+                                </Badge>
+                              </div>
+                              
+                              <div className="space-y-2">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-gloster-gray text-xs md:text-sm font-rubik">Monto:</span>
+                                  <span className="font-bold text-slate-800 text-sm md:text-base font-rubik">
+                                    {formatCurrency(payment.Total || 0, project.Currency || 'CLP')}
+                                  </span>
+                                </div>
+                                
+                              </div>
+                            </div>
+                            
+                            {/* Action Buttons */}
+                            <div className="mt-4 pt-4 border-t border-gloster-gray/20">
+                              <div className="flex gap-2 mb-2">
+                                {canViewPayment(status) && (
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => handlePaymentAction(payment, 'view')}
+                                          className="flex-1 border-gloster-yellow text-gloster-gray hover:bg-gloster-yellow/10"
+                                        >
+                                          <Eye className="h-4 w-4 mr-1" />
+                                          Ver
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>Ver los documentos enviados por el contratista para este estado de pago</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                )}
+                                
+                                {canManagePayment(status) && (
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          size="sm"
+                                          onClick={() => handlePaymentAction(payment, 'manage')}
+                                          className="flex-1 bg-gloster-yellow hover:bg-gloster-yellow/90 text-black"
+                                        >
+                                          <Settings className="h-4 w-4 mr-1" />
+                                          Gestionar
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>Gestionar la aprobación o rechazo de este estado de pago</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                )}
+                              </div>
+                              
+                              {shouldShowNotifyButton(payment) && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => handleNotifyContractor(payment)}
+                                        disabled={notificationLoading}
+                                        className="w-full border-blue-200 text-blue-600 hover:bg-blue-50"
+                                      >
+                                        <Bell className="h-4 w-4 mr-1" />
+                                        {notificationLoading ? 'Notificando...' : 'Notificar Contratista'}
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Enviar notificación manual al contratista sobre este estado de pago pendiente</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="adicionales" className="space-y-6">
+                <Card className="p-8 text-center">
+                  <CardContent>
+                    <h3 className="text-xl font-bold text-slate-800 mb-4 font-rubik">Estados de Pago Adicionales</h3>
+                    <p className="text-gloster-gray font-rubik">Esta sección estará disponible próximamente para gestionar estados de pago adicionales.</p>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          ) : (
+            <>
+              <h3 className="text-2xl font-bold text-slate-800 mb-6 font-rubik">Estados de Pago</h3>
+              
+              {/* Search, Filter and Sort Controls */}
+              <div className="mb-6 p-4 bg-white rounded-lg border border-gloster-gray/20">
+                <div className="flex items-center gap-4 w-full">
+                  <div className="relative flex-1 min-w-0">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gloster-gray h-4 w-4" />
+                    <Input
+                      placeholder="Buscar estados de pago..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10 font-rubik"
+                    />
+                  </div>
+                  
+                  <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger className="w-40 font-rubik">
+                      <SelectValue placeholder="Ordenar por" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="month">Fecha</SelectItem>
+                      <SelectItem value="amount">Monto</SelectItem>
+                      <SelectItem value="status">Estado</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={filterBy} onValueChange={setFilterBy}>
+                    <SelectTrigger className="w-44 font-rubik">
+                      <Filter className="h-4 w-4 mr-2" />
+                      <SelectValue placeholder="Filtrar por estado" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="aprobado">Aprobado</SelectItem>
+                      <SelectItem value="enviado">Recibido</SelectItem>
+                      <SelectItem value="rechazado">Rechazado</SelectItem>
+                      <SelectItem value="pendiente">Pendiente</SelectItem>
+                      <SelectItem value="programado">Programado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              {filteredAndSortedPayments.length === 0 ? (
+                <Card className="p-8 text-center">
+                  <CardContent>
+                    <p className="text-gloster-gray font-rubik">No hay estados de pago para este proyecto.</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredAndSortedPayments.map((payment) => {
+                    const status = getPaymentStatus(payment);
+                    const displayStatus = getDisplayStatus(status);
+                    
+                    return (
+                      <Card 
+                        key={payment.id} 
+                        className="hover:shadow-xl transition-all duration-300 border-gloster-gray/20 hover:border-gloster-yellow/50 h-full"
+                      >
+                        <CardContent className="p-4 md:p-6 h-full flex flex-col">
+                          <div className="space-y-4 flex-1">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex items-center space-x-3 min-w-0 flex-1">
+                                <div className="w-10 h-10 bg-gloster-yellow/20 rounded-lg flex items-center justify-center shrink-0">
+                                  <Calendar className="h-5 w-5 text-gloster-gray" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <h4 className="font-semibold text-slate-800 font-rubik text-sm md:text-base">
+                                    {payment.Name}
+                                  </h4>
+                                  <p className="text-gloster-gray text-xs md:text-sm font-rubik">
+                                    {payment.Mes} {payment.Año}
+                                  </p>
+                                  <p className="text-gloster-gray text-xs md:text-sm font-rubik">
+                                    Vencimiento: {new Date(payment.ExpiryDate).toLocaleDateString('es-CL')}
+                                  </p>
+                                </div>
+                              </div>
+                              <Badge variant="secondary" className={`${getStatusColor(status)} text-xs shrink-0`}>
+                                {displayStatus}
+                              </Badge>
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <div className="flex justify-between items-center">
+                                <span className="text-gloster-gray text-xs md:text-sm font-rubik">Monto:</span>
+                                <span className="font-bold text-slate-800 text-sm md:text-base font-rubik">
+                                  {formatCurrency(payment.Total || 0, project.Currency || 'CLP')}
+                                </span>
+                              </div>
+                              
+                            </div>
+                          </div>
+                          
+                          {/* Action Buttons */}
+                          <div className="mt-4 pt-4 border-t border-gloster-gray/20">
+                            <div className="flex gap-2 mb-2">
+                              {canViewPayment(status) && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => handlePaymentAction(payment, 'view')}
+                                        className="flex-1 border-gloster-yellow text-gloster-gray hover:bg-gloster-yellow/10"
+                                      >
+                                        <Eye className="h-4 w-4 mr-1" />
+                                        Ver
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Ver los documentos enviados por el contratista para este estado de pago</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                              
+                              {canManagePayment(status) && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        size="sm"
+                                        onClick={() => handlePaymentAction(payment, 'manage')}
+                                        className="flex-1 bg-gloster-yellow hover:bg-gloster-yellow/90 text-black"
+                                      >
+                                        <Settings className="h-4 w-4 mr-1" />
+                                        Gestionar
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Gestionar la aprobación o rechazo de este estado de pago</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                            </div>
+                            
+                            {shouldShowNotifyButton(payment) && (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => handleNotifyContractor(payment)}
+                                      disabled={notificationLoading}
+                                      className="w-full border-blue-200 text-blue-600 hover:bg-blue-50"
+                                    >
+                                      <Bell className="h-4 w-4 mr-1" />
+                                      {notificationLoading ? 'Notificando...' : 'Notificar Contratista'}
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Enviar notificación manual al contratista sobre este estado de pago pendiente</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

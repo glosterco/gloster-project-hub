@@ -15,7 +15,7 @@ import { useContractorNotification } from '@/hooks/useContractorNotification';
 import { formatCurrency } from '@/utils/currencyUtils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAdicionales } from '@/hooks/useAdicionales';
-import { AdicionalesTable } from '@/components/AdicionalesTable';
+import { AdicionalesCards } from '@/components/AdicionalesCards';
 
 const ProjectDetailMandante = () => {
   const { id } = useParams();
@@ -481,7 +481,7 @@ const ProjectDetailMandante = () => {
               </TabsContent>
               
               <TabsContent value="adicionales" className="mt-6">
-                <AdicionalesTable 
+                <AdicionalesCards 
                   adicionales={adicionales}
                   loading={adicionalesLoading}
                   currency={project?.Currency}

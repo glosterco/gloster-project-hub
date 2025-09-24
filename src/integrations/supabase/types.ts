@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      Adicionales: {
+        Row: {
+          created_at: string
+          id: number
+          Monto: number | null
+          Proyecto: number | null
+          Status: string | null
+          URL: string | null
+          Vencimiento: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          Monto?: number | null
+          Proyecto?: number | null
+          Status?: string | null
+          URL?: string | null
+          Vencimiento?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          Monto?: number | null
+          Proyecto?: number | null
+          Status?: string | null
+          URL?: string | null
+          Vencimiento?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "Adicionales_Proyecto_fkey"
+            columns: ["Proyecto"]
+            isOneToOne: false
+            referencedRelation: "Proyectos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contratista_users: {
         Row: {
           auth_user_id: string
@@ -58,6 +96,7 @@ export type Database = {
       }
       Contratistas: {
         Row: {
+          Adicionales: boolean | null
           auth_user_id: string | null
           CCEmail: string | null
           CompanyName: string
@@ -72,6 +111,7 @@ export type Database = {
           URLCC: string | null
         }
         Insert: {
+          Adicionales?: boolean | null
           auth_user_id?: string | null
           CCEmail?: string | null
           CompanyName: string
@@ -86,6 +126,7 @@ export type Database = {
           URLCC?: string | null
         }
         Update: {
+          Adicionales?: boolean | null
           auth_user_id?: string | null
           CCEmail?: string | null
           CompanyName?: string
@@ -257,6 +298,7 @@ export type Database = {
       }
       Mandantes: {
         Row: {
+          Adicionales: boolean | null
           auth_user_id: string | null
           CC: string | null
           CompanyName: string
@@ -267,6 +309,7 @@ export type Database = {
           Status: boolean | null
         }
         Insert: {
+          Adicionales?: boolean | null
           auth_user_id?: string | null
           CC?: string | null
           CompanyName: string
@@ -277,6 +320,7 @@ export type Database = {
           Status?: boolean | null
         }
         Update: {
+          Adicionales?: boolean | null
           auth_user_id?: string | null
           CC?: string | null
           CompanyName?: string

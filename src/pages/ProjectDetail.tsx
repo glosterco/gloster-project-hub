@@ -16,7 +16,7 @@ import { useProjectDetailMandante } from '@/hooks/useProjectDetailMandante';
 import { useAuth } from '@/hooks/useAuth';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAdicionales } from '@/hooks/useAdicionales';
-import { AdicionalesTable } from '@/components/AdicionalesTable';
+import { AdicionalesCards } from '@/components/AdicionalesCards';
 
 const ProjectDetail = () => {
   console.log('🎨 ProjectDetail component rendering with SECURE MODE...');
@@ -567,7 +567,7 @@ const ProjectDetail = () => {
               </TabsContent>
               
               <TabsContent value="adicionales" className="mt-6">
-                <AdicionalesTable 
+                <AdicionalesCards 
                   adicionales={adicionales}
                   loading={adicionalesLoading}
                   currency={project?.Currency}

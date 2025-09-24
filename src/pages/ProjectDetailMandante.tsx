@@ -284,7 +284,11 @@ const ProjectDetailMandante = () => {
 
         {/* Estados de Pago - Con pestañas si tiene adicionales */}
         <div className="space-y-6">
-          {mandante?.Adicionales ? (
+          {(() => {
+            console.log('🔍 DEBUG: mandante?.Adicionales =', (mandante as any)?.Adicionales, 'type:', typeof (mandante as any)?.Adicionales);
+            return null;
+          })()}
+          {((mandante as any)?.Adicionales === true) ? (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2 bg-slate-100">
                 <TabsTrigger value="estados-pago" className="font-rubik">

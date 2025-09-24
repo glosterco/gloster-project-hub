@@ -62,25 +62,27 @@ const ProjectDetail = () => {
       // STRICT: Only authenticated users with user_auth_id can access project details
       const { data: mandanteData } = await supabase
         .from('Mandantes')
-        .select('id, auth_user_id')
+        .select('*')
         .eq('auth_user_id', user.id)
         .maybeSingle();
         
       if (mandanteData && mandanteData.auth_user_id === user.id) {
         setUserType('mandante');
-        setUserEntity({ ...mandanteData, Adicionales: false }); // Default to false for now
+        console.log('🔍 DEBUG: mandanteData.Adicionales =', (mandanteData as any).Adicionales, 'type:', typeof (mandanteData as any).Adicionales);
+        setUserEntity(mandanteData);
         return;
       }
       
       const { data: contratistaData } = await supabase
         .from('Contratistas')
-        .select('id, auth_user_id')
+        .select('*')
         .eq('auth_user_id', user.id)
         .maybeSingle();
         
       if (contratistaData && contratistaData.auth_user_id === user.id) {
         setUserType('contratista');
-        setUserEntity({ ...contratistaData, Adicionales: false }); // Default to false for now
+        console.log('🔍 DEBUG: contratistaData.Adicionales =', (contratistaData as any).Adicionales, 'type:', typeof (contratistaData as any).Adicionales);
+        setUserEntity(contratistaData);
         return;
       }
       
@@ -521,7 +523,11 @@ const ProjectDetail = () => {
 
         {/* Estados de Pago - Con pestañas si tiene adicionales */}
         <div className="space-y-6">
-          {userEntity?.Adicionales ? (
+          {(() => {
+            console.log('🔍 DEBUG: userEntity?.Adicionales =', (userEntity as any)?.Adicionales, 'type:', typeof (userEntity as any)?.Adicionales);
+            return null;
+          })()}
+          {((userEntity as any)?.Adicionales === true) ? (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2 bg-slate-100">
                 <TabsTrigger value="estados-pago" className="font-rubik">

@@ -157,6 +157,8 @@ export const useProjectDetailMandante = (projectId: string) => {
       };
 
       console.log('✅ MANDANTE MODE: Setting project state');
+      console.log('🔍 DEBUG: mandanteData =', mandanteData);
+      console.log('🔍 DEBUG: mandanteData.Adicionales =', mandanteData?.Adicionales, 'type:', typeof mandanteData?.Adicionales);
       setProject(projectWithDetails);
       setMandante(mandanteData);
       

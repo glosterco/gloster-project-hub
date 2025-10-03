@@ -177,7 +177,7 @@ const ProjectDetailMandante = () => {
         .sort((a, b) => {
           switch (sortBy) {
             case 'month':
-              return new Date(b.ExpiryDate).getTime() - new Date(a.ExpiryDate).getTime();
+              return new Date(a.ExpiryDate).getTime() - new Date(b.ExpiryDate).getTime();
             case 'amount':
               const amountA = a.Total || 0;
               const amountB = b.Total || 0;

@@ -7,13 +7,14 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Calendar, MapPin, Building2, User, Phone, Mail, FileText, CheckCircle, Clock, AlertCircle, XCircle, LogOut, DollarSign, FolderOpen, Search, Filter, ArrowUpDown, Plus, Folder, ChevronRight, ChevronDown, Edit2, Trash2 } from 'lucide-react';
+import { Calendar, MapPin, Building2, User, Phone, Mail, FileText, CheckCircle, Clock, AlertCircle, XCircle, LogOut, DollarSign, FolderOpen, Search, Filter, ArrowUpDown, Plus, Folder, ChevronRight, ChevronDown, Edit2, Trash2, ChevronDown as ChevronDownIcon } from 'lucide-react';
 import { useProjectsWithDetailsMandante } from '@/hooks/useProjectsWithDetailsMandante';
 import { useMandanteFolders } from '@/hooks/useMandanteFolders';
 import { formatCurrency } from '@/utils/currencyUtils';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 // Force rebuild to clear cached TooltipProvider reference
 
@@ -32,6 +33,7 @@ const DashboardMandante: React.FC = () => {
     ContactName: string;
     CompanyName: string;
   } | null>(null);
+  const [hasMultipleRoles, setHasMultipleRoles] = useState(false);
   
   // Estados para filtros y búsqueda
   const [searchTerm, setSearchTerm] = useState('');
@@ -98,6 +100,9 @@ const DashboardMandante: React.FC = () => {
           console.log('❌ Could not find mandante data');
           navigate('/');
         }
+        
+        // Check if user has multiple roles
+        setHasMultipleRoles((userRoles?.length || 0) > 1);
       } catch (error) {
         console.error('Error fetching mandante info:', error);
         navigate('/');
@@ -443,14 +448,38 @@ const DashboardMandante: React.FC = () => {
             </div>
             
             <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2 text-gloster-gray">
-                <User className="h-4 w-4" />
-                <span className="text-sm font-rubik">
-                  {mandanteInfo?.ContactName && mandanteInfo?.CompanyName 
-                    ? `${mandanteInfo.ContactName} - ${mandanteInfo.CompanyName}` 
-                    : 'Usuario Mandante'}
-                </span>
-              </div>
+              {hasMultipleRoles ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="flex items-center space-x-2 text-gloster-gray hover:text-slate-800">
+                      <User className="h-4 w-4" />
+                      <span className="text-sm font-rubik">
+                        {mandanteInfo?.ContactName && mandanteInfo?.CompanyName 
+                          ? `${mandanteInfo.ContactName} - ${mandanteInfo.CompanyName}` 
+                          : 'Usuario Mandante'}
+                      </span>
+                      <ChevronDownIcon className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-white z-50">
+                    <DropdownMenuItem 
+                      onClick={() => navigate('/role-selection')}
+                      className="cursor-pointer font-rubik"
+                    >
+                      Cambiar de rol
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <div className="flex items-center space-x-2 text-gloster-gray">
+                  <User className="h-4 w-4" />
+                  <span className="text-sm font-rubik">
+                    {mandanteInfo?.ContactName && mandanteInfo?.CompanyName 
+                      ? `${mandanteInfo.ContactName} - ${mandanteInfo.CompanyName}` 
+                      : 'Usuario Mandante'}
+                  </span>
+                </div>
+              )}
               <Button 
                 variant="outline" 
                 size="sm" 

@@ -35,8 +35,10 @@ const RoleSelection: React.FC = () => {
       if (!hasMultipleRoles) {
         // Usuario tiene un solo rol, redirigir directamente
         if (isContratista) {
+          sessionStorage.setItem('activeRole', 'contratista');
           navigate('/dashboard');
         } else if (isMandante) {
+          sessionStorage.setItem('activeRole', 'mandante');
           navigate('/dashboard-mandante');
         }
         return;

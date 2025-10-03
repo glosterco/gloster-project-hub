@@ -61,36 +61,42 @@ const DashboardMandante: React.FC = () => {
           return;
         }
 
-        const { data: mandanteData, error } = await supabase
-          .from('Mandantes')
-          .select('ContactName, CompanyName, auth_user_id')
-          .eq('auth_user_id', user.id)
-          .maybeSingle();
+        // Verificar si el usuario tiene rol de mandante en user_roles
+        const { data: userRoles } = await supabase
+          .from('user_roles')
+          .select('role_type, entity_id')
+          .eq('auth_user_id', user.id);
 
-        if (!error && mandanteData && mandanteData.auth_user_id === user.id) {
-          // Usuario es mandante autenticado con user_auth_id
-          setMandanteInfo(mandanteData);
-          // Guardar el rol activo en sessionStorage
-          sessionStorage.setItem('activeRole', 'mandante');
-        } else {
-          // Usuario no es mandante autenticado
-          console.log('❌ User is not an authenticated mandante, checking contractor access');
+        const mandanteRole = userRoles?.find(role => role.role_type === 'mandante');
+        
+        if (!mandanteRole) {
+          console.log('❌ User does not have mandante role in user_roles');
           
-          // Verificar si es contratista
-          const { data: contratistaData } = await supabase
-            .from('Contratistas')
-            .select('id')
-            .eq('auth_user_id', user.id)
-            .maybeSingle();
-            
-          if (contratistaData) {
-            // Redirigir a dashboard de contratista
+          // Verificar si es contratista y redirigir
+          const contratistaRole = userRoles?.find(role => role.role_type === 'contratista');
+          if (contratistaRole) {
             sessionStorage.setItem('activeRole', 'contratista');
             navigate('/dashboard');
           } else {
-            // Usuario sin roles válidos
             navigate('/');
           }
+          return;
+        }
+
+        // Obtener información del mandante desde la tabla Mandantes
+        const { data: mandanteData } = await supabase
+          .from('Mandantes')
+          .select('ContactName, CompanyName')
+          .eq('id', mandanteRole.entity_id)
+          .maybeSingle();
+
+        if (mandanteData) {
+          setMandanteInfo(mandanteData);
+          sessionStorage.setItem('activeRole', 'mandante');
+          console.log('✅ Verified mandante access via user_roles');
+        } else {
+          console.log('❌ Could not find mandante data');
+          navigate('/');
         }
       } catch (error) {
         console.error('Error fetching mandante info:', error);

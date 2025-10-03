@@ -1,11 +1,13 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { LogOut, User } from 'lucide-react';
+import { LogOut, User, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useProjectsWithDetails } from '@/hooks/useProjectsWithDetails';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { supabase } from '@/integrations/supabase/client';
 
 interface DynamicPageHeaderProps {
   pageType: 'projects' | 'payments' | 'email';
@@ -22,6 +24,23 @@ const DynamicPageHeader: React.FC<DynamicPageHeaderProps> = ({
   const { toast } = useToast();
   const { signOut, loading } = useAuth();
   const { projects, contractor } = useProjectsWithDetails();
+  const [hasMultipleRoles, setHasMultipleRoles] = useState(false);
+  
+  useEffect(() => {
+    const checkMultipleRoles = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      const { data: userRoles } = await supabase
+        .from('user_roles')
+        .select('role_type')
+        .eq('auth_user_id', user.id);
+      
+      setHasMultipleRoles((userRoles?.length || 0) > 1);
+    };
+    
+    checkMultipleRoles();
+  }, []);
 
   const handleLogout = async () => {
     console.log('Attempting logout...');
@@ -95,10 +114,30 @@ const DynamicPageHeader: React.FC<DynamicPageHeaderProps> = ({
           </div>
           
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2 text-gloster-gray">
-              <User className="h-4 w-4" />
-              <span className="text-sm font-rubik">{displayName}</span>
-            </div>
+            {hasMultipleRoles ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="flex items-center space-x-2 text-gloster-gray hover:text-slate-800">
+                    <User className="h-4 w-4" />
+                    <span className="text-sm font-rubik">{displayName}</span>
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-white z-50">
+                  <DropdownMenuItem 
+                    onClick={() => navigate('/role-selection')}
+                    className="cursor-pointer font-rubik"
+                  >
+                    Cambiar de rol
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <div className="flex items-center space-x-2 text-gloster-gray">
+                <User className="h-4 w-4" />
+                <span className="text-sm font-rubik">{displayName}</span>
+              </div>
+            )}
             <Button 
               variant="outline" 
               size="sm" 

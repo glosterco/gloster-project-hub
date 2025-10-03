@@ -1,11 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { LogOut, User, BarChart3, Home } from 'lucide-react';
+import { LogOut, User, BarChart3, Home, ChevronDown } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 const PageHeader = () => {
   const navigate = useNavigate();
@@ -16,6 +17,7 @@ const PageHeader = () => {
     ContactName: string;
     CompanyName: string;
   } | null>(null);
+  const [hasMultipleRoles, setHasMultipleRoles] = useState(false);
 
   useEffect(() => {
     const fetchContractorInfo = async () => {
@@ -33,6 +35,14 @@ const PageHeader = () => {
         if (!error && contractorData) {
           setContractorInfo(contractorData);
         }
+        
+        // Check for multiple roles
+        const { data: userRoles } = await supabase
+          .from('user_roles')
+          .select('role_type')
+          .eq('auth_user_id', user.id);
+        
+        setHasMultipleRoles((userRoles?.length || 0) > 1);
       } catch (error) {
         console.error('Error fetching contractor info:', error);
       }
@@ -93,10 +103,30 @@ const PageHeader = () => {
               </Button>
             </div>
             
-            <div className="flex items-center space-x-2 text-gloster-gray">
-              <User className="h-4 w-4" />
-              <span className="text-sm font-rubik">{displayName}</span>
-            </div>
+            {hasMultipleRoles ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="flex items-center space-x-2 text-gloster-gray hover:text-slate-800">
+                    <User className="h-4 w-4" />
+                    <span className="text-sm font-rubik">{displayName}</span>
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-white z-50">
+                  <DropdownMenuItem 
+                    onClick={() => navigate('/role-selection')}
+                    className="cursor-pointer font-rubik"
+                  >
+                    Cambiar de rol
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <div className="flex items-center space-x-2 text-gloster-gray">
+                <User className="h-4 w-4" />
+                <span className="text-sm font-rubik">{displayName}</span>
+              </div>
+            )}
             
             <Button 
               variant="outline" 

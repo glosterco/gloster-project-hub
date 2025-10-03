@@ -25,7 +25,6 @@ const ProjectDetailMandante = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('month');
   const [filterBy, setFilterBy] = useState('all');
-  const [activeTab, setActiveTab] = useState('estados-pago');
   const [selectedAdicional, setSelectedAdicional] = useState<any>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const { adicionales, loading: adicionalesLoading } = useAdicionales(id || '');
@@ -35,14 +34,11 @@ const ProjectDetailMandante = () => {
     setShowDetailModal(true);
   };
   
-  useEffect(() => {
-    if (activeTab === 'estados-pago' && adicionales.length > 0) {
-      setActiveTab('adicionales');
-    }
-  }, [adicionales]);
-  
   const { project, loading, refetch, mandante } = useProjectDetailMandante(id || '');
   const { sendContractorPaymentNotification, loading: notificationLoading } = useContractorNotification();
+  
+  // Check if Adicionales feature is enabled for this mandante
+  const adicionalesEnabled = mandante?.Adicionales === true;
 
   const getPaymentStatus = (payment: any) => {
     return payment.Status || 'Sin Estado';
@@ -241,29 +237,166 @@ const ProjectDetailMandante = () => {
           <h1 className="text-3xl font-bold text-slate-800 font-rubik">{project.Name}</h1>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="estados-pago" className="font-rubik">
-              Estados de Pago
-            </TabsTrigger>
-            <TabsTrigger value="adicionales" className="font-rubik">
-              Adicionales
-            </TabsTrigger>
-          </TabsList>
+        {/* Project Progress Card */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="font-rubik">Progreso del Proyecto</CardTitle>
+            <CardDescription className="font-rubik">
+              {getApprovedValue() > 0 
+                ? `${formatCurrency(getApprovedValue(), project.Currency)} de ${formatCurrency(project.Budget, project.Currency)} aprobados`
+                : `Presupuesto: ${formatCurrency(project.Budget, project.Currency)}`
+              }
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Progress value={getProjectProgress()} className="h-3" />
+            <p className="text-sm text-gloster-gray mt-2 font-rubik">{getProjectProgress()}% completado</p>
+          </CardContent>
+        </Card>
 
-          <TabsContent value="estados-pago" className="space-y-6">
-            <div className="text-center">Estados de pago content aquí</div>
-          </TabsContent>
+        {/* Filters and Search */}
+        <div className="flex flex-col md:flex-row gap-4 mb-6">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gloster-gray h-4 w-4" />
+            <Input
+              placeholder="Buscar estados de pago..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 font-rubik"
+            />
+          </div>
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-full md:w-48 font-rubik">
+              <SelectValue placeholder="Ordenar por" />
+            </SelectTrigger>
+            <SelectContent className="bg-white z-50">
+              <SelectItem value="month" className="font-rubik">Por mes</SelectItem>
+              <SelectItem value="amount" className="font-rubik">Por monto</SelectItem>
+              <SelectItem value="status" className="font-rubik">Por estado</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={filterBy} onValueChange={setFilterBy}>
+            <SelectTrigger className="w-full md:w-48 font-rubik">
+              <SelectValue placeholder="Filtrar por estado" />
+            </SelectTrigger>
+            <SelectContent className="bg-white z-50">
+              <SelectItem value="all" className="font-rubik">Todos</SelectItem>
+              <SelectItem value="pendiente" className="font-rubik">Pendiente</SelectItem>
+              <SelectItem value="enviado" className="font-rubik">Recibido</SelectItem>
+              <SelectItem value="aprobado" className="font-rubik">Aprobado</SelectItem>
+              <SelectItem value="rechazado" className="font-rubik">Rechazado</SelectItem>
+              <SelectItem value="programado" className="font-rubik">Programado</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-          <TabsContent value="adicionales" className="space-y-6">
+        {/* Payment States Grid */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {filteredAndSortedPayments.map((payment) => {
+            const status = getPaymentStatus(payment);
+            const displayStatus = getDisplayStatus(status);
+            
+            return (
+              <Card key={payment.id} className="hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <div className="flex justify-between items-start">
+                    <CardTitle className="text-lg font-rubik">{payment.Name}</CardTitle>
+                    <Badge className={getStatusColor(displayStatus)}>
+                      {displayStatus}
+                    </Badge>
+                  </div>
+                  <CardDescription className="font-rubik">
+                    {payment.Mes} {payment.Año}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gloster-gray font-rubik">Monto:</span>
+                      <span className="font-semibold font-rubik">
+                        {formatCurrency(payment.Total || 0, project.Currency)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gloster-gray font-rubik">Vencimiento:</span>
+                      <span className="text-sm font-rubik">
+                        <Calendar className="h-3 w-3 inline mr-1" />
+                        {new Date(payment.ExpiryDate).toLocaleDateString()}
+                      </span>
+                    </div>
+                    
+                    <div className="flex gap-2 mt-4">
+                      {canViewPayment(status) && (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => handlePaymentAction(payment, 'view')}
+                          className="flex-1 font-rubik"
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          Ver
+                        </Button>
+                      )}
+                      
+                      {canManagePayment(status) && (
+                        <Button 
+                          variant="default" 
+                          size="sm" 
+                          onClick={() => handlePaymentAction(payment, 'manage')}
+                          className="flex-1 font-rubik"
+                        >
+                          <Settings className="h-4 w-4 mr-1" />
+                          Gestionar
+                        </Button>
+                      )}
+                      
+                      {shouldShowNotifyButton(payment) && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={() => handleNotifyContractor(payment)}
+                                disabled={notificationLoading}
+                                className="flex-1 font-rubik"
+                              >
+                                <Bell className="h-4 w-4 mr-1" />
+                                Notificar
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-white border border-gloster-gray/20 shadow-lg">
+                              <p className="font-rubik text-sm">Notificar al contratista sobre este pago</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+
+        {filteredAndSortedPayments.length === 0 && (
+          <div className="text-center py-8 text-gloster-gray font-rubik">
+            No se encontraron estados de pago
+          </div>
+        )}
+        
+        {/* Adicionales Section - Only show if enabled */}
+        {adicionalesEnabled && (
+          <div className="mt-8">
+            <h2 className="text-2xl font-bold text-slate-800 font-rubik mb-4">Adicionales</h2>
             <AdicionalesCards 
               adicionales={adicionales}
               loading={adicionalesLoading}
               currency={project?.Currency}
               onCardClick={handleCardClick}
             />
-          </TabsContent>
-        </Tabs>
+          </div>
+        )}
       </div>
 
       {/* Modal de Detalle */}

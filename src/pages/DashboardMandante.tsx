@@ -70,6 +70,8 @@ const DashboardMandante: React.FC = () => {
         if (!error && mandanteData && mandanteData.auth_user_id === user.id) {
           // Usuario es mandante autenticado con user_auth_id
           setMandanteInfo(mandanteData);
+          // Guardar el rol activo en sessionStorage
+          sessionStorage.setItem('activeRole', 'mandante');
         } else {
           // Usuario no es mandante autenticado o no tiene user_auth_id
           console.log('❌ User is not an authenticated mandante, checking contractor access');
@@ -82,7 +84,13 @@ const DashboardMandante: React.FC = () => {
             .maybeSingle();
             
           if (contratistaData) {
-            navigate('/dashboard'); // Redirigir a dashboard de contratista
+            // Solo redirigir si el usuario NO seleccionó explícitamente mandante
+            const activeRole = sessionStorage.getItem('activeRole');
+            if (activeRole !== 'mandante') {
+              navigate('/dashboard'); // Redirigir a dashboard de contratista
+            } else {
+              navigate('/'); // Usuario sin acceso válido a mandante
+            }
           } else {
             navigate('/'); // Usuario sin roles válidos
           }

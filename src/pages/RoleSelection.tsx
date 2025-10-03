@@ -81,6 +81,9 @@ const RoleSelection: React.FC = () => {
   };
 
   const handleRoleSelection = (role: 'contratista' | 'mandante') => {
+    // Guardar el rol seleccionado en sessionStorage
+    sessionStorage.setItem('activeRole', role);
+    
     if (role === 'contratista') {
       navigate('/dashboard');
     } else {

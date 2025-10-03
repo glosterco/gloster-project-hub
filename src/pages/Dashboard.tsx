@@ -61,6 +61,23 @@ const Dashboard = () => {
           return;
         }
 
+        // Si el usuario tiene ambos roles, verificar si seleccionó mandante
+        const activeRole = sessionStorage.getItem('activeRole');
+        if (activeRole === 'mandante') {
+          // Verificar que también tenga rol de mandante
+          const { data: mandanteData } = await supabase
+            .from('Mandantes')
+            .select('id, auth_user_id')
+            .eq('auth_user_id', user.id)
+            .maybeSingle();
+            
+          if (mandanteData && mandanteData.auth_user_id === user.id) {
+            console.log('🔄 User selected mandante role, redirecting to mandante dashboard');
+            navigate('/dashboard-mandante');
+            return;
+          }
+        }
+
         console.log('✅ Verified authenticated contractor access');
       } catch (error) {
         console.error('Error verifying contractor access:', error);

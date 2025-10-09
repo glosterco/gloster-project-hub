@@ -503,6 +503,13 @@ const DashboardMandante: React.FC = () => {
             </h2>
             <p className="text-gloster-gray font-rubik">Gestiona tus proyectos activos y estados de pago</p>
           </div>
+          <Button
+            onClick={() => navigate('/executive-summary-mandante')}
+            className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-gloster-gray font-rubik"
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            Ver Resumen Ejecutivo
+          </Button>
         </div>
 
         {/* Tarjetas de resumen */}

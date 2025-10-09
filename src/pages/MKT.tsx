@@ -17,7 +17,7 @@ const MKT = () => {
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
 
   const handleDemoClick = () => {
-    window.open("https://www.loom.com/share/folder/a4fd94baeb5642bcb1339ced7936e4b5", "_blank");
+    window.open("https://loom.com/share/folder/a4fd94baeb5642bcb1339ced7936e4b5", "_blank");
   };
 
   const handleKnowPlatformClick = () => {

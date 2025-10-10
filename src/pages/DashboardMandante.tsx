@@ -561,6 +561,16 @@ const DashboardMandante: React.FC = () => {
           </div>
         </div>
 
+        {/* Título de proyectos */}
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-slate-800 font-rubik">
+            Mis proyectos - {mandanteInfo?.CompanyName || 'Cargando...'}
+          </h2>
+          <p className="text-sm text-gloster-gray font-rubik mt-1">
+            {filteredAndSortedProjects.length} {filteredAndSortedProjects.length === 1 ? 'proyecto' : 'proyectos'}
+          </p>
+        </div>
+
         {/* Barra de búsqueda y filtros - POSICIONADA DESPUÉS DE LAS TARJETAS DE RESUMEN */}
         <div className="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="md:col-span-2">

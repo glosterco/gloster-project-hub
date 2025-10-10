@@ -2,7 +2,8 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { TrendingUp, AlertCircle, CheckCircle, Clock, XCircle, ArrowLeft, LogOut, User, ChevronDown } from 'lucide-react';
+import { TrendingUp, AlertCircle, CheckCircle, Clock, XCircle, ArrowLeft, LogOut, User, ChevronDown, DollarSign, BarChart3 } from 'lucide-react';
+import { BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useExecutiveSummaryMandante } from '@/hooks/useExecutiveSummaryMandante';
 import { formatCurrency } from '@/utils/currencyUtils';
@@ -264,6 +265,87 @@ const ExecutiveSummaryMandante = () => {
               <p className="text-xs text-muted-foreground">
                 Estados de pago rechazados
               </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Status Distribution Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                Distribución de Estados de Pago
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={[
+                      { name: 'Aprobados', value: summaryData?.approvedPayments || 0, color: '#22c55e' },
+                      { name: 'Pendientes', value: summaryData?.pendingPayments || 0, color: '#eab308' },
+                      { name: 'Rechazados', value: summaryData?.rejectedPayments || 0, color: '#ef4444' },
+                    ]}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {[
+                      { name: 'Aprobados', value: summaryData?.approvedPayments || 0, color: '#22c55e' },
+                      { name: 'Pendientes', value: summaryData?.pendingPayments || 0, color: '#eab308' },
+                      { name: 'Rechazados', value: summaryData?.rejectedPayments || 0, color: '#ef4444' },
+                    ].map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Amount Distribution Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5" />
+                Montos por Estado
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart
+                  data={[
+                    { 
+                      name: 'Aprobados', 
+                      monto: summaryData?.approvedPaymentsAmount || 0,
+                      fill: '#22c55e'
+                    },
+                    { 
+                      name: 'Pendientes', 
+                      monto: summaryData?.pendingPaymentsAmount || 0,
+                      fill: '#eab308'
+                    },
+                    { 
+                      name: 'Rechazados', 
+                      monto: summaryData?.rejectedPaymentsAmount || 0,
+                      fill: '#ef4444'
+                    },
+                  ]}
+                >
+                  <XAxis dataKey="name" />
+                  <YAxis tickFormatter={(value) => `$${(value / 1000000).toFixed(1)}M`} />
+                  <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                  <Bar dataKey="monto" />
+                </BarChart>
+              </ResponsiveContainer>
             </CardContent>
           </Card>
         </div>

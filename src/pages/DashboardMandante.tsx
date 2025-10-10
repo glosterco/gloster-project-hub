@@ -443,19 +443,16 @@ const DashboardMandante: React.FC = () => {
                 className="w-8 h-8"
               />
               <div>
-                <h1 className="text-xl font-bold text-slate-800 font-rubik">Gloster</h1>
+                <h1 className="text-xl font-bold text-slate-800 font-rubik">
+                  Mis Proyectos{mandanteInfo?.CompanyName ? ` - ${mandanteInfo.CompanyName}` : ''}
+                </h1>
+                <p className="text-sm text-gloster-gray font-rubik">
+                  {projects.length} proyecto{projects.length !== 1 ? 's' : ''} total{projects.length !== 1 ? 'es' : ''}
+                </p>
               </div>
             </div>
             
             <div className="flex items-center space-x-4">
-              <Button
-                onClick={() => navigate('/executive-summary-mandante')}
-                className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-gloster-gray font-rubik"
-                size="sm"
-              >
-                <FileText className="h-4 w-4 mr-2" />
-                Resumen Ejecutivo
-              </Button>
               {hasMultipleRoles ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -488,6 +485,14 @@ const DashboardMandante: React.FC = () => {
                   </span>
                 </div>
               )}
+              <Button
+                onClick={() => navigate('/executive-summary-mandante')}
+                className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-gloster-gray font-rubik"
+                size="sm"
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Resumen Ejecutivo
+              </Button>
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -503,13 +508,6 @@ const DashboardMandante: React.FC = () => {
       </header>
 
       <div className="container mx-auto px-6 py-8">
-        {/* Page Title */}
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-slate-800 mb-2 font-rubik">
-            Mis Proyectos{mandanteInfo?.CompanyName ? ` - ${mandanteInfo.CompanyName}` : ''}
-          </h2>
-          <p className="text-gloster-gray font-rubik">Gestiona tus proyectos activos y estados de pago</p>
-        </div>
 
         {/* Tarjetas de resumen */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">

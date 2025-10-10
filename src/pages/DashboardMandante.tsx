@@ -1,21 +1,51 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Calendar, MapPin, Building2, User, Phone, Mail, FileText, CheckCircle, Clock, AlertCircle, XCircle, LogOut, DollarSign, FolderOpen, Search, Filter, ArrowUpDown, Plus, Folder, ChevronRight, ChevronDown, Edit2, Trash2, ChevronDown as ChevronDownIcon } from 'lucide-react';
-import { useProjectsWithDetailsMandante } from '@/hooks/useProjectsWithDetailsMandante';
-import { useMandanteFolders } from '@/hooks/useMandanteFolders';
-import { formatCurrency } from '@/utils/currencyUtils';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import PageHeader from '@/components/PageHeader';
+import React, { useState, useEffect, useMemo } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import {
+  Calendar,
+  MapPin,
+  Building2,
+  User,
+  Phone,
+  Mail,
+  FileText,
+  CheckCircle,
+  Clock,
+  AlertCircle,
+  XCircle,
+  LogOut,
+  DollarSign,
+  FolderOpen,
+  Search,
+  Filter,
+  ArrowUpDown,
+  Plus,
+  Folder,
+  ChevronRight,
+  ChevronDown,
+  Edit2,
+  Trash2,
+  ChevronDown as ChevronDownIcon,
+} from "lucide-react";
+import { useProjectsWithDetailsMandante } from "@/hooks/useProjectsWithDetailsMandante";
+import { useMandanteFolders } from "@/hooks/useMandanteFolders";
+import { formatCurrency } from "@/utils/currencyUtils";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import PageHeader from "@/components/PageHeader";
 
 // Force rebuild to clear cached TooltipProvider reference
 
@@ -35,19 +65,19 @@ const DashboardMandante: React.FC = () => {
     CompanyName: string;
   } | null>(null);
   const [hasMultipleRoles, setHasMultipleRoles] = useState(false);
-  
+
   // Estados para filtros y búsqueda
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState('recibidos'); // 'recibidos', 'name', 'date', 'budget'
-  const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'active', 'inactive'
-  
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState("recibidos"); // 'recibidos', 'name', 'date', 'budget'
+  const [filterStatus, setFilterStatus] = useState("all"); // 'all', 'active', 'inactive'
+
   // Estados para carpetas
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
-  const [newFolderName, setNewFolderName] = useState('');
+  const [newFolderName, setNewFolderName] = useState("");
   const [selectedProjectsForFolder, setSelectedProjectsForFolder] = useState<number[]>([]);
   const [editingFolder, setEditingFolder] = useState<string | null>(null);
-  const [editFolderName, setEditFolderName] = useState('');
+  const [editFolderName, setEditFolderName] = useState("");
   const [isEditFolderProjectsOpen, setIsEditFolderProjectsOpen] = useState(false);
   const [editingFolderProjects, setEditingFolderProjects] = useState<string | null>(null);
   const [selectedProjectsForEdit, setSelectedProjectsForEdit] = useState<number[]>([]);
@@ -55,58 +85,60 @@ const DashboardMandante: React.FC = () => {
   useEffect(() => {
     const fetchMandanteInfo = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
         // CRÍTICO: Solo usuarios autenticados pueden acceder al dashboard de mandante
         if (!user) {
-          console.log('❌ No authenticated user, redirecting to home');
-          navigate('/');
+          console.log("❌ No authenticated user, redirecting to home");
+          navigate("/");
           return;
         }
 
         // Verificar si el usuario tiene rol de mandante en user_roles
         const { data: userRoles } = await supabase
-          .from('user_roles')
-          .select('role_type, entity_id')
-          .eq('auth_user_id', user.id);
+          .from("user_roles")
+          .select("role_type, entity_id")
+          .eq("auth_user_id", user.id);
 
-        const mandanteRole = userRoles?.find(role => role.role_type === 'mandante');
-        
+        const mandanteRole = userRoles?.find((role) => role.role_type === "mandante");
+
         if (!mandanteRole) {
-          console.log('❌ User does not have mandante role in user_roles');
-          
+          console.log("❌ User does not have mandante role in user_roles");
+
           // Verificar si es contratista y redirigir
-          const contratistaRole = userRoles?.find(role => role.role_type === 'contratista');
+          const contratistaRole = userRoles?.find((role) => role.role_type === "contratista");
           if (contratistaRole) {
-            sessionStorage.setItem('activeRole', 'contratista');
-            navigate('/dashboard');
+            sessionStorage.setItem("activeRole", "contratista");
+            navigate("/dashboard");
           } else {
-            navigate('/');
+            navigate("/");
           }
           return;
         }
 
         // Obtener información del mandante desde la tabla Mandantes
         const { data: mandanteData } = await supabase
-          .from('Mandantes')
-          .select('ContactName, CompanyName')
-          .eq('id', mandanteRole.entity_id)
+          .from("Mandantes")
+          .select("ContactName, CompanyName")
+          .eq("id", mandanteRole.entity_id)
           .maybeSingle();
 
         if (mandanteData) {
           setMandanteInfo(mandanteData);
-          sessionStorage.setItem('activeRole', 'mandante');
-          console.log('✅ Verified mandante access via user_roles');
+          sessionStorage.setItem("activeRole", "mandante");
+          console.log("✅ Verified mandante access via user_roles");
         } else {
-          console.log('❌ Could not find mandante data');
-          navigate('/');
+          console.log("❌ Could not find mandante data");
+          navigate("/");
         }
-        
+
         // Check if user has multiple roles
         setHasMultipleRoles((userRoles?.length || 0) > 1);
       } catch (error) {
-        console.error('Error fetching mandante info:', error);
-        navigate('/');
+        console.error("Error fetching mandante info:", error);
+        navigate("/");
       }
     };
 
@@ -116,39 +148,41 @@ const DashboardMandante: React.FC = () => {
   const handleSignOut = async () => {
     const { error } = await signOut();
     if (!error) {
-      navigate('/');
+      navigate("/");
     }
   };
 
   const getProjectProgress = (project: any) => {
     if (!project.EstadosPago || project.EstadosPago.length === 0 || !project.Budget) return 0;
-    
+
     // Calcular el monto total aprobado
-    const approvedAmount = project.EstadosPago
-      .filter(payment => payment.Status === 'Aprobado')
-      .reduce((sum, payment) => sum + (payment.Total || 0), 0);
-    
+    const approvedAmount = project.EstadosPago.filter((payment) => payment.Status === "Aprobado").reduce(
+      (sum, payment) => sum + (payment.Total || 0),
+      0,
+    );
+
     // Calcular progreso basado en monto aprobado vs presupuesto total
     return Math.round((approvedAmount / project.Budget) * 100);
   };
 
   const getProjectApprovedValue = (project: any) => {
     if (!project.EstadosPago || project.EstadosPago.length === 0) return 0;
-    
-    return project.EstadosPago
-      .filter(payment => payment.Status === 'Aprobado')
-      .reduce((sum, payment) => sum + (payment.Total || 0), 0);
+
+    return project.EstadosPago.filter((payment) => payment.Status === "Aprobado").reduce(
+      (sum, payment) => sum + (payment.Total || 0),
+      0,
+    );
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'Aprobado':
+      case "Aprobado":
         return <CheckCircle className="w-4 h-4 text-green-600" />;
-      case 'Enviado':
+      case "Enviado":
         return <Clock className="w-4 h-4 text-purple-600" />;
-      case 'Rechazado':
+      case "Rechazado":
         return <XCircle className="w-4 h-4 text-red-600" />;
-      case 'Pendiente':
+      case "Pendiente":
         return <AlertCircle className="w-4 h-4 text-yellow-600" />;
       default:
         return <Clock className="w-4 h-4 text-gray-400" />;
@@ -157,33 +191,33 @@ const DashboardMandante: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Aprobado':
-        return 'bg-green-100 text-green-800';
-      case 'Enviado':
-        return 'bg-purple-100 text-purple-800';
-      case 'Rechazado':
-        return 'bg-red-100 text-red-800';
-      case 'Pendiente':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'Programado':
-        return 'bg-blue-100 text-blue-800';
+      case "Aprobado":
+        return "bg-green-100 text-green-800";
+      case "Enviado":
+        return "bg-purple-100 text-purple-800";
+      case "Rechazado":
+        return "bg-red-100 text-red-800";
+      case "Pendiente":
+        return "bg-yellow-100 text-yellow-800";
+      case "Programado":
+        return "bg-blue-100 text-blue-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const getDisplayStatus = (status: string) => {
     switch (status) {
-      case 'Enviado':
-        return 'Recibido';
-      case 'Aprobado':
-        return 'Aprobado';
-      case 'Rechazado':
-        return 'Rechazado';
-      case 'Pendiente':
-        return 'Programado';
-      case 'Programado':
-        return 'Programado';
+      case "Enviado":
+        return "Recibido";
+      case "Aprobado":
+        return "Aprobado";
+      case "Rechazado":
+        return "Rechazado";
+      case "Pendiente":
+        return "Programado";
+      case "Programado":
+        return "Programado";
       default:
         return status;
     }
@@ -193,13 +227,13 @@ const DashboardMandante: React.FC = () => {
     // CRÍTICO: Solo mandantes autenticados (con user_auth_id) pueden acceder desde dashboard
     const accessData = {
       paymentId: paymentId.toString(),
-      token: 'mandante_authenticated',
-      userType: 'mandante',
+      token: "mandante_authenticated",
+      userType: "mandante",
       hasFullAccess: true, // Usuario autenticado con acceso completo
       isLimitedAccess: false,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
-    sessionStorage.setItem('mandanteAccess', JSON.stringify(accessData));
+    sessionStorage.setItem("mandanteAccess", JSON.stringify(accessData));
     navigate(`/submission/${paymentId}`);
   };
 
@@ -207,48 +241,53 @@ const DashboardMandante: React.FC = () => {
     // CRÍTICO: Solo mandantes autenticados (con user_auth_id) pueden acceder desde dashboard
     const accessData = {
       projectId: projectId.toString(),
-      token: 'mandante_authenticated',
-      userType: 'mandante',
+      token: "mandante_authenticated",
+      userType: "mandante",
       hasFullAccess: true, // Usuario autenticado con acceso completo
       isLimitedAccess: false,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
-    sessionStorage.setItem('mandanteAccess', JSON.stringify(accessData));
+    sessionStorage.setItem("mandanteAccess", JSON.stringify(accessData));
     navigate(`/project-mandante/${projectId}`);
   };
 
-  const totalActiveProjects = projects.filter(p => p.Status).length;
-  
+  const totalActiveProjects = projects.filter((p) => p.Status).length;
+
   // Calcular totales por moneda
-  const totalsByCurrency = projects.reduce((acc, project) => {
-    const currency = project.Currency || 'CLP';
-    if (!acc[currency]) {
-      acc[currency] = 0;
-    }
-    acc[currency] += project.Budget || 0;
-    return acc;
-  }, {} as Record<string, number>);
+  const totalsByCurrency = projects.reduce(
+    (acc, project) => {
+      const currency = project.Currency || "CLP";
+      if (!acc[currency]) {
+        acc[currency] = 0;
+      }
+      acc[currency] += project.Budget || 0;
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
 
   // Calcular totales aprobados por moneda
-  const totalApprovedByCurrency = projects.reduce((acc, project) => {
-    const currency = project.Currency || 'CLP';
-    const approvedValue = getProjectApprovedValue(project);
-    if (!acc[currency]) {
-      acc[currency] = 0;
-    }
-    acc[currency] += approvedValue;
-    return acc;
-  }, {} as Record<string, number>);
+  const totalApprovedByCurrency = projects.reduce(
+    (acc, project) => {
+      const currency = project.Currency || "CLP";
+      const approvedValue = getProjectApprovedValue(project);
+      if (!acc[currency]) {
+        acc[currency] = 0;
+      }
+      acc[currency] += approvedValue;
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
 
   // Función para obtener el estado de pago más cercano a notificar
   const getClosestPaymentToNotify = (project: any) => {
     if (!project.EstadosPago) return null;
-    
+
     const today = new Date();
-    const eligiblePayments = project.EstadosPago
-      .filter((payment: any) => 
-        payment.Status === 'Programado' || payment.Status === 'Pendiente'
-      )
+    const eligiblePayments = project.EstadosPago.filter(
+      (payment: any) => payment.Status === "Programado" || payment.Status === "Pendiente",
+    )
       .filter((payment: any) => {
         if (!payment.ExpiryDate) return false;
         const expiryDate = new Date(payment.ExpiryDate);
@@ -259,7 +298,7 @@ const DashboardMandante: React.FC = () => {
         const dateB = new Date(b.ExpiryDate);
         return dateA.getTime() - dateB.getTime(); // El más cercano primero
       });
-    
+
     return eligiblePayments.length > 0 ? eligiblePayments[0] : null;
   };
 
@@ -267,7 +306,7 @@ const DashboardMandante: React.FC = () => {
 
   // Función para verificar si un proyecto tiene estados "Recibido" (Enviado)
   const hasReceivedPayments = (project: any) => {
-    return project.EstadosPago?.some(payment => payment.Status === 'Enviado') || false;
+    return project.EstadosPago?.some((payment) => payment.Status === "Enviado") || false;
   };
 
   // Función para filtrar y ordenar proyectos
@@ -276,41 +315,40 @@ const DashboardMandante: React.FC = () => {
 
     // Aplicar filtro de búsqueda
     if (searchTerm) {
-      filtered = filtered.filter(project => 
-        project.Name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        project.Description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        project.Location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        project.Contratista?.CompanyName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        project.Contratista?.ContactName?.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(
+        (project) =>
+          project.Name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          project.Description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          project.Location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          project.Contratista?.CompanyName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          project.Contratista?.ContactName?.toLowerCase().includes(searchTerm.toLowerCase()),
       );
     }
 
     // Aplicar filtro de estado
-    if (filterStatus !== 'all') {
-      filtered = filtered.filter(project => 
-        filterStatus === 'active' ? project.Status : !project.Status
-      );
+    if (filterStatus !== "all") {
+      filtered = filtered.filter((project) => (filterStatus === "active" ? project.Status : !project.Status));
     }
 
     // Aplicar ordenamiento
     switch (sortBy) {
-      case 'recibidos':
+      case "recibidos":
         // Ordenar por proyectos con estados recibidos primero, luego por nombre
         filtered.sort((a, b) => {
           const aHasReceived = hasReceivedPayments(a);
           const bHasReceived = hasReceivedPayments(b);
           if (aHasReceived && !bHasReceived) return -1;
           if (!aHasReceived && bHasReceived) return 1;
-          return (a.Name || '').localeCompare(b.Name || '');
+          return (a.Name || "").localeCompare(b.Name || "");
         });
         break;
-      case 'name':
-        filtered.sort((a, b) => (a.Name || '').localeCompare(b.Name || ''));
+      case "name":
+        filtered.sort((a, b) => (a.Name || "").localeCompare(b.Name || ""));
         break;
-      case 'date':
+      case "date":
         filtered.sort((a, b) => new Date(b.StartDate).getTime() - new Date(a.StartDate).getTime());
         break;
-      case 'budget':
+      case "budget":
         filtered.sort((a, b) => (b.Budget || 0) - (a.Budget || 0));
         break;
       default:
@@ -323,26 +361,26 @@ const DashboardMandante: React.FC = () => {
   // Función para crear carpeta
   const handleCreateFolder = async () => {
     if (!newFolderName.trim() || selectedProjectsForFolder.length === 0) return;
-    
+
     try {
       await createFolder(newFolderName.trim(), selectedProjectsForFolder);
-      setNewFolderName('');
+      setNewFolderName("");
       setSelectedProjectsForFolder([]);
       setIsCreateFolderOpen(false);
     } catch (error) {
-      console.error('Error creating folder:', error);
+      console.error("Error creating folder:", error);
     }
   };
 
   // Función para obtener proyectos no asignados a carpetas
   const getUnassignedProjects = () => {
-    const assignedProjectIds = new Set(folders.flatMap(folder => folder.project_ids));
-    return filteredAndSortedProjects.filter(project => !assignedProjectIds.has(project.id));
+    const assignedProjectIds = new Set(folders.flatMap((folder) => folder.project_ids));
+    return filteredAndSortedProjects.filter((project) => !assignedProjectIds.has(project.id));
   };
 
   // Función para alternar expansión de carpeta
   const toggleFolder = (folderId: string) => {
-    setExpandedFolders(prev => {
+    setExpandedFolders((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(folderId)) {
         newSet.delete(folderId);
@@ -355,7 +393,7 @@ const DashboardMandante: React.FC = () => {
 
   // Función para obtener proyectos de una carpeta
   const getFolderProjects = (folder: any) => {
-    return filteredAndSortedProjects.filter(project => folder.project_ids.includes(project.id));
+    return filteredAndSortedProjects.filter((project) => folder.project_ids.includes(project.id));
   };
 
   // Función para editar carpeta
@@ -367,39 +405,39 @@ const DashboardMandante: React.FC = () => {
   // Función para guardar edición de carpeta
   const handleSaveEditFolder = async () => {
     if (!editFolderName.trim() || !editingFolder) return;
-    
+
     try {
       await updateFolder(editingFolder, { folder_name: editFolderName.trim() });
       setEditingFolder(null);
-      setEditFolderName('');
+      setEditFolderName("");
     } catch (error) {
-      console.error('Error updating folder:', error);
+      console.error("Error updating folder:", error);
     }
   };
 
   // Función para cancelar edición
   const handleCancelEdit = () => {
     setEditingFolder(null);
-    setEditFolderName('');
+    setEditFolderName("");
   };
 
   // Función para eliminar carpeta
   const handleDeleteFolder = async (folderId: string) => {
     try {
       await deleteFolder(folderId);
-      setExpandedFolders(prev => {
+      setExpandedFolders((prev) => {
         const newSet = new Set(prev);
         newSet.delete(folderId);
         return newSet;
       });
     } catch (error) {
-      console.error('Error deleting folder:', error);
+      console.error("Error deleting folder:", error);
     }
   };
 
   // Función para editar proyectos de carpeta
   const handleEditFolderProjects = (folderId: string) => {
-    const folder = folders.find(f => f.id === folderId);
+    const folder = folders.find((f) => f.id === folderId);
     if (folder) {
       setEditingFolderProjects(folderId);
       setSelectedProjectsForEdit([...folder.project_ids]);
@@ -410,14 +448,14 @@ const DashboardMandante: React.FC = () => {
   // Función para guardar edición de proyectos
   const handleSaveEditFolderProjects = async () => {
     if (!editingFolderProjects) return;
-    
+
     try {
       await updateFolder(editingFolderProjects, { project_ids: selectedProjectsForEdit });
       setEditingFolderProjects(null);
       setSelectedProjectsForEdit([]);
       setIsEditFolderProjectsOpen(false);
     } catch (error) {
-      console.error('Error updating folder projects:', error);
+      console.error("Error updating folder projects:", error);
     }
   };
 
@@ -436,23 +474,28 @@ const DashboardMandante: React.FC = () => {
     <div className="min-h-screen bg-slate-50 font-rubik">
       <PageHeader />
       <div className="container mx-auto px-6 py-8">
+        {/* Título de proyectos */}
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-slate-800 font-rubik">
+            Mis proyectos - {mandanteInfo?.CompanyName || "Cargando..."}
+          </h2>
+          <p className="text-sm text-gloster-gray font-rubik mt-1">
+            {filteredAndSortedProjects.length} {filteredAndSortedProjects.length === 1 ? "proyecto" : "proyectos"}
+          </p>
+        </div>
 
         {/* Tarjetas de resumen */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card className="border-gloster-gray/20">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gloster-gray font-rubik">
-                Proyectos Activos
-              </CardTitle>
+              <CardTitle className="text-sm font-medium text-gloster-gray font-rubik">Proyectos Activos</CardTitle>
               <div className="w-8 h-8 bg-gloster-yellow/20 rounded-lg flex items-center justify-center">
                 <FolderOpen className="h-4 w-4 text-gloster-gray" />
               </div>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-slate-800 font-rubik">{totalActiveProjects}</div>
-              <p className="text-xs text-gloster-gray font-rubik">
-                {projects.length} proyectos totales
-              </p>
+              <p className="text-xs text-gloster-gray font-rubik">{projects.length} proyectos totales</p>
             </CardContent>
           </Card>
 
@@ -510,7 +553,9 @@ const DashboardMandante: React.FC = () => {
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="folderName" className="font-rubik">Nombre de la carpeta</Label>
+                    <Label htmlFor="folderName" className="font-rubik">
+                      Nombre de la carpeta
+                    </Label>
                     <Input
                       id="folderName"
                       value={newFolderName}
@@ -522,7 +567,7 @@ const DashboardMandante: React.FC = () => {
                   <div>
                     <Label className="font-rubik">Seleccionar proyectos</Label>
                     <div className="max-h-60 overflow-y-auto border rounded-lg p-2 mt-2">
-                      {filteredAndSortedProjects.map(project => (
+                      {filteredAndSortedProjects.map((project) => (
                         <div key={project.id} className="flex items-center space-x-2 py-1">
                           <input
                             type="checkbox"
@@ -530,9 +575,9 @@ const DashboardMandante: React.FC = () => {
                             checked={selectedProjectsForFolder.includes(project.id)}
                             onChange={(e) => {
                               if (e.target.checked) {
-                                setSelectedProjectsForFolder(prev => [...prev, project.id]);
+                                setSelectedProjectsForFolder((prev) => [...prev, project.id]);
                               } else {
-                                setSelectedProjectsForFolder(prev => prev.filter(id => id !== project.id));
+                                setSelectedProjectsForFolder((prev) => prev.filter((id) => id !== project.id));
                               }
                             }}
                           />
@@ -547,7 +592,7 @@ const DashboardMandante: React.FC = () => {
                     <Button variant="outline" onClick={() => setIsCreateFolderOpen(false)} className="font-rubik">
                       Cancelar
                     </Button>
-                    <Button 
+                    <Button
                       onClick={handleCreateFolder}
                       disabled={!newFolderName.trim() || selectedProjectsForFolder.length === 0}
                       className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-rubik"
@@ -559,16 +604,6 @@ const DashboardMandante: React.FC = () => {
               </DialogContent>
             </Dialog>
           </div>
-        </div>
-
-        {/* Título de proyectos */}
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-slate-800 font-rubik">
-            Mis proyectos - {mandanteInfo?.CompanyName || 'Cargando...'}
-          </h2>
-          <p className="text-sm text-gloster-gray font-rubik mt-1">
-            {filteredAndSortedProjects.length} {filteredAndSortedProjects.length === 1 ? 'proyecto' : 'proyectos'}
-          </p>
         </div>
 
         {/* Barra de búsqueda y filtros - POSICIONADA DESPUÉS DE LAS TARJETAS DE RESUMEN */}
@@ -584,17 +619,17 @@ const DashboardMandante: React.FC = () => {
               />
             </div>
           </div>
-          
+
           <Select value={sortBy} onValueChange={setSortBy}>
             <SelectTrigger className="font-rubik">
               <SelectValue>
                 <div className="flex items-center">
                   <ArrowUpDown className="h-4 w-4 mr-2" />
                   <span>
-                    {sortBy === 'recibidos' && 'Por Recibidos'}
-                    {sortBy === 'name' && 'Por Nombre'}
-                    {sortBy === 'date' && 'Por Fecha'}
-                    {sortBy === 'budget' && 'Por Presupuesto'}
+                    {sortBy === "recibidos" && "Por Recibidos"}
+                    {sortBy === "name" && "Por Nombre"}
+                    {sortBy === "date" && "Por Fecha"}
+                    {sortBy === "budget" && "Por Presupuesto"}
                   </span>
                 </div>
               </SelectValue>
@@ -613,9 +648,9 @@ const DashboardMandante: React.FC = () => {
                 <div className="flex items-center">
                   <Filter className="h-4 w-4 mr-2" />
                   <span>
-                    {filterStatus === 'all' && 'Todos'}
-                    {filterStatus === 'active' && 'Activos'}
-                    {filterStatus === 'inactive' && 'Inactivos'}
+                    {filterStatus === "all" && "Todos"}
+                    {filterStatus === "active" && "Activos"}
+                    {filterStatus === "inactive" && "Inactivos"}
                   </span>
                 </div>
               </SelectValue>
@@ -650,9 +685,9 @@ const DashboardMandante: React.FC = () => {
                           onChange={(e) => setEditFolderName(e.target.value)}
                           className="text-lg font-semibold text-slate-800 font-rubik h-8 min-w-0"
                           onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
+                            if (e.key === "Enter") {
                               handleSaveEditFolder();
-                            } else if (e.key === 'Escape') {
+                            } else if (e.key === "Escape") {
                               handleCancelEdit();
                             }
                           }}
@@ -664,29 +699,20 @@ const DashboardMandante: React.FC = () => {
                       <Badge variant="secondary" className="bg-gloster-yellow/20 text-gloster-gray font-rubik">
                         {folderProjects.length} proyectos
                       </Badge>
-                      {expandedFolders.has(folder.id) ? 
-                        <ChevronDown className="h-5 w-5 text-gloster-gray" /> : 
+                      {expandedFolders.has(folder.id) ? (
+                        <ChevronDown className="h-5 w-5 text-gloster-gray" />
+                      ) : (
                         <ChevronRight className="h-5 w-5 text-gloster-gray" />
-                      }
+                      )}
                     </button>
-                    
+
                     <div className="flex items-center gap-2">
                       {editingFolder === folder.id ? (
                         <>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={handleSaveEditFolder}
-                            className="h-8 w-8 p-0"
-                          >
+                          <Button size="sm" variant="outline" onClick={handleSaveEditFolder} className="h-8 w-8 p-0">
                             <CheckCircle className="h-4 w-4" />
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={handleCancelEdit}
-                            className="h-8 w-8 p-0"
-                          >
+                          <Button size="sm" variant="outline" onClick={handleCancelEdit} className="h-8 w-8 p-0">
                             <XCircle className="h-4 w-4" />
                           </Button>
                         </>
@@ -723,7 +749,7 @@ const DashboardMandante: React.FC = () => {
                     </div>
                   </div>
                 </CardHeader>
-                
+
                 {expandedFolders.has(folder.id) && (
                   <CardContent>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -732,8 +758,8 @@ const DashboardMandante: React.FC = () => {
                         const approvedValue = getProjectApprovedValue(project);
 
                         return (
-                          <Card 
-                            key={project.id} 
+                          <Card
+                            key={project.id}
                             className="overflow-hidden border-gloster-gray/20 hover:shadow-xl transition-all duration-300 cursor-pointer hover:border-gloster-yellow/50"
                           >
                             <CardHeader>
@@ -751,7 +777,10 @@ const DashboardMandante: React.FC = () => {
                                     {project.Description}
                                   </CardDescription>
                                 </div>
-                                <Badge variant="secondary" className="bg-gloster-yellow/20 text-gloster-gray border-gloster-yellow/30 text-xs font-rubik">
+                                <Badge
+                                  variant="secondary"
+                                  className="bg-gloster-yellow/20 text-gloster-gray border-gloster-yellow/30 text-xs font-rubik"
+                                >
                                   {project.Status ? "Activo" : "Inactivo"}
                                 </Badge>
                               </div>
@@ -766,26 +795,34 @@ const DashboardMandante: React.FC = () => {
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <Calendar className="w-4 h-4 text-gloster-gray" />
-                                  <span className="text-gloster-gray font-rubik">{new Date(project.StartDate).toLocaleDateString()}</span>
+                                  <span className="text-gloster-gray font-rubik">
+                                    {new Date(project.StartDate).toLocaleDateString()}
+                                  </span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <Building2 className="w-4 h-4 text-gloster-gray" />
-                                  <span className="text-gloster-gray font-rubik">{project.Contratista?.CompanyName}</span>
+                                  <span className="text-gloster-gray font-rubik">
+                                    {project.Contratista?.CompanyName}
+                                  </span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <User className="w-4 h-4 text-gloster-gray" />
-                                  <span className="text-gloster-gray font-rubik">{project.Contratista?.ContactName}</span>
+                                  <span className="text-gloster-gray font-rubik">
+                                    {project.Contratista?.ContactName}
+                                  </span>
                                 </div>
                               </div>
 
                               {/* Progreso del proyecto */}
                               <div className="space-y-2">
                                 <div className="flex justify-between items-center">
-                                  <span className="text-sm font-medium text-gloster-gray font-rubik">Progreso del Proyecto</span>
+                                  <span className="text-sm font-medium text-gloster-gray font-rubik">
+                                    Progreso del Proyecto
+                                  </span>
                                   <span className="text-sm text-slate-800 font-rubik">{progress}%</span>
                                 </div>
                                 <div className="w-full bg-gloster-gray/20 rounded-full h-2">
-                                  <div 
+                                  <div
                                     className="bg-gloster-yellow h-2 rounded-full transition-all duration-300"
                                     style={{ width: `${progress}%` }}
                                   ></div>
@@ -796,45 +833,54 @@ const DashboardMandante: React.FC = () => {
                               <div className="flex justify-between items-center pt-2 border-t border-gloster-gray/20">
                                 <div>
                                   <p className="text-sm text-gloster-gray font-rubik">Presupuesto Total</p>
-                                  <p className="font-semibold text-slate-800 font-rubik">{formatCurrency(project.Budget, project.Currency)}</p>
+                                  <p className="font-semibold text-slate-800 font-rubik">
+                                    {formatCurrency(project.Budget, project.Currency)}
+                                  </p>
                                 </div>
                                 <div>
                                   <p className="text-sm text-gloster-gray font-rubik">Total Aprobado</p>
-                                  <p className="font-semibold text-green-600 font-rubik">{formatCurrency(approvedValue, project.Currency)}</p>
+                                  <p className="font-semibold text-green-600 font-rubik">
+                                    {formatCurrency(approvedValue, project.Currency)}
+                                  </p>
                                 </div>
                               </div>
 
                               {/* Estados recibidos para aprobación rápida */}
                               {project.EstadosPago && project.EstadosPago.length > 0 && (
                                 <div className="space-y-2">
-                                  <h4 className="text-sm font-medium text-slate-800 font-rubik">Estados Recibidos para Aprobación</h4>
+                                  <h4 className="text-sm font-medium text-slate-800 font-rubik">
+                                    Estados Recibidos para Aprobación
+                                  </h4>
                                   <div className="grid gap-2 max-h-32 overflow-y-auto">
-                                    {project.EstadosPago
-                                      .filter(payment => payment.Status === 'Enviado')
-                                      .map((payment) => (
-                                      <div 
-                                        key={payment.id} 
-                                        className="flex items-center justify-between p-2 rounded border text-sm cursor-pointer hover:bg-blue-50 border-blue-200"
-                                        onClick={() => handlePaymentClick(payment.id)}
-                                      >
-                                        <div className="flex items-center gap-2">
-                                          {getStatusIcon(payment.Status)}
-                                          <span className="font-medium text-slate-800 font-rubik">{payment.Name}</span>
-                                          <Badge className={`text-xs ${getStatusColor(payment.Status)} font-rubik`}>
-                                            {getDisplayStatus(payment.Status)}
-                                          </Badge>
-                                        </div>
-                                        <div className="text-right">
-                                          <div className="font-medium text-slate-800 font-rubik">
-                                            {formatCurrency(payment.Total, project.Currency)}
+                                    {project.EstadosPago.filter((payment) => payment.Status === "Enviado").map(
+                                      (payment) => (
+                                        <div
+                                          key={payment.id}
+                                          className="flex items-center justify-between p-2 rounded border text-sm cursor-pointer hover:bg-blue-50 border-blue-200"
+                                          onClick={() => handlePaymentClick(payment.id)}
+                                        >
+                                          <div className="flex items-center gap-2">
+                                            {getStatusIcon(payment.Status)}
+                                            <span className="font-medium text-slate-800 font-rubik">
+                                              {payment.Name}
+                                            </span>
+                                            <Badge className={`text-xs ${getStatusColor(payment.Status)} font-rubik`}>
+                                              {getDisplayStatus(payment.Status)}
+                                            </Badge>
                                           </div>
-                                          <div className="text-xs text-gloster-gray font-rubik">
-                                            {payment.ExpiryDate}
+                                          <div className="text-right">
+                                            <div className="font-medium text-slate-800 font-rubik">
+                                              {formatCurrency(payment.Total, project.Currency)}
+                                            </div>
+                                            <div className="text-xs text-gloster-gray font-rubik">
+                                              {payment.ExpiryDate}
+                                            </div>
                                           </div>
                                         </div>
-                                      </div>
-                                    ))}
-                                    {project.EstadosPago.filter(payment => payment.Status === 'Enviado').length === 0 && (
+                                      ),
+                                    )}
+                                    {project.EstadosPago.filter((payment) => payment.Status === "Enviado").length ===
+                                      0 && (
                                       <div className="text-sm text-gloster-gray text-center py-2 font-rubik">
                                         No hay estados recibidos para aprobación
                                       </div>
@@ -845,7 +891,7 @@ const DashboardMandante: React.FC = () => {
 
                               {/* Botones de acción */}
                               <div className="pt-4 border-t border-gloster-gray/20">
-                                <Button 
+                                <Button
                                   onClick={() => handleProjectDetails(project.id)}
                                   variant="outline"
                                   size="sm"
@@ -870,9 +916,7 @@ const DashboardMandante: React.FC = () => {
           {getUnassignedProjects().length > 0 && (
             <div>
               {folders.length > 0 && (
-                <h3 className="text-lg font-semibold text-slate-800 font-rubik mb-4">
-                  Proyectos Individuales
-                </h3>
+                <h3 className="text-lg font-semibold text-slate-800 font-rubik mb-4">Proyectos Individuales</h3>
               )}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {getUnassignedProjects().map((project) => {
@@ -880,8 +924,8 @@ const DashboardMandante: React.FC = () => {
                   const approvedValue = getProjectApprovedValue(project);
 
                   return (
-                    <Card 
-                      key={project.id} 
+                    <Card
+                      key={project.id}
                       className="overflow-hidden border-gloster-gray/20 hover:shadow-xl transition-all duration-300 cursor-pointer hover:border-gloster-yellow/50"
                     >
                       <CardHeader>
@@ -890,16 +934,17 @@ const DashboardMandante: React.FC = () => {
                             <CardTitle className="text-xl mb-2 text-slate-800 font-rubik">
                               {project.Name}
                               {hasReceivedPayments(project) && (
-                                <Badge className="ml-2 bg-blue-100 text-blue-800 font-rubik">
-                                  Estados Recibidos
-                                </Badge>
+                                <Badge className="ml-2 bg-blue-100 text-blue-800 font-rubik">Estados Recibidos</Badge>
                               )}
                             </CardTitle>
                             <CardDescription className="text-sm text-gloster-gray font-rubik">
                               {project.Description}
                             </CardDescription>
                           </div>
-                          <Badge variant="secondary" className="bg-gloster-yellow/20 text-gloster-gray border-gloster-yellow/30 text-xs font-rubik">
+                          <Badge
+                            variant="secondary"
+                            className="bg-gloster-yellow/20 text-gloster-gray border-gloster-yellow/30 text-xs font-rubik"
+                          >
                             {project.Status ? "Activo" : "Inactivo"}
                           </Badge>
                         </div>
@@ -914,7 +959,9 @@ const DashboardMandante: React.FC = () => {
                           </div>
                           <div className="flex items-center gap-2">
                             <Calendar className="w-4 h-4 text-gloster-gray" />
-                            <span className="text-gloster-gray font-rubik">{new Date(project.StartDate).toLocaleDateString()}</span>
+                            <span className="text-gloster-gray font-rubik">
+                              {new Date(project.StartDate).toLocaleDateString()}
+                            </span>
                           </div>
                           <div className="flex items-center gap-2">
                             <Building2 className="w-4 h-4 text-gloster-gray" />
@@ -929,11 +976,13 @@ const DashboardMandante: React.FC = () => {
                         {/* Progreso del proyecto */}
                         <div className="space-y-2">
                           <div className="flex justify-between items-center">
-                            <span className="text-sm font-medium text-gloster-gray font-rubik">Progreso del Proyecto</span>
+                            <span className="text-sm font-medium text-gloster-gray font-rubik">
+                              Progreso del Proyecto
+                            </span>
                             <span className="text-sm text-slate-800 font-rubik">{progress}%</span>
                           </div>
                           <div className="w-full bg-gloster-gray/20 rounded-full h-2">
-                            <div 
+                            <div
                               className="bg-gloster-yellow h-2 rounded-full transition-all duration-300"
                               style={{ width: `${progress}%` }}
                             ></div>
@@ -944,24 +993,28 @@ const DashboardMandante: React.FC = () => {
                         <div className="flex justify-between items-center pt-2 border-t border-gloster-gray/20">
                           <div>
                             <p className="text-sm text-gloster-gray font-rubik">Presupuesto Total</p>
-                            <p className="font-semibold text-slate-800 font-rubik">{formatCurrency(project.Budget, project.Currency)}</p>
+                            <p className="font-semibold text-slate-800 font-rubik">
+                              {formatCurrency(project.Budget, project.Currency)}
+                            </p>
                           </div>
                           <div>
                             <p className="text-sm text-gloster-gray font-rubik">Total Aprobado</p>
-                            <p className="font-semibold text-green-600 font-rubik">{formatCurrency(approvedValue, project.Currency)}</p>
+                            <p className="font-semibold text-green-600 font-rubik">
+                              {formatCurrency(approvedValue, project.Currency)}
+                            </p>
                           </div>
                         </div>
 
                         {/* Estados recibidos para aprobación rápida */}
                         {project.EstadosPago && project.EstadosPago.length > 0 && (
                           <div className="space-y-2">
-                            <h4 className="text-sm font-medium text-slate-800 font-rubik">Estados Recibidos para Aprobación</h4>
+                            <h4 className="text-sm font-medium text-slate-800 font-rubik">
+                              Estados Recibidos para Aprobación
+                            </h4>
                             <div className="grid gap-2 max-h-32 overflow-y-auto">
-                              {project.EstadosPago
-                                .filter(payment => payment.Status === 'Enviado')
-                                .map((payment) => (
-                                <div 
-                                  key={payment.id} 
+                              {project.EstadosPago.filter((payment) => payment.Status === "Enviado").map((payment) => (
+                                <div
+                                  key={payment.id}
                                   className="flex items-center justify-between p-2 rounded border text-sm cursor-pointer hover:bg-blue-50 border-blue-200"
                                   onClick={() => handlePaymentClick(payment.id)}
                                 >
@@ -976,13 +1029,11 @@ const DashboardMandante: React.FC = () => {
                                     <div className="font-medium text-slate-800 font-rubik">
                                       {formatCurrency(payment.Total, project.Currency)}
                                     </div>
-                                    <div className="text-xs text-gloster-gray font-rubik">
-                                      {payment.ExpiryDate}
-                                    </div>
+                                    <div className="text-xs text-gloster-gray font-rubik">{payment.ExpiryDate}</div>
                                   </div>
                                 </div>
                               ))}
-                              {project.EstadosPago.filter(payment => payment.Status === 'Enviado').length === 0 && (
+                              {project.EstadosPago.filter((payment) => payment.Status === "Enviado").length === 0 && (
                                 <div className="text-sm text-gloster-gray text-center py-2 font-rubik">
                                   No hay estados recibidos para aprobación
                                 </div>
@@ -993,7 +1044,7 @@ const DashboardMandante: React.FC = () => {
 
                         {/* Botón de acción */}
                         <div className="pt-4 border-t border-gloster-gray/20">
-                          <Button 
+                          <Button
                             onClick={() => handleProjectDetails(project.id)}
                             variant="outline"
                             size="sm"
@@ -1025,7 +1076,7 @@ const DashboardMandante: React.FC = () => {
           )}
         </div>
       </div>
-      
+
       {/* Diálogo para editar proyectos de carpeta */}
       <Dialog open={isEditFolderProjectsOpen} onOpenChange={setIsEditFolderProjectsOpen}>
         <DialogContent className="sm:max-w-md">
@@ -1044,9 +1095,9 @@ const DashboardMandante: React.FC = () => {
                       checked={selectedProjectsForEdit.includes(project.id)}
                       onChange={(e) => {
                         if (e.target.checked) {
-                          setSelectedProjectsForEdit(prev => [...prev, project.id]);
+                          setSelectedProjectsForEdit((prev) => [...prev, project.id]);
                         } else {
-                          setSelectedProjectsForEdit(prev => prev.filter(id => id !== project.id));
+                          setSelectedProjectsForEdit((prev) => prev.filter((id) => id !== project.id));
                         }
                       }}
                     />

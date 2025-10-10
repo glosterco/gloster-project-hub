@@ -15,6 +15,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import PageHeader from '@/components/PageHeader';
 
 // Force rebuild to clear cached TooltipProvider reference
 
@@ -433,66 +434,74 @@ const DashboardMandante: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 font-rubik">
-      <header className="bg-white border-b border-gloster-gray/20 shadow-sm">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <img 
-                src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
-                alt="Gloster Logo" 
-                className="w-8 h-8"
-              />
-              <div>
-                <h1 className="text-xl font-bold text-slate-800 font-rubik">
-                  Mis Proyectos{mandanteInfo?.CompanyName ? ` - ${mandanteInfo.CompanyName}` : ''}
-                </h1>
-                <p className="text-sm text-gloster-gray font-rubik">
-                  {projects.length} proyecto{projects.length !== 1 ? 's' : ''} total{projects.length !== 1 ? 'es' : ''}
-                </p>
-              </div>
+      <PageHeader />
+      <div className="container mx-auto px-6 py-4">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-3">
+            <img 
+              src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
+              alt="Gloster Logo" 
+              className="w-8 h-8"
+            />
+            <div>
+              <h1 className="text-xl font-bold text-slate-800 font-rubik">
+                Mis Proyectos{mandanteInfo?.CompanyName ? ` - ${mandanteInfo.CompanyName}` : ''}
+              </h1>
+              <p className="text-sm text-gloster-gray font-rubik">
+                {projects.length} proyecto{projects.length !== 1 ? 's' : ''} total{projects.length !== 1 ? 'es' : ''}
+              </p>
             </div>
-            
-            <div className="flex items-center space-x-4">
-              {hasMultipleRoles ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="flex items-center space-x-2 text-gloster-gray hover:text-slate-800">
-                      <User className="h-4 w-4" />
-                      <span className="text-sm font-rubik">
-                        {mandanteInfo?.ContactName && mandanteInfo?.CompanyName 
-                          ? `${mandanteInfo.ContactName} - ${mandanteInfo.CompanyName}` 
-                          : 'Usuario Mandante'}
-                      </span>
-                      <ChevronDownIcon className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-white z-50">
-                    <DropdownMenuItem 
-                      onClick={() => navigate('/role-selection')}
-                      className="cursor-pointer font-rubik"
-                    >
-                      Cambiar de rol
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : (
-                <div className="flex items-center space-x-2 text-gloster-gray">
-                  <User className="h-4 w-4" />
-                  <span className="text-sm font-rubik">
-                    {mandanteInfo?.ContactName && mandanteInfo?.CompanyName 
-                      ? `${mandanteInfo.ContactName} - ${mandanteInfo.CompanyName}` 
-                      : 'Usuario Mandante'}
-                  </span>
-                </div>
-              )}
-              <Button
-                onClick={() => navigate('/executive-summary-mandante')}
-                className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-gloster-gray font-rubik"
-                size="sm"
-              >
-                <FileText className="h-4 w-4 mr-2" />
-                Resumen Ejecutivo
-              </Button>
+          </div>
+          
+          <div className="flex items-center space-x-4">
+            {hasMultipleRoles ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="flex items-center space-x-2 text-gloster-gray hover:text-slate-800">
+                    <User className="h-4 w-4" />
+                    <span className="text-sm font-rubik">
+                      {mandanteInfo?.ContactName && mandanteInfo?.CompanyName 
+                        ? `${mandanteInfo.ContactName} - ${mandanteInfo.CompanyName}` 
+                        : 'Usuario Mandante'}
+                    </span>
+                    <ChevronDownIcon className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-white z-50">
+                   <DropdownMenuItem 
+                    onClick={() => navigate('/role-selection')}
+                    className="cursor-pointer font-rubik"
+                  >
+                    Cambiar de rol
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={handleSignOut}
+                    className="text-red-600 font-rubik"
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Cerrar Sesión
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <div className="flex items-center space-x-2 text-gloster-gray">
+                <User className="h-4 w-4" />
+                <span className="text-sm font-rubik">
+                  {mandanteInfo?.ContactName && mandanteInfo?.CompanyName 
+                    ? `${mandanteInfo.ContactName} - ${mandanteInfo.CompanyName}` 
+                    : 'Usuario Mandante'}
+                </span>
+              </div>
+            )}
+            <Button
+              onClick={() => navigate('/executive-summary-mandante')}
+              className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-gloster-gray font-rubik"
+              size="sm"
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Resumen Ejecutivo
+            </Button>
+            {!hasMultipleRoles && (
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -502,10 +511,10 @@ const DashboardMandante: React.FC = () => {
                 <LogOut className="h-4 w-4 mr-2" />
                 Cerrar Sesión
               </Button>
-            </div>
+            )}
           </div>
         </div>
-      </header>
+      </div>
 
       <div className="container mx-auto px-6 py-8">
 

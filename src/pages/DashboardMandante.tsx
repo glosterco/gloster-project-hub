@@ -448,6 +448,14 @@ const DashboardMandante: React.FC = () => {
             </div>
             
             <div className="flex items-center space-x-4">
+              <Button
+                onClick={() => navigate('/executive-summary-mandante')}
+                className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-gloster-gray font-rubik"
+                size="sm"
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Resumen Ejecutivo
+              </Button>
               {hasMultipleRoles ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -496,20 +504,11 @@ const DashboardMandante: React.FC = () => {
 
       <div className="container mx-auto px-6 py-8">
         {/* Page Title */}
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h2 className="text-3xl font-bold text-slate-800 mb-2 font-rubik">
-              Mis Proyectos{mandanteInfo?.CompanyName ? ` - ${mandanteInfo.CompanyName}` : ''}
-            </h2>
-            <p className="text-gloster-gray font-rubik">Gestiona tus proyectos activos y estados de pago</p>
-          </div>
-          <Button
-            onClick={() => navigate('/executive-summary-mandante')}
-            className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-gloster-gray font-rubik"
-          >
-            <FileText className="h-4 w-4 mr-2" />
-            Ver Resumen Ejecutivo
-          </Button>
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold text-slate-800 mb-2 font-rubik">
+            Mis Proyectos{mandanteInfo?.CompanyName ? ` - ${mandanteInfo.CompanyName}` : ''}
+          </h2>
+          <p className="text-gloster-gray font-rubik">Gestiona tus proyectos activos y estados de pago</p>
         </div>
 
         {/* Tarjetas de resumen */}

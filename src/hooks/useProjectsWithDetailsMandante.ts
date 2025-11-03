@@ -37,7 +37,7 @@ export interface ProjectWithDetailsMandante {
   }>;
 }
 
-export const useProjectsWithDetailsMandante = () => {
+export const useProjectsWithDetailsMandante = (mandanteId?: number) => {
   const [projects, setProjects] = useState<ProjectWithDetailsMandante[]>([]);
   const [mandante, setMandante] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -45,27 +45,26 @@ export const useProjectsWithDetailsMandante = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (user) {
+    if (user && mandanteId) {
       fetchProjectsWithDetails();
     }
-  }, [user]);
+  }, [user, mandanteId]);
 
   const fetchProjectsWithDetails = async () => {
-    if (!user) return;
+    if (!user || !mandanteId) return;
 
     try {
       setLoading(true);
 
-      // Primero obtener el mandante asociado al usuario autenticado
+      // Obtener el mandante usando el entity_id de user_roles
       const { data: mandanteData, error: mandanteError } = await supabase
         .from('Mandantes')
         .select('*')
-        .eq('auth_user_id', user.id)
+        .eq('id', mandanteId)
         .single();
 
       if (mandanteError || !mandanteData) {
-        console.error('Error fetching mandante or mandante not found:', mandanteError);
-        // No mostrar toast de error, solo manejar silenciosamente
+        console.error('Error fetching mandante:', mandanteError);
         setLoading(false);
         return;
       }

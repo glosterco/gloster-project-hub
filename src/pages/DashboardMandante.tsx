@@ -56,15 +56,17 @@ interface ProjectFolder {
 }
 
 const DashboardMandante: React.FC = () => {
-  const { projects, mandante, loading } = useProjectsWithDetailsMandante();
-  const { folders, createFolder, updateFolder, deleteFolder } = useMandanteFolders(mandante?.id || null);
   const navigate = useNavigate();
   const { signOut } = useAuth();
+  const [mandanteId, setMandanteId] = useState<number | undefined>(undefined);
   const [mandanteInfo, setMandanteInfo] = useState<{
     ContactName: string;
     CompanyName: string;
   } | null>(null);
   const [hasMultipleRoles, setHasMultipleRoles] = useState(false);
+  
+  const { projects, mandante, loading } = useProjectsWithDetailsMandante(mandanteId);
+  const { folders, createFolder, updateFolder, deleteFolder } = useMandanteFolders(mandante?.id || null);
 
   // Estados para filtros y búsqueda
   const [searchTerm, setSearchTerm] = useState("");
@@ -127,6 +129,7 @@ const DashboardMandante: React.FC = () => {
 
         if (mandanteData) {
           setMandanteInfo(mandanteData);
+          setMandanteId(mandanteRole.entity_id); // Set mandante ID from user_roles
           sessionStorage.setItem("activeRole", "mandante");
           console.log("✅ Verified mandante access via user_roles");
         } else {

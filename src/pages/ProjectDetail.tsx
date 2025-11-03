@@ -19,6 +19,14 @@ import { useAdicionales } from '@/hooks/useAdicionales';
 import { AdicionalesCards } from '@/components/AdicionalesCards';
 import { AdicionalesForm } from '@/components/AdicionalesForm';
 import { AdicionalesDetailModal } from '@/components/AdicionalesDetailModal';
+import { useDocumentos } from '@/hooks/useDocumentos';
+import { useFotos } from '@/hooks/useFotos';
+import { usePresupuesto } from '@/hooks/usePresupuesto';
+import { useReuniones } from '@/hooks/useReuniones';
+import { DocumentosCards } from '@/components/DocumentosCards';
+import { FotosCards } from '@/components/FotosCards';
+import { PresupuestoCards } from '@/components/PresupuestoCards';
+import { ReunionesCards } from '@/components/ReunionesCards';
 
 const ProjectDetail = () => {
   console.log('🎨 ProjectDetail component rendering with SECURE MODE...');
@@ -33,8 +41,11 @@ const ProjectDetail = () => {
   const [showAdicionalesForm, setShowAdicionalesForm] = useState(false);
   const [selectedAdicional, setSelectedAdicional] = useState<any>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
-  const { adicionales, loading: adicionalesLoading, refetch: refetchAdicionales } = useAdicionales(id || '');
-  
+const { adicionales, loading: adicionalesLoading, refetch: refetchAdicionales } = useAdicionales(id || '');
+const { documentos, loading: documentosLoading } = useDocumentos(id || '');
+const { fotos, loading: fotosLoading } = useFotos(id || '');
+const { presupuesto, loading: presupuestoLoading } = usePresupuesto(id || '');
+const { reuniones, loading: reunionesLoading } = useReuniones(id || '');
   const handleAdicionalesSuccess = () => {
     refetchAdicionales();
   };
@@ -550,8 +561,149 @@ const ProjectDetail = () => {
             console.log('🔍 DEBUG: userEntity?.Adicionales =', (userEntity as any)?.Adicionales, 'type:', typeof (userEntity as any)?.Adicionales);
             return null;
           })()}
-          {((userEntity as any)?.Adicionales === true) ? (
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+{(() => {
+            const entity = (userEntity as any) || {};
+            const features = {
+              adicionales: Boolean(entity?.Adicionales),
+              documentos: Boolean(entity?.Documentos),
+              fotos: Boolean(entity?.Fotos),
+              presupuesto: Boolean(entity?.Presupuesto),
+              reuniones: Boolean(entity?.Reuniones),
+            };
+            console.log('🔍 DEBUG: features =', features);
+            const hasAnyFeature = Object.values(features).some(Boolean);
+
+            if (!hasAnyFeature) {
+              return (
+                <>
+                  <h3 className="text-2xl font-bold text-slate-800 mb-6 font-rubik">Estados de Pago</h3>
+                  {renderControls()}
+                  {filteredAndSortedPayments.length === 0 ? (
+                    <Card className="p-8 text-center">
+                      <CardContent>
+                        <p className="text-gloster-gray font-rubik">No hay estados de pago para este proyecto.</p>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    renderPaymentCards()
+                  )}
+                </>
+              );
+            }
+
+            return (
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="flex flex-wrap gap-2 bg-card/50 backdrop-blur-sm border border-border/50 rounded-lg p-1">
+                  <TabsTrigger 
+                    value="estados-pago" 
+                    className="font-rubik font-medium transition-all duration-200 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm data-[state=active]:font-semibold"
+                  >
+                    Estados de Pago
+                  </TabsTrigger>
+                  {features.adicionales && (
+                    <TabsTrigger 
+                      value="adicionales" 
+                      className="font-rubik font-medium transition-all duration-200 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm data-[state=active]:font-semibold"
+                    >
+                      Adicionales
+                    </TabsTrigger>
+                  )}
+                  {features.documentos && (
+                    <TabsTrigger 
+                      value="documentos" 
+                      className="font-rubik font-medium transition-all duration-200 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm data-[state=active]:font-semibold"
+                    >
+                      Documentos
+                    </TabsTrigger>
+                  )}
+                  {features.fotos && (
+                    <TabsTrigger 
+                      value="fotos" 
+                      className="font-rubik font-medium transition-all duration-200 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm data-[state=active]:font-semibold"
+                    >
+                      Fotos
+                    </TabsTrigger>
+                  )}
+                  {features.presupuesto && (
+                    <TabsTrigger 
+                      value="presupuesto" 
+                      className="font-rubik font-medium transition-all duration-200 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm data-[state=active]:font-semibold"
+                    >
+                      Presupuesto
+                    </TabsTrigger>
+                  )}
+                  {features.reuniones && (
+                    <TabsTrigger 
+                      value="reuniones" 
+                      className="font-rubik font-medium transition-all duration-200 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm data-[state=active]:font-semibold"
+                    >
+                      Reuniones
+                    </TabsTrigger>
+                  )}
+                </TabsList>
+
+                <TabsContent value="estados-pago" className="space-y-6">
+                  {renderControls()}
+                  {filteredAndSortedPayments.length === 0 ? (
+                    <Card className="p-8 text-center">
+                      <CardContent>
+                        <p className="text-gloster-gray font-rubik">No hay estados de pago para este proyecto.</p>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    renderPaymentCards()
+                  )}
+                </TabsContent>
+
+                {features.adicionales && (
+                  <TabsContent value="adicionales" className="mt-6">
+                    <div className="space-y-6">
+                      {userType === 'contratista' && (
+                        <div className="flex justify-end">
+                          <Button 
+                            onClick={() => setShowAdicionalesForm(true)}
+                            className="font-rubik"
+                          >
+                            Presentar Nuevo Adicional
+                          </Button>
+                        </div>
+                      )}
+                      <AdicionalesCards 
+                        adicionales={adicionales}
+                        loading={adicionalesLoading}
+                        currency={project?.Currency}
+                        onCardClick={handleCardClick}
+                      />
+                    </div>
+                  </TabsContent>
+                )}
+
+                {features.documentos && (
+                  <TabsContent value="documentos" className="mt-6">
+                    <DocumentosCards documentos={documentos} loading={documentosLoading} />
+                  </TabsContent>
+                )}
+
+                {features.fotos && (
+                  <TabsContent value="fotos" className="mt-6">
+                    <FotosCards fotos={fotos} loading={fotosLoading} />
+                  </TabsContent>
+                )}
+
+                {features.presupuesto && (
+                  <TabsContent value="presupuesto" className="mt-6">
+                    <PresupuestoCards presupuesto={presupuesto} loading={presupuestoLoading} currency={project?.Currency} />
+                  </TabsContent>
+                )}
+
+                {features.reuniones && (
+                  <TabsContent value="reuniones" className="mt-6">
+                    <ReunionesCards reuniones={reuniones} loading={reunionesLoading} />
+                  </TabsContent>
+                )}
+              </Tabs>
+            );
+          })()}
               <TabsList className="grid w-full grid-cols-2 bg-card/50 backdrop-blur-sm border border-border/50 rounded-lg p-1">
                 <TabsTrigger 
                   value="estados-pago" 

@@ -2,6 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Building2, User } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface RoleSelectionFormProps {
   onSelectRole: (role: 'contratista' | 'mandante') => void;
@@ -79,9 +80,9 @@ const RoleSelectionForm: React.FC<RoleSelectionFormProps> = ({ onSelectRole }) =
         <div className="text-center mt-8">
           <p className="text-sm text-gloster-gray font-rubik">
             ¿Ya tienes una cuenta?{' '}
-            <a href="/" className="text-gloster-yellow hover:underline">
+            <Link to="/" className="text-gloster-yellow hover:underline">
               Iniciar sesión
-            </a>
+            </Link>
           </p>
         </div>
       </div>

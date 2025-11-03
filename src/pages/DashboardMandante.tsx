@@ -98,6 +98,9 @@ const DashboardMandante: React.FC = () => {
           return;
         }
 
+        // Limpiar accesos limitados previos
+        sessionStorage.removeItem("mandanteAccess");
+
         // Verificar si el usuario tiene rol de mandante en user_roles
         const { data: userRoles } = await supabase
           .from("user_roles")
@@ -129,13 +132,13 @@ const DashboardMandante: React.FC = () => {
 
         if (mandanteData) {
           setMandanteInfo(mandanteData);
-          setMandanteId(mandanteRole.entity_id); // Set mandante ID from user_roles
-          sessionStorage.setItem("activeRole", "mandante");
-          console.log("✅ Verified mandante access via user_roles");
         } else {
           console.log("❌ Could not find mandante data");
-          navigate("/");
+          setMandanteInfo(null);
         }
+        setMandanteId(mandanteRole.entity_id); // Ensure mandanteId is set
+        sessionStorage.setItem("activeRole", "mandante");
+        console.log("✅ Verified mandante access via user_roles");
 
         // Check if user has multiple roles
         setHasMultipleRoles((userRoles?.length || 0) > 1);

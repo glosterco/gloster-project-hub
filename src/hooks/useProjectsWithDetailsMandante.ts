@@ -64,12 +64,11 @@ export const useProjectsWithDetailsMandante = (mandanteId?: number) => {
         .single();
 
       if (mandanteError || !mandanteData) {
-        console.error('Error fetching mandante:', mandanteError);
-        setLoading(false);
-        return;
+        console.warn('Mandante not found, continuing with mandanteId only:', mandanteId, mandanteError);
+        setMandante(null);
+      } else {
+        setMandante(mandanteData);
       }
-
-      setMandante(mandanteData);
 
       // Obtener proyectos donde este mandante es el owner
       const { data: projectsData, error: projectsError } = await supabase
@@ -85,7 +84,7 @@ export const useProjectsWithDetailsMandante = (mandanteId?: number) => {
             RUT
           )
         `)
-        .eq('Owner', mandanteData.id);
+        .eq('Owner', mandanteId);
 
       if (projectsError) {
         console.error('Error fetching projects:', projectsError);
@@ -99,7 +98,7 @@ export const useProjectsWithDetailsMandante = (mandanteId?: number) => {
       }
 
       if (!projectsData || projectsData.length === 0) {
-        console.log('No projects found for mandante:', mandanteData.id);
+        console.log('No projects found for mandante:', mandanteId);
         setProjects([]);
         setLoading(false);
         return;

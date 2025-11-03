@@ -16,6 +16,15 @@ import { formatCurrency } from '@/utils/currencyUtils';
 import { useAdicionales } from '@/hooks/useAdicionales';
 import { AdicionalesCards } from '@/components/AdicionalesCards';
 import { AdicionalesDetailModal } from '@/components/AdicionalesDetailModal';
+import { useDocumentos } from '@/hooks/useDocumentos';
+import { useFotos } from '@/hooks/useFotos';
+import { usePresupuesto } from '@/hooks/usePresupuesto';
+import { useReuniones } from '@/hooks/useReuniones';
+import { DocumentosCards } from '@/components/DocumentosCards';
+import { FotosCards } from '@/components/FotosCards';
+import { PresupuestoCards } from '@/components/PresupuestoCards';
+import { ReunionesCards } from '@/components/ReunionesCards';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const ProjectDetailMandante = () => {
   const { id } = useParams();
@@ -27,6 +36,10 @@ const ProjectDetailMandante = () => {
   const [selectedAdicional, setSelectedAdicional] = useState<any>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const { adicionales, loading: adicionalesLoading } = useAdicionales(id || '');
+  const { documentos, loading: documentosLoading } = useDocumentos(id || '');
+  const { fotos, loading: fotosLoading } = useFotos(id || '');
+  const { presupuesto, loading: presupuestoLoading } = usePresupuesto(id || '');
+  const { reuniones, loading: reunionesLoading } = useReuniones(id || '');
   
   const handleCardClick = (adicional: any) => {
     setSelectedAdicional(adicional);
@@ -36,8 +49,15 @@ const ProjectDetailMandante = () => {
   const { project, loading, refetch, mandante } = useProjectDetailMandante(id || '');
   const { sendContractorPaymentNotification, loading: notificationLoading } = useContractorNotification();
   
-  // Check if Adicionales feature is enabled for this mandante
+  // Check which features are enabled for this mandante
   const adicionalesEnabled = mandante?.Adicionales === true;
+  const documentosEnabled = mandante?.Documentos === true;
+  const fotosEnabled = mandante?.Fotos === true;
+  const presupuestoEnabled = mandante?.Presupuesto === true;
+  const reunionesEnabled = mandante?.Reuniones === true;
+  
+  // Count how many tabs should be shown
+  const hasAnyTab = adicionalesEnabled || documentosEnabled || fotosEnabled || presupuestoEnabled || reunionesEnabled;
 
   const getPaymentStatus = (payment: any) => {
     return payment.Status || 'Sin Estado';
@@ -384,16 +404,76 @@ const ProjectDetailMandante = () => {
           </div>
         )}
         
-        {/* Adicionales Section - Only show if enabled */}
-        {adicionalesEnabled && (
+        {/* Tabs Section - Only show if at least one feature is enabled */}
+        {hasAnyTab && (
           <div className="mt-8">
-            <h2 className="text-2xl font-bold text-slate-800 font-rubik mb-4">Adicionales</h2>
-            <AdicionalesCards 
-              adicionales={adicionales}
-              loading={adicionalesLoading}
-              currency={project?.Currency}
-              onCardClick={handleCardClick}
-            />
+            <Tabs defaultValue={adicionalesEnabled ? "adicionales" : documentosEnabled ? "documentos" : fotosEnabled ? "fotos" : presupuestoEnabled ? "presupuesto" : "reuniones"} className="w-full">
+              <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${[adicionalesEnabled, documentosEnabled, fotosEnabled, presupuestoEnabled, reunionesEnabled].filter(Boolean).length}, 1fr)` }}>
+                {adicionalesEnabled && (
+                  <TabsTrigger value="adicionales" className="font-rubik">Adicionales</TabsTrigger>
+                )}
+                {documentosEnabled && (
+                  <TabsTrigger value="documentos" className="font-rubik">Documentos</TabsTrigger>
+                )}
+                {fotosEnabled && (
+                  <TabsTrigger value="fotos" className="font-rubik">Fotos</TabsTrigger>
+                )}
+                {presupuestoEnabled && (
+                  <TabsTrigger value="presupuesto" className="font-rubik">Presupuesto</TabsTrigger>
+                )}
+                {reunionesEnabled && (
+                  <TabsTrigger value="reuniones" className="font-rubik">Reuniones</TabsTrigger>
+                )}
+              </TabsList>
+
+              {adicionalesEnabled && (
+                <TabsContent value="adicionales" className="mt-6">
+                  <AdicionalesCards 
+                    adicionales={adicionales}
+                    loading={adicionalesLoading}
+                    currency={project?.Currency}
+                    onCardClick={handleCardClick}
+                  />
+                </TabsContent>
+              )}
+
+              {documentosEnabled && (
+                <TabsContent value="documentos" className="mt-6">
+                  <DocumentosCards 
+                    documentos={documentos}
+                    loading={documentosLoading}
+                  />
+                </TabsContent>
+              )}
+
+              {fotosEnabled && (
+                <TabsContent value="fotos" className="mt-6">
+                  <FotosCards 
+                    fotos={fotos}
+                    loading={fotosLoading}
+                  />
+                </TabsContent>
+              )}
+
+              {presupuestoEnabled && (
+                <TabsContent value="presupuesto" className="mt-6">
+                  <PresupuestoCards 
+                    presupuesto={presupuesto}
+                    loading={presupuestoLoading}
+                    currency={project?.Currency}
+                  />
+                </TabsContent>
+              )}
+
+              {reunionesEnabled && (
+                <TabsContent value="reuniones" className="mt-6">
+                  <ReunionesCards 
+                    reuniones={reuniones}
+                    loading={reunionesLoading}
+                  />
+                </TabsContent>
+              )}
+            </Tabs>
           </div>
         )}
       </div>

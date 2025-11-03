@@ -1,4 +1,20 @@
-import { Building, FileText, Clock, Shield, Users, CheckCircle, ArrowRight, BarChart3, Calendar, DollarSign, Download, Upload, Monitor, Smartphone, FolderTree } from "lucide-react";
+import {
+  Building,
+  FileText,
+  Clock,
+  Shield,
+  Users,
+  CheckCircle,
+  ArrowRight,
+  BarChart3,
+  Calendar,
+  DollarSign,
+  Download,
+  Upload,
+  Monitor,
+  Smartphone,
+  FolderTree,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -40,21 +56,21 @@ const MKT = () => {
               <span className="text-brand-yellow">Inteligente</span> para la Construcción
             </h1>
             <p className="text-xl md:text-2xl text-primary-foreground/90 mb-8 max-w-3xl mx-auto">
-              La plataforma que revoluciona la gestión de estados de pagos entre mandantes y contratistas. 
-              Automatiza procesos, reduce tiempos y elimina errores.
+              La plataforma que revoluciona la gestión de estados de pagos entre mandantes y contratistas. Automatiza
+              procesos, reduce tiempos y elimina errores.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button 
-                size="lg" 
+              <Button
+                size="lg"
                 className="bg-brand-yellow text-brand-yellow-foreground hover:bg-brand-yellow/90 px-8 py-4 text-lg"
                 onClick={handleKnowPlatformClick}
               >
                 Conocer la Plataforma
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
-              <Button 
-                size="lg" 
-                variant="outline" 
+              <Button
+                size="lg"
+                variant="outline"
                 className="border-primary-foreground text-primary hover:bg-primary-foreground hover:text-primary px-8 py-4 text-lg"
                 onClick={handleDemoClick}
               >
@@ -62,7 +78,7 @@ const MKT = () => {
               </Button>
             </div>
           </div>
-          
+
           {/* Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6">
@@ -85,9 +101,7 @@ const MKT = () => {
       <section className="py-24 px-6 bg-muted/30">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-foreground mb-6">
-              ¿Te suena familiar?
-            </h2>
+            <h2 className="text-4xl font-bold text-foreground mb-6">¿Te suena familiar?</h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               Los problemas más comunes en la gestión documental de estados de pagos en la construcción
             </p>
@@ -101,8 +115,8 @@ const MKT = () => {
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground">
-                  Semanas esperando aprobaciones, documentos perdidos en emails, 
-                  y procesos manuales que retrasan el flujo de trabajo.
+                  Semanas esperando aprobaciones, documentos perdidos en emails, y procesos manuales que retrasan el
+                  flujo de trabajo.
                 </p>
               </CardContent>
             </Card>
@@ -114,8 +128,7 @@ const MKT = () => {
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground">
-                  Facturas en diferentes formatos, estados de pago confusos, 
-                  y desorden en los documentos críticos.
+                  Facturas en diferentes formatos, estados de pago confusos, y desorden en los documentos críticos.
                 </p>
               </CardContent>
             </Card>
@@ -127,12 +140,11 @@ const MKT = () => {
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground">
-                  WhatsApp, emails, llamadas... Información dispersa que genera 
-                  malentendidos y errores costosos.
+                  WhatsApp, emails, llamadas... Información dispersa que genera malentendidos y errores costosos.
                 </p>
               </CardContent>
             </Card>
-            
+
             <Card className="border-destructive/20 bg-destructive/5">
               <CardHeader>
                 <FolderTree className="w-12 h-12 text-destructive mb-4" />
@@ -140,8 +152,8 @@ const MKT = () => {
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground">
-                  Muchas versiones y desorganización de la documentación. Envíos reiterados 
-                  de información pierden el orden y los registros
+                  Muchas versiones y desorganización de la documentación. Envíos reiterados de información pierden el
+                  orden y los registros
                 </p>
               </CardContent>
             </Card>
@@ -153,9 +165,7 @@ const MKT = () => {
       <section className="py-24 px-6">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-foreground mb-6">
-              La Solución que Necesitas
-            </h2>
+            <h2 className="text-4xl font-bold text-foreground mb-6">La Solución que Necesitas</h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               Una plataforma integral que centraliza, automatiza y optimiza toda la gestión de los estados de pagos
             </p>
@@ -169,26 +179,33 @@ const MKT = () => {
                   <CheckCircle className="w-6 h-6 text-brand-yellow flex-shrink-0 mt-1" />
                   <div>
                     <h4 className="font-semibold mb-1">Notificaciones Automáticas</h4>
-                    <p className="text-muted-foreground">Manten una comunicación clara entre mandante y contratisa notificando automáticamente sobre los estados de pago.</p>
+                    <p className="text-muted-foreground">
+                      Manten una comunicación clara entre mandante y contratisa notificando automáticamente sobre los
+                      estados de pago.
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <CheckCircle className="w-6 h-6 text-brand-yellow flex-shrink-0 mt-1" />
                   <div>
                     <h4 className="font-semibold mb-1">Gestión de Documentos</h4>
-                    <p className="text-muted-foreground">Carga, organización y descarga automática de documentos con registro histórico de la información.</p>
+                    <p className="text-muted-foreground">
+                      Carga, organización y descarga automática de documentos con registro histórico de la información.
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <CheckCircle className="w-6 h-6 text-brand-yellow flex-shrink-0 mt-1" />
                   <div>
                     <h4 className="font-semibold mb-1">Trazabilidad Total</h4>
-                    <p className="text-muted-foreground">Registro completo de todas las acciones, cambios de estado y comunicaciones del proyecto.</p>
+                    <p className="text-muted-foreground">
+                      Registro completo de todas las acciones, cambios de estado y comunicaciones del proyecto.
+                    </p>
                   </div>
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-gradient-to-br from-muted to-muted/50 rounded-2xl p-8 relative">
               <div className="bg-white rounded-lg shadow-lg p-4 mb-4">
                 <div className="flex items-center gap-2 mb-2">
@@ -196,8 +213,8 @@ const MKT = () => {
                   <span className="text-sm font-medium">Dashboard Principal</span>
                 </div>
                 <div className="rounded overflow-hidden">
-                  <img 
-                    src={homeImage} 
+                  <img
+                    src={homeImage}
                     alt="Dashboard Principal de la Plataforma"
                     className="w-full h-auto object-contain"
                   />
@@ -208,102 +225,12 @@ const MKT = () => {
         </div>
       </section>
 
-      {/* Contractor Profile Section */}
-      <section className="py-24 px-6 bg-gradient-to-br from-brand-yellow/10 to-brand-yellow/5">
-        <div className="container mx-auto max-w-6xl">
-          <div className="text-center mb-16">
-            <Badge className="bg-brand-yellow text-brand-yellow-foreground mb-4">Para Contratistas</Badge>
-            <h2 className="text-4xl font-bold text-foreground mb-6">
-              Simplifica tu Gestión de estados de pago
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Herramientas diseñadas para que los contratistas gestionen sus estados de pagos de manera eficiente
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-            <div className="space-y-8">
-              <div className="flex items-start gap-4">
-                <div className="bg-brand-yellow w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <Upload className="w-6 h-6 text-brand-yellow-foreground" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold mb-2">Carga de Documentos Simplificada</h3>
-                  <p className="text-muted-foreground">
-                    Prepara los estados de pago, consigue y carga la documentación complementaria desde <b>un solo lugar.</b>
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="bg-brand-yellow w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <BarChart3 className="w-6 h-6 text-brand-yellow-foreground" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold mb-2">Dashboard de Proyectos</h3>
-                  <p className="text-muted-foreground">
-                    Visualiza todos tus proyectos, estados de pago pendientes, aprobados y rechazados 
-                    en una <b>interfaz clara e intuitiva.</b>
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="bg-brand-yellow w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <Calendar className="w-6 h-6 text-brand-yellow-foreground" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold mb-2">Seguimiento en Tiempo Real</h3>
-                  <p className="text-muted-foreground">
-                    Recibe <b>notificaciones instantáneas</b> sobre cambios de estado 
-                    y/o requerimientos adicionales de documentación.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl shadow-lg p-6 border">
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="font-semibold">Panel de Contratista</h4>
-                <Badge variant="secondary">Vista Real</Badge>
-              </div>
-              <Carousel className="w-full">
-                <CarouselContent>
-                  <CarouselItem>
-                    <div className="rounded-lg overflow-hidden">
-                      <img 
-                        src={dashboardContratistaImage} 
-                        alt="Dashboard de Contratista"
-                        className="w-full h-auto object-contain"
-                      />
-                    </div>
-                  </CarouselItem>
-                  <CarouselItem>
-                    <div className="rounded-lg overflow-hidden">
-                      <img 
-                        src={payment1Image} 
-                        alt="Estado de Pago - Vista Contratista"
-                        className="w-full h-auto object-contain"
-                      />
-                    </div>
-                  </CarouselItem>
-                </CarouselContent>
-                <CarouselPrevious />
-                <CarouselNext />
-              </Carousel>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Mandante Profile Section */}
       <section className="py-24 px-6 bg-gradient-to-br from-primary/10 to-primary/5">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-16">
             <Badge className="bg-primary text-primary-foreground mb-4">Para Mandantes</Badge>
-            <h2 className="text-4xl font-bold text-foreground mb-6">
-              Control Total de tus Proyectos
-            </h2>
+            <h2 className="text-4xl font-bold text-foreground mb-6">Control Total de tus Proyectos</h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               Herramientas avanzadas para recibir, revisar y gestionar estados de pagos de múltiples proyectos
             </p>
@@ -319,8 +246,8 @@ const MKT = () => {
                 <CarouselContent>
                   <CarouselItem>
                     <div className="rounded-lg overflow-hidden">
-                      <img 
-                        src={dashboardMandanteImage} 
+                      <img
+                        src={dashboardMandanteImage}
                         alt="Dashboard de Mandante"
                         className="w-full h-auto object-contain"
                       />
@@ -328,8 +255,8 @@ const MKT = () => {
                   </CarouselItem>
                   <CarouselItem>
                     <div className="rounded-lg overflow-hidden">
-                      <img 
-                        src={submissionImage} 
+                      <img
+                        src={submissionImage}
                         alt="Vista de Estado de Pago - Mandante"
                         className="w-full h-auto object-contain"
                       />
@@ -361,8 +288,8 @@ const MKT = () => {
                 <div>
                   <h3 className="text-xl font-bold mb-2">Reportes Ejecutivos</h3>
                   <p className="text-muted-foreground">
-                    Resúmenes ejecutivos con métricas clave, registro histórico de documentación y
-                    análisis por proyecto y contratista.
+                    Resúmenes ejecutivos con métricas clave, registro histórico de documentación y análisis por proyecto
+                    y contratista.
                   </p>
                 </div>
               </div>
@@ -374,10 +301,98 @@ const MKT = () => {
                 <div>
                   <h3 className="text-xl font-bold mb-2">Gestión Financiera</h3>
                   <p className="text-muted-foreground">
-                    Control sobre montos totales, aprobados, rechazados, fechas de vencimiento y notificaciones automáticas a contratistas.
+                    Control sobre montos totales, aprobados, rechazados, fechas de vencimiento y notificaciones
+                    automáticas a contratistas.
                   </p>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Contractor Profile Section */}
+      <section className="py-24 px-6 bg-gradient-to-br from-brand-yellow/10 to-brand-yellow/5">
+        <div className="container mx-auto max-w-6xl">
+          <div className="text-center mb-16">
+            <Badge className="bg-brand-yellow text-brand-yellow-foreground mb-4">Para Contratistas</Badge>
+            <h2 className="text-4xl font-bold text-foreground mb-6">Simplifica tu Gestión de estados de pago</h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              Herramientas diseñadas para que los contratistas gestionen sus estados de pagos de manera eficiente
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+            <div className="space-y-8">
+              <div className="flex items-start gap-4">
+                <div className="bg-brand-yellow w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Upload className="w-6 h-6 text-brand-yellow-foreground" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold mb-2">Carga de Documentos Simplificada</h3>
+                  <p className="text-muted-foreground">
+                    Prepara los estados de pago, consigue y carga la documentación complementaria desde{" "}
+                    <b>un solo lugar.</b>
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="bg-brand-yellow w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <BarChart3 className="w-6 h-6 text-brand-yellow-foreground" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold mb-2">Dashboard de Proyectos</h3>
+                  <p className="text-muted-foreground">
+                    Visualiza todos tus proyectos, estados de pago pendientes, aprobados y rechazados en una{" "}
+                    <b>interfaz clara e intuitiva.</b>
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="bg-brand-yellow w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Calendar className="w-6 h-6 text-brand-yellow-foreground" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold mb-2">Seguimiento en Tiempo Real</h3>
+                  <p className="text-muted-foreground">
+                    Recibe <b>notificaciones instantáneas</b> sobre cambios de estado y/o requerimientos adicionales de
+                    documentación.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-lg p-6 border">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="font-semibold">Panel de Contratista</h4>
+                <Badge variant="secondary">Vista Real</Badge>
+              </div>
+              <Carousel className="w-full">
+                <CarouselContent>
+                  <CarouselItem>
+                    <div className="rounded-lg overflow-hidden">
+                      <img
+                        src={dashboardContratistaImage}
+                        alt="Dashboard de Contratista"
+                        className="w-full h-auto object-contain"
+                      />
+                    </div>
+                  </CarouselItem>
+                  <CarouselItem>
+                    <div className="rounded-lg overflow-hidden">
+                      <img
+                        src={payment1Image}
+                        alt="Estado de Pago - Vista Contratista"
+                        className="w-full h-auto object-contain"
+                      />
+                    </div>
+                  </CarouselItem>
+                </CarouselContent>
+                <CarouselPrevious />
+                <CarouselNext />
+              </Carousel>
             </div>
           </div>
         </div>
@@ -391,22 +406,21 @@ const MKT = () => {
             <span className="text-brand-yellow">Pagos en Construcción</span>
           </h2>
           <p className="text-xl text-primary-foreground/90 mb-8 max-w-2xl mx-auto">
-            Únete a las empresas que ya optimizaron su gestión documental 
-            y mejoraron la eficiencia de sus proyectos.
+            Únete a las empresas que ya optimizaron su gestión documental y mejoraron la eficiencia de sus proyectos.
           </p>
-          
+
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <Button 
-              size="lg" 
+            <Button
+              size="lg"
               className="bg-brand-yellow text-brand-yellow-foreground hover:bg-brand-yellow/90 px-8 py-4 text-lg"
               onClick={handleKnowPlatformClick}
             >
               Conocer la plataforma
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
-            <Button 
-              size="lg" 
-              variant="outline" 
+            <Button
+              size="lg"
+              variant="outline"
               className="border-primary-foreground text-primary hover:bg-primary-foreground hover:text-primary px-8 py-4 text-lg"
               onClick={handleDemoClick}
             >
@@ -450,11 +464,8 @@ const MKT = () => {
           </p>
         </div>
       </footer>
-      
-      <ContactModal 
-        isOpen={isContactModalOpen} 
-        onClose={() => setIsContactModalOpen(false)} 
-      />
+
+      <ContactModal isOpen={isContactModalOpen} onClose={() => setIsContactModalOpen(false)} />
     </div>
   );
 };

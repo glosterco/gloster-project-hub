@@ -722,7 +722,11 @@ const ProjectDetail = () => {
                       'Cargar Nuevo Documento', 
                       () => toast({ title: "Función en desarrollo", description: "Próximamente podrás cargar documentos" })
                     )}
-                    <DocumentosTable documentos={documentos} loading={documentosLoading} />
+                    <Card>
+                      <CardContent className="pt-6">
+                        <DocumentosTable documentos={documentos} loading={documentosLoading} />
+                      </CardContent>
+                    </Card>
                   </TabsContent>
                 )}
 
@@ -742,7 +746,11 @@ const ProjectDetail = () => {
                       'Cargar Nueva Foto', 
                       () => toast({ title: "Función en desarrollo", description: "Próximamente podrás cargar fotos" })
                     )}
-                    <FotosGrid fotos={fotos} loading={fotosLoading} />
+                    <Card>
+                      <CardContent className="pt-6">
+                        <FotosGrid fotos={fotos} loading={fotosLoading} />
+                      </CardContent>
+                    </Card>
                   </TabsContent>
                 )}
 
@@ -762,12 +770,16 @@ const ProjectDetail = () => {
                       'Actualizar Presupuesto', 
                       () => toast({ title: "Información", description: "Edita los valores de Avance Parcial en la tabla y se guardarán automáticamente" })
                     )}
-                    <PresupuestoTable 
-                      presupuesto={presupuesto} 
-                      loading={presupuestoLoading} 
-                      currency={project?.Currency}
-                      onUpdate={refetchPresupuesto}
-                    />
+                    <Card>
+                      <CardContent className="pt-6">
+                        <PresupuestoTable 
+                          presupuesto={presupuesto} 
+                          loading={presupuestoLoading} 
+                          currency={project?.Currency}
+                          onUpdate={refetchPresupuesto}
+                        />
+                      </CardContent>
+                    </Card>
                   </TabsContent>
                 )}
 
@@ -787,7 +799,11 @@ const ProjectDetail = () => {
                       'Crear Nueva Minuta', 
                       () => toast({ title: "Función en desarrollo", description: "Próximamente podrás crear minutas" })
                     )}
-                    <ReunionesTable reuniones={reuniones} loading={reunionesLoading} />
+                    <Card>
+                      <CardContent className="pt-6">
+                        <ReunionesTable reuniones={reuniones} loading={reunionesLoading} />
+                      </CardContent>
+                    </Card>
                   </TabsContent>
                 )}
               </Tabs>

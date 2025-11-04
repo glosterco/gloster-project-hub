@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { ArrowLeft, Calendar, Search, Eye, Settings, Bell } from 'lucide-react';
+import { ArrowLeft, Calendar, Search, Eye, Settings, Bell, ChevronRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import PageHeader from '@/components/PageHeader';
 import { useProjectDetailMandante } from '@/hooks/useProjectDetailMandante';
@@ -310,87 +310,113 @@ const ProjectDetailMandante = () => {
         </div>
 
         {/* Payment States Grid */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredAndSortedPayments.map((payment) => {
             const status = getPaymentStatus(payment);
             const displayStatus = getDisplayStatus(status);
             
             return (
-              <Card key={payment.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <CardTitle className="text-lg font-rubik">{payment.Name}</CardTitle>
-                    <Badge className={getStatusColor(displayStatus)}>
-                      {displayStatus}
-                    </Badge>
-                  </div>
-                  <CardDescription className="font-rubik">
-                    {payment.Mes} {payment.Año}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gloster-gray font-rubik">Monto:</span>
-                      <span className="font-semibold font-rubik">
-                        {formatCurrency(payment.Total || 0, project.Currency)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gloster-gray font-rubik">Vencimiento:</span>
-                      <span className="text-sm font-rubik">
-                        <Calendar className="h-3 w-3 inline mr-1" />
-                        {new Date(payment.ExpiryDate).toLocaleDateString()}
-                      </span>
+              <Card 
+                key={payment.id} 
+                className="hover:shadow-xl transition-all duration-300 border-gloster-gray/20 hover:border-gloster-gray/50 h-full"
+              >
+                <CardContent className="p-4 md:p-6 h-full flex flex-col">
+                  <div className="space-y-4 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center space-x-3 min-w-0 flex-1">
+                        <div className="w-10 h-10 bg-gloster-gray/20 rounded-lg flex items-center justify-center shrink-0">
+                          <Calendar className="h-5 w-5 text-gloster-gray" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-semibold text-slate-800 font-rubik text-sm md:text-base">
+                            {payment.Name}
+                          </h4>
+                          <p className="text-gloster-gray text-xs md:text-sm font-rubik">
+                            {payment.Mes} {payment.Año}
+                          </p>
+                          <p className="text-gloster-gray text-xs md:text-sm font-rubik">
+                            Vencimiento: {new Date(payment.ExpiryDate).toLocaleDateString('es-CL')}
+                          </p>
+                        </div>
+                      </div>
+                      <Badge variant="secondary" className={`${getStatusColor(displayStatus)} text-xs shrink-0`}>
+                        {displayStatus}
+                      </Badge>
                     </div>
                     
-                    <div className="flex gap-2 mt-4">
-                      {canViewPayment(status) && (
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => handlePaymentAction(payment, 'view')}
-                          className="flex-1 font-rubik"
-                        >
-                          <Eye className="h-4 w-4 mr-1" />
-                          Ver
-                        </Button>
-                      )}
-                      
-                      {canManagePayment(status) && (
-                        <Button 
-                          variant="default" 
-                          size="sm" 
-                          onClick={() => handlePaymentAction(payment, 'manage')}
-                          className="flex-1 font-rubik"
-                        >
-                          <Settings className="h-4 w-4 mr-1" />
-                          Gestionar
-                        </Button>
-                      )}
-                      
-                      {shouldShowNotifyButton(payment) && (
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                onClick={() => handleNotifyContractor(payment)}
-                                disabled={notificationLoading}
-                                className="flex-1 font-rubik"
-                              >
-                                <Bell className="h-4 w-4 mr-1" />
-                                Notificar
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-white border border-gloster-gray/20 shadow-lg">
-                              <p className="font-rubik text-sm">Notificar al contratista sobre este pago</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      )}
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gloster-gray text-xs md:text-sm font-rubik">Monto:</span>
+                        <span className="font-bold text-slate-800 text-sm md:text-base font-rubik">
+                          {formatCurrency(payment.Total || 0, project.Currency)}
+                        </span>
+                      </div>
                     </div>
+                  </div>
+
+                  <div className="pt-4 mt-auto space-y-2">
+                    {canManagePayment(status) && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              onClick={() => handlePaymentAction(payment, 'manage')}
+                              className="w-full bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold font-rubik"
+                              size="sm"
+                            >
+                              <Settings className="h-4 w-4 mr-2" />
+                              Gestionar
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Aprobar o rechazar estado de pago</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                    
+                    {canViewPayment(status) && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              variant="outline"
+                              onClick={() => handlePaymentAction(payment, 'view')}
+                              className="w-full border-gloster-gray/30 hover:bg-gloster-gray/10 font-rubik"
+                              size="sm"
+                            >
+                              <Eye className="h-4 w-4 mr-2" />
+                              Ver
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Ver detalles del estado de pago</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                    
+                    {shouldShowNotifyButton(payment) && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              variant="outline" 
+                              onClick={() => handleNotifyContractor(payment)}
+                              disabled={notificationLoading}
+                              className="w-full border-gloster-gray/30 hover:bg-gloster-gray/10 font-rubik"
+                              size="sm"
+                            >
+                              <Bell className="h-4 w-4 mr-2" />
+                              Notificar
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Notificar al contratista sobre este pago</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
                   </div>
                 </CardContent>
               </Card>

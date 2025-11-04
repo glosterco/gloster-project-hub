@@ -23,10 +23,10 @@ import { useDocumentos } from '@/hooks/useDocumentos';
 import { useFotos } from '@/hooks/useFotos';
 import { usePresupuesto } from '@/hooks/usePresupuesto';
 import { useReuniones } from '@/hooks/useReuniones';
-import { DocumentosCards } from '@/components/DocumentosCards';
-import { FotosCards } from '@/components/FotosCards';
-import { PresupuestoCards } from '@/components/PresupuestoCards';
-import { ReunionesCards } from '@/components/ReunionesCards';
+import { DocumentosTable } from '@/components/DocumentosTable';
+import { FotosGrid } from '@/components/FotosGrid';
+import { PresupuestoTable } from '@/components/PresupuestoTable';
+import { ReunionesTable } from '@/components/ReunionesTable';
 
 const ProjectDetail = () => {
   console.log('🎨 ProjectDetail component rendering with SECURE MODE...');
@@ -41,11 +41,18 @@ const ProjectDetail = () => {
   const [showAdicionalesForm, setShowAdicionalesForm] = useState(false);
   const [selectedAdicional, setSelectedAdicional] = useState<any>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
-const { adicionales, loading: adicionalesLoading, refetch: refetchAdicionales } = useAdicionales(id || '');
-const { documentos, loading: documentosLoading } = useDocumentos(id || '');
-const { fotos, loading: fotosLoading } = useFotos(id || '');
-const { presupuesto, loading: presupuestoLoading } = usePresupuesto(id || '');
-const { reuniones, loading: reunionesLoading } = useReuniones(id || '');
+  const { adicionales, loading: adicionalesLoading, refetch: refetchAdicionales } = useAdicionales(id || '');
+  const { documentos, loading: documentosLoading, refetch: refetchDocumentos } = useDocumentos(id || '');
+  const { fotos, loading: fotosLoading, refetch: refetchFotos } = useFotos(id || '');
+  const { presupuesto, loading: presupuestoLoading, refetch: refetchPresupuesto } = usePresupuesto(id || '');
+  const { reuniones, loading: reunionesLoading, refetch: refetchReuniones } = useReuniones(id || '');
+  
+  // Estado para búsqueda, filtrado y orden de cada pestaña
+  const [adicionalesSearch, setAdicionalesSearch] = useState('');
+  const [documentosSearch, setDocumentosSearch] = useState('');
+  const [fotosSearch, setFotosSearch] = useState('');
+  const [presupuestoSearch, setPresupuestoSearch] = useState('');
+  const [reunionesSearch, setReunionesSearch] = useState('');
   const handleAdicionalesSuccess = () => {
     refetchAdicionales();
   };
@@ -432,15 +439,20 @@ const { reuniones, loading: reunionesLoading } = useReuniones(id || '');
     </div>
   );
 
-  const renderControls = () => (
+  const renderControls = (
+    searchValue: string,
+    onSearchChange: (value: string) => void,
+    buttonText: string,
+    onButtonClick: () => void
+  ) => (
     <div className="mb-6 p-4 bg-white rounded-lg border border-gloster-gray/20">
       <div className="flex items-center gap-4 w-full">
         <div className="relative flex-1 min-w-0">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gloster-gray h-4 w-4" />
           <Input
-            placeholder="Buscar estados de pago..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Buscar..."
+            value={searchValue}
+            onChange={(e) => onSearchChange(e.target.value)}
             className="pl-10 font-rubik"
           />
         </div>
@@ -468,16 +480,15 @@ const { reuniones, loading: reunionesLoading } = useReuniones(id || '');
             <SelectItem value="programado">Programado</SelectItem>
             <SelectItem value="enviado">Enviado</SelectItem>
             <SelectItem value="rechazado">Rechazado</SelectItem>
-            <SelectItem value="en progreso">Pendiente</SelectItem>
           </SelectContent>
         </Select>
 
         <Button 
-          onClick={handleAddExtraordinaryPayment}
+          onClick={onButtonClick}
           className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold font-rubik whitespace-nowrap"
         >
           <Plus className="h-4 w-4 mr-2" />
-          Agregar Estado Extraordinario
+          {buttonText}
         </Button>
       </div>
     </div>
@@ -576,8 +587,15 @@ const { reuniones, loading: reunionesLoading } = useReuniones(id || '');
             if (!hasAnyFeature) {
               return (
                 <>
-                  <h3 className="text-2xl font-bold text-slate-800 mb-6 font-rubik">Estados de Pago</h3>
-                  {renderControls()}
+                  <Card className="mb-6">
+                    <CardHeader>
+                      <CardTitle className="text-xl font-rubik">Estados de Pago</CardTitle>
+                      <CardDescription className="font-rubik">
+                        Gestiona los estados de pago del proyecto
+                      </CardDescription>
+                    </CardHeader>
+                  </Card>
+                  {renderControls(searchTerm, setSearchTerm, 'Agregar Estado Extraordinario', handleAddExtraordinaryPayment)}
                   {filteredAndSortedPayments.length === 0 ? (
                     <Card className="p-8 text-center">
                       <CardContent>
@@ -643,7 +661,15 @@ const { reuniones, loading: reunionesLoading } = useReuniones(id || '');
                 </TabsList>
 
                 <TabsContent value="estados-pago" className="space-y-6">
-                  {renderControls()}
+                  <Card className="mb-6">
+                    <CardHeader>
+                      <CardTitle className="text-xl font-rubik">Estados de Pago</CardTitle>
+                      <CardDescription className="font-rubik">
+                        Gestiona los estados de pago del proyecto
+                      </CardDescription>
+                    </CardHeader>
+                  </Card>
+                  {renderControls(searchTerm, setSearchTerm, 'Agregar Estado Extraordinario', handleAddExtraordinaryPayment)}
                   {filteredAndSortedPayments.length === 0 ? (
                     <Card className="p-8 text-center">
                       <CardContent>
@@ -656,49 +682,80 @@ const { reuniones, loading: reunionesLoading } = useReuniones(id || '');
                 </TabsContent>
 
                 {features.adicionales && (
-                  <TabsContent value="adicionales" className="mt-6">
-                    <div className="space-y-6">
-                      {userType === 'contratista' && (
-                        <div className="flex justify-end">
-                          <Button 
-                            onClick={() => setShowAdicionalesForm(true)}
-                            className="font-rubik"
-                          >
-                            Presentar Nuevo Adicional
-                          </Button>
-                        </div>
-                      )}
-                      <AdicionalesCards 
-                        adicionales={adicionales}
-                        loading={adicionalesLoading}
-                        currency={project?.Currency}
-                        onCardClick={handleCardClick}
-                      />
-                    </div>
+                  <TabsContent value="adicionales" className="space-y-6">
+                    <Card className="mb-6">
+                      <CardHeader>
+                        <CardTitle className="text-xl font-rubik">Adicionales</CardTitle>
+                        <CardDescription className="font-rubik">
+                          Gestiona los adicionales presentados para el proyecto
+                        </CardDescription>
+                      </CardHeader>
+                    </Card>
+                    {renderControls(
+                      adicionalesSearch, 
+                      setAdicionalesSearch, 
+                      'Presentar Nuevo Adicional', 
+                      () => setShowAdicionalesForm(true)
+                    )}
+                    <AdicionalesCards 
+                      adicionales={adicionales}
+                      loading={adicionalesLoading}
+                      currency={project?.Currency}
+                      onCardClick={handleCardClick}
+                    />
                   </TabsContent>
                 )}
 
                 {features.documentos && (
-                  <TabsContent value="documentos" className="mt-6">
-                    <DocumentosCards documentos={documentos} loading={documentosLoading} />
+                  <TabsContent value="documentos" className="space-y-6">
+                    {renderControls(
+                      documentosSearch, 
+                      setDocumentosSearch, 
+                      'Cargar Nuevo Documento', 
+                      () => toast({ title: "Función en desarrollo", description: "Próximamente podrás cargar documentos" })
+                    )}
+                    <DocumentosTable documentos={documentos} loading={documentosLoading} />
                   </TabsContent>
                 )}
 
                 {features.fotos && (
-                  <TabsContent value="fotos" className="mt-6">
-                    <FotosCards fotos={fotos} loading={fotosLoading} />
+                  <TabsContent value="fotos" className="space-y-6">
+                    {renderControls(
+                      fotosSearch, 
+                      setFotosSearch, 
+                      'Cargar Nueva Foto', 
+                      () => toast({ title: "Función en desarrollo", description: "Próximamente podrás cargar fotos" })
+                    )}
+                    <FotosGrid fotos={fotos} loading={fotosLoading} />
                   </TabsContent>
                 )}
 
                 {features.presupuesto && (
-                  <TabsContent value="presupuesto" className="mt-6">
-                    <PresupuestoCards presupuesto={presupuesto} loading={presupuestoLoading} currency={project?.Currency} />
+                  <TabsContent value="presupuesto" className="space-y-6">
+                    {renderControls(
+                      presupuestoSearch, 
+                      setPresupuestoSearch, 
+                      'Actualizar Presupuesto', 
+                      () => toast({ title: "Información", description: "Edita los valores de Avance Parcial en la tabla y se guardarán automáticamente" })
+                    )}
+                    <PresupuestoTable 
+                      presupuesto={presupuesto} 
+                      loading={presupuestoLoading} 
+                      currency={project?.Currency}
+                      onUpdate={refetchPresupuesto}
+                    />
                   </TabsContent>
                 )}
 
                 {features.reuniones && (
-                  <TabsContent value="reuniones" className="mt-6">
-                    <ReunionesCards reuniones={reuniones} loading={reunionesLoading} />
+                  <TabsContent value="reuniones" className="space-y-6">
+                    {renderControls(
+                      reunionesSearch, 
+                      setReunionesSearch, 
+                      'Crear Nueva Minuta', 
+                      () => toast({ title: "Función en desarrollo", description: "Próximamente podrás crear minutas" })
+                    )}
+                    <ReunionesTable reuniones={reuniones} loading={reunionesLoading} />
                   </TabsContent>
                 )}
               </Tabs>

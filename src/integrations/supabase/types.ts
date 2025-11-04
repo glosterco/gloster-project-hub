@@ -16,29 +16,44 @@ export type Database = {
     Tables: {
       Adicionales: {
         Row: {
+          Categoria: string | null
           created_at: string
+          Descripcion: string | null
+          GG: number | null
           id: number
-          Monto: number | null
+          Monto_aprobado: number | null
+          Monto_presentado: number | null
           Proyecto: number | null
           Status: string | null
+          Titulo: string | null
           URL: string | null
           Vencimiento: string | null
         }
         Insert: {
+          Categoria?: string | null
           created_at?: string
+          Descripcion?: string | null
+          GG?: number | null
           id?: number
-          Monto?: number | null
+          Monto_aprobado?: number | null
+          Monto_presentado?: number | null
           Proyecto?: number | null
           Status?: string | null
+          Titulo?: string | null
           URL?: string | null
           Vencimiento?: string | null
         }
         Update: {
+          Categoria?: string | null
           created_at?: string
+          Descripcion?: string | null
+          GG?: number | null
           id?: number
-          Monto?: number | null
+          Monto_aprobado?: number | null
+          Monto_presentado?: number | null
           Proyecto?: number | null
           Status?: string | null
+          Titulo?: string | null
           URL?: string | null
           Vencimiento?: string | null
         }
@@ -103,8 +118,12 @@ export type Database = {
           ContactEmail: string | null
           ContactName: string | null
           ContactPhone: number | null
+          Documentos: boolean | null
           Experience: string | null
+          Fotos: boolean | null
           id: number
+          Presupuesto: boolean | null
+          Reuniones: boolean | null
           RUT: string | null
           Specialization: string | null
           Status: boolean | null
@@ -118,8 +137,12 @@ export type Database = {
           ContactEmail?: string | null
           ContactName?: string | null
           ContactPhone?: number | null
+          Documentos?: boolean | null
           Experience?: string | null
+          Fotos?: boolean | null
           id?: number
+          Presupuesto?: boolean | null
+          Reuniones?: boolean | null
           RUT?: string | null
           Specialization?: string | null
           Status?: boolean | null
@@ -133,14 +156,50 @@ export type Database = {
           ContactEmail?: string | null
           ContactName?: string | null
           ContactPhone?: number | null
+          Documentos?: boolean | null
           Experience?: string | null
+          Fotos?: boolean | null
           id?: number
+          Presupuesto?: boolean | null
+          Reuniones?: boolean | null
           RUT?: string | null
           Specialization?: string | null
           Status?: boolean | null
           URLCC?: string | null
         }
         Relationships: []
+      }
+      Documentos: {
+        Row: {
+          created_at: string
+          id: number
+          Nombre: string | null
+          Proyecto: number | null
+          Tipo: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          Nombre?: string | null
+          Proyecto?: number | null
+          Tipo?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          Nombre?: string | null
+          Proyecto?: number | null
+          Tipo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "Documentos_Proyecto_fkey"
+            columns: ["Proyecto"]
+            isOneToOne: false
+            referencedRelation: "Proyectos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       early_adopters: {
         Row: {
@@ -213,6 +272,32 @@ export type Database = {
           {
             foreignKeyName: "Estados de pago_Project_fkey"
             columns: ["Project"]
+            isOneToOne: false
+            referencedRelation: "Proyectos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      Fotos: {
+        Row: {
+          created_at: string
+          id: number
+          Proyecto: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          Proyecto?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          Proyecto?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "Fotos_Proyecto_fkey"
+            columns: ["Proyecto"]
             isOneToOne: false
             referencedRelation: "Proyectos"
             referencedColumns: ["id"]
@@ -305,7 +390,11 @@ export type Database = {
           ContactEmail: string | null
           ContactName: string | null
           ContactPhone: number | null
+          Documentos: boolean | null
+          Fotos: boolean | null
           id: number
+          Presupuesto: boolean | null
+          Reuniones: boolean | null
           Status: boolean | null
         }
         Insert: {
@@ -316,7 +405,11 @@ export type Database = {
           ContactEmail?: string | null
           ContactName?: string | null
           ContactPhone?: number | null
+          Documentos?: boolean | null
+          Fotos?: boolean | null
           id?: number
+          Presupuesto?: boolean | null
+          Reuniones?: boolean | null
           Status?: boolean | null
         }
         Update: {
@@ -327,10 +420,64 @@ export type Database = {
           ContactEmail?: string | null
           ContactName?: string | null
           ContactPhone?: number | null
+          Documentos?: boolean | null
+          Fotos?: boolean | null
           id?: number
+          Presupuesto?: boolean | null
+          Reuniones?: boolean | null
           Status?: boolean | null
         }
         Relationships: []
+      }
+      Presupuesto: {
+        Row: {
+          "Avance Acumulado": number | null
+          "Avance Parcial": number | null
+          Cantidad: number | null
+          created_at: string
+          id: number
+          Item: string | null
+          Project_ID: number | null
+          PU: number | null
+          Total: number | null
+          "Ult. Actualizacion": string | null
+          Unidad: string | null
+        }
+        Insert: {
+          "Avance Acumulado"?: number | null
+          "Avance Parcial"?: number | null
+          Cantidad?: number | null
+          created_at?: string
+          id?: number
+          Item?: string | null
+          Project_ID?: number | null
+          PU?: number | null
+          Total?: number | null
+          "Ult. Actualizacion"?: string | null
+          Unidad?: string | null
+        }
+        Update: {
+          "Avance Acumulado"?: number | null
+          "Avance Parcial"?: number | null
+          Cantidad?: number | null
+          created_at?: string
+          id?: number
+          Item?: string | null
+          Project_ID?: number | null
+          PU?: number | null
+          Total?: number | null
+          "Ult. Actualizacion"?: string | null
+          Unidad?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "Presupuesto_Project_ID_fkey"
+            columns: ["Project_ID"]
+            isOneToOne: false
+            referencedRelation: "Proyectos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       Proyectos: {
         Row: {
@@ -349,6 +496,8 @@ export type Database = {
           StartDate: string | null
           Status: boolean | null
           URL: string | null
+          URL_docs: string | null
+          URL_Fotos: string | null
         }
         Insert: {
           Budget?: number | null
@@ -366,6 +515,8 @@ export type Database = {
           StartDate?: string | null
           Status?: boolean | null
           URL?: string | null
+          URL_docs?: string | null
+          URL_Fotos?: string | null
         }
         Update: {
           Budget?: number | null
@@ -383,6 +534,8 @@ export type Database = {
           StartDate?: string | null
           Status?: boolean | null
           URL?: string | null
+          URL_docs?: string | null
+          URL_Fotos?: string | null
         }
         Relationships: [
           {
@@ -400,6 +553,21 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      Reuniones: {
+        Row: {
+          created_at: string
+          id: number
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+        }
+        Update: {
+          created_at?: string
+          id?: number
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
@@ -439,26 +607,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      ensure_contractor_cc_urls: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      ensure_contractor_urls: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      ensure_mandante_cc_urls: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      ensure_mandante_urls: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      get_user_mandante_ids: {
-        Args: { user_id: string }
-        Returns: number[]
-      }
+      ensure_contractor_cc_urls: { Args: never; Returns: undefined }
+      ensure_contractor_urls: { Args: never; Returns: undefined }
+      ensure_mandante_cc_urls: { Args: never; Returns: undefined }
+      ensure_mandante_urls: { Args: never; Returns: undefined }
+      get_user_mandante_ids: { Args: { user_id: string }; Returns: number[] }
       has_cc_access_to_mandante: {
         Args: { _mandante_id: number }
         Returns: boolean
@@ -471,10 +624,7 @@ export type Database = {
         Args: { _mandante_id: number; _user_id: string }
         Returns: boolean
       }
-      is_cc_contractor: {
-        Args: { _contractor_id: number }
-        Returns: boolean
-      }
+      is_cc_contractor: { Args: { _contractor_id: number }; Returns: boolean }
       is_contractor_related: {
         Args: { _contratista_id: number; _user_id: string }
         Returns: boolean
@@ -483,10 +633,7 @@ export type Database = {
         Args: { _project_id: number; _user_id: string }
         Returns: boolean
       }
-      send_contractor_payment_reminders: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      send_contractor_payment_reminders: { Args: never; Returns: undefined }
       set_config: {
         Args: {
           is_local?: boolean
@@ -495,10 +642,7 @@ export type Database = {
         }
         Returns: undefined
       }
-      update_payment_states_weekly: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      update_payment_states_weekly: { Args: never; Returns: undefined }
       verify_email_payment_access: {
         Args: { payment_id: number; user_email: string }
         Returns: boolean

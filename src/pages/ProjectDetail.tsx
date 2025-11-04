@@ -708,6 +708,14 @@ const ProjectDetail = () => {
 
                 {features.documentos && (
                   <TabsContent value="documentos" className="space-y-6">
+                    <Card className="mb-6">
+                      <CardHeader>
+                        <CardTitle className="text-xl font-rubik">Documentos del Proyecto</CardTitle>
+                        <CardDescription className="font-rubik">
+                          Gestiona los documentos cargados para este proyecto
+                        </CardDescription>
+                      </CardHeader>
+                    </Card>
                     {renderControls(
                       documentosSearch, 
                       setDocumentosSearch, 
@@ -720,6 +728,14 @@ const ProjectDetail = () => {
 
                 {features.fotos && (
                   <TabsContent value="fotos" className="space-y-6">
+                    <Card className="mb-6">
+                      <CardHeader>
+                        <CardTitle className="text-xl font-rubik">Fotos del Proyecto</CardTitle>
+                        <CardDescription className="font-rubik">
+                          Visualiza las fotos cargadas para este proyecto
+                        </CardDescription>
+                      </CardHeader>
+                    </Card>
                     {renderControls(
                       fotosSearch, 
                       setFotosSearch, 
@@ -732,6 +748,14 @@ const ProjectDetail = () => {
 
                 {features.presupuesto && (
                   <TabsContent value="presupuesto" className="space-y-6">
+                    <Card className="mb-6">
+                      <CardHeader>
+                        <CardTitle className="text-xl font-rubik">Presupuesto del Proyecto</CardTitle>
+                        <CardDescription className="font-rubik">
+                          Visualiza y actualiza el desglose del presupuesto
+                        </CardDescription>
+                      </CardHeader>
+                    </Card>
                     {renderControls(
                       presupuestoSearch, 
                       setPresupuestoSearch, 
@@ -749,6 +773,14 @@ const ProjectDetail = () => {
 
                 {features.reuniones && (
                   <TabsContent value="reuniones" className="space-y-6">
+                    <Card className="mb-6">
+                      <CardHeader>
+                        <CardTitle className="text-xl font-rubik">Reuniones del Proyecto</CardTitle>
+                        <CardDescription className="font-rubik">
+                          Gestiona las minutas de reunión del proyecto
+                        </CardDescription>
+                      </CardHeader>
+                    </Card>
                     {renderControls(
                       reunionesSearch, 
                       setReunionesSearch, 

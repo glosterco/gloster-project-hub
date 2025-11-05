@@ -11,6 +11,7 @@ import { Plus, X, Upload, Calendar as CalendarIcon, Mail, FileText, Settings } f
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { useLicitaciones, CalendarEvent } from '@/hooks/useLicitaciones';
 
 interface LicitacionFormProps {
   open: boolean;
@@ -18,24 +19,24 @@ interface LicitacionFormProps {
   onSuccess?: () => void;
 }
 
-interface CalendarEvent {
-  id: string;
-  fecha: Date | undefined;
-  titulo: string;
-  descripcion: string;
-  requiereArchivos: boolean;
-}
-
 const LicitacionForm = ({ open, onOpenChange, onSuccess }: LicitacionFormProps) => {
   const { toast } = useToast();
+  const { createLicitacion } = useLicitaciones();
   const [oferentesEmails, setOferentesEmails] = useState<string[]>(['']);
   const [emailInput, setEmailInput] = useState('');
   const [mensaje, setMensaje] = useState('');
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
-  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
+  const [calendarEvents, setCalendarEvents] = useState<Array<{
+    id: string;
+    fecha: Date | undefined;
+    titulo: string;
+    descripcion: string;
+    requiereArchivos: boolean;
+  }>>([]);
   const [documentos, setDocumentos] = useState<File[]>([]);
   const [especificaciones, setEspecificaciones] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const handleAddEmail = () => {
     if (emailInput && emailInput.includes('@')) {
@@ -55,7 +56,7 @@ const LicitacionForm = ({ open, onOpenChange, onSuccess }: LicitacionFormProps) 
   };
 
   const handleAddCalendarEvent = () => {
-    const newEvent: CalendarEvent = {
+    const newEvent = {
       id: Math.random().toString(),
       fecha: undefined,
       titulo: '',
@@ -91,7 +92,7 @@ const LicitacionForm = ({ open, onOpenChange, onSuccess }: LicitacionFormProps) 
     setDocumentos(documentos.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!nombre || !descripcion) {
       toast({
         title: "Campos incompletos",
@@ -101,13 +102,43 @@ const LicitacionForm = ({ open, onOpenChange, onSuccess }: LicitacionFormProps) 
       return;
     }
 
-    toast({
-      title: "Licitación creada",
-      description: "La licitación se ha creado exitosamente"
-    });
+    setSubmitting(true);
 
-    onSuccess?.();
-    onOpenChange(false);
+    try {
+      // Convertir eventos del calendario al formato correcto
+      const eventosFormateados: CalendarEvent[] = calendarEvents.map(event => ({
+        fecha: event.fecha ? event.fecha.toISOString() : '',
+        titulo: event.titulo,
+        descripcion: event.descripcion,
+        requiereArchivos: event.requiereArchivos
+      }));
+
+      const result = await createLicitacion({
+        nombre,
+        descripcion,
+        mensaje_oferentes: mensaje,
+        oferentes_emails: oferentesEmails.filter(e => e),
+        calendario_eventos: eventosFormateados,
+        especificaciones,
+        documentos: documentos.map(f => ({ name: f.name, size: f.size, type: f.type }))
+      });
+
+      if (result) {
+        // Limpiar el formulario
+        setNombre('');
+        setDescripcion('');
+        setMensaje('');
+        setOferentesEmails(['']);
+        setCalendarEvents([]);
+        setDocumentos([]);
+        setEspecificaciones('');
+        
+        onSuccess?.();
+        onOpenChange(false);
+      }
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -344,11 +375,11 @@ const LicitacionForm = ({ open, onOpenChange, onSuccess }: LicitacionFormProps) 
         </div>
 
         <div className="flex justify-end gap-2 pt-4 border-t">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
             Cancelar
           </Button>
-          <Button onClick={handleSubmit}>
-            Crear Licitación
+          <Button onClick={handleSubmit} disabled={submitting}>
+            {submitting ? 'Creando...' : 'Crear Licitación'}
           </Button>
         </div>
       </DialogContent>

@@ -319,6 +319,51 @@ export type Database = {
           },
         ]
       }
+      Licitaciones: {
+        Row: {
+          calendario_eventos: Json | null
+          created_at: string | null
+          descripcion: string
+          documentos: Json | null
+          especificaciones: string | null
+          estado: string | null
+          id: number
+          mandante_id: number
+          mensaje_oferentes: string | null
+          nombre: string
+          oferentes_emails: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          calendario_eventos?: Json | null
+          created_at?: string | null
+          descripcion: string
+          documentos?: Json | null
+          especificaciones?: string | null
+          estado?: string | null
+          id?: never
+          mandante_id: number
+          mensaje_oferentes?: string | null
+          nombre: string
+          oferentes_emails?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          calendario_eventos?: Json | null
+          created_at?: string | null
+          descripcion?: string
+          documentos?: Json | null
+          especificaciones?: string | null
+          estado?: string | null
+          id?: never
+          mandante_id?: number
+          mensaje_oferentes?: string | null
+          nombre?: string
+          oferentes_emails?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       mandante_project_folders: {
         Row: {
           created_at: string

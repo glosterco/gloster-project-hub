@@ -1,32 +1,22 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, FileText, Calendar, DollarSign } from 'lucide-react';
+import { Plus, FileText, Calendar, Mail } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 import LicitacionForm from '@/components/LicitacionForm';
-import { useToast } from '@/hooks/use-toast';
-
-interface Licitacion {
-  id: string;
-  nombre: string;
-  descripcion: string;
-  fechaInicio: string;
-  fechaCierre: string;
-  presupuestoEstimado: number;
-  estado: 'abierta' | 'cerrada' | 'en_evaluacion';
-}
+import { useLicitaciones, Licitacion } from '@/hooks/useLicitaciones';
+import { format } from 'date-fns';
 
 const Licitaciones = () => {
-  const { toast } = useToast();
-  const [licitaciones, setLicitaciones] = useState<Licitacion[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const { licitaciones, loading, refetch } = useLicitaciones();
 
   const handleNuevaLicitacion = () => {
     setShowForm(true);
   };
 
   const handleFormSuccess = () => {
-    // Aquí se podría refrescar la lista de licitaciones
+    refetch();
     setShowForm(false);
   };
 
@@ -67,7 +57,13 @@ const Licitaciones = () => {
           </Button>
         </div>
 
-        {licitaciones.length === 0 ? (
+        {loading ? (
+          <Card>
+            <CardContent className="flex items-center justify-center py-12">
+              <p className="text-muted-foreground">Cargando licitaciones...</p>
+            </CardContent>
+          </Card>
+        ) : licitaciones.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
               <FileText className="h-16 w-16 text-muted-foreground mb-4" />
@@ -99,16 +95,16 @@ const Licitaciones = () => {
                 <CardContent>
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center text-muted-foreground">
-                      <Calendar className="h-4 w-4 mr-2" />
-                      <span>Inicio: {new Date(licitacion.fechaInicio).toLocaleDateString()}</span>
+                      <Mail className="h-4 w-4 mr-2" />
+                      <span>{licitacion.oferentes_emails.length} oferentes invitados</span>
                     </div>
                     <div className="flex items-center text-muted-foreground">
                       <Calendar className="h-4 w-4 mr-2" />
-                      <span>Cierre: {new Date(licitacion.fechaCierre).toLocaleDateString()}</span>
+                      <span>{licitacion.calendario_eventos.length} eventos en calendario</span>
                     </div>
                     <div className="flex items-center text-muted-foreground">
-                      <DollarSign className="h-4 w-4 mr-2" />
-                      <span>Presupuesto: ${licitacion.presupuestoEstimado.toLocaleString()}</span>
+                      <FileText className="h-4 w-4 mr-2" />
+                      <span>Creada: {format(new Date(licitacion.created_at), 'dd/MM/yyyy')}</span>
                     </div>
                   </div>
                   <div className="mt-4 flex gap-2">

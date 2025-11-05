@@ -1,6 +1,5 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ExternalLink, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 interface DocumentPreviewModalProps {
@@ -34,19 +33,8 @@ export const DocumentPreviewModal = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-5xl h-[85vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
-            <span className="truncate mr-4">{documentName || 'Vista previa'}</span>
-            {webViewLink && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => window.open(webViewLink, '_blank')}
-                className="flex-shrink-0"
-              >
-                <ExternalLink className="h-4 w-4 mr-2" />
-                Abrir en Drive
-              </Button>
-            )}
+          <DialogTitle className="truncate">
+            {documentName || 'Vista previa'}
           </DialogTitle>
         </DialogHeader>
 

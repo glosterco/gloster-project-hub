@@ -20,13 +20,19 @@ async function getAccessToken(): Promise<string> {
   const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
   const supabase = createClient(supabaseUrl, supabaseKey);
 
-  const { data, error } = await supabase.functions.invoke('google-drive-token-manager');
+  const { data, error } = await supabase.functions.invoke('google-drive-token-manager', { body: {} });
   
-  if (error || !data?.isValid) {
+  if (error) {
+    throw new Error(`Failed to call token manager: ${error.message}`);
+  }
+  
+  const accessToken = data?.access_token || data?.accessToken;
+  const isValid = data?.valid ?? data?.isValid;
+  if (!isValid || !accessToken) {
     throw new Error('Failed to get valid Google Drive access token');
   }
   
-  return data.accessToken;
+  return accessToken;
 }
 
 async function uploadFileToDrive(

@@ -184,26 +184,49 @@ export const DocumentosTableWithSidebar = ({ documentos, loading, projectId }: D
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0"
-                            onClick={() => doc.WebViewLink && window.open(doc.WebViewLink, '_blank')}
-                            disabled={!doc.WebViewLink}
-                            title="Vista previa"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0"
-                            onClick={() => doc.DriveId && doc.Nombre && downloadDocument(doc.DriveId, doc.Nombre)}
-                            disabled={!doc.DriveId || !doc.Nombre || isDocumentLoading(doc.Nombre || '')}
-                            title="Descargar"
-                          >
-                            <Download className="h-4 w-4" />
-                          </Button>
+                          {doc.WebViewLink ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              onClick={() => window.open(doc.WebViewLink!, '_blank')}
+                              title="Vista previa"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0 opacity-50 cursor-not-allowed"
+                              disabled
+                              title="Vista previa no disponible - documento no subido a Drive"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {doc.DriveId && doc.Nombre ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              onClick={() => downloadDocument(doc.DriveId!, doc.Nombre!)}
+                              disabled={isDocumentLoading(doc.Nombre)}
+                              title="Descargar"
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0 opacity-50 cursor-not-allowed"
+                              disabled
+                              title="Descarga no disponible - documento no subido a Drive"
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>

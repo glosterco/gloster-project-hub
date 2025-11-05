@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
     // Get project's Google Drive URL
     const { data: project, error: projectError } = await supabase
       .from('Proyectos')
-      .select('URL_docs')
+      .select('URL_docs, Name')
       .eq('id', projectId)
       .single();
 
@@ -109,16 +109,42 @@ Deno.serve(async (req) => {
       throw new Error('Project not found');
     }
 
-    if (!project.URL_docs) {
-      throw new Error('Project does not have a Google Drive folder configured');
-    }
+    let folderId: string;
 
-    // Extract folder ID from URL
-    const urlMatch = project.URL_docs.match(/folders\/([a-zA-Z0-9-_]+)/);
-    if (!urlMatch) {
-      throw new Error('Invalid Google Drive URL format');
+    // If no Google Drive folder exists, create one
+    if (!project.URL_docs) {
+      console.log('Creating Google Drive folder for project...');
+      
+      const { data: folderData, error: folderError } = await supabase.functions.invoke(
+        'google-drive-integration',
+        {
+          body: {
+            type: 'project_docs',
+            projectId,
+            projectName: project.Name
+          }
+        }
+      );
+
+      if (folderError || !folderData?.success) {
+        throw new Error('Failed to create Google Drive folder: ' + (folderError?.message || folderData?.error));
+      }
+
+      // The folder creation function should return the folder URL
+      // Extract folder ID from the newly created URL
+      const urlMatch = folderData.fullUrl?.match(/folders\/([a-zA-Z0-9-_]+)/);
+      if (!urlMatch) {
+        throw new Error('Invalid Google Drive URL format returned from folder creation');
+      }
+      folderId = urlMatch[1];
+    } else {
+      // Extract folder ID from existing URL
+      const urlMatch = project.URL_docs.match(/folders\/([a-zA-Z0-9-_]+)/);
+      if (!urlMatch) {
+        throw new Error('Invalid Google Drive URL format in database');
+      }
+      folderId = urlMatch[1];
     }
-    const folderId = urlMatch[1];
 
     // Get access token
     const accessToken = await getAccessToken();

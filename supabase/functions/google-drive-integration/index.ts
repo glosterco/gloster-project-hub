@@ -8,7 +8,7 @@ const corsHeaders = {
 }
 
 interface CreateFolderRequest {
-  type: 'project' | 'payment_state';
+  type: 'project' | 'payment_state' | 'project_docs';
   projectId: number;
   projectName: string;
   paymentStateName?: string;
@@ -123,6 +123,30 @@ serve(async (req) => {
         // Don't throw error here, just log it as the folder was created successfully
       } else {
         console.log('✅ Project updated with URL');
+      }
+
+    } else if (body.type === 'project_docs') {
+      console.log('📁 Creating project documents folder...');
+      // Create project documents folder: "Documentos - ID proyecto - nombre proyecto"
+      folderName = `Documentos - ${body.projectId} - ${body.projectName}`;
+      folderId = await createGoogleDriveFolder(accessToken, folderName);
+      fullUrl = `https://drive.google.com/drive/u/2/folders/${folderId}`;
+      
+      console.log(`📁 Project documents folder created: ${folderName} with ID: ${folderId}`);
+      console.log(`🔗 Full URL: ${fullUrl}`);
+
+      // Update project with Google Drive documents URL using service role client
+      console.log('💾 Updating project with documents URL...');
+      const { error: updateProjectError } = await supabase
+        .from('Proyectos')
+        .update({ URL_docs: fullUrl })
+        .eq('id', body.projectId);
+
+      if (updateProjectError) {
+        console.error('❌ Error updating project documents URL:', updateProjectError);
+        // Don't throw error here, just log it as the folder was created successfully
+      } else {
+        console.log('✅ Project updated with documents URL');
       }
 
     } else if (body.type === 'payment_state') {

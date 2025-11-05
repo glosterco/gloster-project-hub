@@ -81,12 +81,6 @@ export const AdicionalesCards: React.FC<AdicionalesCardsProps> = ({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-2xl font-bold text-slate-800 mb-2 font-rubik">Adicionales del Proyecto</h3>
-        <p className="text-muted-foreground font-rubik">
-          Gestión de trabajos adicionales y modificaciones al proyecto original
-        </p>
-      </div>
 
       {adicionales.length === 0 ? (
         <Card className="p-8 text-center border-dashed border-2 border-muted">

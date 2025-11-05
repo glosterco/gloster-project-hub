@@ -25,6 +25,7 @@ import { FotosCards } from '@/components/FotosCards';
 import { PresupuestoCards } from '@/components/PresupuestoCards';
 import { ReunionesCards } from '@/components/ReunionesCards';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ProjectDocumentUpload } from '@/components/ProjectDocumentUpload';
 
 const ProjectDetailMandante = () => {
   const { id } = useParams();
@@ -36,8 +37,9 @@ const ProjectDetailMandante = () => {
   const [activeTab, setActiveTab] = useState('estados-pago');
   const [selectedAdicional, setSelectedAdicional] = useState<any>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showDocumentUpload, setShowDocumentUpload] = useState(false);
   const { adicionales, loading: adicionalesLoading } = useAdicionales(id || '');
-  const { documentos, loading: documentosLoading } = useDocumentos(id || '');
+  const { documentos, loading: documentosLoading, refetch: refetchDocumentos } = useDocumentos(id || '');
   const { fotos, loading: fotosLoading } = useFotos(id || '');
   const { presupuesto, loading: presupuestoLoading, refetch: refetchPresupuesto } = usePresupuesto(id || '');
   const { reuniones, loading: reunionesLoading } = useReuniones(id || '');
@@ -598,13 +600,20 @@ const ProjectDetailMandante = () => {
                     </CardDescription>
                   </CardHeader>
                 </Card>
-                {renderControls(documentosSearch, setDocumentosSearch, 'Cargar Documento', () => toast({ title: "Función en desarrollo" }))}
+                {renderControls(documentosSearch, setDocumentosSearch, 'Cargar Documento', () => setShowDocumentUpload(true))}
                 <DocumentosCards 
                   documentos={documentos}
                   loading={documentosLoading}
                 />
               </TabsContent>
             )}
+
+            <ProjectDocumentUpload
+              projectId={parseInt(id || '0')}
+              open={showDocumentUpload}
+              onOpenChange={setShowDocumentUpload}
+              onUploadComplete={refetchDocumentos}
+            />
 
             {fotosEnabled && (
               <TabsContent value="fotos" className="space-y-6">

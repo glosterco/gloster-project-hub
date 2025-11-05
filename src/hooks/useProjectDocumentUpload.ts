@@ -10,6 +10,7 @@ interface UploadedFile {
 export const useProjectDocumentUpload = (projectId: number) => {
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<UploadedFile[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const ALLOWED_TYPES = [
@@ -99,7 +100,7 @@ export const useProjectDocumentUpload = (projectId: number) => {
     setDragActive(false);
   };
 
-  const handleDrop = async (e: React.DragEvent, tipo: string = 'Otro') => {
+  const handleDrop = (e: React.DragEvent, tipo: string = 'Otro') => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
@@ -108,21 +109,44 @@ export const useProjectDocumentUpload = (projectId: number) => {
     const validFiles = files.filter(validateFile);
 
     if (validFiles.length > 0) {
-      const uploadFiles = validFiles.map(file => ({ file, tipo }));
-      await uploadDocuments(uploadFiles);
+      const newFiles = validFiles.map(file => ({ file, tipo }));
+      setPendingFiles(prev => [...prev, ...newFiles]);
+      toast.success(`${validFiles.length} archivo(s) añadido(s)`);
     }
   };
 
-  const handleFileSelect = async (files: FileList | null, tipo: string = 'Otro') => {
+  const handleFileSelect = (files: FileList | null, tipo: string = 'Otro') => {
     if (!files || files.length === 0) return;
 
     const fileArray = Array.from(files);
     const validFiles = fileArray.filter(validateFile);
 
     if (validFiles.length > 0) {
-      const uploadFiles = validFiles.map(file => ({ file, tipo }));
-      await uploadDocuments(uploadFiles);
+      const newFiles = validFiles.map(file => ({ file, tipo }));
+      setPendingFiles(prev => [...prev, ...newFiles]);
+      toast.success(`${validFiles.length} archivo(s) añadido(s)`);
     }
+  };
+
+  const removeFile = (index: number) => {
+    setPendingFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const confirmUpload = async () => {
+    if (pendingFiles.length === 0) {
+      toast.error('No hay archivos para cargar');
+      return false;
+    }
+
+    const success = await uploadDocuments(pendingFiles);
+    if (success) {
+      setPendingFiles([]);
+    }
+    return success;
+  };
+
+  const clearPendingFiles = () => {
+    setPendingFiles([]);
   };
 
   const triggerFileInput = () => {
@@ -132,12 +156,15 @@ export const useProjectDocumentUpload = (projectId: number) => {
   return {
     uploading,
     dragActive,
+    pendingFiles,
     fileInputRef,
     handleDragOver,
     handleDragLeave,
     handleDrop,
     handleFileSelect,
     triggerFileInput,
-    uploadDocuments
+    removeFile,
+    confirmUpload,
+    clearPendingFiles
   };
 };

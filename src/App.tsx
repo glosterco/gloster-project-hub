@@ -23,6 +23,7 @@ import ContractorAccess from "./pages/ContractorAccess";
 import Pricing from "./pages/Pricing";
 import ExecutiveSummary from "./pages/ExecutiveSummary";
 import ExecutiveSummaryMandante from "./pages/ExecutiveSummaryMandante";
+import Licitaciones from "./pages/Licitaciones";
 import MKT from "./pages/MKT";
 import NotFound from "./pages/NotFound";
 
@@ -56,6 +57,7 @@ const App = () => (
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/executive-summary" element={<ExecutiveSummary />} />
               <Route path="/executive-summary-mandante" element={<ExecutiveSummaryMandante />} />
+              <Route path="/licitaciones" element={<Licitaciones />} />
               <Route path="/mkt" element={<MKT />} />
               <Route path="*" element={<NotFound />} />
             </Routes>

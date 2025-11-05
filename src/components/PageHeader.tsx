@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { LogOut, User, BarChart3, Home, ChevronDown } from 'lucide-react';
+import { LogOut, User, BarChart3, Home, ChevronDown, FileText } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -100,6 +100,15 @@ const PageHeader = () => {
               >
                 <BarChart3 className="h-3 w-3 mr-1" />
                 Resumen
+              </Button>
+              <Button 
+                variant={location.pathname === '/licitaciones' ? 'default' : 'ghost'} 
+                size="sm" 
+                onClick={() => navigate('/licitaciones')}
+                className="font-rubik text-xs"
+              >
+                <FileText className="h-3 w-3 mr-1" />
+                Licitaciones
               </Button>
             </div>
             

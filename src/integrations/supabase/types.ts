@@ -436,6 +436,7 @@ export type Database = {
           Cantidad: number | null
           created_at: string
           id: number
+          ID: string | null
           Item: string | null
           Project_ID: number | null
           PU: number | null
@@ -449,6 +450,7 @@ export type Database = {
           Cantidad?: number | null
           created_at?: string
           id?: number
+          ID?: string | null
           Item?: string | null
           Project_ID?: number | null
           PU?: number | null
@@ -462,6 +464,7 @@ export type Database = {
           Cantidad?: number | null
           created_at?: string
           id?: number
+          ID?: string | null
           Item?: string | null
           Project_ID?: number | null
           PU?: number | null

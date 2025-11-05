@@ -32,9 +32,6 @@ const LicitacionForm = ({ open, onOpenChange, onSuccess }: LicitacionFormProps) 
   const [mensaje, setMensaje] = useState('');
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
-  const [presupuestoEstimado, setPresupuestoEstimado] = useState('');
-  const [fechaInicio, setFechaInicio] = useState<Date>();
-  const [fechaCierre, setFechaCierre] = useState<Date>();
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [documentos, setDocumentos] = useState<File[]>([]);
   const [especificaciones, setEspecificaciones] = useState('');
@@ -57,17 +54,9 @@ const LicitacionForm = ({ open, onOpenChange, onSuccess }: LicitacionFormProps) 
   };
 
   const handleAddCalendarEvent = () => {
-    if (!fechaInicio) {
-      toast({
-        title: "Selecciona una fecha",
-        description: "Debes seleccionar una fecha para el evento",
-        variant: "destructive"
-      });
-      return;
-    }
     const newEvent: CalendarEvent = {
       id: Math.random().toString(),
-      fecha: fechaInicio,
+      fecha: new Date(),
       titulo: '',
       descripcion: ''
     };
@@ -95,7 +84,7 @@ const LicitacionForm = ({ open, onOpenChange, onSuccess }: LicitacionFormProps) 
   };
 
   const handleSubmit = () => {
-    if (!nombre || !descripcion || !fechaInicio || !fechaCierre) {
+    if (!nombre || !descripcion) {
       toast({
         title: "Campos incompletos",
         description: "Por favor completa todos los campos obligatorios",
@@ -153,73 +142,6 @@ const LicitacionForm = ({ open, onOpenChange, onSuccess }: LicitacionFormProps) 
                   rows={3}
                 />
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="presupuesto">Presupuesto Estimado</Label>
-                <Input
-                  id="presupuesto"
-                  type="number"
-                  value={presupuestoEstimado}
-                  onChange={(e) => setPresupuestoEstimado(e.target.value)}
-                  placeholder="0"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Fecha de Inicio *</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !fechaInicio && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {fechaInicio ? format(fechaInicio, "PPP") : "Seleccionar fecha"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={fechaInicio}
-                        onSelect={setFechaInicio}
-                        initialFocus
-                        className="pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Fecha de Cierre *</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !fechaCierre && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {fechaCierre ? format(fechaCierre, "PPP") : "Seleccionar fecha"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={fechaCierre}
-                        onSelect={setFechaCierre}
-                        initialFocus
-                        className="pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
             </CardContent>
           </Card>
 
@@ -231,43 +153,50 @@ const LicitacionForm = ({ open, onOpenChange, onSuccess }: LicitacionFormProps) 
                 Oferentes
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex gap-2">
-                <Input
-                  value={emailInput}
-                  onChange={(e) => setEmailInput(e.target.value)}
-                  placeholder="email@ejemplo.com"
-                  onKeyPress={(e) => e.key === 'Enter' && handleAddEmail()}
-                />
-                <Button onClick={handleAddEmail} size="sm">
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-
-              <div className="space-y-2">
-                {oferentesEmails.filter(e => e).map((email, index) => (
-                  <div key={index} className="flex items-center justify-between bg-muted p-2 rounded">
-                    <span className="text-sm">{email}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRemoveEmail(index)}
-                    >
-                      <X className="h-4 w-4" />
+            <CardContent>
+              <div className="grid grid-cols-2 gap-6">
+                {/* Columna Izquierda - Correos */}
+                <div className="space-y-4">
+                  <div className="flex gap-2">
+                    <Input
+                      value={emailInput}
+                      onChange={(e) => setEmailInput(e.target.value)}
+                      placeholder="email@ejemplo.com"
+                      onKeyPress={(e) => e.key === 'Enter' && handleAddEmail()}
+                    />
+                    <Button onClick={handleAddEmail} size="sm">
+                      <Plus className="h-4 w-4" />
                     </Button>
                   </div>
-                ))}
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="mensaje">Mensaje para los Oferentes</Label>
-                <Textarea
-                  id="mensaje"
-                  value={mensaje}
-                  onChange={(e) => setMensaje(e.target.value)}
-                  placeholder="Mensaje que se enviará a los oferentes..."
-                  rows={4}
-                />
+                  <div className="space-y-2">
+                    {oferentesEmails.filter(e => e).map((email, index) => (
+                      <div key={index} className="flex items-center justify-between bg-muted p-2 rounded">
+                        <span className="text-sm">{email}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveEmail(index)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Columna Derecha - Mensaje */}
+                <div className="space-y-2">
+                  <Label htmlFor="mensaje">Mensaje para los Oferentes</Label>
+                  <Textarea
+                    id="mensaje"
+                    value={mensaje}
+                    onChange={(e) => setMensaje(e.target.value)}
+                    placeholder="Mensaje que se enviará a los oferentes..."
+                    rows={12}
+                    className="h-full"
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>

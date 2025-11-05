@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { useProjectDocumentDownload } from '@/hooks/useProjectDocumentDownload';
+import { DocumentPreviewModal } from '@/components/DocumentPreviewModal';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -29,7 +30,49 @@ interface DocumentosTableWithSidebarProps {
 
 export const DocumentosTableWithSidebar = ({ documentos, loading, projectId }: DocumentosTableWithSidebarProps) => {
   const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [previewModal, setPreviewModal] = useState<{
+    isOpen: boolean;
+    documentName: string | null;
+    webViewLink: string | null;
+    isLoading: boolean;
+  }>({
+    isOpen: false,
+    documentName: null,
+    webViewLink: null,
+    isLoading: false,
+  });
   const { downloadDocument, previewDocument, isDocumentLoading } = useProjectDocumentDownload();
+
+  const handlePreview = async (doc: Documento) => {
+    if (!doc.Nombre) return;
+
+    setPreviewModal({
+      isOpen: true,
+      documentName: doc.Nombre,
+      webViewLink: doc.WebViewLink,
+      isLoading: !doc.WebViewLink,
+    });
+
+    // If we don't have webViewLink, fetch it
+    if (!doc.WebViewLink) {
+      const result = await previewDocument({
+        fileName: doc.Nombre,
+        webViewLink: doc.WebViewLink,
+        driveId: doc.DriveId,
+        projectId: Number(projectId),
+      });
+
+      if (result.success && result.webViewLink) {
+        setPreviewModal(prev => ({
+          ...prev,
+          webViewLink: result.webViewLink || null,
+          isLoading: false,
+        }));
+      } else {
+        setPreviewModal(prev => ({ ...prev, isLoading: false }));
+      }
+    }
+  };
 
   // Get unique document types with counts
   const documentTypes = documentos.reduce((acc, doc) => {
@@ -83,7 +126,16 @@ export const DocumentosTableWithSidebar = ({ documentos, loading, projectId }: D
   }
 
   return (
-    <div className="flex gap-4">
+    <>
+      <DocumentPreviewModal
+        isOpen={previewModal.isOpen}
+        onClose={() => setPreviewModal({ isOpen: false, documentName: null, webViewLink: null, isLoading: false })}
+        documentName={previewModal.documentName}
+        webViewLink={previewModal.webViewLink}
+        isLoading={previewModal.isLoading}
+      />
+      
+      <div className="flex gap-4">
       {/* Sidebar with document categories */}
       <Card className="w-64 flex-shrink-0">
         <CardContent className="p-4">
@@ -188,12 +240,7 @@ export const DocumentosTableWithSidebar = ({ documentos, loading, projectId }: D
                             variant="ghost"
                             size="sm"
                             className="h-8 w-8 p-0"
-                            onClick={() => doc.Nombre && previewDocument({
-                              fileName: doc.Nombre,
-                              webViewLink: doc.WebViewLink,
-                              driveId: doc.DriveId,
-                              projectId: Number(projectId)
-                            })}
+                            onClick={() => handlePreview(doc)}
                             title="Vista previa"
                           >
                             <Eye className="h-4 w-4" />
@@ -223,5 +270,6 @@ export const DocumentosTableWithSidebar = ({ documentos, loading, projectId }: D
         </CardContent>
       </Card>
     </div>
+    </>
   );
 };

@@ -56,10 +56,12 @@ export const useProjectDocumentDownload = () => {
 
   const previewDocument = async ({ fileName, webViewLink, driveId, projectId }: PreviewArgs) => {
     try {
+      // If webViewLink already exists, return it directly
       if (webViewLink) {
-        window.open(webViewLink, '_blank');
-        return { success: true };
+        return { success: true, webViewLink };
       }
+
+      // Otherwise, fetch metadata to get webViewLink
       const body: any = { fileName, mode: 'meta' as const };
       if (driveId) body.driveId = driveId;
       else if (projectId) body.projectId = typeof projectId === 'string' ? Number(projectId) : projectId;
@@ -69,8 +71,7 @@ export const useProjectDocumentDownload = () => {
       if (!data?.success) throw new Error(data?.error || 'No se pudo obtener el enlace de vista previa');
       if (!data.webViewLink) throw new Error('Vista previa no disponible');
 
-      window.open(data.webViewLink, '_blank');
-      return { success: true };
+      return { success: true, webViewLink: data.webViewLink };
     } catch (error: any) {
       console.error('❌ Error opening preview:', error);
       toast({ title: 'Error en vista previa', description: error.message || 'No se pudo abrir la vista previa', variant: 'destructive' });

@@ -132,6 +132,7 @@ export const DocumentosTableWithSidebar = ({ documentos, loading, projectId }: D
         onClose={() => setPreviewModal({ isOpen: false, documentName: null, previewUrl: null, mimeType: null, isLoading: false })}
         documentName={previewModal.documentName}
         previewUrl={previewModal.previewUrl}
+        mimeType={previewModal.mimeType}
         isLoading={previewModal.isLoading}
       />
       

@@ -10,6 +10,9 @@ max_rows = 1000
 [functions.get-drive-files]
 verify_jwt = false
 
+[functions.download-project-document]
+verify_jwt = false
+
 [functions.upload-project-documents]
 verify_jwt = false
 

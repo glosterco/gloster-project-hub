@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { useDirectDriveDownload } from '@/hooks/useDirectDriveDownload';
+import { useProjectDocumentDownload } from '@/hooks/useProjectDocumentDownload';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -29,7 +29,7 @@ interface DocumentosTableWithSidebarProps {
 
 export const DocumentosTableWithSidebar = ({ documentos, loading, projectId }: DocumentosTableWithSidebarProps) => {
   const [selectedType, setSelectedType] = useState<string | null>(null);
-  const { downloadDocument, isDocumentLoading } = useDirectDriveDownload();
+  const { downloadDocument, isDocumentLoading } = useProjectDocumentDownload();
 
   // Get unique document types with counts
   const documentTypes = documentos.reduce((acc, doc) => {
@@ -198,8 +198,8 @@ export const DocumentosTableWithSidebar = ({ documentos, loading, projectId }: D
                             variant="ghost"
                             size="sm"
                             className="h-8 w-8 p-0"
-                            onClick={() => doc.Nombre && downloadDocument(projectId, doc.Nombre)}
-                            disabled={!doc.Nombre || isDocumentLoading(doc.Nombre || '')}
+                            onClick={() => doc.DriveId && doc.Nombre && downloadDocument(doc.DriveId, doc.Nombre)}
+                            disabled={!doc.DriveId || !doc.Nombre || isDocumentLoading(doc.Nombre || '')}
                             title="Descargar"
                           >
                             <Download className="h-4 w-4" />

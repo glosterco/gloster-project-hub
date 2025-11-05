@@ -20,7 +20,7 @@ import { useDocumentos } from '@/hooks/useDocumentos';
 import { useFotos } from '@/hooks/useFotos';
 import { usePresupuesto } from '@/hooks/usePresupuesto';
 import { useReuniones } from '@/hooks/useReuniones';
-import { DocumentosCards } from '@/components/DocumentosCards';
+import { DocumentosTableWithSidebar } from '@/components/DocumentosTableWithSidebar';
 import { FotosCards } from '@/components/FotosCards';
 import { PresupuestoCards } from '@/components/PresupuestoCards';
 import { ReunionesCards } from '@/components/ReunionesCards';
@@ -601,7 +601,7 @@ const ProjectDetailMandante = () => {
                   </CardHeader>
                 </Card>
                 {renderControls(documentosSearch, setDocumentosSearch, 'Cargar Documento', () => setShowDocumentUpload(true))}
-                <DocumentosCards 
+                <DocumentosTableWithSidebar 
                   documentos={documentos}
                   loading={documentosLoading}
                 />

@@ -168,13 +168,25 @@ Deno.serve(async (req) => {
           doc.mimeType
         );
 
-        // Insert into Documentos table
+        // Extract file extension
+        const fileExtension = doc.fileName.split('.').pop() || '';
+        
+        // Calculate file size from base64 (approximate)
+        const base64Data = doc.fileContent.includes(',') ? doc.fileContent.split(',')[1] : doc.fileContent;
+        const fileSizeBytes = Math.floor((base64Data.length * 3) / 4);
+
+        // Insert into Documentos table with metadata
         const { data: insertedDoc, error: insertError } = await supabase
           .from('Documentos')
           .insert({
             Proyecto: projectId,
             Nombre: doc.fileName,
             Tipo: doc.tipo,
+            Size: fileSizeBytes,
+            Extension: fileExtension,
+            MimeType: doc.mimeType,
+            DriveId: driveFile.id,
+            WebViewLink: driveFile.webViewLink,
           })
           .select()
           .single();

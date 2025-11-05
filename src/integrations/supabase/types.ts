@@ -172,24 +172,39 @@ export type Database = {
       Documentos: {
         Row: {
           created_at: string
+          DriveId: string | null
+          Extension: string | null
           id: number
+          MimeType: string | null
           Nombre: string | null
           Proyecto: number | null
+          Size: number | null
           Tipo: string | null
+          WebViewLink: string | null
         }
         Insert: {
           created_at?: string
+          DriveId?: string | null
+          Extension?: string | null
           id?: number
+          MimeType?: string | null
           Nombre?: string | null
           Proyecto?: number | null
+          Size?: number | null
           Tipo?: string | null
+          WebViewLink?: string | null
         }
         Update: {
           created_at?: string
+          DriveId?: string | null
+          Extension?: string | null
           id?: number
+          MimeType?: string | null
           Nombre?: string | null
           Proyecto?: number | null
+          Size?: number | null
           Tipo?: string | null
+          WebViewLink?: string | null
         }
         Relationships: [
           {

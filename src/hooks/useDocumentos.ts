@@ -7,6 +7,11 @@ export interface Documento {
   Proyecto: number;
   Tipo: string | null;
   Nombre: string | null;
+  Size: number | null;
+  Extension: string | null;
+  MimeType: string | null;
+  DriveId: string | null;
+  WebViewLink: string | null;
   created_at: string;
 }
 

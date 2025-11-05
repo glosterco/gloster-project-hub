@@ -23,6 +23,16 @@ export interface Documento {
   url?: string;
 }
 
+export interface LicitacionItem {
+  id?: number;
+  descripcion: string;
+  unidad: string;
+  cantidad: number;
+  precio_unitario: number;
+  precio_total: number;
+  orden: number;
+}
+
 export interface Licitacion {
   id: number;
   nombre: string;
@@ -33,9 +43,12 @@ export interface Licitacion {
   mandante_id: number;
   created_at: string;
   updated_at: string;
+  gastos_generales?: number;
+  iva_porcentaje?: number;
   oferentes?: Oferente[];
   eventos?: CalendarEvent[];
   documentos?: Documento[];
+  items?: LicitacionItem[];
 }
 
 export interface NewLicitacion {
@@ -46,6 +59,9 @@ export interface NewLicitacion {
   oferentes_emails: string[];
   calendario_eventos: CalendarEvent[];
   documentos: Documento[];
+  items?: LicitacionItem[];
+  gastos_generales?: number;
+  iva_porcentaje?: number;
 }
 
 export const useLicitaciones = () => {
@@ -107,6 +123,15 @@ export const useLicitaciones = () => {
             size,
             tipo,
             url
+          ),
+          LicitacionItems (
+            id,
+            descripcion,
+            unidad,
+            cantidad,
+            precio_unitario,
+            precio_total,
+            orden
           )
         `)
         .order('created_at', { ascending: false });
@@ -132,6 +157,8 @@ export const useLicitaciones = () => {
         mandante_id: item.mandante_id,
         created_at: item.created_at,
         updated_at: item.updated_at,
+        gastos_generales: item.gastos_generales,
+        iva_porcentaje: item.iva_porcentaje,
         oferentes: (item.LicitacionOferentes || []).map((o: any) => ({
           id: o.id,
           email: o.email
@@ -149,6 +176,15 @@ export const useLicitaciones = () => {
           size: d.size,
           tipo: d.tipo,
           url: d.url
+        })),
+        items: (item.LicitacionItems || []).map((i: any) => ({
+          id: i.id,
+          descripcion: i.descripcion,
+          unidad: i.unidad,
+          cantidad: i.cantidad,
+          precio_unitario: i.precio_unitario,
+          precio_total: i.precio_total,
+          orden: i.orden
         }))
       }));
 
@@ -215,6 +251,8 @@ export const useLicitaciones = () => {
           descripcion: newLicitacion.descripcion,
           mensaje_oferentes: newLicitacion.mensaje_oferentes,
           especificaciones: newLicitacion.especificaciones,
+          gastos_generales: newLicitacion.gastos_generales,
+          iva_porcentaje: newLicitacion.iva_porcentaje,
           mandante_id: mandanteId,
           estado: 'abierta'
         }])
@@ -284,6 +322,27 @@ export const useLicitaciones = () => {
 
         if (documentosError) {
           console.error('Error creating documentos:', documentosError);
+        }
+      }
+
+      // Insertar items
+      if (newLicitacion.items && newLicitacion.items.length > 0) {
+        const itemsData = newLicitacion.items.map(item => ({
+          licitacion_id: licitacionId,
+          descripcion: item.descripcion,
+          unidad: item.unidad,
+          cantidad: item.cantidad,
+          precio_unitario: item.precio_unitario,
+          precio_total: item.precio_total,
+          orden: item.orden
+        }));
+
+        const { error: itemsError } = await supabase
+          .from('LicitacionItems')
+          .insert(itemsData);
+
+        if (itemsError) {
+          console.error('Error creating items:', itemsError);
         }
       }
 

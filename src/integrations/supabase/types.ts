@@ -363,7 +363,9 @@ export type Database = {
           descripcion: string
           especificaciones: string | null
           estado: string | null
+          gastos_generales: number | null
           id: number
+          iva_porcentaje: number | null
           mandante_id: number
           mensaje_oferentes: string | null
           nombre: string
@@ -374,7 +376,9 @@ export type Database = {
           descripcion: string
           especificaciones?: string | null
           estado?: string | null
+          gastos_generales?: number | null
           id?: never
+          iva_porcentaje?: number | null
           mandante_id: number
           mensaje_oferentes?: string | null
           nombre: string
@@ -385,13 +389,23 @@ export type Database = {
           descripcion?: string
           especificaciones?: string | null
           estado?: string | null
+          gastos_generales?: number | null
           id?: never
+          iva_porcentaje?: number | null
           mandante_id?: number
           mensaje_oferentes?: string | null
           nombre?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "Licitaciones_mandante_id_fkey"
+            columns: ["mandante_id"]
+            isOneToOne: false
+            referencedRelation: "Mandantes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       LicitacionEventos: {
         Row: {
@@ -430,6 +444,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      LicitacionItems: {
+        Row: {
+          cantidad: number | null
+          created_at: string
+          descripcion: string
+          id: number
+          licitacion_id: number
+          orden: number
+          precio_total: number | null
+          precio_unitario: number | null
+          unidad: string | null
+        }
+        Insert: {
+          cantidad?: number | null
+          created_at?: string
+          descripcion: string
+          id?: never
+          licitacion_id: number
+          orden?: number
+          precio_total?: number | null
+          precio_unitario?: number | null
+          unidad?: string | null
+        }
+        Update: {
+          cantidad?: number | null
+          created_at?: string
+          descripcion?: string
+          id?: never
+          licitacion_id?: number
+          orden?: number
+          precio_total?: number | null
+          precio_unitario?: number | null
+          unidad?: string | null
+        }
+        Relationships: []
       }
       LicitacionOferentes: {
         Row: {

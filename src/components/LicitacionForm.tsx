@@ -11,7 +11,7 @@ import { Plus, X, Upload, Calendar as CalendarIcon, Mail, FileText, Settings } f
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { useLicitaciones, CalendarEvent } from '@/hooks/useLicitaciones';
+import { useLicitaciones, CalendarEvent, LicitacionItem } from '@/hooks/useLicitaciones';
 
 interface LicitacionFormProps {
   open: boolean;
@@ -36,6 +36,16 @@ const LicitacionForm = ({ open, onOpenChange, onSuccess }: LicitacionFormProps) 
   }>>([]);
   const [documentos, setDocumentos] = useState<File[]>([]);
   const [especificaciones, setEspecificaciones] = useState('');
+  const [items, setItems] = useState<Array<{
+    id: string;
+    descripcion: string;
+    unidad: string;
+    cantidad: number;
+    precio_unitario: number;
+    precio_total: number;
+  }>>([]);
+  const [gastosGenerales, setGastosGenerales] = useState<number>(0);
+  const [ivaPorcentaje, setIvaPorcentaje] = useState<number>(19);
   const [submitting, setSubmitting] = useState(false);
 
   const handleAddEmail = () => {
@@ -92,6 +102,52 @@ const LicitacionForm = ({ open, onOpenChange, onSuccess }: LicitacionFormProps) 
     setDocumentos(documentos.filter((_, i) => i !== index));
   };
 
+  const handleAddItem = () => {
+    const newItem = {
+      id: Math.random().toString(),
+      descripcion: '',
+      unidad: '',
+      cantidad: 0,
+      precio_unitario: 0,
+      precio_total: 0
+    };
+    setItems([...items, newItem]);
+  };
+
+  const handleRemoveItem = (id: string) => {
+    setItems(items.filter(i => i.id !== id));
+  };
+
+  const handleUpdateItem = (id: string, field: keyof Omit<typeof items[0], 'id'>, value: string | number) => {
+    setItems(items.map(item => {
+      if (item.id === id) {
+        const updated = { ...item, [field]: value };
+        // Calcular precio total automáticamente
+        if (field === 'cantidad' || field === 'precio_unitario') {
+          updated.precio_total = updated.cantidad * updated.precio_unitario;
+        }
+        return updated;
+      }
+      return item;
+    }));
+  };
+
+  const calcularTotalCostosDirectos = () => {
+    return items.reduce((sum, item) => sum + item.precio_total, 0);
+  };
+
+  const calcularCostoNetoTotal = () => {
+    return calcularTotalCostosDirectos() + gastosGenerales;
+  };
+
+  const calcularIVA = () => {
+    return calcularCostoNetoTotal() * (ivaPorcentaje / 100);
+  };
+
+  const calcularTotal = () => {
+    return calcularCostoNetoTotal() + calcularIVA();
+  };
+
   const handleSubmit = async () => {
     if (!nombre || !descripcion) {
       toast({
@@ -113,6 +169,15 @@ const LicitacionForm = ({ open, onOpenChange, onSuccess }: LicitacionFormProps) 
         requiereArchivos: event.requiereArchivos
       }));
 
+      const itemsFormateados: LicitacionItem[] = items.map((item, index) => ({
+        descripcion: item.descripcion,
+        unidad: item.unidad,
+        cantidad: item.cantidad,
+        precio_unitario: item.precio_unitario,
+        precio_total: item.precio_total,
+        orden: index
+      }));
+
       const result = await createLicitacion({
         nombre,
         descripcion,
@@ -120,7 +185,10 @@ const LicitacionForm = ({ open, onOpenChange, onSuccess }: LicitacionFormProps) 
         oferentes_emails: oferentesEmails.filter(e => e),
         calendario_eventos: eventosFormateados,
         especificaciones,
-        documentos: documentos.map(f => ({ nombre: f.name, size: f.size, tipo: f.type }))
+        documentos: documentos.map(f => ({ nombre: f.name, size: f.size, tipo: f.type })),
+        items: itemsFormateados.length > 0 ? itemsFormateados : undefined,
+        gastos_generales: gastosGenerales > 0 ? gastosGenerales : undefined,
+        iva_porcentaje: ivaPorcentaje
       });
 
       if (result) {
@@ -132,6 +200,9 @@ const LicitacionForm = ({ open, onOpenChange, onSuccess }: LicitacionFormProps) 
         setCalendarEvents([]);
         setDocumentos([]);
         setEspecificaciones('');
+        setItems([]);
+        setGastosGenerales(0);
+        setIvaPorcentaje(19);
         
         onSuccess?.();
         onOpenChange(false);
@@ -352,6 +423,136 @@ const LicitacionForm = ({ open, onOpenChange, onSuccess }: LicitacionFormProps) 
                   </div>
                 ))}
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Itemizado (Opcional) */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg font-rubik flex items-center">
+                <FileText className="h-5 w-5 mr-2" />
+                Itemizado (Opcional)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Button onClick={handleAddItem} variant="outline" size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Agregar Item
+              </Button>
+
+              {items.length > 0 && (
+                <div className="border rounded-lg overflow-hidden">
+                  <table className="w-full">
+                    <thead className="bg-muted">
+                      <tr>
+                        <th className="p-2 text-left text-sm font-medium">Descripción</th>
+                        <th className="p-2 text-left text-sm font-medium w-24">Unidad</th>
+                        <th className="p-2 text-right text-sm font-medium w-24">Cantidad</th>
+                        <th className="p-2 text-right text-sm font-medium w-32">P.U.</th>
+                        <th className="p-2 text-right text-sm font-medium w-32">Total</th>
+                        <th className="p-2 w-12"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {items.map((item) => (
+                        <tr key={item.id} className="border-t">
+                          <td className="p-2">
+                            <Input
+                              placeholder="Descripción del item"
+                              value={item.descripcion}
+                              onChange={(e) => handleUpdateItem(item.id, 'descripcion', e.target.value)}
+                              className="h-8"
+                            />
+                          </td>
+                          <td className="p-2">
+                            <Input
+                              placeholder="Ej: m²"
+                              value={item.unidad}
+                              onChange={(e) => handleUpdateItem(item.id, 'unidad', e.target.value)}
+                              className="h-8"
+                            />
+                          </td>
+                          <td className="p-2">
+                            <Input
+                              type="number"
+                              value={item.cantidad || ''}
+                              onChange={(e) => handleUpdateItem(item.id, 'cantidad', parseFloat(e.target.value) || 0)}
+                              className="h-8 text-right"
+                            />
+                          </td>
+                          <td className="p-2">
+                            <Input
+                              type="number"
+                              value={item.precio_unitario || ''}
+                              onChange={(e) => handleUpdateItem(item.id, 'precio_unitario', parseFloat(e.target.value) || 0)}
+                              className="h-8 text-right"
+                            />
+                          </td>
+                          <td className="p-2">
+                            <Input
+                              type="number"
+                              value={item.precio_total || 0}
+                              readOnly
+                              className="h-8 text-right bg-muted"
+                            />
+                          </td>
+                          <td className="p-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveItem(item.id)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                      <tr className="border-t bg-muted/50 font-medium">
+                        <td colSpan={4} className="p-2 text-right">Total Costos Directos:</td>
+                        <td className="p-2 text-right">${calcularTotalCostosDirectos().toLocaleString('es-CL')}</td>
+                        <td></td>
+                      </tr>
+                      <tr className="border-t">
+                        <td colSpan={4} className="p-2 text-right">Gastos Generales:</td>
+                        <td className="p-2">
+                          <Input
+                            type="number"
+                            value={gastosGenerales || ''}
+                            onChange={(e) => setGastosGenerales(parseFloat(e.target.value) || 0)}
+                            className="h-8 text-right"
+                          />
+                        </td>
+                        <td></td>
+                      </tr>
+                      <tr className="border-t bg-muted/50 font-medium">
+                        <td colSpan={4} className="p-2 text-right">Costo Neto Total:</td>
+                        <td className="p-2 text-right">${calcularCostoNetoTotal().toLocaleString('es-CL')}</td>
+                        <td></td>
+                      </tr>
+                      <tr className="border-t">
+                        <td colSpan={3} className="p-2 text-right">IVA (%):</td>
+                        <td className="p-2">
+                          <Input
+                            type="number"
+                            value={ivaPorcentaje || ''}
+                            onChange={(e) => setIvaPorcentaje(parseFloat(e.target.value) || 0)}
+                            className="h-8 text-right"
+                            max={100}
+                            min={0}
+                          />
+                        </td>
+                        <td className="p-2 text-right">${calcularIVA().toLocaleString('es-CL')}</td>
+                        <td></td>
+                      </tr>
+                      <tr className="border-t bg-primary/10 font-bold">
+                        <td colSpan={4} className="p-2 text-right">TOTAL:</td>
+                        <td className="p-2 text-right">${calcularTotal().toLocaleString('es-CL')}</td>
+                        <td></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </CardContent>
           </Card>
 

@@ -30,21 +30,27 @@ serve(async (req) => {
   try {
     console.log('🔑 Google Drive Token Manager started');
     
-    const { action } = await req.json();
+    // Safely parse optional JSON body
+    let action: string | null = null;
+    try {
+      if (req.headers.get('content-type')?.includes('application/json')) {
+        const parsed = await req.json();
+        action = parsed?.action ?? null;
+      }
+    } catch {
+      // Ignore empty or invalid JSON body
+    }
     
     // Get Google Drive credentials and clean them aggressively
-    console.log('🔍 Debugging environment variables...');
-    console.log('🔍 Raw GOOGLE_DRIVE_CLIENT_ID:', JSON.stringify(Deno.env.get('GOOGLE_DRIVE_CLIENT_ID')));
-    console.log('🔍 Raw GOOGLE_DRIVE_CLIENT_SECRET:', JSON.stringify(Deno.env.get('GOOGLE_DRIVE_CLIENT_SECRET')));
-    console.log('🔍 Raw GOOGLE_DRIVE_REFRESH_TOKEN:', JSON.stringify(Deno.env.get('GOOGLE_DRIVE_REFRESH_TOKEN')));
-    
     const clientId = Deno.env.get('GOOGLE_DRIVE_CLIENT_ID')?.replace(/[\r\n\t\s]+/g, '').trim();
     const clientSecret = Deno.env.get('GOOGLE_DRIVE_CLIENT_SECRET')?.replace(/[\r\n\t\s]+/g, '').trim();
     const refreshToken = Deno.env.get('GOOGLE_DRIVE_REFRESH_TOKEN')?.replace(/[\r\n\t\s]+/g, '').trim();
     
-    console.log('🔑 Cleaned GOOGLE_DRIVE_CLIENT_ID:', clientId ? '✅ found and cleaned' : '❌ missing');
-    console.log('🔑 Cleaned GOOGLE_DRIVE_CLIENT_SECRET:', clientSecret ? '✅ found and cleaned' : '❌ missing');
-    console.log('🔑 Cleaned GOOGLE_DRIVE_REFRESH_TOKEN:', refreshToken ? '✅ found and cleaned' : '❌ missing');
+    console.log('🔑 Credentials presence:', {
+      clientId: !!clientId,
+      clientSecret: !!clientSecret,
+      refreshToken: !!refreshToken,
+    });
 
     if (!clientId || !clientSecret || !refreshToken) {
       console.error('❌ Missing Google Drive credentials');

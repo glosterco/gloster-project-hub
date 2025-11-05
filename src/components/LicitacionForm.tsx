@@ -20,9 +20,10 @@ interface LicitacionFormProps {
 
 interface CalendarEvent {
   id: string;
-  fecha: Date;
+  fecha: Date | undefined;
   titulo: string;
   descripcion: string;
+  requiereArchivos: boolean;
 }
 
 const LicitacionForm = ({ open, onOpenChange, onSuccess }: LicitacionFormProps) => {
@@ -56,9 +57,10 @@ const LicitacionForm = ({ open, onOpenChange, onSuccess }: LicitacionFormProps) 
   const handleAddCalendarEvent = () => {
     const newEvent: CalendarEvent = {
       id: Math.random().toString(),
-      fecha: new Date(),
+      fecha: undefined,
       titulo: '',
-      descripcion: ''
+      descripcion: '',
+      requiereArchivos: false
     };
     setCalendarEvents([...calendarEvents, newEvent]);
   };
@@ -67,9 +69,15 @@ const LicitacionForm = ({ open, onOpenChange, onSuccess }: LicitacionFormProps) 
     setCalendarEvents(calendarEvents.filter(e => e.id !== id));
   };
 
-  const handleUpdateEvent = (id: string, field: 'titulo' | 'descripcion', value: string) => {
+  const handleUpdateEvent = (id: string, field: 'titulo' | 'descripcion' | 'requiereArchivos', value: string | boolean) => {
     setCalendarEvents(calendarEvents.map(e => 
       e.id === id ? { ...e, [field]: value } : e
+    ));
+  };
+
+  const handleUpdateEventDate = (id: string, date: Date | undefined) => {
+    setCalendarEvents(calendarEvents.map(e => 
+      e.id === id ? { ...e, fecha: date } : e
     ));
   };
 
@@ -157,6 +165,7 @@ const LicitacionForm = ({ open, onOpenChange, onSuccess }: LicitacionFormProps) 
               <div className="grid grid-cols-2 gap-6">
                 {/* Columna Izquierda - Correos */}
                 <div className="space-y-4">
+                  <Label className="text-base font-medium">Ingresar contacto oferentes</Label>
                   <div className="flex gap-2">
                     <Input
                       value={emailInput}
@@ -187,14 +196,13 @@ const LicitacionForm = ({ open, onOpenChange, onSuccess }: LicitacionFormProps) 
 
                 {/* Columna Derecha - Mensaje */}
                 <div className="space-y-2">
-                  <Label htmlFor="mensaje">Mensaje para los Oferentes</Label>
+                  <Label htmlFor="mensaje" className="text-base font-medium">Mensaje para los Oferentes</Label>
                   <Textarea
                     id="mensaje"
                     value={mensaje}
                     onChange={(e) => setMensaje(e.target.value)}
                     placeholder="Mensaje que se enviará a los oferentes..."
-                    rows={12}
-                    className="h-full"
+                    rows={8}
                   />
                 </div>
               </div>
@@ -218,11 +226,32 @@ const LicitacionForm = ({ open, onOpenChange, onSuccess }: LicitacionFormProps) 
               <div className="space-y-3">
                 {calendarEvents.map((event) => (
                   <Card key={event.id}>
-                    <CardContent className="pt-4 space-y-2">
+                    <CardContent className="pt-4 space-y-3">
                       <div className="flex justify-between items-start">
-                        <span className="text-sm text-muted-foreground">
-                          {format(event.fecha, "PPP")}
-                        </span>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className={cn(
+                                "justify-start text-left font-normal",
+                                !event.fecha && "text-muted-foreground"
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {event.fecha ? format(event.fecha, "PPP") : "Seleccionar fecha"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={event.fecha}
+                              onSelect={(date) => handleUpdateEventDate(event.id, date)}
+                              initialFocus
+                              className="pointer-events-auto"
+                            />
+                          </PopoverContent>
+                        </Popover>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -241,6 +270,18 @@ const LicitacionForm = ({ open, onOpenChange, onSuccess }: LicitacionFormProps) 
                         value={event.descripcion}
                         onChange={(e) => handleUpdateEvent(event.id, 'descripcion', e.target.value)}
                       />
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id={`archivos-${event.id}`}
+                          checked={event.requiereArchivos}
+                          onChange={(e) => handleUpdateEvent(event.id, 'requiereArchivos', e.target.checked)}
+                          className="h-4 w-4 rounded border-gray-300"
+                        />
+                        <Label htmlFor={`archivos-${event.id}`} className="text-sm cursor-pointer">
+                          Requiere recibir archivos de oferentes
+                        </Label>
+                      </div>
                     </CardContent>
                   </Card>
                 ))}

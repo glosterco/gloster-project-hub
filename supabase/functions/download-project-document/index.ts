@@ -1,3 +1,4 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -6,8 +7,10 @@ const corsHeaders = {
 };
 
 interface DownloadRequest {
-  driveId: string;
+  driveId?: string;
   fileName: string;
+  projectId?: number;
+  mode?: 'content' | 'meta';
 }
 
 const getAccessToken = async (): Promise<string> => {
@@ -38,6 +41,36 @@ const getAccessToken = async (): Promise<string> => {
   return tokenData.access_token;
 };
 
+const getSupabaseAdmin = () => {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  return createClient(supabaseUrl, supabaseServiceKey);
+};
+
+const getFolderIdFromUrl = (driveUrl: string): string | null => {
+  const match = driveUrl.match(/folders\/([a-zA-Z0-9-_]+)/);
+  return match ? match[1] : null;
+};
+
+const searchFileInFolder = async (
+  accessToken: string,
+  folderId: string,
+  fileName: string
+): Promise<{ id: string; name: string; mimeType: string; webViewLink?: string } | null> => {
+  const q = encodeURIComponent(`'${folderId}' in parents and trashed = false and name = '${fileName.replace(/'/g, "\\'")}'`);
+  const fields = encodeURIComponent('files(id,name,mimeType,webViewLink)');
+  const url = `https://www.googleapis.com/drive/v3/files?q=${q}&fields=${fields}`;
+
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to search file: ${res.statusText}`);
+  }
+  const data = await res.json();
+  return data.files?.[0] || null;
+};
+
 const downloadFileContent = async (
   accessToken: string,
   fileId: string
@@ -59,7 +92,6 @@ const downloadFileContent = async (
   }
 
   const metadata = await metadataResponse.json();
-  console.log(`File metadata:`, metadata);
 
   // Download file content
   const downloadResponse = await fetch(
@@ -79,8 +111,6 @@ const downloadFileContent = async (
   const uint8Array = new Uint8Array(arrayBuffer);
   const base64Content = btoa(String.fromCharCode(...uint8Array));
 
-  console.log(`✅ File downloaded successfully, size: ${arrayBuffer.byteLength} bytes`);
-
   return {
     content: base64Content,
     mimeType: metadata.mimeType,
@@ -93,39 +123,83 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { driveId, fileName }: DownloadRequest = await req.json();
+    const { driveId, fileName, projectId, mode = 'content' }: DownloadRequest = await req.json();
 
-    console.log(`🔍 Downloading document: ${fileName} with Drive ID: ${driveId}`);
-
-    if (!driveId || !fileName) {
-      throw new Error('Missing driveId or fileName');
+    if (!fileName) {
+      throw new Error('Missing fileName');
     }
 
     const accessToken = await getAccessToken();
-    const { content, mimeType } = await downloadFileContent(accessToken, driveId);
+
+    let resolvedDriveId = driveId;
+    let resolvedWebViewLink: string | undefined;
+    let resolvedMimeType: string | undefined;
+
+    if (!resolvedDriveId) {
+      if (!projectId) {
+        throw new Error('Missing driveId or projectId');
+      }
+      // Resolve folder from project and search by name
+      const supabase = getSupabaseAdmin();
+      const { data: project, error: projectError } = await supabase
+        .from('Proyectos')
+        .select('URL_docs')
+        .eq('id', projectId)
+        .single();
+
+      if (projectError || !project?.URL_docs) {
+        throw new Error('No hay carpeta de documentos configurada para el proyecto');
+      }
+      const folderId = getFolderIdFromUrl(project.URL_docs);
+      if (!folderId) throw new Error('URL de Google Drive inválida para el proyecto');
+
+      const found = await searchFileInFolder(accessToken, folderId, fileName);
+      if (!found) {
+        throw new Error('Archivo no encontrado en la carpeta del proyecto');
+      }
+      resolvedDriveId = found.id;
+      resolvedWebViewLink = found.webViewLink;
+      resolvedMimeType = found.mimeType;
+    }
+
+    if (mode === 'meta') {
+      // Only return metadata (for preview URL)
+      if (!resolvedWebViewLink || !resolvedMimeType) {
+        // fetch minimal metadata if missing
+        const metaRes = await fetch(
+          `https://www.googleapis.com/drive/v3/files/${resolvedDriveId}?fields=webViewLink,mimeType`,
+          { headers: { Authorization: `Bearer ${accessToken}` } }
+        );
+        if (!metaRes.ok) throw new Error('No se pudo obtener metadatos del archivo');
+        const meta = await metaRes.json();
+        resolvedWebViewLink = meta.webViewLink;
+        resolvedMimeType = meta.mimeType;
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          fileName,
+          driveId: resolvedDriveId,
+          webViewLink: resolvedWebViewLink,
+          mimeType: resolvedMimeType,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Mode content: download bytes
+    const { content, mimeType } = await downloadFileContent(accessToken, resolvedDriveId!);
 
     return new Response(
-      JSON.stringify({
-        success: true,
-        content,
-        mimeType,
-        fileName,
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      JSON.stringify({ success: true, content, mimeType, fileName }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
     console.error('❌ Error in download-project-document:', error);
     return new Response(
-      JSON.stringify({
-        success: false,
-        error: error.message,
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      JSON.stringify({ success: false, error: (error as Error).message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 };

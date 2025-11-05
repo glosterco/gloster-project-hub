@@ -2,45 +2,38 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+type DownloadArgs = {
+  fileName: string;
+  driveId?: string | null;
+  projectId?: number | string;
+};
+
+type PreviewArgs = DownloadArgs & {
+  webViewLink?: string | null;
+};
+
 export const useProjectDocumentDownload = () => {
   const [loadingDocuments, setLoadingDocuments] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
 
-  const downloadDocument = async (driveId: string, fileName: string) => {
+  const downloadDocument = async ({ fileName, driveId, projectId }: DownloadArgs) => {
     setLoadingDocuments(prev => ({ ...prev, [fileName]: true }));
-    
     try {
-      console.log(`📥 Starting download for: ${fileName} (Drive ID: ${driveId})`);
-      
-      const { data, error } = await supabase.functions.invoke('download-project-document', {
-        body: {
-          driveId: driveId,
-          fileName: fileName
-        }
-      });
+      const body: any = { fileName, mode: 'content' as const };
+      if (driveId) body.driveId = driveId;
+      else if (projectId) body.projectId = typeof projectId === 'string' ? Number(projectId) : projectId;
 
-      if (error) {
-        throw new Error(`Error fetching file: ${error.message}`);
-      }
+      const { data, error } = await supabase.functions.invoke('download-project-document', { body });
+      if (error) throw new Error(error.message);
+      if (!data?.success) throw new Error(data?.error || 'No se pudo descargar el archivo');
+      if (!data.content) throw new Error('El archivo no tiene contenido disponible');
 
-      if (!data.success) {
-        throw new Error(data.error || 'Error desconocido al descargar archivo');
-      }
-
-      if (!data.content) {
-        throw new Error('El archivo no tiene contenido disponible');
-      }
-
-      // Convert base64 to blob
       const byteCharacters = atob(data.content);
       const byteNumbers = new Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-      }
+      for (let i = 0; i < byteCharacters.length; i++) byteNumbers[i] = byteCharacters.charCodeAt(i);
       const byteArray = new Uint8Array(byteNumbers);
       const blob = new Blob([byteArray], { type: data.mimeType });
-      
-      // Create download link
+
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -49,35 +42,43 @@ export const useProjectDocumentDownload = () => {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      
-      console.log(`✅ Downloaded: ${fileName}`);
-      
-      toast({
-        title: "Descarga completada",
-        description: `Se ha descargado ${fileName}`,
-      });
 
+      toast({ title: 'Descarga completada', description: `Se ha descargado ${fileName}` });
       return { success: true };
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Error downloading document:', error);
-      toast({
-        title: "Error en la descarga",
-        description: error.message || "No se pudo descargar el archivo",
-        variant: "destructive"
-      });
+      toast({ title: 'Error en la descarga', description: error.message || 'No se pudo descargar el archivo', variant: 'destructive' });
       return { success: false, error: error.message };
     } finally {
       setLoadingDocuments(prev => ({ ...prev, [fileName]: false }));
     }
   };
 
-  const isDocumentLoading = (fileName: string) => {
-    return loadingDocuments[fileName] || false;
+  const previewDocument = async ({ fileName, webViewLink, driveId, projectId }: PreviewArgs) => {
+    try {
+      if (webViewLink) {
+        window.open(webViewLink, '_blank');
+        return { success: true };
+      }
+      const body: any = { fileName, mode: 'meta' as const };
+      if (driveId) body.driveId = driveId;
+      else if (projectId) body.projectId = typeof projectId === 'string' ? Number(projectId) : projectId;
+
+      const { data, error } = await supabase.functions.invoke('download-project-document', { body });
+      if (error) throw new Error(error.message);
+      if (!data?.success) throw new Error(data?.error || 'No se pudo obtener el enlace de vista previa');
+      if (!data.webViewLink) throw new Error('Vista previa no disponible');
+
+      window.open(data.webViewLink, '_blank');
+      return { success: true };
+    } catch (error: any) {
+      console.error('❌ Error opening preview:', error);
+      toast({ title: 'Error en vista previa', description: error.message || 'No se pudo abrir la vista previa', variant: 'destructive' });
+      return { success: false, error: error.message };
+    }
   };
 
-  return {
-    downloadDocument,
-    isDocumentLoading,
-    loading: Object.values(loadingDocuments).some(Boolean)
-  };
+  const isDocumentLoading = (fileName: string) => loadingDocuments[fileName] || false;
+
+  return { downloadDocument, previewDocument, isDocumentLoading, loading: Object.values(loadingDocuments).some(Boolean) };
 };

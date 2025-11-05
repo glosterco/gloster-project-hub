@@ -51,9 +51,6 @@ export const AdicionalesTable: React.FC<AdicionalesTableProps> = ({
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Adicionales del Proyecto</CardTitle>
-      </CardHeader>
       <CardContent>
         {adicionales.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">

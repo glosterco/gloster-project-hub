@@ -177,7 +177,7 @@ export const useLicitaciones = () => {
           tipo: d.tipo,
           url: d.url
         })),
-        items: (item.LicitacionItems || []).map((i: any) => ({
+        items: Array.isArray(item.LicitacionItems) ? item.LicitacionItems.map((i: any) => ({
           id: i.id,
           descripcion: i.descripcion,
           unidad: i.unidad,
@@ -185,7 +185,7 @@ export const useLicitaciones = () => {
           precio_unitario: i.precio_unitario,
           precio_total: i.precio_total,
           orden: i.orden
-        }))
+        })) : []
       }));
 
       setLicitaciones(licitacionesData);

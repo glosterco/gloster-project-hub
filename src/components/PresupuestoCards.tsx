@@ -39,12 +39,6 @@ export const PresupuestoCards: React.FC<PresupuestoCardsProps> = ({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-2xl font-bold text-slate-800 mb-2 font-rubik">Presupuesto del Proyecto</h3>
-        <p className="text-muted-foreground font-rubik">
-          Desglose de partidas y avance del presupuesto
-        </p>
-      </div>
 
       {presupuesto.length === 0 ? (
         <Card className="p-8 text-center border-dashed border-2 border-muted">

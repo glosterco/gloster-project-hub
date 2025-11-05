@@ -96,11 +96,11 @@ const Licitaciones = () => {
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center text-muted-foreground">
                       <Mail className="h-4 w-4 mr-2" />
-                      <span>{licitacion.oferentes_emails.length} oferentes invitados</span>
+                      <span>{licitacion.oferentes?.length || 0} oferentes invitados</span>
                     </div>
                     <div className="flex items-center text-muted-foreground">
                       <Calendar className="h-4 w-4 mr-2" />
-                      <span>{licitacion.calendario_eventos.length} eventos en calendario</span>
+                      <span>{licitacion.eventos?.length || 0} eventos en calendario</span>
                     </div>
                     <div className="flex items-center text-muted-foreground">
                       <FileText className="h-4 w-4 mr-2" />

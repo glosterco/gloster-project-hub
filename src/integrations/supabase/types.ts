@@ -319,50 +319,146 @@ export type Database = {
           },
         ]
       }
+      LicitacionDocumentos: {
+        Row: {
+          created_at: string
+          id: number
+          licitacion_id: number
+          nombre: string
+          size: number | null
+          tipo: string | null
+          url: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: never
+          licitacion_id: number
+          nombre: string
+          size?: number | null
+          tipo?: string | null
+          url?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: never
+          licitacion_id?: number
+          nombre?: string
+          size?: number | null
+          tipo?: string | null
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "LicitacionDocumentos_licitacion_id_fkey"
+            columns: ["licitacion_id"]
+            isOneToOne: false
+            referencedRelation: "Licitaciones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       Licitaciones: {
         Row: {
-          calendario_eventos: Json | null
           created_at: string | null
           descripcion: string
-          documentos: Json | null
           especificaciones: string | null
           estado: string | null
           id: number
           mandante_id: number
           mensaje_oferentes: string | null
           nombre: string
-          oferentes_emails: Json | null
           updated_at: string | null
         }
         Insert: {
-          calendario_eventos?: Json | null
           created_at?: string | null
           descripcion: string
-          documentos?: Json | null
           especificaciones?: string | null
           estado?: string | null
           id?: never
           mandante_id: number
           mensaje_oferentes?: string | null
           nombre: string
-          oferentes_emails?: Json | null
           updated_at?: string | null
         }
         Update: {
-          calendario_eventos?: Json | null
           created_at?: string | null
           descripcion?: string
-          documentos?: Json | null
           especificaciones?: string | null
           estado?: string | null
           id?: never
           mandante_id?: number
           mensaje_oferentes?: string | null
           nombre?: string
-          oferentes_emails?: Json | null
           updated_at?: string | null
         }
         Relationships: []
+      }
+      LicitacionEventos: {
+        Row: {
+          created_at: string
+          descripcion: string | null
+          fecha: string
+          id: number
+          licitacion_id: number
+          requiere_archivos: boolean
+          titulo: string
+        }
+        Insert: {
+          created_at?: string
+          descripcion?: string | null
+          fecha: string
+          id?: never
+          licitacion_id: number
+          requiere_archivos?: boolean
+          titulo: string
+        }
+        Update: {
+          created_at?: string
+          descripcion?: string | null
+          fecha?: string
+          id?: never
+          licitacion_id?: number
+          requiere_archivos?: boolean
+          titulo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "LicitacionEventos_licitacion_id_fkey"
+            columns: ["licitacion_id"]
+            isOneToOne: false
+            referencedRelation: "Licitaciones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      LicitacionOferentes: {
+        Row: {
+          created_at: string
+          email: string
+          id: number
+          licitacion_id: number
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: never
+          licitacion_id: number
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: never
+          licitacion_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "LicitacionOferentes_licitacion_id_fkey"
+            columns: ["licitacion_id"]
+            isOneToOne: false
+            referencedRelation: "Licitaciones"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       mandante_project_folders: {
         Row: {

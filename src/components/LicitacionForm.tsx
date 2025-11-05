@@ -120,7 +120,7 @@ const LicitacionForm = ({ open, onOpenChange, onSuccess }: LicitacionFormProps) 
         oferentes_emails: oferentesEmails.filter(e => e),
         calendario_eventos: eventosFormateados,
         especificaciones,
-        documentos: documentos.map(f => ({ name: f.name, size: f.size, type: f.type }))
+        documentos: documentos.map(f => ({ nombre: f.name, size: f.size, tipo: f.type }))
       });
 
       if (result) {

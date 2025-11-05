@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Plus, FileText, Calendar, DollarSign } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
+import LicitacionForm from '@/components/LicitacionForm';
 import { useToast } from '@/hooks/use-toast';
 
 interface Licitacion {
@@ -21,11 +22,12 @@ const Licitaciones = () => {
   const [showForm, setShowForm] = useState(false);
 
   const handleNuevaLicitacion = () => {
-    toast({
-      title: "Función en desarrollo",
-      description: "Próximamente podrás crear nuevas licitaciones",
-    });
     setShowForm(true);
+  };
+
+  const handleFormSuccess = () => {
+    // Aquí se podría refrescar la lista de licitaciones
+    setShowForm(false);
   };
 
   const getEstadoBadgeColor = (estado: Licitacion['estado']) => {
@@ -122,6 +124,12 @@ const Licitaciones = () => {
             ))}
           </div>
         )}
+
+        <LicitacionForm
+          open={showForm}
+          onOpenChange={setShowForm}
+          onSuccess={handleFormSuccess}
+        />
       </div>
     </div>
   );

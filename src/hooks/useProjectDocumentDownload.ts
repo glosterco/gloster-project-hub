@@ -8,9 +8,7 @@ type DownloadArgs = {
   projectId?: number | string;
 };
 
-type PreviewArgs = DownloadArgs & {
-  webViewLink?: string | null;
-};
+type PreviewArgs = DownloadArgs;
 
 export const useProjectDocumentDownload = () => {
   const [loadingDocuments, setLoadingDocuments] = useState<Record<string, boolean>>({});
@@ -54,24 +52,26 @@ export const useProjectDocumentDownload = () => {
     }
   };
 
-  const previewDocument = async ({ fileName, webViewLink, driveId, projectId }: PreviewArgs) => {
+  const previewDocument = async ({ fileName, driveId, projectId }: PreviewArgs) => {
     try {
-      // If webViewLink already exists, return it directly
-      if (webViewLink) {
-        return { success: true, webViewLink };
-      }
-
-      // Otherwise, fetch metadata to get webViewLink
-      const body: any = { fileName, mode: 'meta' as const };
+      // Fetch file bytes to render preview without Google Drive UI
+      const body: any = { fileName, mode: 'content' as const };
       if (driveId) body.driveId = driveId;
       else if (projectId) body.projectId = typeof projectId === 'string' ? Number(projectId) : projectId;
 
       const { data, error } = await supabase.functions.invoke('download-project-document', { body });
       if (error) throw new Error(error.message);
-      if (!data?.success) throw new Error(data?.error || 'No se pudo obtener el enlace de vista previa');
-      if (!data.webViewLink) throw new Error('Vista previa no disponible');
+      if (!data?.success) throw new Error(data?.error || 'No se pudo obtener el contenido para la vista previa');
+      if (!data.content) throw new Error('Contenido no disponible para vista previa');
 
-      return { success: true, webViewLink: data.webViewLink };
+      const byteCharacters = atob(data.content);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) byteNumbers[i] = byteCharacters.charCodeAt(i);
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: data.mimeType });
+      const url = URL.createObjectURL(blob);
+
+      return { success: true, previewUrl: url, mimeType: data.mimeType as string };
     } catch (error: any) {
       console.error('❌ Error opening preview:', error);
       toast({ title: 'Error en vista previa', description: error.message || 'No se pudo abrir la vista previa', variant: 'destructive' });

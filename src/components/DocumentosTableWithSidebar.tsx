@@ -33,12 +33,14 @@ export const DocumentosTableWithSidebar = ({ documentos, loading, projectId }: D
   const [previewModal, setPreviewModal] = useState<{
     isOpen: boolean;
     documentName: string | null;
-    webViewLink: string | null;
+    previewUrl: string | null;
+    mimeType?: string | null;
     isLoading: boolean;
   }>({
     isOpen: false,
     documentName: null,
-    webViewLink: null,
+    previewUrl: null,
+    mimeType: null,
     isLoading: false,
   });
   const { downloadDocument, previewDocument, isDocumentLoading } = useProjectDocumentDownload();
@@ -49,28 +51,26 @@ export const DocumentosTableWithSidebar = ({ documentos, loading, projectId }: D
     setPreviewModal({
       isOpen: true,
       documentName: doc.Nombre,
-      webViewLink: doc.WebViewLink,
-      isLoading: !doc.WebViewLink,
+      previewUrl: null,
+      mimeType: doc.MimeType || null,
+      isLoading: true,
     });
 
-    // If we don't have webViewLink, fetch it
-    if (!doc.WebViewLink) {
-      const result = await previewDocument({
-        fileName: doc.Nombre,
-        webViewLink: doc.WebViewLink,
-        driveId: doc.DriveId,
-        projectId: Number(projectId),
-      });
+    const result = await previewDocument({
+      fileName: doc.Nombre,
+      driveId: doc.DriveId,
+      projectId: Number(projectId),
+    });
 
-      if (result.success && result.webViewLink) {
-        setPreviewModal(prev => ({
-          ...prev,
-          webViewLink: result.webViewLink || null,
-          isLoading: false,
-        }));
-      } else {
-        setPreviewModal(prev => ({ ...prev, isLoading: false }));
-      }
+    if (result.success && result.previewUrl) {
+      setPreviewModal(prev => ({
+        ...prev,
+        previewUrl: result.previewUrl,
+        mimeType: result.mimeType || prev.mimeType,
+        isLoading: false,
+      }));
+    } else {
+      setPreviewModal(prev => ({ ...prev, isLoading: false }));
     }
   };
 
@@ -129,9 +129,9 @@ export const DocumentosTableWithSidebar = ({ documentos, loading, projectId }: D
     <>
       <DocumentPreviewModal
         isOpen={previewModal.isOpen}
-        onClose={() => setPreviewModal({ isOpen: false, documentName: null, webViewLink: null, isLoading: false })}
+        onClose={() => setPreviewModal({ isOpen: false, documentName: null, previewUrl: null, mimeType: null, isLoading: false })}
         documentName={previewModal.documentName}
-        webViewLink={previewModal.webViewLink}
+        previewUrl={previewModal.previewUrl}
         isLoading={previewModal.isLoading}
       />
       

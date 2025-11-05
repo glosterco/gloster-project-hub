@@ -6,7 +6,7 @@ interface DocumentPreviewModalProps {
   isOpen: boolean;
   onClose: () => void;
   documentName: string | null;
-  webViewLink: string | null;
+  previewUrl: string | null;
   isLoading?: boolean;
 }
 
@@ -14,7 +14,7 @@ export const DocumentPreviewModal = ({
   isOpen,
   onClose,
   documentName,
-  webViewLink,
+  previewUrl,
   isLoading = false
 }: DocumentPreviewModalProps) => {
   const [iframeLoaded, setIframeLoaded] = useState(false);
@@ -25,9 +25,7 @@ export const DocumentPreviewModal = ({
     }
   }, [isOpen]);
 
-  const embedUrl = webViewLink 
-    ? webViewLink.replace('/view', '/preview')
-    : null;
+  const embedUrl = previewUrl || null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

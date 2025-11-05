@@ -604,6 +604,7 @@ const ProjectDetailMandante = () => {
                 <DocumentosTableWithSidebar 
                   documentos={documentos}
                   loading={documentosLoading}
+                  projectId={id || ''}
                 />
               </TabsContent>
             )}

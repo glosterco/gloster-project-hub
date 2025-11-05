@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { FileText, Folder, File, ExternalLink, Calendar, HardDrive } from 'lucide-react';
+import { FileText, Folder, File, ExternalLink, Calendar, HardDrive, Eye, Download } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { useDirectDriveDownload } from '@/hooks/useDirectDriveDownload';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -22,10 +24,12 @@ interface Documento {
 interface DocumentosTableWithSidebarProps {
   documentos: Documento[];
   loading: boolean;
+  projectId: string;
 }
 
-export const DocumentosTableWithSidebar = ({ documentos, loading }: DocumentosTableWithSidebarProps) => {
+export const DocumentosTableWithSidebar = ({ documentos, loading, projectId }: DocumentosTableWithSidebarProps) => {
   const [selectedType, setSelectedType] = useState<string | null>(null);
+  const { downloadDocument, isDocumentLoading } = useDirectDriveDownload();
 
   // Get unique document types with counts
   const documentTypes = documentos.reduce((acc, doc) => {
@@ -135,7 +139,7 @@ export const DocumentosTableWithSidebar = ({ documentos, loading }: DocumentosTa
                   <TableHead className="w-[100px]">Tipo</TableHead>
                   <TableHead className="w-[100px]">Extensión</TableHead>
                   <TableHead className="w-[160px]">Fecha</TableHead>
-                  <TableHead className="w-[80px] text-right">Acciones</TableHead>
+                  <TableHead className="w-[120px] text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -179,16 +183,28 @@ export const DocumentosTableWithSidebar = ({ documentos, loading }: DocumentosTa
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        {doc.WebViewLink && (
-                          <a
-                            href={doc.WebViewLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center justify-center h-8 w-8 rounded-md hover:bg-muted transition-colors"
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            onClick={() => doc.WebViewLink && window.open(doc.WebViewLink, '_blank')}
+                            disabled={!doc.WebViewLink}
+                            title="Vista previa"
                           >
-                            <ExternalLink className="h-4 w-4 text-muted-foreground" />
-                          </a>
-                        )}
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            onClick={() => doc.Nombre && downloadDocument(projectId, doc.Nombre)}
+                            disabled={!doc.Nombre || isDocumentLoading(doc.Nombre || '')}
+                            title="Descargar"
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))

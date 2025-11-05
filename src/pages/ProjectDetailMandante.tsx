@@ -16,6 +16,7 @@ import { formatCurrency } from '@/utils/currencyUtils';
 import { useAdicionales } from '@/hooks/useAdicionales';
 import { AdicionalesCards } from '@/components/AdicionalesCards';
 import { AdicionalesDetailModal } from '@/components/AdicionalesDetailModal';
+import { AdicionalesForm } from '@/components/AdicionalesForm';
 import { useDocumentos } from '@/hooks/useDocumentos';
 import { useFotos } from '@/hooks/useFotos';
 import { usePresupuesto } from '@/hooks/usePresupuesto';
@@ -37,8 +38,9 @@ const ProjectDetailMandante = () => {
   const [activeTab, setActiveTab] = useState('estados-pago');
   const [selectedAdicional, setSelectedAdicional] = useState<any>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showAdicionalesForm, setShowAdicionalesForm] = useState(false);
   const [showDocumentUpload, setShowDocumentUpload] = useState(false);
-  const { adicionales, loading: adicionalesLoading } = useAdicionales(id || '');
+  const { adicionales, loading: adicionalesLoading, refetch: refetchAdicionales } = useAdicionales(id || '');
   const { documentos, loading: documentosLoading, refetch: refetchDocumentos } = useDocumentos(id || '');
   const { fotos, loading: fotosLoading } = useFotos(id || '');
   const { presupuesto, loading: presupuestoLoading, refetch: refetchPresupuesto } = usePresupuesto(id || '');
@@ -580,7 +582,7 @@ const ProjectDetailMandante = () => {
                     </CardDescription>
                   </CardHeader>
                 </Card>
-                {renderControls(adicionalesSearch, setAdicionalesSearch, 'Nuevo Adicional', () => toast({ title: "Función en desarrollo" }))}
+                {renderControls(adicionalesSearch, setAdicionalesSearch, 'Nuevo Adicional', () => setShowAdicionalesForm(true))}
                 <AdicionalesCards 
                   adicionales={adicionales}
                   loading={adicionalesLoading}
@@ -710,6 +712,18 @@ const ProjectDetailMandante = () => {
         onOpenChange={setShowDetailModal}
         adicional={selectedAdicional}
         currency={project?.Currency}
+      />
+
+      {/* Modal de Nuevo Adicional */}
+      <AdicionalesForm
+        open={showAdicionalesForm}
+        onOpenChange={setShowAdicionalesForm}
+        projectId={id || '0'}
+        currency={project?.Currency}
+        onSuccess={() => {
+          refetchAdicionales();
+          setShowAdicionalesForm(false);
+        }}
       />
     </div>
   );

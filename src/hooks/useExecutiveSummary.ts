@@ -32,6 +32,27 @@ export interface ExecutiveSummaryData {
   rejectedPayments: number;
   rejectedPaymentsAmount: number;
   projectSummaries: ProjectSummary[];
+  // Adicionales metrics
+  totalAdicionales: number;
+  montoPresentadoAdicionales: number;
+  montoAprobadoAdicionales: number;
+  adicionalesPendientes: number;
+  adicionalesAprobados: number;
+  adicionalesRechazados: number;
+  // Documentos metrics
+  totalDocumentos: number;
+  totalSizeDocumentos: number;
+  documentosPorTipo: { tipo: string; count: number }[];
+  // Fotos metrics
+  totalFotos: number;
+  fotosPorProyecto: { projectId: number; count: number }[];
+  // Presupuesto metrics
+  totalPresupuestoItems: number;
+  avancePromedioPresupuesto: number;
+  montoTotalPresupuesto: number;
+  // Reuniones metrics
+  totalReuniones: number;
+  projects: { id: number; name: string }[];
 }
 
 export const useExecutiveSummary = () => {
@@ -93,14 +114,30 @@ export const useExecutiveSummary = () => {
           approvedPaymentsAmount: 0,
           rejectedPayments: 0,
           rejectedPaymentsAmount: 0,
-          projectSummaries: []
+          projectSummaries: [],
+          totalAdicionales: 0,
+          montoPresentadoAdicionales: 0,
+          montoAprobadoAdicionales: 0,
+          adicionalesPendientes: 0,
+          adicionalesAprobados: 0,
+          adicionalesRechazados: 0,
+          totalDocumentos: 0,
+          totalSizeDocumentos: 0,
+          documentosPorTipo: [],
+          totalFotos: 0,
+          fotosPorProyecto: [],
+          totalPresupuestoItems: 0,
+          avancePromedioPresupuesto: 0,
+          montoTotalPresupuesto: 0,
+          totalReuniones: 0,
+          projects: []
         });
         return;
       }
 
       const projectIds = projects.map(p => p.id);
 
-      // Fetch payment states excluding "Programado" status and get last 3 per project
+      // Fetch payment states excluding "Programado" status
       const { data: payments, error: paymentsError } = await supabase
         .from('Estados de pago')
         .select(`
@@ -111,6 +148,7 @@ export const useExecutiveSummary = () => {
           Mes,
           "Año",
           Project,
+          ExpiryDate,
           Proyectos:Project (
             Name,
             Currency,
@@ -122,8 +160,36 @@ export const useExecutiveSummary = () => {
         `)
         .in('Project', projectIds)
         .neq('Status', 'Programado')
-        .order('ExpiryDate', { ascending: false })
-        .limit(50); // Get more to filter properly later
+        .order('ExpiryDate', { ascending: false });
+
+      // Fetch adicionales data
+      const { data: adicionales } = await supabase
+        .from('Adicionales')
+        .select('id, Monto_presentado, Monto_aprobado, Status, Proyecto')
+        .in('Proyecto', projectIds);
+
+      // Fetch documentos data
+      const { data: documentos } = await supabase
+        .from('Documentos')
+        .select('id, Tipo, Size, Proyecto')
+        .in('Proyecto', projectIds);
+
+      // Fetch fotos data
+      const { data: fotos } = await supabase
+        .from('Fotos')
+        .select('id, Proyecto')
+        .in('Proyecto', projectIds);
+
+      // Fetch presupuesto data
+      const { data: presupuesto } = await supabase
+        .from('Presupuesto')
+        .select('id, Total, "Avance Acumulado", Project_ID')
+        .in('Project_ID', projectIds);
+
+      // Fetch reuniones data
+      const { data: reuniones } = await supabase
+        .from('Reuniones')
+        .select('id');
 
       if (paymentsError) {
         throw paymentsError;
@@ -169,6 +235,44 @@ export const useExecutiveSummary = () => {
         };
       }).filter(project => project.recentPayments.length > 0); // Only include projects with payments
 
+      // Calculate adicionales metrics
+      const totalAdicionales = adicionales?.length || 0;
+      const montoPresentadoAdicionales = adicionales?.reduce((sum, a) => sum + (a.Monto_presentado || 0), 0) || 0;
+      const montoAprobadoAdicionales = adicionales?.reduce((sum, a) => sum + (a.Monto_aprobado || 0), 0) || 0;
+      const adicionalesPendientes = adicionales?.filter(a => a.Status === 'Pendiente').length || 0;
+      const adicionalesAprobados = adicionales?.filter(a => a.Status === 'Aprobado').length || 0;
+      const adicionalesRechazados = adicionales?.filter(a => a.Status === 'Rechazado').length || 0;
+
+      // Calculate documentos metrics
+      const totalDocumentos = documentos?.length || 0;
+      const totalSizeDocumentos = documentos?.reduce((sum, d) => sum + (d.Size || 0), 0) || 0;
+      const documentosPorTipo = Object.entries(
+        documentos?.reduce((acc, d) => {
+          const tipo = d.Tipo || 'Sin tipo';
+          acc[tipo] = (acc[tipo] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>) || {}
+      ).map(([tipo, count]) => ({ tipo, count }));
+
+      // Calculate fotos metrics
+      const totalFotos = fotos?.length || 0;
+      const fotosPorProyecto = Object.entries(
+        fotos?.reduce((acc, f) => {
+          acc[f.Proyecto] = (acc[f.Proyecto] || 0) + 1;
+          return acc;
+        }, {} as Record<number, number>) || {}
+      ).map(([projectId, count]) => ({ projectId: Number(projectId), count }));
+
+      // Calculate presupuesto metrics
+      const totalPresupuestoItems = presupuesto?.length || 0;
+      const avancePromedioPresupuesto = presupuesto?.length 
+        ? presupuesto.reduce((sum, p) => sum + (p['Avance Acumulado'] || 0), 0) / presupuesto.length 
+        : 0;
+      const montoTotalPresupuesto = presupuesto?.reduce((sum, p) => sum + (p.Total || 0), 0) || 0;
+
+      // Calculate reuniones metrics
+      const totalReuniones = reuniones?.length || 0;
+
       setSummaryData({
         totalProjects,
         totalValue,
@@ -178,7 +282,23 @@ export const useExecutiveSummary = () => {
         approvedPaymentsAmount,
         rejectedPayments,
         rejectedPaymentsAmount,
-        projectSummaries
+        projectSummaries,
+        totalAdicionales,
+        montoPresentadoAdicionales,
+        montoAprobadoAdicionales,
+        adicionalesPendientes,
+        adicionalesAprobados,
+        adicionalesRechazados,
+        totalDocumentos,
+        totalSizeDocumentos,
+        documentosPorTipo,
+        totalFotos,
+        fotosPorProyecto,
+        totalPresupuestoItems,
+        avancePromedioPresupuesto,
+        montoTotalPresupuesto,
+        totalReuniones,
+        projects: projects.map(p => ({ id: p.id, name: p.Name || 'Sin nombre' }))
       });
 
     } catch (error: any) {

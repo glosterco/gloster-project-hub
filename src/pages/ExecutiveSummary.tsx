@@ -8,6 +8,7 @@ import PageHeader from '@/components/PageHeader';
 import { useExecutiveSummary } from '@/hooks/useExecutiveSummary';
 import { useExecutiveSummaryCC } from '@/hooks/useExecutiveSummaryCC';
 import { formatCurrency } from '@/utils/currencyUtils';
+import { ProjectFilter } from '@/components/ProjectFilter';
 
 const ExecutiveSummary = () => {
   // Verificar si es acceso CC
@@ -15,6 +16,14 @@ const ExecutiveSummary = () => {
   const isCC = mandanteAccess ? JSON.parse(mandanteAccess).userType === 'cc' : false;
   
   const { summaryData, loading, error } = isCC ? useExecutiveSummaryCC() : useExecutiveSummary();
+  const [selectedProjects, setSelectedProjects] = React.useState<number[]>([]);
+
+  // Initialize selected projects when data loads
+  React.useEffect(() => {
+    if (summaryData?.projects && selectedProjects.length === 0) {
+      setSelectedProjects(summaryData.projects.map(p => p.id));
+    }
+  }, [summaryData]);
 
   if (loading) {
     return (
@@ -100,6 +109,15 @@ const ExecutiveSummary = () => {
             <TabsTrigger value="presupuesto">Presupuesto</TabsTrigger>
             <TabsTrigger value="reuniones">Reuniones</TabsTrigger>
           </TabsList>
+
+          {/* Project Filter */}
+          {summaryData?.projects && (
+            <ProjectFilter
+              projects={summaryData.projects}
+              selectedProjects={selectedProjects}
+              onProjectsChange={setSelectedProjects}
+            />
+          )}
 
           {/* Estados de Pago Tab */}
           <TabsContent value="estados-pago">
@@ -328,7 +346,7 @@ const ExecutiveSummary = () => {
 
           {/* Adicionales Tab */}
           <TabsContent value="adicionales">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -337,7 +355,7 @@ const ExecutiveSummary = () => {
                   <Plus className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">-</div>
+                  <div className="text-2xl font-bold">{summaryData?.totalAdicionales || 0}</div>
                   <p className="text-xs text-muted-foreground">
                     Adicionales registrados en el sistema
                   </p>
@@ -352,7 +370,9 @@ const ExecutiveSummary = () => {
                   <DollarSign className="h-4 w-4 text-blue-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-blue-600">-</div>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {formatCurrency(summaryData?.montoPresentadoAdicionales || 0)}
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     Total en adicionales presentados
                   </p>
@@ -367,15 +387,39 @@ const ExecutiveSummary = () => {
                   <CheckCircle className="h-4 w-4 text-green-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-green-600">-</div>
+                  <div className="text-2xl font-bold text-green-600">
+                    {formatCurrency(summaryData?.montoAprobadoAdicionales || 0)}
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     Total en adicionales aprobados
                   </p>
                 </CardContent>
               </Card>
-            </div>
-            <div className="text-center text-muted-foreground py-8">
-              Métricas de adicionales próximamente
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Por Estado
+                  </CardTitle>
+                  <BarChart3 className="h-4 w-4 text-purple-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">Pendientes:</span>
+                      <span className="font-medium">{summaryData?.adicionalesPendientes || 0}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">Aprobados:</span>
+                      <span className="font-medium text-green-600">{summaryData?.adicionalesAprobados || 0}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">Rechazados:</span>
+                      <span className="font-medium text-red-600">{summaryData?.adicionalesRechazados || 0}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </TabsContent>
 
@@ -390,7 +434,7 @@ const ExecutiveSummary = () => {
                   <FileText className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">-</div>
+                  <div className="text-2xl font-bold">{summaryData?.totalDocumentos || 0}</div>
                   <p className="text-xs text-muted-foreground">
                     Documentos en el sistema
                   </p>
@@ -405,7 +449,9 @@ const ExecutiveSummary = () => {
                   <FolderOpen className="h-4 w-4 text-blue-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-blue-600">-</div>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {((summaryData?.totalSizeDocumentos || 0) / (1024 * 1024)).toFixed(2)} MB
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     Espacio utilizado
                   </p>
@@ -420,21 +466,38 @@ const ExecutiveSummary = () => {
                   <FileText className="h-4 w-4 text-purple-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-purple-600">-</div>
+                  <div className="text-2xl font-bold text-purple-600">
+                    {summaryData?.documentosPorTipo?.length || 0}
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     Formatos diferentes
                   </p>
                 </CardContent>
               </Card>
             </div>
-            <div className="text-center text-muted-foreground py-8">
-              Métricas de documentos próximamente
-            </div>
+
+            {summaryData?.documentosPorTipo && summaryData.documentosPorTipo.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Documentos por Tipo</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={summaryData.documentosPorTipo}>
+                      <XAxis dataKey="tipo" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="count" fill="hsl(var(--primary))" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           {/* Fotos Tab */}
           <TabsContent value="fotos">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -443,9 +506,9 @@ const ExecutiveSummary = () => {
                   <Image className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">-</div>
+                  <div className="text-2xl font-bold">{summaryData?.totalFotos || 0}</div>
                   <p className="text-xs text-muted-foreground">
-                    Fotos registradas
+                    Fotos en el sistema
                   </p>
                 </CardContent>
               </Card>
@@ -453,35 +516,21 @@ const ExecutiveSummary = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Por Proyecto
+                    Promedio por Proyecto
                   </CardTitle>
-                  <FolderOpen className="h-4 w-4 text-blue-500" />
+                  <BarChart3 className="h-4 w-4 text-blue-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-blue-600">-</div>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {summaryData?.fotosPorProyecto && summaryData.fotosPorProyecto.length > 0
+                      ? (summaryData.totalFotos / summaryData.fotosPorProyecto.length).toFixed(1)
+                      : '0'}
+                  </div>
                   <p className="text-xs text-muted-foreground">
-                    Promedio por proyecto
+                    Fotos por proyecto en promedio
                   </p>
                 </CardContent>
               </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Última Carga
-                  </CardTitle>
-                  <Clock className="h-4 w-4 text-purple-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-purple-600">-</div>
-                  <p className="text-xs text-muted-foreground">
-                    Días desde última foto
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-            <div className="text-center text-muted-foreground py-8">
-              Métricas de fotos próximamente
             </div>
           </TabsContent>
 
@@ -491,14 +540,14 @@ const ExecutiveSummary = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Avance Global
+                    Items Totales
                   </CardTitle>
-                  <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                  <FileText className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">-</div>
+                  <div className="text-2xl font-bold">{summaryData?.totalPresupuestoItems || 0}</div>
                   <p className="text-xs text-muted-foreground">
-                    Porcentaje de avance total
+                    Partidas en presupuestos
                   </p>
                 </CardContent>
               </Card>
@@ -506,14 +555,16 @@ const ExecutiveSummary = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Items Completados
+                    Avance Promedio
                   </CardTitle>
-                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <BarChart3 className="h-4 w-4 text-blue-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-green-600">-</div>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {(summaryData?.avancePromedioPresupuesto || 0).toFixed(1)}%
+                  </div>
                   <p className="text-xs text-muted-foreground">
-                    Items al 100%
+                    Avance acumulado promedio
                   </p>
                 </CardContent>
               </Card>
@@ -521,26 +572,25 @@ const ExecutiveSummary = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Items Pendientes
+                    Monto Total
                   </CardTitle>
-                  <AlertCircle className="h-4 w-4 text-yellow-500" />
+                  <DollarSign className="h-4 w-4 text-green-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-yellow-600">-</div>
+                  <div className="text-2xl font-bold text-green-600">
+                    {formatCurrency(summaryData?.montoTotalPresupuesto || 0)}
+                  </div>
                   <p className="text-xs text-muted-foreground">
-                    Items sin completar
+                    Total en presupuestos
                   </p>
                 </CardContent>
               </Card>
-            </div>
-            <div className="text-center text-muted-foreground py-8">
-              Métricas de presupuesto próximamente
             </div>
           </TabsContent>
 
           {/* Reuniones Tab */}
           <TabsContent value="reuniones">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -549,9 +599,9 @@ const ExecutiveSummary = () => {
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">-</div>
+                  <div className="text-2xl font-bold">{summaryData?.totalReuniones || 0}</div>
                   <p className="text-xs text-muted-foreground">
-                    Reuniones registradas
+                    Reuniones registradas en el sistema
                   </p>
                 </CardContent>
               </Card>
@@ -559,35 +609,21 @@ const ExecutiveSummary = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Este Mes
+                    Promedio por Proyecto
                   </CardTitle>
-                  <Clock className="h-4 w-4 text-blue-500" />
+                  <BarChart3 className="h-4 w-4 text-blue-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-blue-600">-</div>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {summaryData?.totalProjects && summaryData.totalProjects > 0
+                      ? ((summaryData.totalReuniones || 0) / summaryData.totalProjects).toFixed(1)
+                      : '0'}
+                  </div>
                   <p className="text-xs text-muted-foreground">
-                    Reuniones del mes actual
+                    Reuniones por proyecto
                   </p>
                 </CardContent>
               </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Próxima Reunión
-                  </CardTitle>
-                  <AlertCircle className="h-4 w-4 text-purple-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-purple-600">-</div>
-                  <p className="text-xs text-muted-foreground">
-                    Días hasta próxima reunión
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-            <div className="text-center text-muted-foreground py-8">
-              Métricas de reuniones próximamente
             </div>
           </TabsContent>
         </Tabs>

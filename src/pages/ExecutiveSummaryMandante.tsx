@@ -2,7 +2,8 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { TrendingUp, AlertCircle, CheckCircle, Clock, XCircle, ArrowLeft, LogOut, User, ChevronDown, DollarSign, BarChart3 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { TrendingUp, AlertCircle, CheckCircle, Clock, XCircle, ArrowLeft, LogOut, User, ChevronDown, DollarSign, BarChart3, FileText, Image, Calendar, FolderOpen, Plus } from 'lucide-react';
 import { BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useExecutiveSummaryMandante } from '@/hooks/useExecutiveSummaryMandante';
@@ -188,6 +189,19 @@ const ExecutiveSummaryMandante = () => {
           </p>
         </div>
 
+        {/* Tabs */}
+        <Tabs defaultValue="estados-pago" className="w-full">
+          <TabsList className="grid w-full grid-cols-6 mb-8">
+            <TabsTrigger value="estados-pago">Estados de pago</TabsTrigger>
+            <TabsTrigger value="adicionales">Adicionales</TabsTrigger>
+            <TabsTrigger value="documentos">Documentos</TabsTrigger>
+            <TabsTrigger value="fotos">Fotos</TabsTrigger>
+            <TabsTrigger value="presupuesto">Presupuesto</TabsTrigger>
+            <TabsTrigger value="reuniones">Reuniones</TabsTrigger>
+          </TabsList>
+
+          {/* Estados de Pago Tab */}
+          <TabsContent value="estados-pago">
         {/* Metrics Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card>
@@ -409,6 +423,273 @@ const ExecutiveSummaryMandante = () => {
             </div>
           )}
         </div>
+          </TabsContent>
+
+          {/* Adicionales Tab */}
+          <TabsContent value="adicionales">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Total Adicionales
+                  </CardTitle>
+                  <Plus className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">-</div>
+                  <p className="text-xs text-muted-foreground">
+                    Adicionales registrados en el sistema
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Monto Presentado
+                  </CardTitle>
+                  <DollarSign className="h-4 w-4 text-blue-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-blue-600">-</div>
+                  <p className="text-xs text-muted-foreground">
+                    Total en adicionales presentados
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Monto Aprobado
+                  </CardTitle>
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-green-600">-</div>
+                  <p className="text-xs text-muted-foreground">
+                    Total en adicionales aprobados
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+            <div className="text-center text-muted-foreground py-8">
+              Métricas de adicionales próximamente
+            </div>
+          </TabsContent>
+
+          {/* Documentos Tab */}
+          <TabsContent value="documentos">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Total Documentos
+                  </CardTitle>
+                  <FileText className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">-</div>
+                  <p className="text-xs text-muted-foreground">
+                    Documentos en el sistema
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Tamaño Total
+                  </CardTitle>
+                  <FolderOpen className="h-4 w-4 text-blue-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-blue-600">-</div>
+                  <p className="text-xs text-muted-foreground">
+                    Espacio utilizado
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Tipos de Archivo
+                  </CardTitle>
+                  <FileText className="h-4 w-4 text-purple-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-purple-600">-</div>
+                  <p className="text-xs text-muted-foreground">
+                    Formatos diferentes
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+            <div className="text-center text-muted-foreground py-8">
+              Métricas de documentos próximamente
+            </div>
+          </TabsContent>
+
+          {/* Fotos Tab */}
+          <TabsContent value="fotos">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Total Fotos
+                  </CardTitle>
+                  <Image className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">-</div>
+                  <p className="text-xs text-muted-foreground">
+                    Fotos registradas
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Por Proyecto
+                  </CardTitle>
+                  <FolderOpen className="h-4 w-4 text-blue-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-blue-600">-</div>
+                  <p className="text-xs text-muted-foreground">
+                    Promedio por proyecto
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Última Carga
+                  </CardTitle>
+                  <Clock className="h-4 w-4 text-purple-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-purple-600">-</div>
+                  <p className="text-xs text-muted-foreground">
+                    Días desde última foto
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+            <div className="text-center text-muted-foreground py-8">
+              Métricas de fotos próximamente
+            </div>
+          </TabsContent>
+
+          {/* Presupuesto Tab */}
+          <TabsContent value="presupuesto">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Avance Global
+                  </CardTitle>
+                  <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">-</div>
+                  <p className="text-xs text-muted-foreground">
+                    Porcentaje de avance total
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Items Completados
+                  </CardTitle>
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-green-600">-</div>
+                  <p className="text-xs text-muted-foreground">
+                    Items al 100%
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Items Pendientes
+                  </CardTitle>
+                  <AlertCircle className="h-4 w-4 text-yellow-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-yellow-600">-</div>
+                  <p className="text-xs text-muted-foreground">
+                    Items sin completar
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+            <div className="text-center text-muted-foreground py-8">
+              Métricas de presupuesto próximamente
+            </div>
+          </TabsContent>
+
+          {/* Reuniones Tab */}
+          <TabsContent value="reuniones">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Total Reuniones
+                  </CardTitle>
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">-</div>
+                  <p className="text-xs text-muted-foreground">
+                    Reuniones registradas
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Este Mes
+                  </CardTitle>
+                  <Clock className="h-4 w-4 text-blue-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-blue-600">-</div>
+                  <p className="text-xs text-muted-foreground">
+                    Reuniones del mes actual
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Próxima Reunión
+                  </CardTitle>
+                  <AlertCircle className="h-4 w-4 text-purple-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-purple-600">-</div>
+                  <p className="text-xs text-muted-foreground">
+                    Días hasta próxima reunión
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+            <div className="text-center text-muted-foreground py-8">
+              Métricas de reuniones próximamente
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

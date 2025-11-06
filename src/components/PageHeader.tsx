@@ -99,7 +99,7 @@ const PageHeader = () => {
                 className="font-rubik text-xs"
               >
                 <BarChart3 className="h-3 w-3 mr-1" />
-                Resumen
+                Métricas
               </Button>
               <Button 
                 variant={location.pathname === '/licitaciones' ? 'default' : 'ghost'} 

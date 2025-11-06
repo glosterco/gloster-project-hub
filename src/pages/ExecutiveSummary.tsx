@@ -111,13 +111,11 @@ const ExecutiveSummary = () => {
           </TabsList>
 
           {/* Project Filter */}
-          {summaryData?.projects && (
-            <ProjectFilter
-              projects={summaryData.projects}
-              selectedProjects={selectedProjects}
-              onProjectsChange={setSelectedProjects}
-            />
-          )}
+          <ProjectFilter
+            projects={summaryData?.projects || []}
+            selectedProjects={selectedProjects}
+            onProjectsChange={setSelectedProjects}
+          />
 
           {/* Estados de Pago Tab */}
           <TabsContent value="estados-pago">

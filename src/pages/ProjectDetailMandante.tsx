@@ -27,6 +27,7 @@ import { PresupuestoCards } from '@/components/PresupuestoCards';
 import { ReunionesCards } from '@/components/ReunionesCards';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProjectDocumentUpload } from '@/components/ProjectDocumentUpload';
+import { ProjectPhotoUpload } from '@/components/ProjectPhotoUpload';
 
 const ProjectDetailMandante = () => {
   const { id } = useParams();
@@ -40,9 +41,10 @@ const ProjectDetailMandante = () => {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showAdicionalesForm, setShowAdicionalesForm] = useState(false);
   const [showDocumentUpload, setShowDocumentUpload] = useState(false);
+  const [showPhotoUpload, setShowPhotoUpload] = useState(false);
   const { adicionales, loading: adicionalesLoading, refetch: refetchAdicionales } = useAdicionales(id || '');
   const { documentos, loading: documentosLoading, refetch: refetchDocumentos } = useDocumentos(id || '');
-  const { fotos, loading: fotosLoading } = useFotos(id || '');
+  const { fotos, loading: fotosLoading, refetch: refetchFotos } = useFotos(id || '');
   const { presupuesto, loading: presupuestoLoading, refetch: refetchPresupuesto } = usePresupuesto(id || '');
   const { reuniones, loading: reunionesLoading } = useReuniones(id || '');
   
@@ -628,7 +630,7 @@ const ProjectDetailMandante = () => {
                     </CardDescription>
                   </CardHeader>
                 </Card>
-                {renderControls(fotosSearch, setFotosSearch, 'Cargar Foto', () => toast({ title: "Función en desarrollo" }))}
+                {renderControls(fotosSearch, setFotosSearch, 'Cargar Foto', () => setShowPhotoUpload(true))}
                 <FotosCards 
                   fotos={fotos}
                   loading={fotosLoading}
@@ -723,6 +725,16 @@ const ProjectDetailMandante = () => {
         onSuccess={() => {
           refetchAdicionales();
           setShowAdicionalesForm(false);
+        }}
+      />
+
+      <ProjectPhotoUpload
+        projectId={parseInt(id || '0')}
+        open={showPhotoUpload}
+        onOpenChange={setShowPhotoUpload}
+        onUploadComplete={() => {
+          refetchFotos();
+          setShowPhotoUpload(false);
         }}
       />
     </div>

@@ -6,6 +6,10 @@ export interface Foto {
   id: number;
   Proyecto: number;
   created_at: string;
+  DriveId?: string;
+  WebViewLink?: string;
+  Nombre?: string;
+  MimeType?: string;
 }
 
 export const useFotos = (projectId: string) => {

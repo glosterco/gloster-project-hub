@@ -1,8 +1,10 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Image } from 'lucide-react';
+import { Camera, ExternalLink } from 'lucide-react';
 import { Foto } from '@/hooks/useFotos';
+import { Dialog, DialogContent } from './ui/dialog';
+import { Button } from './ui/button';
 
 interface FotosCardsProps {
   fotos: Foto[];
@@ -15,70 +17,114 @@ export const FotosCards: React.FC<FotosCardsProps> = ({
   loading,
   onCardClick
 }) => {
+  const [selectedPhoto, setSelectedPhoto] = useState<Foto | null>(null);
+
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h3 className="text-2xl font-bold text-slate-800 mb-6 font-rubik">Fotos del Proyecto</h3>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3].map((i) => (
-            <Card key={i} className="p-6">
-              <Skeleton className="h-4 w-20 mb-4" />
-              <Skeleton className="h-6 w-32 mb-2" />
-            </Card>
-          ))}
-        </div>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {[...Array(8)].map((_, i) => (
+          <Skeleton key={i} className="aspect-square rounded-lg" />
+        ))}
       </div>
     );
   }
 
-  return (
-    <div className="space-y-6">
+  if (fotos.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <Camera className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
+        <p className="text-lg text-muted-foreground">No hay fotos registradas</p>
+      </div>
+    );
+  }
 
-      {fotos.length === 0 ? (
-        <Card className="p-8 text-center border-dashed border-2 border-muted">
-          <CardContent className="pt-6">
-            <div className="flex flex-col items-center space-y-4">
-              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
-                <Image className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <div className="space-y-2">
-                <h3 className="font-semibold text-slate-800 font-rubik">No hay fotos registradas</h3>
-                <p className="text-muted-foreground text-sm font-rubik">
-                  Las fotos aparecerán aquí cuando sean subidas
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {fotos.map((foto) => (
+  const getPhotoUrl = (foto: Foto) => {
+    if (!foto.DriveId) return null;
+    return `https://drive.google.com/thumbnail?id=${foto.DriveId}&sz=w800`;
+  };
+
+  const handleCardClick = (foto: Foto) => {
+    setSelectedPhoto(foto);
+    if (onCardClick) onCardClick(foto);
+  };
+
+  return (
+    <>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {fotos.map((foto) => {
+          const photoUrl = getPhotoUrl(foto);
+          return (
             <Card 
               key={foto.id} 
-              className="hover:shadow-xl transition-all duration-300 border-muted hover:border-primary/50 group cursor-pointer"
-              onClick={() => onCardClick?.(foto)}
+              className="overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary transition-all"
+              onClick={() => handleCardClick(foto)}
             >
-              <CardHeader className="pb-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
-                    <Image className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg font-rubik text-slate-800">
-                      Foto #{foto.id}
-                    </CardTitle>
-                    <p className="text-sm text-muted-foreground font-rubik">
-                      {new Date(foto.created_at).toLocaleDateString('es-CL')}
-                    </p>
-                  </div>
+              <CardContent className="p-0">
+                <div className="aspect-square bg-muted flex items-center justify-center">
+                  {photoUrl ? (
+                    <img
+                      src={photoUrl}
+                      alt={foto.Nombre || 'Foto del proyecto'}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        target.parentElement!.innerHTML = '<div class="flex items-center justify-center w-full h-full"><svg class="h-12 w-12 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></div>';
+                      }}
+                    />
+                  ) : (
+                    <Camera className="h-12 w-12 text-muted-foreground" />
+                  )}
                 </div>
-              </CardHeader>
+              </CardContent>
             </Card>
-          ))}
-        </div>
-      )}
-    </div>
+          );
+        })}
+      </div>
+
+      <Dialog open={!!selectedPhoto} onOpenChange={() => setSelectedPhoto(null)}>
+        <DialogContent className="max-w-4xl">
+          {selectedPhoto && (
+            <div className="space-y-4">
+              <div className="relative aspect-video bg-muted rounded-lg overflow-hidden">
+                {getPhotoUrl(selectedPhoto) ? (
+                  <img
+                    src={getPhotoUrl(selectedPhoto)!}
+                    alt={selectedPhoto.Nombre || 'Foto del proyecto'}
+                    className="w-full h-full object-contain"
+                  />
+                ) : (
+                  <div className="flex items-center justify-center w-full h-full">
+                    <Camera className="h-24 w-24 text-muted-foreground" />
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">{selectedPhoto.Nombre || 'Sin nombre'}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {new Date(selectedPhoto.created_at).toLocaleDateString('es-ES', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </p>
+                </div>
+                {selectedPhoto.WebViewLink && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open(selectedPhoto.WebViewLink, '_blank')}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Ver en Drive
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };

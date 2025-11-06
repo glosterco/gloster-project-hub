@@ -494,7 +494,15 @@ export type Database = {
           precio_unitario?: number | null
           unidad?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "LicitacionItems_licitacion_id_fkey"
+            columns: ["licitacion_id"]
+            isOneToOne: false
+            referencedRelation: "Licitaciones"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       LicitacionOferentes: {
         Row: {

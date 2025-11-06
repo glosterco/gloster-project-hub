@@ -23,11 +23,12 @@ import { usePresupuesto } from '@/hooks/usePresupuesto';
 import { useReuniones } from '@/hooks/useReuniones';
 import { DocumentosTableWithSidebar } from '@/components/DocumentosTableWithSidebar';
 import { FotosCards } from '@/components/FotosCards';
-import { PresupuestoCards } from '@/components/PresupuestoCards';
 import { ReunionesCards } from '@/components/ReunionesCards';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProjectDocumentUpload } from '@/components/ProjectDocumentUpload';
 import { ProjectPhotoUpload } from '@/components/ProjectPhotoUpload';
+import { PresupuestoTable } from '@/components/PresupuestoTable';
+import html2pdf from 'html2pdf.js';
 
 const ProjectDetailMandante = () => {
   const { id } = useParams();
@@ -648,12 +649,109 @@ const ProjectDetailMandante = () => {
                     </CardDescription>
                   </CardHeader>
                 </Card>
-                {renderControls(presupuestoSearch, setPresupuestoSearch, 'Actualizar Presupuesto', () => toast({ title: "Información", description: "Edita los valores en la tabla" }))}
-                <PresupuestoCards 
+                {renderControls(presupuestoSearch, setPresupuestoSearch, 'Exportar Avance', async () => {
+                  try {
+                    const element = document.createElement('div');
+                    element.style.padding = '40px';
+                    element.style.fontFamily = 'Rubik, sans-serif';
+                    
+                    // Calcular avances
+                    const previousMonth = presupuesto.reduce((acc, item) => {
+                      const previousAccumulated = (item['Avance Acumulado'] || 0) - (item['Avance Parcial'] || 0);
+                      return acc + (previousAccumulated / 100 * (item.Total || 0));
+                    }, 0);
+                    
+                    const currentMonth = presupuesto.reduce((acc, item) => {
+                      return acc + ((item['Avance Parcial'] || 0) / 100 * (item.Total || 0));
+                    }, 0);
+                    
+                    const totalAccumulated = presupuesto.reduce((acc, item) => {
+                      return acc + ((item['Avance Acumulado'] || 0) / 100 * (item.Total || 0));
+                    }, 0);
+
+                    element.innerHTML = `
+                      <h1 style="color: #1e293b; margin-bottom: 20px; font-size: 24px; font-weight: bold;">Avance de Presupuesto</h1>
+                      <h2 style="color: #64748b; margin-bottom: 30px; font-size: 18px;">${project?.Name || 'Proyecto'}</h2>
+                      
+                      <div style="margin-bottom: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px;">
+                        <h3 style="color: #1e293b; margin-bottom: 15px; font-size: 16px; font-weight: bold;">Resumen de Avances</h3>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+                          <div>
+                            <p style="color: #64748b; font-size: 12px; margin-bottom: 5px;">Acumulado Anterior</p>
+                            <p style="color: #1e293b; font-size: 18px; font-weight: bold;">${formatCurrency(previousMonth, project?.Currency)}</p>
+                          </div>
+                          <div>
+                            <p style="color: #64748b; font-size: 12px; margin-bottom: 5px;">Avance Último Mes</p>
+                            <p style="color: #16a34a; font-size: 18px; font-weight: bold;">${formatCurrency(currentMonth, project?.Currency)}</p>
+                          </div>
+                          <div>
+                            <p style="color: #64748b; font-size: 12px; margin-bottom: 5px;">Total Acumulado</p>
+                            <p style="color: #1e293b; font-size: 18px; font-weight: bold;">${formatCurrency(totalAccumulated, project?.Currency)}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+                        <thead>
+                          <tr style="background-color: #f1f5f9; border-bottom: 2px solid #e2e8f0;">
+                            <th style="padding: 12px; text-align: left; font-size: 12px; color: #64748b; font-weight: 600;">Ítem</th>
+                            <th style="padding: 12px; text-align: right; font-size: 12px; color: #64748b; font-weight: 600;">Total</th>
+                            <th style="padding: 12px; text-align: right; font-size: 12px; color: #64748b; font-weight: 600;">Avance Parcial</th>
+                            <th style="padding: 12px; text-align: right; font-size: 12px; color: #64748b; font-weight: 600;">Avance Acumulado</th>
+                            <th style="padding: 12px; text-align: left; font-size: 12px; color: #64748b; font-weight: 600;">Última Actualización</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          ${presupuesto.map((item, index) => `
+                            <tr style="border-bottom: 1px solid #e2e8f0; ${index % 2 === 0 ? 'background-color: #ffffff;' : 'background-color: #f8fafc;'}">
+                              <td style="padding: 12px; font-size: 13px; color: #1e293b;">${item.Item || '-'}</td>
+                              <td style="padding: 12px; text-align: right; font-size: 13px; color: #1e293b; font-weight: 500;">${item.Total ? formatCurrency(item.Total, project?.Currency) : '-'}</td>
+                              <td style="padding: 12px; text-align: right; font-size: 13px; color: #16a34a; font-weight: 500;">${item['Avance Parcial'] !== null ? item['Avance Parcial'] + '%' : '-'}</td>
+                              <td style="padding: 12px; text-align: right; font-size: 13px; color: #1e293b; font-weight: 600;">${item['Avance Acumulado'] !== null ? item['Avance Acumulado'] + '%' : '-'}</td>
+                              <td style="padding: 12px; font-size: 13px; color: #64748b;">${item['Ult. Actualizacion'] ? new Date(item['Ult. Actualizacion']).toLocaleDateString('es-CL') : '-'}</td>
+                            </tr>
+                          `).join('')}
+                        </tbody>
+                      </table>
+                    `;
+
+                    const opt = {
+                      margin: 10,
+                      filename: `avance-presupuesto-${project?.Name || 'proyecto'}.pdf`,
+                      image: { type: 'jpeg', quality: 0.98 },
+                      html2canvas: { scale: 2 },
+                      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+                    };
+
+                    await html2pdf().set(opt).from(element).save();
+                    
+                    toast({
+                      title: "PDF generado",
+                      description: "El avance del presupuesto se ha exportado correctamente"
+                    });
+                  } catch (error) {
+                    console.error('Error generando PDF:', error);
+                    toast({
+                      title: "Error",
+                      description: "No se pudo generar el PDF",
+                      variant: "destructive"
+                    });
+                  }
+                })}
+                <PresupuestoTable 
                   presupuesto={presupuesto}
                   loading={presupuestoLoading}
                   currency={project?.Currency}
+                  onUpdate={refetchPresupuesto}
                 />
+                <div className="flex justify-center mt-6">
+                  <Button 
+                    onClick={() => toast({ title: "Información", description: "Edita los valores de avance en la tabla" })}
+                    className="font-rubik"
+                  >
+                    Actualizar Avance
+                  </Button>
+                </div>
               </TabsContent>
             )}
 

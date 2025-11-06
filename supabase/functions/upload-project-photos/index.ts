@@ -74,7 +74,29 @@ async function uploadFileToDrive(
     throw new Error(`Failed to upload file: ${errorText}`);
   }
 
-  return await uploadResponse.json();
+  const uploadedFile = await uploadResponse.json();
+
+  // Make the file publicly accessible
+  const permissionResponse = await fetch(
+    `https://www.googleapis.com/drive/v3/files/${uploadedFile.id}/permissions`,
+    {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        role: 'reader',
+        type: 'anyone'
+      }),
+    }
+  );
+
+  if (!permissionResponse.ok) {
+    console.warn('Failed to set public permissions, file may not be viewable');
+  }
+
+  return uploadedFile;
 }
 
 Deno.serve(async (req) => {

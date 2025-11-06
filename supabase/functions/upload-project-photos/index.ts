@@ -5,15 +5,30 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-async function getAccessToken() {
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const supabase = createClient(supabaseUrl, supabaseKey);
-
-  const { data, error } = await supabase.functions.invoke('google-drive-token-manager');
+async function getAccessToken(): Promise<string> {
+  console.log('🔑 Getting Google Drive access token via token manager...');
   
-  if (error) throw error;
-  return data.accessToken;
+  const tokenManagerResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/google-drive-token-manager`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`,
+    },
+    body: JSON.stringify({ action: 'validate' }),
+  });
+
+  if (!tokenManagerResponse.ok) {
+    throw new Error(`Token manager responded with status: ${tokenManagerResponse.status}`);
+  }
+
+  const tokenResult = await tokenManagerResponse.json();
+  console.log('🔑 Token manager response:', { valid: tokenResult.valid });
+
+  if (!tokenResult.valid || !tokenResult.access_token) {
+    throw new Error('Failed to get valid Google Drive access token');
+  }
+
+  return tokenResult.access_token;
 }
 
 async function uploadFileToDrive(

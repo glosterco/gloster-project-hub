@@ -651,10 +651,6 @@ const ProjectDetailMandante = () => {
                 </Card>
                 {renderControls(presupuestoSearch, setPresupuestoSearch, 'Exportar Avance', async () => {
                   try {
-                    const element = document.createElement('div');
-                    element.style.padding = '40px';
-                    element.style.fontFamily = 'Rubik, sans-serif';
-                    
                     // Calcular avances
                     const previousMonth = presupuesto.reduce((acc, item) => {
                       const previousAccumulated = (item['Avance Acumulado'] || 0) - (item['Avance Parcial'] || 0);
@@ -668,8 +664,19 @@ const ProjectDetailMandante = () => {
                     const totalAccumulated = presupuesto.reduce((acc, item) => {
                       return acc + ((item['Avance Acumulado'] || 0) / 100 * (item.Total || 0));
                     }, 0);
+                    
+                    // Calcular totales del presupuesto
+                    const subtotalNeto = presupuesto.reduce((sum, item) => sum + (item.Total || 0), 0);
+                    const iva = subtotalNeto * 0.19;
+                    const totalConIva = subtotalNeto + iva;
 
-                    element.innerHTML = `
+                    // Primera página - Resumen
+                    const page1 = document.createElement('div');
+                    page1.style.padding = '40px';
+                    page1.style.fontFamily = 'Rubik, sans-serif';
+                    page1.style.pageBreakAfter = 'always';
+                    
+                    page1.innerHTML = `
                       <h1 style="color: #1e293b; margin-bottom: 20px; font-size: 24px; font-weight: bold;">Avance de Presupuesto</h1>
                       <h2 style="color: #64748b; margin-bottom: 30px; font-size: 18px;">${project?.Name || 'Proyecto'}</h2>
                       
@@ -715,6 +722,68 @@ const ProjectDetailMandante = () => {
                       </table>
                     `;
 
+                    // Segunda página - Detalle completo
+                    const page2 = document.createElement('div');
+                    page2.style.padding = '40px';
+                    page2.style.fontFamily = 'Rubik, sans-serif';
+                    
+                    page2.innerHTML = `
+                      <h1 style="color: #1e293b; margin-bottom: 20px; font-size: 22px; font-weight: bold;">Detalle Completo del Presupuesto</h1>
+                      <h2 style="color: #64748b; margin-bottom: 30px; font-size: 16px;">${project?.Name || 'Proyecto'}</h2>
+
+                      <table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 10px;">
+                        <thead>
+                          <tr style="background-color: #f1f5f9; border-bottom: 2px solid #e2e8f0;">
+                            <th style="padding: 8px; text-align: left; font-size: 10px; color: #64748b; font-weight: 600;">Ítem</th>
+                            <th style="padding: 8px; text-align: center; font-size: 10px; color: #64748b; font-weight: 600;">Unidad</th>
+                            <th style="padding: 8px; text-align: right; font-size: 10px; color: #64748b; font-weight: 600;">Cantidad</th>
+                            <th style="padding: 8px; text-align: right; font-size: 10px; color: #64748b; font-weight: 600;">P.U.</th>
+                            <th style="padding: 8px; text-align: right; font-size: 10px; color: #64748b; font-weight: 600;">Total</th>
+                            <th style="padding: 8px; text-align: right; font-size: 10px; color: #64748b; font-weight: 600;">Avance Parcial</th>
+                            <th style="padding: 8px; text-align: right; font-size: 10px; color: #64748b; font-weight: 600;">Avance Acum.</th>
+                            <th style="padding: 8px; text-align: center; font-size: 10px; color: #64748b; font-weight: 600;">Última Act.</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          ${presupuesto.map((item, index) => `
+                            <tr style="border-bottom: 1px solid #e2e8f0; ${index % 2 === 0 ? 'background-color: #ffffff;' : 'background-color: #f8fafc;'}">
+                              <td style="padding: 8px; font-size: 10px; color: #1e293b;">${item.Item || '-'}</td>
+                              <td style="padding: 8px; text-align: center; font-size: 10px; color: #64748b;">${item.Unidad || '-'}</td>
+                              <td style="padding: 8px; text-align: right; font-size: 10px; color: #1e293b;">${item.Cantidad ? new Intl.NumberFormat('es-CL').format(item.Cantidad) : '-'}</td>
+                              <td style="padding: 8px; text-align: right; font-size: 10px; color: #1e293b;">${item.PU ? formatCurrency(item.PU, project?.Currency) : '-'}</td>
+                              <td style="padding: 8px; text-align: right; font-size: 10px; color: #1e293b; font-weight: 600;">${item.Total ? formatCurrency(item.Total, project?.Currency) : '-'}</td>
+                              <td style="padding: 8px; text-align: right; font-size: 10px; color: #16a34a; font-weight: 500;">${item['Avance Parcial'] !== null ? item['Avance Parcial'] + '%' : '-'}</td>
+                              <td style="padding: 8px; text-align: right; font-size: 10px; color: #1e293b; font-weight: 600;">${item['Avance Acumulado'] !== null ? item['Avance Acumulado'] + '%' : '-'}</td>
+                              <td style="padding: 8px; text-align: center; font-size: 9px; color: #64748b;">${item['Ult. Actualizacion'] ? new Date(item['Ult. Actualizacion']).toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '-'}</td>
+                            </tr>
+                          `).join('')}
+                          
+                          <tr style="background-color: #f1f5f9; border-top: 2px solid #e2e8f0; font-weight: 600;">
+                            <td colspan="4" style="padding: 8px; text-align: right; font-size: 10px; color: #1e293b;">Subtotal Neto:</td>
+                            <td style="padding: 8px; text-align: right; font-size: 10px; color: #1e293b; font-weight: bold;">${formatCurrency(subtotalNeto, project?.Currency)}</td>
+                            <td colspan="3"></td>
+                          </tr>
+                          
+                          <tr style="background-color: #f1f5f9; font-weight: 600;">
+                            <td colspan="4" style="padding: 8px; text-align: right; font-size: 10px; color: #1e293b;">IVA (19%):</td>
+                            <td style="padding: 8px; text-align: right; font-size: 10px; color: #1e293b; font-weight: bold;">${formatCurrency(iva, project?.Currency)}</td>
+                            <td colspan="3"></td>
+                          </tr>
+                          
+                          <tr style="background-color: #e2e8f0; border-top: 2px solid #cbd5e1; font-weight: bold;">
+                            <td colspan="4" style="padding: 8px; text-align: right; font-size: 11px; color: #1e293b;">Total con IVA:</td>
+                            <td style="padding: 8px; text-align: right; font-size: 11px; color: #1e293b; font-weight: bold;">${formatCurrency(totalConIva, project?.Currency)}</td>
+                            <td colspan="3"></td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    `;
+
+                    // Contenedor con ambas páginas
+                    const container = document.createElement('div');
+                    container.appendChild(page1);
+                    container.appendChild(page2);
+
                     const opt = {
                       margin: 10,
                       filename: `avance-presupuesto-${project?.Name || 'proyecto'}.pdf`,
@@ -723,7 +792,7 @@ const ProjectDetailMandante = () => {
                       jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
                     };
 
-                    await html2pdf().set(opt).from(element).save();
+                    await html2pdf().set(opt).from(container).save();
                     
                     toast({
                       title: "PDF generado",

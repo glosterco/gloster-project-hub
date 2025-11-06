@@ -66,6 +66,18 @@ export const FotosGrid: React.FC<FotosGridProps> = ({ fotos, loading }) => {
                     <Camera className="h-12 w-12 text-muted-foreground" />
                   )}
                 </div>
+                <div className="p-3 space-y-1">
+                  <p className="text-sm font-medium truncate" title={foto.Nombre || 'Sin nombre'}>
+                    {foto.Nombre || 'Sin nombre'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(foto.created_at).toLocaleDateString('es-ES', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric'
+                    })}
+                  </p>
+                </div>
               </CardContent>
             </Card>
           );

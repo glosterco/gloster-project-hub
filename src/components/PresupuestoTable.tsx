@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
@@ -15,7 +15,7 @@ interface PresupuestoTableProps {
   onUpdate?: () => void;
 }
 
-export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({ 
+export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
   presupuesto, 
   loading, 
   currency = 'CLP',

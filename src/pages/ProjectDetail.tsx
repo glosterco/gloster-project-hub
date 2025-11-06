@@ -27,6 +27,7 @@ import { DocumentosTable } from '@/components/DocumentosTable';
 import { FotosGrid } from '@/components/FotosGrid';
 import { PresupuestoTable } from '@/components/PresupuestoTable';
 import { ReunionesTable } from '@/components/ReunionesTable';
+import { ProjectPhotoUpload } from '@/components/ProjectPhotoUpload';
 
 const ProjectDetail = () => {
   console.log('🎨 ProjectDetail component rendering with SECURE MODE...');
@@ -39,6 +40,7 @@ const ProjectDetail = () => {
   const [filterBy, setFilterBy] = useState('all');
   const [activeTab, setActiveTab] = useState('estados-pago');
   const [showAdicionalesForm, setShowAdicionalesForm] = useState(false);
+  const [showPhotoUpload, setShowPhotoUpload] = useState(false);
   const [selectedAdicional, setSelectedAdicional] = useState<any>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const { adicionales, loading: adicionalesLoading, refetch: refetchAdicionales } = useAdicionales(id || '');
@@ -744,7 +746,7 @@ const ProjectDetail = () => {
                       fotosSearch, 
                       setFotosSearch, 
                       'Cargar Nueva Foto', 
-                      () => toast({ title: "Función en desarrollo", description: "Próximamente podrás cargar fotos" })
+                      () => setShowPhotoUpload(true)
                     )}
                     <Card>
                       <CardContent className="pt-6">
@@ -856,6 +858,16 @@ const ProjectDetail = () => {
         onOpenChange={setShowDetailModal}
         adicional={selectedAdicional}
         currency={project?.Currency}
+      />
+
+      <ProjectPhotoUpload
+        projectId={parseInt(id || '0')}
+        open={showPhotoUpload}
+        onOpenChange={setShowPhotoUpload}
+        onUploadComplete={() => {
+          refetchFotos();
+          setShowPhotoUpload(false);
+        }}
       />
     </div>
   );

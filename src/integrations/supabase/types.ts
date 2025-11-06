@@ -122,6 +122,7 @@ export type Database = {
           Experience: string | null
           Fotos: boolean | null
           id: number
+          Licitaciones: boolean | null
           Presupuesto: boolean | null
           Reuniones: boolean | null
           RUT: string | null
@@ -141,6 +142,7 @@ export type Database = {
           Experience?: string | null
           Fotos?: boolean | null
           id?: number
+          Licitaciones?: boolean | null
           Presupuesto?: boolean | null
           Reuniones?: boolean | null
           RUT?: string | null
@@ -160,6 +162,7 @@ export type Database = {
           Experience?: string | null
           Fotos?: boolean | null
           id?: number
+          Licitaciones?: boolean | null
           Presupuesto?: boolean | null
           Reuniones?: boolean | null
           RUT?: string | null
@@ -296,18 +299,30 @@ export type Database = {
       Fotos: {
         Row: {
           created_at: string
+          DriveId: string | null
           id: number
+          MimeType: string | null
+          Nombre: string | null
           Proyecto: number | null
+          WebViewLink: string | null
         }
         Insert: {
           created_at?: string
+          DriveId?: string | null
           id?: number
+          MimeType?: string | null
+          Nombre?: string | null
           Proyecto?: number | null
+          WebViewLink?: string | null
         }
         Update: {
           created_at?: string
+          DriveId?: string | null
           id?: number
+          MimeType?: string | null
+          Nombre?: string | null
           Proyecto?: number | null
+          WebViewLink?: string | null
         }
         Relationships: [
           {
@@ -599,6 +614,7 @@ export type Database = {
           Documentos: boolean | null
           Fotos: boolean | null
           id: number
+          Licitaciones: boolean | null
           Presupuesto: boolean | null
           Reuniones: boolean | null
           Status: boolean | null
@@ -614,6 +630,7 @@ export type Database = {
           Documentos?: boolean | null
           Fotos?: boolean | null
           id?: number
+          Licitaciones?: boolean | null
           Presupuesto?: boolean | null
           Reuniones?: boolean | null
           Status?: boolean | null
@@ -629,6 +646,7 @@ export type Database = {
           Documentos?: boolean | null
           Fotos?: boolean | null
           id?: number
+          Licitaciones?: boolean | null
           Presupuesto?: boolean | null
           Reuniones?: boolean | null
           Status?: boolean | null

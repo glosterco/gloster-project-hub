@@ -29,6 +29,7 @@ import { ProjectDocumentUpload } from '@/components/ProjectDocumentUpload';
 import { ProjectPhotoUpload } from '@/components/ProjectPhotoUpload';
 import { PresupuestoTable } from '@/components/PresupuestoTable';
 import html2pdf from 'html2pdf.js';
+import * as XLSX from 'xlsx';
 
 const ProjectDetailMandante = () => {
   const { id } = useParams();
@@ -649,7 +650,19 @@ const ProjectDetailMandante = () => {
                     </CardDescription>
                   </CardHeader>
                 </Card>
-                {renderControls(presupuestoSearch, setPresupuestoSearch, 'Exportar Avance', async () => {
+                <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                  <div className="flex-1">
+                    <Input
+                      placeholder="Buscar en presupuesto..."
+                      value={presupuestoSearch}
+                      onChange={(e) => setPresupuestoSearch(e.target.value)}
+                      className="max-w-sm"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline"
+                      onClick={async () => {
                   try {
                     // Calcular avances
                     const previousMonth = presupuesto.reduce((acc, item) => {
@@ -806,7 +819,114 @@ const ProjectDetailMandante = () => {
                       variant: "destructive"
                     });
                   }
-                })}
+                }}
+                      className="font-rubik"
+                    >
+                      Exportar PDF
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => {
+                        try {
+                          // Calcular avances
+                          const previousMonth = presupuesto.reduce((acc, item) => {
+                            const previousAccumulated = (item['Avance Acumulado'] || 0) - (item['Avance Parcial'] || 0);
+                            return acc + (previousAccumulated / 100 * (item.Total || 0));
+                          }, 0);
+                          
+                          const currentMonth = presupuesto.reduce((acc, item) => {
+                            return acc + ((item['Avance Parcial'] || 0) / 100 * (item.Total || 0));
+                          }, 0);
+                          
+                          const totalAccumulated = presupuesto.reduce((acc, item) => {
+                            return acc + ((item['Avance Acumulado'] || 0) / 100 * (item.Total || 0));
+                          }, 0);
+                          
+                          const subtotalNeto = presupuesto.reduce((sum, item) => sum + (item.Total || 0), 0);
+                          const iva = subtotalNeto * 0.19;
+                          const totalConIva = subtotalNeto + iva;
+
+                          // Hoja 1: Resumen
+                          const resumenData = [
+                            ['Avance de Presupuesto'],
+                            [project?.Name || 'Proyecto'],
+                            [],
+                            ['Resumen de Avances'],
+                            ['Acumulado Anterior', formatCurrency(previousMonth, project?.Currency)],
+                            ['Avance Último Mes', formatCurrency(currentMonth, project?.Currency)],
+                            ['Total Acumulado', formatCurrency(totalAccumulated, project?.Currency)],
+                            [],
+                            ['Ítem', 'Total', 'Avance Parcial (%)', 'Avance Acumulado (%)', 'Última Actualización'],
+                            ...presupuesto.map(item => [
+                              item.Item || '-',
+                              item.Total || 0,
+                              item['Avance Parcial'] || 0,
+                              item['Avance Acumulado'] || 0,
+                              item['Ult. Actualizacion'] ? new Date(item['Ult. Actualizacion']).toLocaleDateString('es-CL') : '-'
+                            ])
+                          ];
+
+                          // Hoja 2: Detalle Completo
+                          const detalleData = [
+                            ['Detalle Completo del Presupuesto'],
+                            [project?.Name || 'Proyecto'],
+                            [],
+                            ['Ítem', 'Unidad', 'Cantidad', 'P.U.', 'Total', 'Avance Parcial (%)', 'Avance Acumulado (%)', 'Última Actualización'],
+                            ...presupuesto.map(item => [
+                              item.Item || '-',
+                              item.Unidad || '-',
+                              item.Cantidad || 0,
+                              item.PU || 0,
+                              item.Total || 0,
+                              item['Avance Parcial'] || 0,
+                              item['Avance Acumulado'] || 0,
+                              item['Ult. Actualizacion'] ? new Date(item['Ult. Actualizacion']).toLocaleDateString('es-CL') : '-'
+                            ]),
+                            [],
+                            ['', '', '', 'Subtotal Neto:', subtotalNeto],
+                            ['', '', '', 'IVA (19%):', iva],
+                            ['', '', '', 'Total con IVA:', totalConIva]
+                          ];
+
+                          // Crear libro de Excel
+                          const wb = XLSX.utils.book_new();
+                          
+                          const ws1 = XLSX.utils.aoa_to_sheet(resumenData);
+                          const ws2 = XLSX.utils.aoa_to_sheet(detalleData);
+                          
+                          // Ajustar anchos de columna
+                          ws1['!cols'] = [
+                            { wch: 40 }, { wch: 20 }, { wch: 20 }, { wch: 20 }, { wch: 20 }
+                          ];
+                          ws2['!cols'] = [
+                            { wch: 40 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, 
+                            { wch: 15 }, { wch: 18 }, { wch: 18 }, { wch: 20 }
+                          ];
+                          
+                          XLSX.utils.book_append_sheet(wb, ws1, 'Resumen');
+                          XLSX.utils.book_append_sheet(wb, ws2, 'Detalle Completo');
+                          
+                          XLSX.writeFile(wb, `avance-presupuesto-${project?.Name || 'proyecto'}.xlsx`);
+                          
+                          toast({
+                            title: "Excel generado",
+                            description: "El avance del presupuesto se ha exportado correctamente"
+                          });
+                        } catch (error) {
+                          console.error('Error generando Excel:', error);
+                          toast({
+                            title: "Error",
+                            description: "No se pudo generar el archivo Excel",
+                            variant: "destructive"
+                          });
+                        }
+                      }}
+                      className="font-rubik"
+                    >
+                      Exportar Excel
+                    </Button>
+                  </div>
+                </div>
                 <PresupuestoTable 
                   presupuesto={presupuesto}
                   loading={presupuestoLoading}

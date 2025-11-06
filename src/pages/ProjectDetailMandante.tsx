@@ -5,9 +5,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { ArrowLeft, Calendar, Search, Eye, Settings, Bell, ChevronRight, Plus, Filter } from 'lucide-react';
+import { ArrowLeft, Calendar, Search, Eye, Settings, Bell, ChevronRight, Plus, Filter, FileText, FileSpreadsheet, ChevronDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import PageHeader from '@/components/PageHeader';
 import { useProjectDetailMandante } from '@/hooks/useProjectDetailMandante';
@@ -431,6 +432,75 @@ const ProjectDetailMandante = () => {
     </div>
   );
 
+  const renderPresupuestoControls = (
+    searchValue: string,
+    onSearchChange: (value: string) => void,
+    onExportPDF: () => void,
+    onExportExcel: () => void
+  ) => (
+    <div className="mb-6 p-4 bg-white rounded-lg border border-gloster-gray/20">
+      <div className="flex items-center gap-4 w-full">
+        <div className="relative flex-1 min-w-0">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gloster-gray h-4 w-4" />
+          <Input
+            placeholder="Buscar..."
+            value={searchValue}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="pl-10 font-rubik"
+          />
+        </div>
+        
+        <Select value={sortBy} onValueChange={setSortBy}>
+          <SelectTrigger className="w-40 font-rubik">
+            <SelectValue placeholder="Ordenar por" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="month">Fecha</SelectItem>
+            <SelectItem value="amount">Monto</SelectItem>
+            <SelectItem value="status">Estado</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={filterBy} onValueChange={setFilterBy}>
+          <SelectTrigger className="w-44 font-rubik">
+            <Filter className="h-4 w-4 mr-2" />
+            <SelectValue placeholder="Filtrar por estado" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="aprobado">Aprobado</SelectItem>
+            <SelectItem value="pendiente">Pendiente</SelectItem>
+            <SelectItem value="programado">Programado</SelectItem>
+            <SelectItem value="enviado">Recibido</SelectItem>
+            <SelectItem value="rechazado">Rechazado</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button 
+              className="bg-gloster-yellow hover:bg-gloster-yellow/90 text-black font-semibold font-rubik whitespace-nowrap"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Exportar Avance
+              <ChevronDown className="h-4 w-4 ml-2" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="font-rubik">
+            <DropdownMenuItem onClick={onExportPDF} className="cursor-pointer">
+              <FileText className="h-4 w-4 mr-2" />
+              Exportar PDF
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onExportExcel} className="cursor-pointer">
+              <FileSpreadsheet className="h-4 w-4 mr-2" />
+              Exportar Excel
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-slate-50 font-rubik">
       <PageHeader />
@@ -650,284 +720,264 @@ const ProjectDetailMandante = () => {
                     </CardDescription>
                   </CardHeader>
                 </Card>
-                <div className="flex flex-col sm:flex-row gap-4 mb-6">
-                  <div className="flex-1">
-                    <Input
-                      placeholder="Buscar en presupuesto..."
-                      value={presupuestoSearch}
-                      onChange={(e) => setPresupuestoSearch(e.target.value)}
-                      className="max-w-sm"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline"
-                      onClick={async () => {
-                  try {
-                    // Calcular avances
-                    const previousMonth = presupuesto.reduce((acc, item) => {
-                      const previousAccumulated = (item['Avance Acumulado'] || 0) - (item['Avance Parcial'] || 0);
-                      return acc + (previousAccumulated / 100 * (item.Total || 0));
-                    }, 0);
-                    
-                    const currentMonth = presupuesto.reduce((acc, item) => {
-                      return acc + ((item['Avance Parcial'] || 0) / 100 * (item.Total || 0));
-                    }, 0);
-                    
-                    const totalAccumulated = presupuesto.reduce((acc, item) => {
-                      return acc + ((item['Avance Acumulado'] || 0) / 100 * (item.Total || 0));
-                    }, 0);
-                    
-                    // Calcular totales del presupuesto
-                    const subtotalNeto = presupuesto.reduce((sum, item) => sum + (item.Total || 0), 0);
-                    const iva = subtotalNeto * 0.19;
-                    const totalConIva = subtotalNeto + iva;
-
-                    // Primera página - Resumen
-                    const page1 = document.createElement('div');
-                    page1.style.padding = '40px';
-                    page1.style.fontFamily = 'Rubik, sans-serif';
-                    page1.style.pageBreakAfter = 'always';
-                    
-                    page1.innerHTML = `
-                      <h1 style="color: #1e293b; margin-bottom: 20px; font-size: 24px; font-weight: bold;">Avance de Presupuesto</h1>
-                      <h2 style="color: #64748b; margin-bottom: 30px; font-size: 18px;">${project?.Name || 'Proyecto'}</h2>
+                {renderPresupuestoControls(
+                  presupuestoSearch,
+                  setPresupuestoSearch,
+                  async () => {
+                    try {
+                      // Calcular avances
+                      const previousMonth = presupuesto.reduce((acc, item) => {
+                        const previousAccumulated = (item['Avance Acumulado'] || 0) - (item['Avance Parcial'] || 0);
+                        return acc + (previousAccumulated / 100 * (item.Total || 0));
+                      }, 0);
                       
-                      <div style="margin-bottom: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px;">
-                        <h3 style="color: #1e293b; margin-bottom: 15px; font-size: 16px; font-weight: bold;">Resumen de Avances</h3>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
-                          <div>
-                            <p style="color: #64748b; font-size: 12px; margin-bottom: 5px;">Acumulado Anterior</p>
-                            <p style="color: #1e293b; font-size: 18px; font-weight: bold;">${formatCurrency(previousMonth, project?.Currency)}</p>
-                          </div>
-                          <div>
-                            <p style="color: #64748b; font-size: 12px; margin-bottom: 5px;">Avance Último Mes</p>
-                            <p style="color: #16a34a; font-size: 18px; font-weight: bold;">${formatCurrency(currentMonth, project?.Currency)}</p>
-                          </div>
-                          <div>
-                            <p style="color: #64748b; font-size: 12px; margin-bottom: 5px;">Total Acumulado</p>
-                            <p style="color: #1e293b; font-size: 18px; font-weight: bold;">${formatCurrency(totalAccumulated, project?.Currency)}</p>
+                      const currentMonth = presupuesto.reduce((acc, item) => {
+                        return acc + ((item['Avance Parcial'] || 0) / 100 * (item.Total || 0));
+                      }, 0);
+                      
+                      const totalAccumulated = presupuesto.reduce((acc, item) => {
+                        return acc + ((item['Avance Acumulado'] || 0) / 100 * (item.Total || 0));
+                      }, 0);
+                      
+                      // Calcular totales del presupuesto
+                      const subtotalNeto = presupuesto.reduce((sum, item) => sum + (item.Total || 0), 0);
+                      const iva = subtotalNeto * 0.19;
+                      const totalConIva = subtotalNeto + iva;
+
+                      // Primera página - Resumen
+                      const page1 = document.createElement('div');
+                      page1.style.padding = '40px';
+                      page1.style.fontFamily = 'Rubik, sans-serif';
+                      page1.style.pageBreakAfter = 'always';
+                      
+                      page1.innerHTML = `
+                        <h1 style="color: #1e293b; margin-bottom: 20px; font-size: 24px; font-weight: bold;">Avance de Presupuesto</h1>
+                        <h2 style="color: #64748b; margin-bottom: 30px; font-size: 18px;">${project?.Name || 'Proyecto'}</h2>
+                        
+                        <div style="margin-bottom: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px;">
+                          <h3 style="color: #1e293b; margin-bottom: 15px; font-size: 16px; font-weight: bold;">Resumen de Avances</h3>
+                          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+                            <div>
+                              <p style="color: #64748b; font-size: 12px; margin-bottom: 5px;">Acumulado Anterior</p>
+                              <p style="color: #1e293b; font-size: 18px; font-weight: bold;">${formatCurrency(previousMonth, project?.Currency)}</p>
+                            </div>
+                            <div>
+                              <p style="color: #64748b; font-size: 12px; margin-bottom: 5px;">Avance Último Mes</p>
+                              <p style="color: #16a34a; font-size: 18px; font-weight: bold;">${formatCurrency(currentMonth, project?.Currency)}</p>
+                            </div>
+                            <div>
+                              <p style="color: #64748b; font-size: 12px; margin-bottom: 5px;">Total Acumulado</p>
+                              <p style="color: #1e293b; font-size: 18px; font-weight: bold;">${formatCurrency(totalAccumulated, project?.Currency)}</p>
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
-                        <thead>
-                          <tr style="background-color: #f1f5f9; border-bottom: 2px solid #e2e8f0;">
-                            <th style="padding: 12px; text-align: left; font-size: 12px; color: #64748b; font-weight: 600;">Ítem</th>
-                            <th style="padding: 12px; text-align: right; font-size: 12px; color: #64748b; font-weight: 600;">Total</th>
-                            <th style="padding: 12px; text-align: right; font-size: 12px; color: #64748b; font-weight: 600;">Avance Parcial</th>
-                            <th style="padding: 12px; text-align: right; font-size: 12px; color: #64748b; font-weight: 600;">Avance Acumulado</th>
-                            <th style="padding: 12px; text-align: left; font-size: 12px; color: #64748b; font-weight: 600;">Última Actualización</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          ${presupuesto.map((item, index) => `
-                            <tr style="border-bottom: 1px solid #e2e8f0; ${index % 2 === 0 ? 'background-color: #ffffff;' : 'background-color: #f8fafc;'}">
-                              <td style="padding: 12px; font-size: 13px; color: #1e293b;">${item.Item || '-'}</td>
-                              <td style="padding: 12px; text-align: right; font-size: 13px; color: #1e293b; font-weight: 500;">${item.Total ? formatCurrency(item.Total, project?.Currency) : '-'}</td>
-                              <td style="padding: 12px; text-align: right; font-size: 13px; color: #16a34a; font-weight: 500;">${item['Avance Parcial'] !== null ? item['Avance Parcial'] + '%' : '-'}</td>
-                              <td style="padding: 12px; text-align: right; font-size: 13px; color: #1e293b; font-weight: 600;">${item['Avance Acumulado'] !== null ? item['Avance Acumulado'] + '%' : '-'}</td>
-                              <td style="padding: 12px; font-size: 13px; color: #64748b;">${item['Ult. Actualizacion'] ? new Date(item['Ult. Actualizacion']).toLocaleDateString('es-CL') : '-'}</td>
+                        <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+                          <thead>
+                            <tr style="background-color: #f1f5f9; border-bottom: 2px solid #e2e8f0;">
+                              <th style="padding: 12px; text-align: left; font-size: 12px; color: #64748b; font-weight: 600;">Ítem</th>
+                              <th style="padding: 12px; text-align: right; font-size: 12px; color: #64748b; font-weight: 600;">Total</th>
+                              <th style="padding: 12px; text-align: right; font-size: 12px; color: #64748b; font-weight: 600;">Avance Parcial</th>
+                              <th style="padding: 12px; text-align: right; font-size: 12px; color: #64748b; font-weight: 600;">Avance Acumulado</th>
+                              <th style="padding: 12px; text-align: left; font-size: 12px; color: #64748b; font-weight: 600;">Última Actualización</th>
                             </tr>
-                          `).join('')}
-                        </tbody>
-                      </table>
-                    `;
+                          </thead>
+                          <tbody>
+                            ${presupuesto.map((item, index) => `
+                              <tr style="border-bottom: 1px solid #e2e8f0; ${index % 2 === 0 ? 'background-color: #ffffff;' : 'background-color: #f8fafc;'}">
+                                <td style="padding: 12px; font-size: 13px; color: #1e293b;">${item.Item || '-'}</td>
+                                <td style="padding: 12px; text-align: right; font-size: 13px; color: #1e293b; font-weight: 500;">${item.Total ? formatCurrency(item.Total, project?.Currency) : '-'}</td>
+                                <td style="padding: 12px; text-align: right; font-size: 13px; color: #16a34a; font-weight: 500;">${item['Avance Parcial'] !== null ? item['Avance Parcial'] + '%' : '-'}</td>
+                                <td style="padding: 12px; text-align: right; font-size: 13px; color: #1e293b; font-weight: 600;">${item['Avance Acumulado'] !== null ? item['Avance Acumulado'] + '%' : '-'}</td>
+                                <td style="padding: 12px; font-size: 13px; color: #64748b;">${item['Ult. Actualizacion'] ? new Date(item['Ult. Actualizacion']).toLocaleDateString('es-CL') : '-'}</td>
+                              </tr>
+                            `).join('')}
+                          </tbody>
+                        </table>
+                      `;
 
-                    // Segunda página - Detalle completo
-                    const page2 = document.createElement('div');
-                    page2.style.padding = '40px';
-                    page2.style.fontFamily = 'Rubik, sans-serif';
-                    
-                    page2.innerHTML = `
-                      <h1 style="color: #1e293b; margin-bottom: 20px; font-size: 22px; font-weight: bold;">Detalle Completo del Presupuesto</h1>
-                      <h2 style="color: #64748b; margin-bottom: 30px; font-size: 16px;">${project?.Name || 'Proyecto'}</h2>
+                      // Segunda página - Detalle completo
+                      const page2 = document.createElement('div');
+                      page2.style.padding = '40px';
+                      page2.style.fontFamily = 'Rubik, sans-serif';
+                      
+                      page2.innerHTML = `
+                        <h1 style="color: #1e293b; margin-bottom: 20px; font-size: 22px; font-weight: bold;">Detalle Completo del Presupuesto</h1>
+                        <h2 style="color: #64748b; margin-bottom: 30px; font-size: 16px;">${project?.Name || 'Proyecto'}</h2>
 
-                      <table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 10px;">
-                        <thead>
-                          <tr style="background-color: #f1f5f9; border-bottom: 2px solid #e2e8f0;">
-                            <th style="padding: 8px; text-align: left; font-size: 10px; color: #64748b; font-weight: 600;">Ítem</th>
-                            <th style="padding: 8px; text-align: center; font-size: 10px; color: #64748b; font-weight: 600;">Unidad</th>
-                            <th style="padding: 8px; text-align: right; font-size: 10px; color: #64748b; font-weight: 600;">Cantidad</th>
-                            <th style="padding: 8px; text-align: right; font-size: 10px; color: #64748b; font-weight: 600;">P.U.</th>
-                            <th style="padding: 8px; text-align: right; font-size: 10px; color: #64748b; font-weight: 600;">Total</th>
-                            <th style="padding: 8px; text-align: right; font-size: 10px; color: #64748b; font-weight: 600;">Avance Parcial</th>
-                            <th style="padding: 8px; text-align: right; font-size: 10px; color: #64748b; font-weight: 600;">Avance Acum.</th>
-                            <th style="padding: 8px; text-align: center; font-size: 10px; color: #64748b; font-weight: 600;">Última Act.</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          ${presupuesto.map((item, index) => `
-                            <tr style="border-bottom: 1px solid #e2e8f0; ${index % 2 === 0 ? 'background-color: #ffffff;' : 'background-color: #f8fafc;'}">
-                              <td style="padding: 8px; font-size: 10px; color: #1e293b;">${item.Item || '-'}</td>
-                              <td style="padding: 8px; text-align: center; font-size: 10px; color: #64748b;">${item.Unidad || '-'}</td>
-                              <td style="padding: 8px; text-align: right; font-size: 10px; color: #1e293b;">${item.Cantidad ? new Intl.NumberFormat('es-CL').format(item.Cantidad) : '-'}</td>
-                              <td style="padding: 8px; text-align: right; font-size: 10px; color: #1e293b;">${item.PU ? formatCurrency(item.PU, project?.Currency) : '-'}</td>
-                              <td style="padding: 8px; text-align: right; font-size: 10px; color: #1e293b; font-weight: 600;">${item.Total ? formatCurrency(item.Total, project?.Currency) : '-'}</td>
-                              <td style="padding: 8px; text-align: right; font-size: 10px; color: #16a34a; font-weight: 500;">${item['Avance Parcial'] !== null ? item['Avance Parcial'] + '%' : '-'}</td>
-                              <td style="padding: 8px; text-align: right; font-size: 10px; color: #1e293b; font-weight: 600;">${item['Avance Acumulado'] !== null ? item['Avance Acumulado'] + '%' : '-'}</td>
-                              <td style="padding: 8px; text-align: center; font-size: 9px; color: #64748b;">${item['Ult. Actualizacion'] ? new Date(item['Ult. Actualizacion']).toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '-'}</td>
+                        <table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 10px;">
+                          <thead>
+                            <tr style="background-color: #f1f5f9; border-bottom: 2px solid #e2e8f0;">
+                              <th style="padding: 8px; text-align: left; font-size: 10px; color: #64748b; font-weight: 600;">Ítem</th>
+                              <th style="padding: 8px; text-align: center; font-size: 10px; color: #64748b; font-weight: 600;">Unidad</th>
+                              <th style="padding: 8px; text-align: right; font-size: 10px; color: #64748b; font-weight: 600;">Cantidad</th>
+                              <th style="padding: 8px; text-align: right; font-size: 10px; color: #64748b; font-weight: 600;">P.U.</th>
+                              <th style="padding: 8px; text-align: right; font-size: 10px; color: #64748b; font-weight: 600;">Total</th>
+                              <th style="padding: 8px; text-align: right; font-size: 10px; color: #64748b; font-weight: 600;">Avance Parcial</th>
+                              <th style="padding: 8px; text-align: right; font-size: 10px; color: #64748b; font-weight: 600;">Avance Acum.</th>
+                              <th style="padding: 8px; text-align: center; font-size: 10px; color: #64748b; font-weight: 600;">Última Act.</th>
                             </tr>
-                          `).join('')}
-                          
-                          <tr style="background-color: #f1f5f9; border-top: 2px solid #e2e8f0; font-weight: 600;">
-                            <td colspan="4" style="padding: 8px; text-align: right; font-size: 10px; color: #1e293b;">Subtotal Neto:</td>
-                            <td style="padding: 8px; text-align: right; font-size: 10px; color: #1e293b; font-weight: bold;">${formatCurrency(subtotalNeto, project?.Currency)}</td>
-                            <td colspan="3"></td>
-                          </tr>
-                          
-                          <tr style="background-color: #f1f5f9; font-weight: 600;">
-                            <td colspan="4" style="padding: 8px; text-align: right; font-size: 10px; color: #1e293b;">IVA (19%):</td>
-                            <td style="padding: 8px; text-align: right; font-size: 10px; color: #1e293b; font-weight: bold;">${formatCurrency(iva, project?.Currency)}</td>
-                            <td colspan="3"></td>
-                          </tr>
-                          
-                          <tr style="background-color: #e2e8f0; border-top: 2px solid #cbd5e1; font-weight: bold;">
-                            <td colspan="4" style="padding: 8px; text-align: right; font-size: 11px; color: #1e293b;">Total con IVA:</td>
-                            <td style="padding: 8px; text-align: right; font-size: 11px; color: #1e293b; font-weight: bold;">${formatCurrency(totalConIva, project?.Currency)}</td>
-                            <td colspan="3"></td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    `;
+                          </thead>
+                          <tbody>
+                            ${presupuesto.map((item, index) => `
+                              <tr style="border-bottom: 1px solid #e2e8f0; ${index % 2 === 0 ? 'background-color: #ffffff;' : 'background-color: #f8fafc;'}">
+                                <td style="padding: 8px; font-size: 10px; color: #1e293b;">${item.Item || '-'}</td>
+                                <td style="padding: 8px; text-align: center; font-size: 10px; color: #64748b;">${item.Unidad || '-'}</td>
+                                <td style="padding: 8px; text-align: right; font-size: 10px; color: #1e293b;">${item.Cantidad ? new Intl.NumberFormat('es-CL').format(item.Cantidad) : '-'}</td>
+                                <td style="padding: 8px; text-align: right; font-size: 10px; color: #1e293b;">${item.PU ? formatCurrency(item.PU, project?.Currency) : '-'}</td>
+                                <td style="padding: 8px; text-align: right; font-size: 10px; color: #1e293b; font-weight: 600;">${item.Total ? formatCurrency(item.Total, project?.Currency) : '-'}</td>
+                                <td style="padding: 8px; text-align: right; font-size: 10px; color: #16a34a; font-weight: 500;">${item['Avance Parcial'] !== null ? item['Avance Parcial'] + '%' : '-'}</td>
+                                <td style="padding: 8px; text-align: right; font-size: 10px; color: #1e293b; font-weight: 600;">${item['Avance Acumulado'] !== null ? item['Avance Acumulado'] + '%' : '-'}</td>
+                                <td style="padding: 8px; text-align: center; font-size: 9px; color: #64748b;">${item['Ult. Actualizacion'] ? new Date(item['Ult. Actualizacion']).toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '-'}</td>
+                              </tr>
+                            `).join('')}
+                            
+                            <tr style="background-color: #f1f5f9; border-top: 2px solid #e2e8f0; font-weight: 600;">
+                              <td colspan="4" style="padding: 8px; text-align: right; font-size: 10px; color: #1e293b;">Subtotal Neto:</td>
+                              <td style="padding: 8px; text-align: right; font-size: 10px; color: #1e293b; font-weight: bold;">${formatCurrency(subtotalNeto, project?.Currency)}</td>
+                              <td colspan="3"></td>
+                            </tr>
+                            
+                            <tr style="background-color: #f1f5f9; font-weight: 600;">
+                              <td colspan="4" style="padding: 8px; text-align: right; font-size: 10px; color: #1e293b;">IVA (19%):</td>
+                              <td style="padding: 8px; text-align: right; font-size: 10px; color: #1e293b; font-weight: bold;">${formatCurrency(iva, project?.Currency)}</td>
+                              <td colspan="3"></td>
+                            </tr>
+                            
+                            <tr style="background-color: #e2e8f0; border-top: 2px solid #cbd5e1; font-weight: bold;">
+                              <td colspan="4" style="padding: 8px; text-align: right; font-size: 11px; color: #1e293b;">Total con IVA:</td>
+                              <td style="padding: 8px; text-align: right; font-size: 11px; color: #1e293b; font-weight: bold;">${formatCurrency(totalConIva, project?.Currency)}</td>
+                              <td colspan="3"></td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      `;
 
-                    // Contenedor con ambas páginas
-                    const container = document.createElement('div');
-                    container.appendChild(page1);
-                    container.appendChild(page2);
+                      // Contenedor con ambas páginas
+                      const container = document.createElement('div');
+                      container.appendChild(page1);
+                      container.appendChild(page2);
 
-                    const opt = {
-                      margin: 10,
-                      filename: `avance-presupuesto-${project?.Name || 'proyecto'}.pdf`,
-                      image: { type: 'jpeg', quality: 0.98 },
-                      html2canvas: { scale: 2 },
-                      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
-                    };
+                      const opt = {
+                        margin: 10,
+                        filename: `avance-presupuesto-${project?.Name || 'proyecto'}.pdf`,
+                        image: { type: 'jpeg', quality: 0.98 },
+                        html2canvas: { scale: 2 },
+                        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+                      };
 
-                    await html2pdf().set(opt).from(container).save();
-                    
-                    toast({
-                      title: "PDF generado",
-                      description: "El avance del presupuesto se ha exportado correctamente"
-                    });
-                  } catch (error) {
-                    console.error('Error generando PDF:', error);
-                    toast({
-                      title: "Error",
-                      description: "No se pudo generar el PDF",
-                      variant: "destructive"
-                    });
+                      await html2pdf().set(opt).from(container).save();
+                      
+                      toast({
+                        title: "PDF generado",
+                        description: "El avance del presupuesto se ha exportado correctamente"
+                      });
+                    } catch (error) {
+                      console.error('Error generando PDF:', error);
+                      toast({
+                        title: "Error",
+                        description: "No se pudo generar el PDF",
+                        variant: "destructive"
+                      });
+                    }
+                  },
+                  () => {
+                    try {
+                      // Calcular avances
+                      const previousMonth = presupuesto.reduce((acc, item) => {
+                        const previousAccumulated = (item['Avance Acumulado'] || 0) - (item['Avance Parcial'] || 0);
+                        return acc + (previousAccumulated / 100 * (item.Total || 0));
+                      }, 0);
+                      
+                      const currentMonth = presupuesto.reduce((acc, item) => {
+                        return acc + ((item['Avance Parcial'] || 0) / 100 * (item.Total || 0));
+                      }, 0);
+                      
+                      const totalAccumulated = presupuesto.reduce((acc, item) => {
+                        return acc + ((item['Avance Acumulado'] || 0) / 100 * (item.Total || 0));
+                      }, 0);
+                      
+                      const subtotalNeto = presupuesto.reduce((sum, item) => sum + (item.Total || 0), 0);
+                      const iva = subtotalNeto * 0.19;
+                      const totalConIva = subtotalNeto + iva;
+
+                      // Hoja 1: Resumen
+                      const resumenData = [
+                        ['Avance de Presupuesto'],
+                        [project?.Name || 'Proyecto'],
+                        [],
+                        ['Resumen de Avances'],
+                        ['Acumulado Anterior', formatCurrency(previousMonth, project?.Currency)],
+                        ['Avance Último Mes', formatCurrency(currentMonth, project?.Currency)],
+                        ['Total Acumulado', formatCurrency(totalAccumulated, project?.Currency)],
+                        [],
+                        ['Ítem', 'Total', 'Avance Parcial (%)', 'Avance Acumulado (%)', 'Última Actualización'],
+                        ...presupuesto.map(item => [
+                          item.Item || '-',
+                          item.Total || 0,
+                          item['Avance Parcial'] || 0,
+                          item['Avance Acumulado'] || 0,
+                          item['Ult. Actualizacion'] ? new Date(item['Ult. Actualizacion']).toLocaleDateString('es-CL') : '-'
+                        ])
+                      ];
+
+                      // Hoja 2: Detalle Completo
+                      const detalleData = [
+                        ['Detalle Completo del Presupuesto'],
+                        [project?.Name || 'Proyecto'],
+                        [],
+                        ['Ítem', 'Unidad', 'Cantidad', 'P.U.', 'Total', 'Avance Parcial (%)', 'Avance Acumulado (%)', 'Última Actualización'],
+                        ...presupuesto.map(item => [
+                          item.Item || '-',
+                          item.Unidad || '-',
+                          item.Cantidad || 0,
+                          item.PU || 0,
+                          item.Total || 0,
+                          item['Avance Parcial'] || 0,
+                          item['Avance Acumulado'] || 0,
+                          item['Ult. Actualizacion'] ? new Date(item['Ult. Actualizacion']).toLocaleDateString('es-CL') : '-'
+                        ]),
+                        [],
+                        ['', '', '', 'Subtotal Neto:', subtotalNeto],
+                        ['', '', '', 'IVA (19%):', iva],
+                        ['', '', '', 'Total con IVA:', totalConIva]
+                      ];
+
+                      // Crear libro de Excel
+                      const wb = XLSX.utils.book_new();
+                      
+                      const ws1 = XLSX.utils.aoa_to_sheet(resumenData);
+                      const ws2 = XLSX.utils.aoa_to_sheet(detalleData);
+                      
+                      // Ajustar anchos de columna
+                      ws1['!cols'] = [
+                        { wch: 40 }, { wch: 20 }, { wch: 20 }, { wch: 20 }, { wch: 20 }
+                      ];
+                      ws2['!cols'] = [
+                        { wch: 40 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, 
+                        { wch: 15 }, { wch: 18 }, { wch: 18 }, { wch: 20 }
+                      ];
+                      
+                      XLSX.utils.book_append_sheet(wb, ws1, 'Resumen');
+                      XLSX.utils.book_append_sheet(wb, ws2, 'Detalle Completo');
+                      
+                      XLSX.writeFile(wb, `avance-presupuesto-${project?.Name || 'proyecto'}.xlsx`);
+                      
+                      toast({
+                        title: "Excel generado",
+                        description: "El avance del presupuesto se ha exportado correctamente"
+                      });
+                    } catch (error) {
+                      console.error('Error generando Excel:', error);
+                      toast({
+                        title: "Error",
+                        description: "No se pudo generar el archivo Excel",
+                        variant: "destructive"
+                      });
+                    }
                   }
-                }}
-                      className="font-rubik"
-                    >
-                      Exportar PDF
-                    </Button>
-                    <Button 
-                      variant="outline"
-                      onClick={() => {
-                        try {
-                          // Calcular avances
-                          const previousMonth = presupuesto.reduce((acc, item) => {
-                            const previousAccumulated = (item['Avance Acumulado'] || 0) - (item['Avance Parcial'] || 0);
-                            return acc + (previousAccumulated / 100 * (item.Total || 0));
-                          }, 0);
-                          
-                          const currentMonth = presupuesto.reduce((acc, item) => {
-                            return acc + ((item['Avance Parcial'] || 0) / 100 * (item.Total || 0));
-                          }, 0);
-                          
-                          const totalAccumulated = presupuesto.reduce((acc, item) => {
-                            return acc + ((item['Avance Acumulado'] || 0) / 100 * (item.Total || 0));
-                          }, 0);
-                          
-                          const subtotalNeto = presupuesto.reduce((sum, item) => sum + (item.Total || 0), 0);
-                          const iva = subtotalNeto * 0.19;
-                          const totalConIva = subtotalNeto + iva;
-
-                          // Hoja 1: Resumen
-                          const resumenData = [
-                            ['Avance de Presupuesto'],
-                            [project?.Name || 'Proyecto'],
-                            [],
-                            ['Resumen de Avances'],
-                            ['Acumulado Anterior', formatCurrency(previousMonth, project?.Currency)],
-                            ['Avance Último Mes', formatCurrency(currentMonth, project?.Currency)],
-                            ['Total Acumulado', formatCurrency(totalAccumulated, project?.Currency)],
-                            [],
-                            ['Ítem', 'Total', 'Avance Parcial (%)', 'Avance Acumulado (%)', 'Última Actualización'],
-                            ...presupuesto.map(item => [
-                              item.Item || '-',
-                              item.Total || 0,
-                              item['Avance Parcial'] || 0,
-                              item['Avance Acumulado'] || 0,
-                              item['Ult. Actualizacion'] ? new Date(item['Ult. Actualizacion']).toLocaleDateString('es-CL') : '-'
-                            ])
-                          ];
-
-                          // Hoja 2: Detalle Completo
-                          const detalleData = [
-                            ['Detalle Completo del Presupuesto'],
-                            [project?.Name || 'Proyecto'],
-                            [],
-                            ['Ítem', 'Unidad', 'Cantidad', 'P.U.', 'Total', 'Avance Parcial (%)', 'Avance Acumulado (%)', 'Última Actualización'],
-                            ...presupuesto.map(item => [
-                              item.Item || '-',
-                              item.Unidad || '-',
-                              item.Cantidad || 0,
-                              item.PU || 0,
-                              item.Total || 0,
-                              item['Avance Parcial'] || 0,
-                              item['Avance Acumulado'] || 0,
-                              item['Ult. Actualizacion'] ? new Date(item['Ult. Actualizacion']).toLocaleDateString('es-CL') : '-'
-                            ]),
-                            [],
-                            ['', '', '', 'Subtotal Neto:', subtotalNeto],
-                            ['', '', '', 'IVA (19%):', iva],
-                            ['', '', '', 'Total con IVA:', totalConIva]
-                          ];
-
-                          // Crear libro de Excel
-                          const wb = XLSX.utils.book_new();
-                          
-                          const ws1 = XLSX.utils.aoa_to_sheet(resumenData);
-                          const ws2 = XLSX.utils.aoa_to_sheet(detalleData);
-                          
-                          // Ajustar anchos de columna
-                          ws1['!cols'] = [
-                            { wch: 40 }, { wch: 20 }, { wch: 20 }, { wch: 20 }, { wch: 20 }
-                          ];
-                          ws2['!cols'] = [
-                            { wch: 40 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, 
-                            { wch: 15 }, { wch: 18 }, { wch: 18 }, { wch: 20 }
-                          ];
-                          
-                          XLSX.utils.book_append_sheet(wb, ws1, 'Resumen');
-                          XLSX.utils.book_append_sheet(wb, ws2, 'Detalle Completo');
-                          
-                          XLSX.writeFile(wb, `avance-presupuesto-${project?.Name || 'proyecto'}.xlsx`);
-                          
-                          toast({
-                            title: "Excel generado",
-                            description: "El avance del presupuesto se ha exportado correctamente"
-                          });
-                        } catch (error) {
-                          console.error('Error generando Excel:', error);
-                          toast({
-                            title: "Error",
-                            description: "No se pudo generar el archivo Excel",
-                            variant: "destructive"
-                          });
-                        }
-                      }}
-                      className="font-rubik"
-                    >
-                      Exportar Excel
-                    </Button>
-                  </div>
-                </div>
-                <PresupuestoTable 
+                )}
+                <PresupuestoTable
                   presupuesto={presupuesto}
                   loading={presupuestoLoading}
                   currency={project?.Currency}

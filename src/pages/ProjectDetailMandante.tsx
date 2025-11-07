@@ -784,6 +784,15 @@ const ProjectDetailMandante = () => {
                       page1.style.pageBreakAfter = 'always';
                       
                       page1.innerHTML = `
+                        <!-- Logo Gloster -->
+                        <div style="position: absolute; top: 20px; right: 20px; opacity: 0.7;">
+                          <img 
+                            src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
+                            alt="Gloster Logo" 
+                            style="width: 40px; height: 40px;"
+                          />
+                        </div>
+                        
                         <div style="text-align: center; margin-bottom: 30px;">
                           <h1 style="color: #1F2937; margin-bottom: 10px; font-size: 26px; font-weight: bold;">Informe de Avance de Presupuesto</h1>
                           <h2 style="color: #6B7280; font-size: 18px;">${project?.Name || 'Proyecto'}</h2>
@@ -838,22 +847,29 @@ const ProjectDetailMandante = () => {
                       page2.style.position = 'relative';
                       
                       page2.innerHTML = `
-                        <img src="/lovable-uploads/56ec2da3-35f4-4d8e-bbf7-cdf7224e6304.png" style="position: absolute; top: 20px; right: 20px; width: 80px; opacity: 0.7;" />
+                        <!-- Logo Gloster -->
+                        <div style="position: absolute; top: 20px; right: 20px; opacity: 0.7;">
+                          <img 
+                            src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
+                            alt="Gloster Logo" 
+                            style="width: 40px; height: 40px;"
+                          />
+                        </div>
                         
                         <div style="text-align: center; margin-bottom: 10px;">
                           <h1 style="color: #1F2937; margin-bottom: 5px; font-size: 18px; font-weight: bold;">Resumen del Período Actualizado</h1>
                         </div>
                         
                         <div style="margin-bottom: 15px;">
-                          <table style="width: 100%; max-width: 700px; margin: 0 auto; border-collapse: collapse; font-size: 11px;">
+                          <table style="width: 100%; max-width: 700px; margin: 0 auto; border-collapse: collapse; font-size: 12px;">
                             <!-- Información de fecha y avance -->
                             <tr style="background-color: #F8FAFC;">
                               <td style="padding: 6px 8px; border: 1px solid #E5E7EB; border-bottom: 2px solid #6B7280; color: #6B7280; font-weight: 600; width: 60%;">Fecha de Actualización</td>
-                              <td style="padding: 6px 8px; text-align: right; border: 1px solid #E5E7EB; border-bottom: 2px solid #6B7280; color: #1F2937; font-weight: 700; font-size: 11px; width: 40%;">${new Date().toLocaleDateString('es-CL')}</td>
+                              <td style="padding: 6px 8px; text-align: right; border: 1px solid #E5E7EB; border-bottom: 2px solid #6B7280; color: #1F2937; font-weight: 700; font-size: 12px; width: 40%;">${new Date().toLocaleDateString('es-CL')}</td>
                             </tr>
                             <tr style="background-color: #F8FAFC;">
                               <td style="padding: 6px 8px; border: 1px solid #E5E7EB; border-bottom: 2px solid #6B7280; color: #6B7280; font-weight: 600;">Porcentaje de Avance Financiero</td>
-                              <td style="padding: 6px 8px; text-align: right; border: 1px solid #E5E7EB; border-bottom: 2px solid #6B7280; color: #1F2937; font-weight: 700; font-size: 11px;">${porcentajeAvance}%</td>
+                              <td style="padding: 6px 8px; text-align: right; border: 1px solid #E5E7EB; border-bottom: 2px solid #6B7280; color: #1F2937; font-weight: 700; font-size: 12px;">${porcentajeAvance}%</td>
                             </tr>
                             
                             <!-- Encabezado de tabla -->
@@ -917,10 +933,10 @@ const ProjectDetailMandante = () => {
                           </table>
                         </div>
                           
-                          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 18px;">
+                          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 12px;">
                             <div style="padding: 10px; background-color: #FFFBEB; border-radius: 6px; border: 2px solid #F5DF4D;">
                               <h4 style="color: #1F2937; margin-bottom: 8px; font-size: 11px; font-weight: bold;">Control de Anticipos</h4>
-                              <table style="width: 100%; font-size: 9px;">
+                              <table style="width: 100%; font-size: 10px;">
                                 <tr>
                                   <td style="color: #6B7280; padding: 3px 0;">Total Anticipos:</td>
                                   <td style="color: #1F2937; font-weight: 600; text-align: right;">${formatCurrency(anticipos.total || 0, project?.Currency)}</td>
@@ -942,7 +958,7 @@ const ProjectDetailMandante = () => {
                             
                             <div style="padding: 10px; background-color: #F8FAFC; border-radius: 6px; border: 2px solid #6B7280;">
                               <h4 style="color: #1F2937; margin-bottom: 8px; font-size: 11px; font-weight: bold;">Control de Retenciones</h4>
-                              <table style="width: 100%; font-size: 9px;">
+                              <table style="width: 100%; font-size: 10px;">
                                 <tr>
                                   <td style="color: #6B7280; padding: 3px 0;">Total Retenciones:</td>
                                   <td style="color: #1F2937; font-weight: 600; text-align: right;">${formatCurrency(retenciones.total || 0, project?.Currency)}</td>
@@ -964,10 +980,84 @@ const ProjectDetailMandante = () => {
                           </div>
                       `;
 
-                      // Contenedor solo con las dos primeras páginas
+                      // Tercera página - Detalle del Estado de Pago
+                      const page3 = document.createElement('div');
+                      page3.style.padding = '20px';
+                      page3.style.fontFamily = 'Rubik, sans-serif';
+                      page3.style.pageBreakAfter = 'always';
+                      page3.style.position = 'relative';
+                      
+                      page3.innerHTML = `
+                        <!-- Logo Gloster -->
+                        <div style="position: absolute; top: 20px; right: 20px; opacity: 0.7;">
+                          <img 
+                            src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
+                            alt="Gloster Logo" 
+                            style="width: 40px; height: 40px;"
+                          />
+                        </div>
+
+                        <h2 style="color: #1e293b; margin-bottom: 15px; margin-top: 10px; font-size: 18px; font-weight: bold;">
+                          Detalle del Proyecto
+                        </h2>
+                        
+                        <!-- Project Details Table -->
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 11px;">
+                          <thead>
+                            <tr style="background-color: #FEF3C7; border-bottom: 2px solid #92400E;">
+                              <th style="padding: 8px; text-align: left; font-weight: bold; color: #1e293b;">Campo</th>
+                              <th style="padding: 8px; text-align: left; font-weight: bold; color: #1e293b;">Valor</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                              <td style="padding: 6px 8px; color: #475569;">Nombre del Proyecto</td>
+                              <td style="padding: 6px 8px; color: #1e293b; font-weight: 500;">${project?.Name || 'N/A'}</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                              <td style="padding: 6px 8px; color: #475569;">Descripción</td>
+                              <td style="padding: 6px 8px; color: #1e293b;">${project?.Description || 'N/A'}</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                              <td style="padding: 6px 8px; color: #475569;">Ubicación</td>
+                              <td style="padding: 6px 8px; color: #1e293b;">${project?.Location || 'N/A'}</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                              <td style="padding: 6px 8px; color: #475569;">Mandante</td>
+                              <td style="padding: 6px 8px; color: #1e293b;">${project?.Owner?.CompanyName || 'N/A'}</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                              <td style="padding: 6px 8px; color: #475569;">Contratista</td>
+                              <td style="padding: 6px 8px; color: #1e293b;">${project?.Contratista?.CompanyName || 'N/A'}</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                              <td style="padding: 6px 8px; color: #475569;">Fecha de Inicio</td>
+                              <td style="padding: 6px 8px; color: #1e293b;">${project?.StartDate ? new Date(project.StartDate).toLocaleDateString('es-CL') : 'N/A'}</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                              <td style="padding: 6px 8px; color: #475569;">Duración</td>
+                              <td style="padding: 6px 8px; color: #1e293b;">${project?.Duration || 0} meses</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                              <td style="padding: 6px 8px; color: #475569;">Estado</td>
+                              <td style="padding: 6px 8px; color: #1e293b;">${project?.Status ? 'Activo' : 'Inactivo'}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+
+                        <!-- Additional Information -->
+                        <div style="margin-top: 20px; padding: 12px; background-color: #f8fafc; border-left: 3px solid #3b82f6; border-radius: 4px;">
+                          <p style="font-size: 11px; color: #475569; margin: 0;">
+                            <strong>Nota:</strong> Este documento contiene información detallada del avance del presupuesto del proyecto.
+                          </p>
+                        </div>
+                      `;
+
+                      // Contenedor con las tres páginas
                       const container = document.createElement('div');
                       container.appendChild(page1);
                       container.appendChild(page2);
+                      container.appendChild(page3);
 
                       const opt = {
                         margin: 10,

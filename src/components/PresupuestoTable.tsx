@@ -120,54 +120,54 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
   const totalFinal = totalNeto + iva;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Tabla Principal de Presupuesto */}
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead className="font-rubik min-w-[200px]">Item</TableHead>
-              <TableHead className="font-rubik">Unidad</TableHead>
-              <TableHead className="font-rubik text-right">Cantidad</TableHead>
-              <TableHead className="font-rubik text-right">P.U.</TableHead>
-              <TableHead className="font-rubik text-right">Total</TableHead>
-              <TableHead className="font-rubik text-right">Avance Acum. (%)</TableHead>
-              <TableHead className="font-rubik text-right">Avance Parcial (%)</TableHead>
-              <TableHead className="font-rubik">Última Actualización</TableHead>
+            <TableRow className="h-10">
+              <TableHead className="font-rubik min-w-[200px] py-2">Item</TableHead>
+              <TableHead className="font-rubik py-2">Unidad</TableHead>
+              <TableHead className="font-rubik text-right py-2">Cantidad</TableHead>
+              <TableHead className="font-rubik text-right py-2">P.U.</TableHead>
+              <TableHead className="font-rubik text-right py-2">Total</TableHead>
+              <TableHead className="font-rubik text-right py-2">Avance Acum. (%)</TableHead>
+              <TableHead className="font-rubik text-right py-2">Avance Parcial (%)</TableHead>
+              <TableHead className="font-rubik py-2">Última Actualización</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody className="[&_tr]:h-10">
             {presupuesto.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-12">
+                <TableCell colSpan={8} className="text-center py-8">
                   <div className="flex flex-col items-center justify-center text-center">
-                    <ClipboardList className="h-12 w-12 text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground font-rubik">No hay partidas registradas</p>
+                    <ClipboardList className="h-10 w-10 text-muted-foreground mb-2" />
+                    <p className="text-muted-foreground font-rubik text-sm">No hay partidas registradas</p>
                   </div>
                 </TableCell>
               </TableRow>
             ) : (
               presupuesto.map((item) => (
-                <TableRow key={item.id} className="hover:bg-muted/50">
-                  <TableCell className="font-medium font-rubik">
+                <TableRow key={item.id} className="hover:bg-muted/50 h-10">
+                  <TableCell className="font-medium font-rubik py-2">
                     {item.Item || `Item ${item.id}`}
                   </TableCell>
-                  <TableCell className="font-rubik">{item.Unidad || '-'}</TableCell>
-                  <TableCell className="font-rubik text-right">
+                  <TableCell className="font-rubik py-2">{item.Unidad || '-'}</TableCell>
+                  <TableCell className="font-rubik text-right py-2">
                     {item.Cantidad ? new Intl.NumberFormat('es-CL').format(item.Cantidad) : '-'}
                   </TableCell>
-                  <TableCell className="font-rubik text-right">
+                  <TableCell className="font-rubik text-right py-2">
                     {item.PU ? formatCurrency(item.PU) : '-'}
                   </TableCell>
-                  <TableCell className="font-rubik text-right font-semibold">
+                  <TableCell className="font-rubik text-right font-semibold py-2">
                     {item.Total ? formatCurrency(item.Total) : '-'}
                   </TableCell>
-                  <TableCell className="font-rubik text-right">
+                  <TableCell className="font-rubik text-right py-2">
                     {item['Avance Acumulado'] !== null && item['Avance Acumulado'] !== undefined
                       ? `${item['Avance Acumulado'].toFixed(1)}%`
                       : '-'}
                   </TableCell>
-                  <TableCell className="font-rubik">
+                  <TableCell className="font-rubik py-2">
                     <Input
                       type="number"
                       step="0.1"
@@ -181,10 +181,10 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
                           handleUpdatePresupuesto(item);
                         }
                       }}
-                      className="w-24 text-right font-rubik"
+                      className="w-24 text-right font-rubik h-8"
                     />
                   </TableCell>
-                  <TableCell className="font-rubik text-sm text-muted-foreground">
+                  <TableCell className="font-rubik text-sm text-muted-foreground py-2">
                     {item['Ult. Actualizacion']
                       ? new Date(item['Ult. Actualizacion']).toLocaleDateString('es-CL', {
                           day: '2-digit',
@@ -198,29 +198,29 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
             )}
             
             {/* Subtotal Costo Directo */}
-            <TableRow className="bg-muted/50 font-semibold border-t-2">
-              <TableCell colSpan={4} className="font-rubik text-right">
+            <TableRow className="bg-muted/50 font-semibold border-t-2 h-10">
+              <TableCell colSpan={4} className="font-rubik text-right py-2">
                 Subtotal Costo Directo:
               </TableCell>
-              <TableCell className="font-rubik text-right">
+              <TableCell className="font-rubik text-right py-2">
                 {formatCurrency(subtotalCostoDirecto)}
               </TableCell>
               <TableCell colSpan={3}></TableCell>
             </TableRow>
             
             {/* Sección Gastos Generales y Utilidad */}
-            <TableRow className="bg-accent/30">
-              <TableCell colSpan={8} className="font-rubik font-bold text-center py-2">
+            <TableRow className="bg-accent/30 h-9">
+              <TableCell colSpan={8} className="font-rubik font-bold text-center py-1.5 text-sm">
                 Gastos Generales y Utilidad
               </TableCell>
             </TableRow>
             
-            <TableRow className="hover:bg-muted/50">
-              <TableCell colSpan={2} className="font-rubik font-medium">
+            <TableRow className="hover:bg-muted/50 h-10">
+              <TableCell colSpan={2} className="font-rubik font-medium py-2">
                 Gastos Generales
               </TableCell>
-              <TableCell className="font-rubik">%</TableCell>
-              <TableCell className="font-rubik text-right">
+              <TableCell className="font-rubik py-2">%</TableCell>
+              <TableCell className="font-rubik text-right py-2">
                 <Input
                   type="number"
                   step="0.1"
@@ -228,21 +228,21 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
                   placeholder="0.0"
                   value={gastosGenerales || ''}
                   onChange={(e) => setGastosGenerales(parseFloat(e.target.value) || 0)}
-                  className="w-24 text-right font-rubik"
+                  className="w-24 text-right font-rubik h-8"
                 />
               </TableCell>
-              <TableCell className="font-rubik text-right font-semibold">
+              <TableCell className="font-rubik text-right font-semibold py-2">
                 {formatCurrency(montoGastosGenerales)}
               </TableCell>
               <TableCell colSpan={3}></TableCell>
             </TableRow>
             
-            <TableRow className="hover:bg-muted/50">
-              <TableCell colSpan={2} className="font-rubik font-medium">
+            <TableRow className="hover:bg-muted/50 h-10">
+              <TableCell colSpan={2} className="font-rubik font-medium py-2">
                 Utilidad
               </TableCell>
-              <TableCell className="font-rubik">%</TableCell>
-              <TableCell className="font-rubik text-right">
+              <TableCell className="font-rubik py-2">%</TableCell>
+              <TableCell className="font-rubik text-right py-2">
                 <Input
                   type="number"
                   step="0.1"
@@ -250,45 +250,45 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
                   placeholder="0.0"
                   value={utilidad || ''}
                   onChange={(e) => setUtilidad(parseFloat(e.target.value) || 0)}
-                  className="w-24 text-right font-rubik"
+                  className="w-24 text-right font-rubik h-8"
                 />
               </TableCell>
-              <TableCell className="font-rubik text-right font-semibold">
+              <TableCell className="font-rubik text-right font-semibold py-2">
                 {formatCurrency(montoUtilidad)}
               </TableCell>
               <TableCell colSpan={3}></TableCell>
             </TableRow>
             
             {/* Total Neto */}
-            <TableRow className="bg-muted/50 font-semibold border-t-2">
-              <TableCell colSpan={4} className="font-rubik text-right">
+            <TableRow className="bg-muted/50 font-semibold border-t-2 h-10">
+              <TableCell colSpan={4} className="font-rubik text-right py-2">
                 Total Neto:
               </TableCell>
-              <TableCell className="font-rubik text-right">
+              <TableCell className="font-rubik text-right py-2">
                 {formatCurrency(totalNeto)}
               </TableCell>
               <TableCell colSpan={3}></TableCell>
             </TableRow>
             
             {/* IVA */}
-            <TableRow className="hover:bg-muted/50">
-              <TableCell colSpan={2} className="font-rubik font-medium">
+            <TableRow className="hover:bg-muted/50 h-10">
+              <TableCell colSpan={2} className="font-rubik font-medium py-2">
                 IVA
               </TableCell>
-              <TableCell className="font-rubik">%</TableCell>
-              <TableCell className="font-rubik text-right">19</TableCell>
-              <TableCell className="font-rubik text-right font-semibold">
+              <TableCell className="font-rubik py-2">%</TableCell>
+              <TableCell className="font-rubik text-right py-2">19</TableCell>
+              <TableCell className="font-rubik text-right font-semibold py-2">
                 {formatCurrency(iva)}
               </TableCell>
               <TableCell colSpan={3}></TableCell>
             </TableRow>
             
             {/* Total Final */}
-            <TableRow className="bg-primary/10 font-bold border-t-2">
-              <TableCell colSpan={4} className="font-rubik text-right text-lg">
+            <TableRow className="bg-primary/10 font-bold border-t-2 h-11">
+              <TableCell colSpan={4} className="font-rubik text-right py-2">
                 Total Final:
               </TableCell>
-              <TableCell className="font-rubik text-right text-lg">
+              <TableCell className="font-rubik text-right py-2">
                 {formatCurrency(totalFinal)}
               </TableCell>
               <TableCell colSpan={3}></TableCell>
@@ -299,24 +299,24 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
 
       {/* Control de Anticipos */}
       <Card>
-        <CardHeader>
-          <CardTitle className="font-rubik">Control de Anticipos</CardTitle>
+        <CardHeader className="py-3">
+          <CardTitle className="font-rubik text-base">Control de Anticipos</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="py-3">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead className="font-rubik">Concepto</TableHead>
-                <TableHead className="font-rubik text-right">Monto</TableHead>
+              <TableRow className="h-9">
+                <TableHead className="font-rubik py-2">Concepto</TableHead>
+                <TableHead className="font-rubik text-right py-2">Monto</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+            <TableBody className="[&_tr]:h-10">
               {/* Total Anticipos */}
-              <TableRow className="bg-muted/50 font-semibold">
-                <TableCell className="font-rubik">
+              <TableRow className="bg-muted/50 font-semibold h-10">
+                <TableCell className="font-rubik py-2">
                   Total Anticipos
                 </TableCell>
-                <TableCell className="font-rubik text-right">
+                <TableCell className="font-rubik text-right py-2">
                   <Input
                     type="number"
                     step="0.01"
@@ -324,17 +324,17 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
                     placeholder="0"
                     value={totalAnticipos || ''}
                     onChange={(e) => setTotalAnticipos(parseFloat(e.target.value) || 0)}
-                    className="w-32 text-right font-rubik ml-auto"
+                    className="w-32 text-right font-rubik ml-auto h-8"
                   />
                 </TableCell>
               </TableRow>
               
               {/* Devolución Actual */}
-              <TableRow className="hover:bg-muted/50">
-                <TableCell className="font-rubik">
+              <TableRow className="hover:bg-muted/50 h-10">
+                <TableCell className="font-rubik py-2">
                   Devolución de Anticipo Actual
                 </TableCell>
-                <TableCell className="font-rubik text-right">
+                <TableCell className="font-rubik text-right py-2">
                   <Input
                     type="number"
                     step="0.01"
@@ -342,17 +342,17 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
                     placeholder="0"
                     value={devolucionActual || ''}
                     onChange={(e) => setDevolucionActual(parseFloat(e.target.value) || 0)}
-                    className="w-32 text-right font-rubik ml-auto"
+                    className="w-32 text-right font-rubik ml-auto h-8"
                   />
                 </TableCell>
               </TableRow>
               
               {/* Devolución Acumulado */}
-              <TableRow className="hover:bg-muted/50">
-                <TableCell className="font-rubik">
+              <TableRow className="hover:bg-muted/50 h-10">
+                <TableCell className="font-rubik py-2">
                   Devolución de Anticipo Acumulado
                 </TableCell>
-                <TableCell className="font-rubik text-right">
+                <TableCell className="font-rubik text-right py-2">
                   <Input
                     type="number"
                     step="0.01"
@@ -360,27 +360,27 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
                     placeholder="0"
                     value={devolucionAcumulado || ''}
                     onChange={(e) => setDevolucionAcumulado(parseFloat(e.target.value) || 0)}
-                    className="w-32 text-right font-rubik ml-auto"
+                    className="w-32 text-right font-rubik ml-auto h-8"
                   />
                 </TableCell>
               </TableRow>
               
               {/* Total Devuelto */}
-              <TableRow className="bg-accent/20 font-semibold">
-                <TableCell className="font-rubik">
+              <TableRow className="bg-accent/20 font-semibold h-10">
+                <TableCell className="font-rubik py-2">
                   Total Devuelto
                 </TableCell>
-                <TableCell className="font-rubik text-right">
+                <TableCell className="font-rubik text-right py-2">
                   {formatCurrency(totalDevuelto)}
                 </TableCell>
               </TableRow>
               
               {/* Saldo por Devolver */}
-              <TableRow className="bg-primary/10 font-bold border-t-2">
-                <TableCell className="font-rubik">
+              <TableRow className="bg-primary/10 font-bold border-t-2 h-10">
+                <TableCell className="font-rubik py-2">
                   Saldo por Devolver
                 </TableCell>
-                <TableCell className="font-rubik text-right">
+                <TableCell className="font-rubik text-right py-2">
                   {formatCurrency(saldoPorDevolver)}
                 </TableCell>
               </TableRow>
@@ -391,24 +391,24 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
 
       {/* Control de Retenciones */}
       <Card>
-        <CardHeader>
-          <CardTitle className="font-rubik">Control de Retenciones</CardTitle>
+        <CardHeader className="py-3">
+          <CardTitle className="font-rubik text-base">Control de Retenciones</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="py-3">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead className="font-rubik">Concepto</TableHead>
-                <TableHead className="font-rubik text-right">Monto</TableHead>
+              <TableRow className="h-9">
+                <TableHead className="font-rubik py-2">Concepto</TableHead>
+                <TableHead className="font-rubik text-right py-2">Monto</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+            <TableBody className="[&_tr]:h-10">
               {/* Total Retenciones */}
-              <TableRow className="bg-muted/50 font-semibold">
-                <TableCell className="font-rubik">
+              <TableRow className="bg-muted/50 font-semibold h-10">
+                <TableCell className="font-rubik py-2">
                   Total Retenciones
                 </TableCell>
-                <TableCell className="font-rubik text-right">
+                <TableCell className="font-rubik text-right py-2">
                   <Input
                     type="number"
                     step="0.01"
@@ -416,17 +416,17 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
                     placeholder="0"
                     value={totalRetenciones || ''}
                     onChange={(e) => setTotalRetenciones(parseFloat(e.target.value) || 0)}
-                    className="w-32 text-right font-rubik ml-auto"
+                    className="w-32 text-right font-rubik ml-auto h-8"
                   />
                 </TableCell>
               </TableRow>
               
               {/* Retención Actual */}
-              <TableRow className="hover:bg-muted/50">
-                <TableCell className="font-rubik">
+              <TableRow className="hover:bg-muted/50 h-10">
+                <TableCell className="font-rubik py-2">
                   Retención de Anticipo Actual
                 </TableCell>
-                <TableCell className="font-rubik text-right">
+                <TableCell className="font-rubik text-right py-2">
                   <Input
                     type="number"
                     step="0.01"
@@ -434,17 +434,17 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
                     placeholder="0"
                     value={retencionActual || ''}
                     onChange={(e) => setRetencionActual(parseFloat(e.target.value) || 0)}
-                    className="w-32 text-right font-rubik ml-auto"
+                    className="w-32 text-right font-rubik ml-auto h-8"
                   />
                 </TableCell>
               </TableRow>
               
               {/* Retención Acumulado */}
-              <TableRow className="hover:bg-muted/50">
-                <TableCell className="font-rubik">
+              <TableRow className="hover:bg-muted/50 h-10">
+                <TableCell className="font-rubik py-2">
                   Retención de Anticipo Acumulado
                 </TableCell>
-                <TableCell className="font-rubik text-right">
+                <TableCell className="font-rubik text-right py-2">
                   <Input
                     type="number"
                     step="0.01"
@@ -452,27 +452,27 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
                     placeholder="0"
                     value={retencionAcumulado || ''}
                     onChange={(e) => setRetencionAcumulado(parseFloat(e.target.value) || 0)}
-                    className="w-32 text-right font-rubik ml-auto"
+                    className="w-32 text-right font-rubik ml-auto h-8"
                   />
                 </TableCell>
               </TableRow>
               
               {/* Total Retenido */}
-              <TableRow className="bg-accent/20 font-semibold">
-                <TableCell className="font-rubik">
+              <TableRow className="bg-accent/20 font-semibold h-10">
+                <TableCell className="font-rubik py-2">
                   Total Retenido
                 </TableCell>
-                <TableCell className="font-rubik text-right">
+                <TableCell className="font-rubik text-right py-2">
                   {formatCurrency(totalRetenido)}
                 </TableCell>
               </TableRow>
               
               {/* Saldo por Retener */}
-              <TableRow className="bg-primary/10 font-bold border-t-2">
-                <TableCell className="font-rubik">
+              <TableRow className="bg-primary/10 font-bold border-t-2 h-10">
+                <TableCell className="font-rubik py-2">
                   Saldo por Retener
                 </TableCell>
-                <TableCell className="font-rubik text-right">
+                <TableCell className="font-rubik text-right py-2">
                   {formatCurrency(saldoPorRetener)}
                 </TableCell>
               </TableRow>

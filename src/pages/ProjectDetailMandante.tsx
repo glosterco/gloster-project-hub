@@ -837,27 +837,27 @@ const ProjectDetailMandante = () => {
                       page2.style.pageBreakAfter = 'always';
                       
                       page2.innerHTML = `
-                        <div style="text-align: center; margin-bottom: 20px;">
+                        <div style="text-align: center; margin-bottom: 15px;">
                           <h1 style="color: #1F2937; margin-bottom: 5px; font-size: 20px; font-weight: bold;">Resumen del Período Actualizado</h1>
                         </div>
                         
-                        <div style="margin-bottom: 18px;">
-                          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
-                            <div style="padding: 10px; background-color: #F8FAFC; border-radius: 6px; border-left: 3px solid #6B7280;">
-                              <p style="color: #6B7280; font-size: 11px; margin-bottom: 3px;">Fecha de Actualización</p>
-                              <p style="color: #1F2937; font-size: 13px; font-weight: 600;">${new Date().toLocaleDateString('es-CL')}</p>
-                            </div>
-                            <div style="padding: 10px; background-color: #FFFBEB; border-radius: 6px; border-left: 3px solid #F5DF4D;">
-                              <p style="color: #6B7280; font-size: 11px; margin-bottom: 3px;">Porcentaje de Avance Financiero</p>
-                              <p style="color: #1F2937; font-size: 13px; font-weight: 700;">${porcentajeAvance}%</p>
-                            </div>
-                          </div>
-                          
+                        <div style="margin-bottom: 15px;">
                           <table style="width: 100%; max-width: 700px; margin: 0 auto; border-collapse: collapse; font-size: 11px;">
+                            <!-- Información de fecha y avance -->
+                            <tr style="background-color: #FFFBEB;">
+                              <td style="padding: 8px; border: 1px solid #E5E7EB; color: #6B7280; font-weight: 600; width: 60%;">Fecha de Actualización</td>
+                              <td style="padding: 8px; text-align: right; border: 1px solid #E5E7EB; color: #1F2937; font-weight: 600; width: 40%;">${new Date().toLocaleDateString('es-CL')}</td>
+                            </tr>
+                            <tr style="background-color: #FFFBEB;">
+                              <td style="padding: 8px; border: 1px solid #E5E7EB; border-bottom: 3px solid #F5DF4D; color: #6B7280; font-weight: 600;">Porcentaje de Avance Financiero</td>
+                              <td style="padding: 8px; text-align: right; border: 1px solid #E5E7EB; border-bottom: 3px solid #F5DF4D; color: #1F2937; font-weight: 700; font-size: 12px;">${porcentajeAvance}%</td>
+                            </tr>
+                            
+                            <!-- Encabezado de tabla -->
                             <thead>
                               <tr style="background-color: #F5DF4D;">
-                                <th style="padding: 8px; text-align: left; font-weight: 600; border: 1px solid #E5E7EB; width: 60%; color: #1F2937;">Concepto</th>
-                                <th style="padding: 8px; text-align: right; font-weight: 600; border: 1px solid #E5E7EB; width: 40%; color: #1F2937;">Monto</th>
+                                <th style="padding: 8px; text-align: left; font-weight: 600; border: 1px solid #E5E7EB; color: #1F2937;">Concepto</th>
+                                <th style="padding: 8px; text-align: right; font-weight: 600; border: 1px solid #E5E7EB; color: #1F2937;">Monto</th>
                               </tr>
                             </thead>
                             <tbody>

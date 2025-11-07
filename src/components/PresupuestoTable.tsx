@@ -22,6 +22,8 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
   onUpdate 
 }) => {
   const [editingValues, setEditingValues] = useState<{ [key: number]: number }>({});
+  const [gastosGenerales, setGastosGenerales] = useState<number>(0);
+  const [utilidad, setUtilidad] = useState<number>(0);
   const { toast } = useToast();
 
   const formatCurrency = (amount: number) => {
@@ -91,38 +93,42 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
   }
 
   // Calcular totales
-  const subtotalNeto = presupuesto.reduce((sum, item) => sum + (item.Total || 0), 0);
-  const iva = subtotalNeto * 0.19;
-  const totalConIva = subtotalNeto + iva;
+  const subtotalCostoDirecto = presupuesto.reduce((sum, item) => sum + (item.Total || 0), 0);
+  const montoGastosGenerales = subtotalCostoDirecto * (gastosGenerales / 100);
+  const montoUtilidad = subtotalCostoDirecto * (utilidad / 100);
+  const totalNeto = subtotalCostoDirecto + montoGastosGenerales + montoUtilidad;
+  const iva = totalNeto * 0.19;
+  const totalFinal = totalNeto + iva;
 
   return (
-    <div className="overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="font-rubik min-w-[200px]">Item</TableHead>
-            <TableHead className="font-rubik">Unidad</TableHead>
-            <TableHead className="font-rubik text-right">Cantidad</TableHead>
-            <TableHead className="font-rubik text-right">P.U.</TableHead>
-            <TableHead className="font-rubik text-right">Total</TableHead>
-            <TableHead className="font-rubik text-right">Avance Acum. (%)</TableHead>
-            <TableHead className="font-rubik text-right">Avance Parcial (%)</TableHead>
-            <TableHead className="font-rubik">Última Actualización</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {presupuesto.length === 0 ? (
+    <div className="space-y-6">
+      {/* Tabla Principal de Presupuesto */}
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={8} className="text-center py-12">
-                <div className="flex flex-col items-center justify-center text-center">
-                  <ClipboardList className="h-12 w-12 text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground font-rubik">No hay partidas registradas</p>
-                </div>
-              </TableCell>
+              <TableHead className="font-rubik min-w-[200px]">Item</TableHead>
+              <TableHead className="font-rubik">Unidad</TableHead>
+              <TableHead className="font-rubik text-right">Cantidad</TableHead>
+              <TableHead className="font-rubik text-right">P.U.</TableHead>
+              <TableHead className="font-rubik text-right">Total</TableHead>
+              <TableHead className="font-rubik text-right">Avance Acum. (%)</TableHead>
+              <TableHead className="font-rubik text-right">Avance Parcial (%)</TableHead>
+              <TableHead className="font-rubik">Última Actualización</TableHead>
             </TableRow>
-          ) : (
-            <>
-              {presupuesto.map((item) => (
+          </TableHeader>
+          <TableBody>
+            {presupuesto.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={8} className="text-center py-12">
+                  <div className="flex flex-col items-center justify-center text-center">
+                    <ClipboardList className="h-12 w-12 text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground font-rubik">No hay partidas registradas</p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : (
+              presupuesto.map((item) => (
                 <TableRow key={item.id} className="hover:bg-muted/50">
                   <TableCell className="font-medium font-rubik">
                     {item.Item || `Item ${item.id}`}
@@ -169,42 +175,178 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
                       : '-'}
                   </TableCell>
                 </TableRow>
-              ))}
-              
-              {/* Fila de subtotales */}
+              ))
+            )}
+            
+            {/* Subtotal Costo Directo */}
+            <TableRow className="bg-muted/50 font-semibold border-t-2">
+              <TableCell colSpan={4} className="font-rubik text-right">
+                Subtotal Costo Directo:
+              </TableCell>
+              <TableCell className="font-rubik text-right">
+                {formatCurrency(subtotalCostoDirecto)}
+              </TableCell>
+              <TableCell colSpan={3}></TableCell>
+            </TableRow>
+            
+            {/* Sección Gastos Generales y Utilidad */}
+            <TableRow className="bg-accent/30">
+              <TableCell colSpan={8} className="font-rubik font-bold text-center py-2">
+                Gastos Generales y Utilidad
+              </TableCell>
+            </TableRow>
+            
+            <TableRow className="hover:bg-muted/50">
+              <TableCell colSpan={2} className="font-rubik font-medium">
+                Gastos Generales
+              </TableCell>
+              <TableCell className="font-rubik">%</TableCell>
+              <TableCell className="font-rubik text-right">
+                <Input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  placeholder="0.0"
+                  value={gastosGenerales || ''}
+                  onChange={(e) => setGastosGenerales(parseFloat(e.target.value) || 0)}
+                  className="w-24 text-right font-rubik"
+                />
+              </TableCell>
+              <TableCell className="font-rubik text-right font-semibold">
+                {formatCurrency(montoGastosGenerales)}
+              </TableCell>
+              <TableCell colSpan={3}></TableCell>
+            </TableRow>
+            
+            <TableRow className="hover:bg-muted/50">
+              <TableCell colSpan={2} className="font-rubik font-medium">
+                Utilidad
+              </TableCell>
+              <TableCell className="font-rubik">%</TableCell>
+              <TableCell className="font-rubik text-right">
+                <Input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  placeholder="0.0"
+                  value={utilidad || ''}
+                  onChange={(e) => setUtilidad(parseFloat(e.target.value) || 0)}
+                  className="w-24 text-right font-rubik"
+                />
+              </TableCell>
+              <TableCell className="font-rubik text-right font-semibold">
+                {formatCurrency(montoUtilidad)}
+              </TableCell>
+              <TableCell colSpan={3}></TableCell>
+            </TableRow>
+            
+            {/* Total Neto */}
+            <TableRow className="bg-muted/50 font-semibold border-t-2">
+              <TableCell colSpan={4} className="font-rubik text-right">
+                Total Neto:
+              </TableCell>
+              <TableCell className="font-rubik text-right">
+                {formatCurrency(totalNeto)}
+              </TableCell>
+              <TableCell colSpan={3}></TableCell>
+            </TableRow>
+            
+            {/* IVA */}
+            <TableRow className="hover:bg-muted/50">
+              <TableCell colSpan={2} className="font-rubik font-medium">
+                IVA
+              </TableCell>
+              <TableCell className="font-rubik">%</TableCell>
+              <TableCell className="font-rubik text-right">19</TableCell>
+              <TableCell className="font-rubik text-right font-semibold">
+                {formatCurrency(iva)}
+              </TableCell>
+              <TableCell colSpan={3}></TableCell>
+            </TableRow>
+            
+            {/* Total Final */}
+            <TableRow className="bg-primary/10 font-bold border-t-2">
+              <TableCell colSpan={4} className="font-rubik text-right text-lg">
+                Total Final:
+              </TableCell>
+              <TableCell className="font-rubik text-right text-lg">
+                {formatCurrency(totalFinal)}
+              </TableCell>
+              <TableCell colSpan={3}></TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Control de Anticipos */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="font-rubik">Control de Anticipos</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="font-rubik">Concepto</TableHead>
+                <TableHead className="font-rubik">Unidad</TableHead>
+                <TableHead className="font-rubik text-right">Cantidad</TableHead>
+                <TableHead className="font-rubik text-right">P.U.</TableHead>
+                <TableHead className="font-rubik text-right">Total</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground font-rubik">
+                  No hay anticipos registrados
+                </TableCell>
+              </TableRow>
               <TableRow className="bg-muted/50 font-semibold border-t-2">
                 <TableCell colSpan={4} className="font-rubik text-right">
-                  Subtotal Neto:
+                  Total Anticipos:
                 </TableCell>
                 <TableCell className="font-rubik text-right">
-                  {formatCurrency(subtotalNeto)}
+                  {formatCurrency(0)}
                 </TableCell>
-                <TableCell colSpan={3}></TableCell>
               </TableRow>
-              
-              <TableRow className="bg-muted/50 font-semibold">
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Control de Retenciones */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="font-rubik">Control de Retenciones</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="font-rubik">Concepto</TableHead>
+                <TableHead className="font-rubik">Unidad</TableHead>
+                <TableHead className="font-rubik text-right">Cantidad</TableHead>
+                <TableHead className="font-rubik text-right">P.U.</TableHead>
+                <TableHead className="font-rubik text-right">Total</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground font-rubik">
+                  No hay retenciones registradas
+                </TableCell>
+              </TableRow>
+              <TableRow className="bg-muted/50 font-semibold border-t-2">
                 <TableCell colSpan={4} className="font-rubik text-right">
-                  IVA (19%):
+                  Total Retenciones:
                 </TableCell>
                 <TableCell className="font-rubik text-right">
-                  {formatCurrency(iva)}
+                  {formatCurrency(0)}
                 </TableCell>
-                <TableCell colSpan={3}></TableCell>
               </TableRow>
-              
-              <TableRow className="bg-muted/50 font-bold border-t-2">
-                <TableCell colSpan={4} className="font-rubik text-right">
-                  Total con IVA:
-                </TableCell>
-                <TableCell className="font-rubik text-right">
-                  {formatCurrency(totalConIva)}
-                </TableCell>
-                <TableCell colSpan={3}></TableCell>
-              </TableRow>
-            </>
-          )}
-        </TableBody>
-      </Table>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 };

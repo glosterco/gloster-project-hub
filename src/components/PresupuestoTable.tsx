@@ -13,13 +13,15 @@ interface PresupuestoTableProps {
   loading: boolean;
   currency?: string;
   onUpdate?: () => void;
+  projectId: number;
 }
 
 export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
   presupuesto, 
   loading, 
   currency = 'CLP',
-  onUpdate 
+  onUpdate,
+  projectId
 }) => {
   const [editingValues, setEditingValues] = useState<{ [key: number]: number }>({});
   const [gastosGenerales, setGastosGenerales] = useState<number>(0);
@@ -34,6 +36,11 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
   const [totalRetenciones, setTotalRetenciones] = useState<number>(0);
   const [retencionActual, setRetencionActual] = useState<number>(0);
   const [retencionAcumulado, setRetencionAcumulado] = useState<number>(0);
+  
+  // Estados para rastrear si hay controles en DB
+  const [anticiposId, setAnticiposId] = useState<number | null>(null);
+  const [retencionesId, setRetencionesId] = useState<number | null>(null);
+  const [controlsLoaded, setControlsLoaded] = useState(false);
   
   const { toast } = useToast();
   
@@ -56,6 +63,43 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
     }).format(amount);
   };
 
+  // Cargar controles desde la base de datos
+  React.useEffect(() => {
+    const loadControls = async () => {
+      if (!projectId || controlsLoaded) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('Presupuesto' as any)
+          .select('*')
+          .eq('Project_ID', projectId)
+          .in('Item', ['Control de Anticipos', 'Control de Retenciones']);
+        
+        if (error) throw error;
+        
+        data?.forEach((item: any) => {
+          if (item.Item === 'Control de Anticipos') {
+            setTotalAnticipos(item.Total || 0);
+            setDevolucionAcumulado(item['Avance Acumulado'] || 0);
+            setDevolucionActual(item['Avance Parcial'] || 0);
+            setAnticiposId(item.id);
+          } else if (item.Item === 'Control de Retenciones') {
+            setTotalRetenciones(item.Total || 0);
+            setRetencionAcumulado(item['Avance Acumulado'] || 0);
+            setRetencionActual(item['Avance Parcial'] || 0);
+            setRetencionesId(item.id);
+          }
+        });
+        
+        setControlsLoaded(true);
+      } catch (error) {
+        console.error('Error loading controls:', error);
+      }
+    };
+    
+    loadControls();
+  }, [projectId, controlsLoaded]);
+
   const handleAvanceParcialChange = (id: number, value: string) => {
     const numValue = parseFloat(value) || 0;
     setEditingValues(prev => ({ ...prev, [id]: numValue }));
@@ -76,6 +120,9 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
         .eq('id', item.id);
 
       if (error) throw error;
+
+      // Guardar controles también
+      await saveControls();
 
       toast({
         title: "Actualizado",
@@ -98,6 +145,67 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
         description: "No se pudo actualizar el presupuesto",
         variant: "destructive",
       });
+    }
+  };
+
+  const saveControls = async () => {
+    try {
+      // Guardar Control de Anticipos
+      if (anticiposId) {
+        await supabase
+          .from('Presupuesto' as any)
+          .update({
+            Total: totalAnticipos,
+            'Avance Acumulado': devolucionAcumulado,
+            'Avance Parcial': devolucionActual,
+            'Ult. Actualizacion': new Date().toISOString(),
+          })
+          .eq('id', anticiposId);
+      } else {
+        const { data, error } = await supabase
+          .from('Presupuesto' as any)
+          .insert({
+            Project_ID: projectId,
+            Item: 'Control de Anticipos',
+            Total: totalAnticipos,
+            'Avance Acumulado': devolucionAcumulado,
+            'Avance Parcial': devolucionActual,
+            'Ult. Actualizacion': new Date().toISOString(),
+          })
+          .select()
+          .single();
+        if (data && !error) setAnticiposId((data as any).id);
+      }
+
+      // Guardar Control de Retenciones
+      if (retencionesId) {
+        await supabase
+          .from('Presupuesto' as any)
+          .update({
+            Total: totalRetenciones,
+            'Avance Acumulado': retencionAcumulado,
+            'Avance Parcial': retencionActual,
+            'Ult. Actualizacion': new Date().toISOString(),
+          })
+          .eq('id', retencionesId);
+      } else {
+        const { data, error } = await supabase
+          .from('Presupuesto' as any)
+          .insert({
+            Project_ID: projectId,
+            Item: 'Control de Retenciones',
+            Total: totalRetenciones,
+            'Avance Acumulado': retencionAcumulado,
+            'Avance Parcial': retencionActual,
+            'Ult. Actualizacion': new Date().toISOString(),
+          })
+          .select()
+          .single();
+        if (data && !error) setRetencionesId((data as any).id);
+      }
+    } catch (error) {
+      console.error('Error saving controls:', error);
+      throw error;
     }
   };
 

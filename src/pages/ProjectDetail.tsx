@@ -779,6 +779,7 @@ const ProjectDetail = () => {
                           loading={presupuestoLoading} 
                           currency={project?.Currency}
                           onUpdate={refetchPresupuesto}
+                          projectId={parseInt(id || '0')}
                         />
                       </CardContent>
                     </Card>

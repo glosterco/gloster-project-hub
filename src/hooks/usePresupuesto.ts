@@ -16,8 +16,16 @@ export interface Presupuesto {
   created_at: string;
 }
 
+export interface ControlData {
+  total: number;
+  acumulado: number;
+  actual: number;
+}
+
 export const usePresupuesto = (projectId: string) => {
   const [presupuesto, setPresupuesto] = useState<Presupuesto[]>([]);
+  const [anticipos, setAnticipos] = useState<ControlData>({ total: 0, acumulado: 0, actual: 0 });
+  const [retenciones, setRetenciones] = useState<ControlData>({ total: 0, acumulado: 0, actual: 0 });
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -51,7 +59,33 @@ export const usePresupuesto = (projectId: string) => {
       }
       
       console.log('✅ Fetched presupuesto:', Array.isArray(presupuestoData) ? presupuestoData.length : 0);
-      setPresupuesto((presupuestoData as any) || []);
+      
+      // Separar datos regulares de controles
+      const regularItems: any[] = [];
+      let anticiposData: ControlData = { total: 0, acumulado: 0, actual: 0 };
+      let retencionesData: ControlData = { total: 0, acumulado: 0, actual: 0 };
+      
+      presupuestoData?.forEach((item: any) => {
+        if (item.Item === 'Control de Anticipos') {
+          anticiposData = {
+            total: item.Total || 0,
+            acumulado: item['Avance Acumulado'] || 0,
+            actual: item['Avance Parcial'] || 0
+          };
+        } else if (item.Item === 'Control de Retenciones') {
+          retencionesData = {
+            total: item.Total || 0,
+            acumulado: item['Avance Acumulado'] || 0,
+            actual: item['Avance Parcial'] || 0
+          };
+        } else {
+          regularItems.push(item);
+        }
+      });
+      
+      setPresupuesto(regularItems);
+      setAnticipos(anticiposData);
+      setRetenciones(retencionesData);
     } catch (error) {
       console.error('❌ CRITICAL ERROR in fetchPresupuesto:', error);
       toast({
@@ -70,6 +104,8 @@ export const usePresupuesto = (projectId: string) => {
 
   return {
     presupuesto,
+    anticipos,
+    retenciones,
     loading,
     refetch: fetchPresupuesto
   };

@@ -1102,18 +1102,6 @@ const ProjectDetailMandante = () => {
                             </tr>
                           </tbody>
                         </table>
-
-                        <!-- Resumen de Avances -->
-                        <div style="margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                          <div style="padding: 10px; background-color: #F8FAFC; border-radius: 6px; border-left: 3px solid #3b82f6;">
-                            <p style="font-size: 9px; color: #475569; margin: 0 0 5px 0;"><strong>Avance Acumulado Total:</strong></p>
-                            <p style="font-size: 11px; color: #1e293b; font-weight: 700; margin: 0;">${formatCurrency(avanceAcumuladoTotal, project?.Currency)} (${porcentajeAvance}%)</p>
-                          </div>
-                          <div style="padding: 10px; background-color: #FFFBEB; border-radius: 6px; border-left: 3px solid #F5DF4D;">
-                            <p style="font-size: 9px; color: #475569; margin: 0 0 5px 0;"><strong>Avance Parcial Período:</strong></p>
-                            <p style="font-size: 11px; color: #1e293b; font-weight: 700; margin: 0;">${formatCurrency(avanceParcialTotal, project?.Currency)}</p>
-                          </div>
-                        </div>
                       `;
 
                       // Contenedor con las tres páginas

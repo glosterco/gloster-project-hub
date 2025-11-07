@@ -34,8 +34,11 @@
 
     --radius: 0.5rem;
 
-    --brand-yellow: 48 96% 55%;
+    --brand-yellow: 48 89% 63%;
     --brand-yellow-foreground: 222.2 47.4% 11.2%;
+    
+    --gloster-accent: 31 96% 55%;
+    --gloster-accent-foreground: 0 0% 100%;
 
     --sidebar-background: 0 0% 98%;
 
@@ -91,8 +94,11 @@
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
 
-    --brand-yellow: 48 96% 55%;
+    --brand-yellow: 48 89% 63%;
     --brand-yellow-foreground: 210 40% 98%;
+    
+    --gloster-accent: 31 96% 55%;
+    --gloster-accent-foreground: 0 0% 100%;
   }
 }
 

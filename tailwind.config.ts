@@ -23,9 +23,10 @@ export default {
 				'sans': ['Rubik', 'sans-serif'],
 			},
 			colors: {
-				// Gloster brand colors
+				// Gloster brand colors - Enhanced palette
 				'gloster-yellow': '#F5DF4D',
-				'gloster-gray': '#939597',
+				'gloster-gray': '#6B7280',
+				'gloster-dark': '#1F2937',
 				'gloster-white': '#FFFFFF',
 				
 				border: 'hsl(var(--border))',

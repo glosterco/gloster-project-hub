@@ -903,21 +903,18 @@ const ProjectDetailMandante = () => {
                               <td style="padding: 6px 8px; border: 1px solid #E5E7EB; border-bottom: 2px solid #6B7280; color: #6B7280; font-weight: 600;">Porcentaje de Avance Financiero</td>
                               <td style="padding: 6px 8px; text-align: right; border: 1px solid #E5E7EB; border-bottom: 2px solid #6B7280; color: #1F2937; font-weight: 700; font-size: 13px;">${porcentajeAvance}%</td>
                             </tr>
-                            
-                            <!-- Encabezado de tabla -->
-                            <thead>
+                            <tbody>
+                              <!-- Encabezado de tabla -->
                               <tr style="background-color: #F5DF4D;">
                                 <th style="padding: 6px 8px; text-align: left; font-weight: 600; border: 1px solid #E5E7EB; color: #1F2937;">Concepto</th>
                                 <th style="padding: 6px 8px; text-align: right; font-weight: 600; border: 1px solid #E5E7EB; color: #1F2937;">Monto</th>
                               </tr>
-                            </thead>
-                            <tbody>
                               <!-- SECCIÓN: COSTO DIRECTO -->
                               <tr style="background-color: #FFFFFF;">
                                 <td style="padding: 5px 8px; border: 1px solid #E5E7EB; color: #1F2937;">Avance Acumulado Actual - Costo Directo</td>
                                 <td style="padding: 5px 8px; text-align: right; border: 1px solid #E5E7EB; color: #1F2937; font-weight: 600;">${formatCurrency(avanceAcumuladoTotal, project?.Currency)}</td>
                               </tr>
-                              <tr style="background-color: #F8FAFC;">
+                              <tr style="background-color: #FFFFFF;">
                                 <td style="padding: 5px 8px; border: 1px solid #E5E7EB; color: #6B7280;">Avance Acumulado Anterior - Costo Directo</td>
                                 <td style="padding: 5px 8px; text-align: right; border: 1px solid #E5E7EB; color: #6B7280;">${formatCurrency(avanceAcumuladoAnterior, project?.Currency)}</td>
                               </tr>
@@ -927,7 +924,7 @@ const ProjectDetailMandante = () => {
                               </tr>
                               
                               <!-- SECCIÓN: GASTOS GENERALES Y UTILIDAD -->
-                              <tr style="background-color: #FFFFFF;">
+                              <tr style="background-color: #F8FAFC;">
                                 <td style="padding: 5px 8px; border: 1px solid #E5E7EB; color: #6B7280;">Gastos Generales (${gastosGenerales.toFixed(1)}%)</td>
                                 <td style="padding: 5px 8px; text-align: right; border: 1px solid #E5E7EB; color: #6B7280;">${formatCurrency(montoGastosGeneralesParcial, project?.Currency)}</td>
                               </tr>
@@ -945,7 +942,7 @@ const ProjectDetailMandante = () => {
                                 <td style="padding: 5px 8px; border: 1px solid #E5E7EB; color: #6B7280;">Retenciones (${retenciones.total > 0 ? ((retenciones.actual / retenciones.total) * 100).toFixed(1) : "0.0"}%)</td>
                                 <td style="padding: 5px 8px; text-align: right; border: 1px solid #E5E7EB; color: #6B7280;">-${formatCurrency(retenciones.actual || 0, project?.Currency)}</td>
                               </tr>
-                              <tr style="background-color: #F8FAFC;">
+                              <tr style="background-color: #FFFFFF;">
                                 <td style="padding: 5px 8px; border: 1px solid #E5E7EB; color: #6B7280;">Devolución Anticipo (${anticipos.total > 0 ? ((anticipos.actual / anticipos.total) * 100).toFixed(1) : "0.0"}%)</td>
                                 <td style="padding: 5px 8px; text-align: right; border: 1px solid #E5E7EB; color: #6B7280;">-${formatCurrency(anticipos.actual || 0, project?.Currency)}</td>
                               </tr>

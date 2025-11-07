@@ -527,16 +527,8 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
                   <TableCell className="font-rubik py-2">
                     Total Anticipos
                   </TableCell>
-                  <TableCell className="font-rubik text-right py-2">
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="0"
-                      value={totalAnticipos || ''}
-                      onChange={(e) => setTotalAnticipos(parseFloat(e.target.value) || 0)}
-                      className="w-32 text-right font-rubik ml-auto h-8"
-                    />
+                  <TableCell className="font-rubik text-right font-semibold py-2">
+                    {formatCurrency(totalAnticipos)}
                   </TableCell>
                 </TableRow>
                 
@@ -611,16 +603,8 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
                   <TableCell className="font-rubik py-2">
                     Total Retenciones
                   </TableCell>
-                  <TableCell className="font-rubik text-right py-2">
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="0"
-                      value={totalRetenciones || ''}
-                      onChange={(e) => setTotalRetenciones(parseFloat(e.target.value) || 0)}
-                      className="w-32 text-right font-rubik ml-auto h-8"
-                    />
+                  <TableCell className="font-rubik text-right font-semibold py-2">
+                    {formatCurrency(totalRetenciones)}
                   </TableCell>
                 </TableRow>
                 

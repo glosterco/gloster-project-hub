@@ -53,6 +53,15 @@ export interface ExecutiveSummaryData {
   // Reuniones metrics
   totalReuniones: number;
   projects: { id: number; name: string }[];
+  // Mandante features configuration
+  features: {
+    Adicionales: boolean;
+    Documentos: boolean;
+    Fotos: boolean;
+    Presupuesto: boolean;
+    Reuniones: boolean;
+    Licitaciones: boolean;
+  };
 }
 
 export const useExecutiveSummaryMandante = (selectedProjectIds?: number[]) => {
@@ -74,6 +83,22 @@ export const useExecutiveSummaryMandante = (selectedProjectIds?: number[]) => {
 
       // Get user's mandante IDs only
       const mandanteIds = await getUserMandanteIds(user.id);
+
+      // Fetch mandante features configuration
+      const { data: mandanteConfig } = await supabase
+        .from('Mandantes')
+        .select('Adicionales, Documentos, Fotos, Presupuesto, Reuniones, Licitaciones')
+        .in('id', mandanteIds.split(',').map(Number))
+        .maybeSingle();
+
+      const features = {
+        Adicionales: mandanteConfig?.Adicionales || false,
+        Documentos: mandanteConfig?.Documentos || false,
+        Fotos: mandanteConfig?.Fotos || false,
+        Presupuesto: mandanteConfig?.Presupuesto || false,
+        Reuniones: mandanteConfig?.Reuniones || false,
+        Licitaciones: mandanteConfig?.Licitaciones || false,
+      };
 
       if (!mandanteIds || mandanteIds === '0') {
         setSummaryData({
@@ -101,7 +126,8 @@ export const useExecutiveSummaryMandante = (selectedProjectIds?: number[]) => {
           avancePromedioPresupuesto: 0,
           montoTotalPresupuesto: 0,
           totalReuniones: 0,
-          projects: []
+          projects: [],
+          features
         });
         return;
       }
@@ -154,7 +180,8 @@ export const useExecutiveSummaryMandante = (selectedProjectIds?: number[]) => {
           avancePromedioPresupuesto: 0,
           montoTotalPresupuesto: 0,
           totalReuniones: 0,
-          projects: []
+          projects: [],
+          features
         });
         return;
       }
@@ -326,7 +353,8 @@ export const useExecutiveSummaryMandante = (selectedProjectIds?: number[]) => {
         avancePromedioPresupuesto,
         montoTotalPresupuesto,
         totalReuniones,
-        projects: projects.map(p => ({ id: p.id, name: p.Name || 'Sin nombre' }))
+        projects: projects.map(p => ({ id: p.id, name: p.Name || 'Sin nombre' })),
+        features
       });
 
     } catch (error: any) {

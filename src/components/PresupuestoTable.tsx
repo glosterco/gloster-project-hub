@@ -113,11 +113,34 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
 
   // Calcular totales
   const subtotalCostoDirecto = presupuesto.reduce((sum, item) => sum + (item.Total || 0), 0);
+  const avanceAcumuladoTotal = presupuesto.reduce((sum, item) => {
+    const monto = (item.Total || 0) * ((item['Avance Acumulado'] || 0) / 100);
+    return sum + monto;
+  }, 0);
+  const avanceParcialTotal = presupuesto.reduce((sum, item) => {
+    const monto = (item.Total || 0) * ((editingValues[item.id] || 0) / 100);
+    return sum + monto;
+  }, 0);
+  
   const montoGastosGenerales = subtotalCostoDirecto * (gastosGenerales / 100);
+  const montoGastosGeneralesAcum = avanceAcumuladoTotal * (gastosGenerales / 100);
+  const montoGastosGeneralesParcial = avanceParcialTotal * (gastosGenerales / 100);
+  
   const montoUtilidad = subtotalCostoDirecto * (utilidad / 100);
+  const montoUtilidadAcum = avanceAcumuladoTotal * (utilidad / 100);
+  const montoUtilidadParcial = avanceParcialTotal * (utilidad / 100);
+  
   const totalNeto = subtotalCostoDirecto + montoGastosGenerales + montoUtilidad;
+  const totalNetoAcum = avanceAcumuladoTotal + montoGastosGeneralesAcum + montoUtilidadAcum;
+  const totalNetoParcial = avanceParcialTotal + montoGastosGeneralesParcial + montoUtilidadParcial;
+  
   const iva = totalNeto * 0.19;
+  const ivaAcum = totalNetoAcum * 0.19;
+  const ivaParcial = totalNetoParcial * 0.19;
+  
   const totalFinal = totalNeto + iva;
+  const totalFinalAcum = totalNetoAcum + ivaAcum;
+  const totalFinalParcial = totalNetoParcial + ivaParcial;
 
   return (
     <div className="space-y-4">
@@ -131,8 +154,8 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
               <TableHead className="font-rubik text-right py-2">Cantidad</TableHead>
               <TableHead className="font-rubik text-right py-2">P.U.</TableHead>
               <TableHead className="font-rubik text-right py-2">Total</TableHead>
-              <TableHead className="font-rubik text-right py-2">Avance Acum. (%)</TableHead>
-              <TableHead className="font-rubik text-right py-2">Avance Parcial (%)</TableHead>
+              <TableHead className="font-rubik text-right py-2">Avance Acum.</TableHead>
+              <TableHead className="font-rubik text-right py-2">Avance Parcial</TableHead>
               <TableHead className="font-rubik py-2">Última Actualización</TableHead>
             </TableRow>
           </TableHeader>
@@ -163,9 +186,18 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
                     {item.Total ? formatCurrency(item.Total) : '-'}
                   </TableCell>
                   <TableCell className="font-rubik text-right py-2">
-                    {item['Avance Acumulado'] !== null && item['Avance Acumulado'] !== undefined
-                      ? `${item['Avance Acumulado'].toFixed(1)}%`
-                      : '-'}
+                    <div className="flex flex-col">
+                      <span className="font-semibold">
+                        {item.Total && item['Avance Acumulado'] 
+                          ? formatCurrency(item.Total * (item['Avance Acumulado'] / 100))
+                          : '-'}
+                      </span>
+                      {item['Avance Acumulado'] !== null && item['Avance Acumulado'] !== undefined && (
+                        <span className="text-xs text-muted-foreground">
+                          {item['Avance Acumulado'].toFixed(1)}%
+                        </span>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="font-rubik py-2">
                     <Input
@@ -205,16 +237,26 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
               <TableCell className="font-rubik text-right py-2">
                 {formatCurrency(subtotalCostoDirecto)}
               </TableCell>
-              <TableCell colSpan={3}></TableCell>
-            </TableRow>
-            
-            {/* Sección Gastos Generales y Utilidad */}
-            <TableRow className="bg-accent/30 h-9">
-              <TableCell colSpan={8} className="font-rubik font-bold text-center py-1.5 text-sm">
-                Gastos Generales y Utilidad
+              <TableCell className="font-rubik text-right py-2">
+                <div className="flex flex-col">
+                  <span className="font-semibold">{formatCurrency(avanceAcumuladoTotal)}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {subtotalCostoDirecto > 0 ? ((avanceAcumuladoTotal / subtotalCostoDirecto) * 100).toFixed(1) : 0}%
+                  </span>
+                </div>
               </TableCell>
+              <TableCell className="font-rubik text-right py-2">
+                <div className="flex flex-col">
+                  <span className="font-semibold">{formatCurrency(avanceParcialTotal)}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {subtotalCostoDirecto > 0 ? ((avanceParcialTotal / subtotalCostoDirecto) * 100).toFixed(1) : 0}%
+                  </span>
+                </div>
+              </TableCell>
+              <TableCell></TableCell>
             </TableRow>
             
+            {/* Gastos Generales */}
             <TableRow className="hover:bg-muted/50 h-10">
               <TableCell colSpan={2} className="font-rubik font-medium py-2">
                 Gastos Generales
@@ -234,9 +276,22 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
               <TableCell className="font-rubik text-right font-semibold py-2">
                 {formatCurrency(montoGastosGenerales)}
               </TableCell>
-              <TableCell colSpan={3}></TableCell>
+              <TableCell className="font-rubik text-right py-2">
+                <div className="flex flex-col">
+                  <span className="font-semibold">{formatCurrency(montoGastosGeneralesAcum)}</span>
+                  <span className="text-xs text-muted-foreground">{gastosGenerales.toFixed(1)}%</span>
+                </div>
+              </TableCell>
+              <TableCell className="font-rubik text-right py-2">
+                <div className="flex flex-col">
+                  <span className="font-semibold">{formatCurrency(montoGastosGeneralesParcial)}</span>
+                  <span className="text-xs text-muted-foreground">{gastosGenerales.toFixed(1)}%</span>
+                </div>
+              </TableCell>
+              <TableCell></TableCell>
             </TableRow>
             
+            {/* Utilidad */}
             <TableRow className="hover:bg-muted/50 h-10">
               <TableCell colSpan={2} className="font-rubik font-medium py-2">
                 Utilidad
@@ -256,7 +311,19 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
               <TableCell className="font-rubik text-right font-semibold py-2">
                 {formatCurrency(montoUtilidad)}
               </TableCell>
-              <TableCell colSpan={3}></TableCell>
+              <TableCell className="font-rubik text-right py-2">
+                <div className="flex flex-col">
+                  <span className="font-semibold">{formatCurrency(montoUtilidadAcum)}</span>
+                  <span className="text-xs text-muted-foreground">{utilidad.toFixed(1)}%</span>
+                </div>
+              </TableCell>
+              <TableCell className="font-rubik text-right py-2">
+                <div className="flex flex-col">
+                  <span className="font-semibold">{formatCurrency(montoUtilidadParcial)}</span>
+                  <span className="text-xs text-muted-foreground">{utilidad.toFixed(1)}%</span>
+                </div>
+              </TableCell>
+              <TableCell></TableCell>
             </TableRow>
             
             {/* Total Neto */}
@@ -267,7 +334,13 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
               <TableCell className="font-rubik text-right py-2">
                 {formatCurrency(totalNeto)}
               </TableCell>
-              <TableCell colSpan={3}></TableCell>
+              <TableCell className="font-rubik text-right py-2">
+                {formatCurrency(totalNetoAcum)}
+              </TableCell>
+              <TableCell className="font-rubik text-right py-2">
+                {formatCurrency(totalNetoParcial)}
+              </TableCell>
+              <TableCell></TableCell>
             </TableRow>
             
             {/* IVA */}
@@ -280,7 +353,19 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
               <TableCell className="font-rubik text-right font-semibold py-2">
                 {formatCurrency(iva)}
               </TableCell>
-              <TableCell colSpan={3}></TableCell>
+              <TableCell className="font-rubik text-right py-2">
+                <div className="flex flex-col">
+                  <span className="font-semibold">{formatCurrency(ivaAcum)}</span>
+                  <span className="text-xs text-muted-foreground">19.0%</span>
+                </div>
+              </TableCell>
+              <TableCell className="font-rubik text-right py-2">
+                <div className="flex flex-col">
+                  <span className="font-semibold">{formatCurrency(ivaParcial)}</span>
+                  <span className="text-xs text-muted-foreground">19.0%</span>
+                </div>
+              </TableCell>
+              <TableCell></TableCell>
             </TableRow>
             
             {/* Total Final */}
@@ -291,195 +376,204 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
               <TableCell className="font-rubik text-right py-2">
                 {formatCurrency(totalFinal)}
               </TableCell>
-              <TableCell colSpan={3}></TableCell>
+              <TableCell className="font-rubik text-right py-2">
+                {formatCurrency(totalFinalAcum)}
+              </TableCell>
+              <TableCell className="font-rubik text-right py-2">
+                {formatCurrency(totalFinalParcial)}
+              </TableCell>
+              <TableCell></TableCell>
             </TableRow>
           </TableBody>
         </Table>
       </div>
 
-      {/* Control de Anticipos */}
-      <Card>
-        <CardHeader className="py-3">
-          <CardTitle className="font-rubik text-base">Control de Anticipos</CardTitle>
-        </CardHeader>
-        <CardContent className="py-3">
-          <Table>
-            <TableHeader>
-              <TableRow className="h-9">
-                <TableHead className="font-rubik py-2">Concepto</TableHead>
-                <TableHead className="font-rubik text-right py-2">Monto</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody className="[&_tr]:h-10">
-              {/* Total Anticipos */}
-              <TableRow className="bg-muted/50 font-semibold h-10">
-                <TableCell className="font-rubik py-2">
-                  Total Anticipos
-                </TableCell>
-                <TableCell className="font-rubik text-right py-2">
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="0"
-                    value={totalAnticipos || ''}
-                    onChange={(e) => setTotalAnticipos(parseFloat(e.target.value) || 0)}
-                    className="w-32 text-right font-rubik ml-auto h-8"
-                  />
-                </TableCell>
-              </TableRow>
-              
-              {/* Devolución Actual */}
-              <TableRow className="hover:bg-muted/50 h-10">
-                <TableCell className="font-rubik py-2">
-                  Devolución de Anticipo Actual
-                </TableCell>
-                <TableCell className="font-rubik text-right py-2">
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="0"
-                    value={devolucionActual || ''}
-                    onChange={(e) => setDevolucionActual(parseFloat(e.target.value) || 0)}
-                    className="w-32 text-right font-rubik ml-auto h-8"
-                  />
-                </TableCell>
-              </TableRow>
-              
-              {/* Devolución Acumulado */}
-              <TableRow className="hover:bg-muted/50 h-10">
-                <TableCell className="font-rubik py-2">
-                  Devolución de Anticipo Acumulado
-                </TableCell>
-                <TableCell className="font-rubik text-right py-2">
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="0"
-                    value={devolucionAcumulado || ''}
-                    onChange={(e) => setDevolucionAcumulado(parseFloat(e.target.value) || 0)}
-                    className="w-32 text-right font-rubik ml-auto h-8"
-                  />
-                </TableCell>
-              </TableRow>
-              
-              {/* Total Devuelto */}
-              <TableRow className="bg-accent/20 font-semibold h-10">
-                <TableCell className="font-rubik py-2">
-                  Total Devuelto
-                </TableCell>
-                <TableCell className="font-rubik text-right py-2">
-                  {formatCurrency(totalDevuelto)}
-                </TableCell>
-              </TableRow>
-              
-              {/* Saldo por Devolver */}
-              <TableRow className="bg-primary/10 font-bold border-t-2 h-10">
-                <TableCell className="font-rubik py-2">
-                  Saldo por Devolver
-                </TableCell>
-                <TableCell className="font-rubik text-right py-2">
-                  {formatCurrency(saldoPorDevolver)}
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      {/* Tablas de Control en Paralelo */}
+      <div className="grid grid-cols-2 gap-4">
+        {/* Control de Anticipos */}
+        <Card>
+          <CardHeader className="py-3">
+            <CardTitle className="font-rubik text-base">Control de Anticipos</CardTitle>
+          </CardHeader>
+          <CardContent className="py-3">
+            <Table>
+              <TableHeader>
+                <TableRow className="h-9">
+                  <TableHead className="font-rubik py-2">Concepto</TableHead>
+                  <TableHead className="font-rubik text-right py-2">Monto</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody className="[&_tr]:h-10">
+                {/* Total Anticipos */}
+                <TableRow className="bg-muted/50 font-semibold h-10">
+                  <TableCell className="font-rubik py-2">
+                    Total Anticipos
+                  </TableCell>
+                  <TableCell className="font-rubik text-right py-2">
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0"
+                      value={totalAnticipos || ''}
+                      onChange={(e) => setTotalAnticipos(parseFloat(e.target.value) || 0)}
+                      className="w-32 text-right font-rubik ml-auto h-8"
+                    />
+                  </TableCell>
+                </TableRow>
+                
+                {/* Devolución Actual */}
+                <TableRow className="hover:bg-muted/50 h-10">
+                  <TableCell className="font-rubik py-2">
+                    Devolución de Anticipo Actual
+                  </TableCell>
+                  <TableCell className="font-rubik text-right py-2">
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0"
+                      value={devolucionActual || ''}
+                      onChange={(e) => setDevolucionActual(parseFloat(e.target.value) || 0)}
+                      className="w-32 text-right font-rubik ml-auto h-8"
+                    />
+                  </TableCell>
+                </TableRow>
+                
+                {/* Devolución Acumulado */}
+                <TableRow className="hover:bg-muted/50 h-10">
+                  <TableCell className="font-rubik py-2">
+                    Devolución de Anticipo Acumulado
+                  </TableCell>
+                  <TableCell className="font-rubik text-right py-2">
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0"
+                      value={devolucionAcumulado || ''}
+                      onChange={(e) => setDevolucionAcumulado(parseFloat(e.target.value) || 0)}
+                      className="w-32 text-right font-rubik ml-auto h-8"
+                    />
+                  </TableCell>
+                </TableRow>
+                
+                {/* Total Devuelto */}
+                <TableRow className="bg-accent/20 font-semibold h-10">
+                  <TableCell className="font-rubik py-2">
+                    Total Devuelto
+                  </TableCell>
+                  <TableCell className="font-rubik text-right py-2">
+                    {formatCurrency(totalDevuelto)}
+                  </TableCell>
+                </TableRow>
+                
+                {/* Saldo por Devolver */}
+                <TableRow className="bg-primary/10 font-bold border-t-2 h-10">
+                  <TableCell className="font-rubik py-2">
+                    Saldo por Devolver
+                  </TableCell>
+                  <TableCell className="font-rubik text-right py-2">
+                    {formatCurrency(saldoPorDevolver)}
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
 
-      {/* Control de Retenciones */}
-      <Card>
-        <CardHeader className="py-3">
-          <CardTitle className="font-rubik text-base">Control de Retenciones</CardTitle>
-        </CardHeader>
-        <CardContent className="py-3">
-          <Table>
-            <TableHeader>
-              <TableRow className="h-9">
-                <TableHead className="font-rubik py-2">Concepto</TableHead>
-                <TableHead className="font-rubik text-right py-2">Monto</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody className="[&_tr]:h-10">
-              {/* Total Retenciones */}
-              <TableRow className="bg-muted/50 font-semibold h-10">
-                <TableCell className="font-rubik py-2">
-                  Total Retenciones
-                </TableCell>
-                <TableCell className="font-rubik text-right py-2">
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="0"
-                    value={totalRetenciones || ''}
-                    onChange={(e) => setTotalRetenciones(parseFloat(e.target.value) || 0)}
-                    className="w-32 text-right font-rubik ml-auto h-8"
-                  />
-                </TableCell>
-              </TableRow>
-              
-              {/* Retención Actual */}
-              <TableRow className="hover:bg-muted/50 h-10">
-                <TableCell className="font-rubik py-2">
-                  Retención de Anticipo Actual
-                </TableCell>
-                <TableCell className="font-rubik text-right py-2">
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="0"
-                    value={retencionActual || ''}
-                    onChange={(e) => setRetencionActual(parseFloat(e.target.value) || 0)}
-                    className="w-32 text-right font-rubik ml-auto h-8"
-                  />
-                </TableCell>
-              </TableRow>
-              
-              {/* Retención Acumulado */}
-              <TableRow className="hover:bg-muted/50 h-10">
-                <TableCell className="font-rubik py-2">
-                  Retención de Anticipo Acumulado
-                </TableCell>
-                <TableCell className="font-rubik text-right py-2">
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="0"
-                    value={retencionAcumulado || ''}
-                    onChange={(e) => setRetencionAcumulado(parseFloat(e.target.value) || 0)}
-                    className="w-32 text-right font-rubik ml-auto h-8"
-                  />
-                </TableCell>
-              </TableRow>
-              
-              {/* Total Retenido */}
-              <TableRow className="bg-accent/20 font-semibold h-10">
-                <TableCell className="font-rubik py-2">
-                  Total Retenido
-                </TableCell>
-                <TableCell className="font-rubik text-right py-2">
-                  {formatCurrency(totalRetenido)}
-                </TableCell>
-              </TableRow>
-              
-              {/* Saldo por Retener */}
-              <TableRow className="bg-primary/10 font-bold border-t-2 h-10">
-                <TableCell className="font-rubik py-2">
-                  Saldo por Retener
-                </TableCell>
-                <TableCell className="font-rubik text-right py-2">
-                  {formatCurrency(saldoPorRetener)}
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+        {/* Control de Retenciones */}
+        <Card>
+          <CardHeader className="py-3">
+            <CardTitle className="font-rubik text-base">Control de Retenciones</CardTitle>
+          </CardHeader>
+          <CardContent className="py-3">
+            <Table>
+              <TableHeader>
+                <TableRow className="h-9">
+                  <TableHead className="font-rubik py-2">Concepto</TableHead>
+                  <TableHead className="font-rubik text-right py-2">Monto</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody className="[&_tr]:h-10">
+                {/* Total Retenciones */}
+                <TableRow className="bg-muted/50 font-semibold h-10">
+                  <TableCell className="font-rubik py-2">
+                    Total Retenciones
+                  </TableCell>
+                  <TableCell className="font-rubik text-right py-2">
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0"
+                      value={totalRetenciones || ''}
+                      onChange={(e) => setTotalRetenciones(parseFloat(e.target.value) || 0)}
+                      className="w-32 text-right font-rubik ml-auto h-8"
+                    />
+                  </TableCell>
+                </TableRow>
+                
+                {/* Retención Actual */}
+                <TableRow className="hover:bg-muted/50 h-10">
+                  <TableCell className="font-rubik py-2">
+                    Retención de Anticipo Actual
+                  </TableCell>
+                  <TableCell className="font-rubik text-right py-2">
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0"
+                      value={retencionActual || ''}
+                      onChange={(e) => setRetencionActual(parseFloat(e.target.value) || 0)}
+                      className="w-32 text-right font-rubik ml-auto h-8"
+                    />
+                  </TableCell>
+                </TableRow>
+                
+                {/* Retención Acumulado */}
+                <TableRow className="hover:bg-muted/50 h-10">
+                  <TableCell className="font-rubik py-2">
+                    Retención de Anticipo Acumulado
+                  </TableCell>
+                  <TableCell className="font-rubik text-right py-2">
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0"
+                      value={retencionAcumulado || ''}
+                      onChange={(e) => setRetencionAcumulado(parseFloat(e.target.value) || 0)}
+                      className="w-32 text-right font-rubik ml-auto h-8"
+                    />
+                  </TableCell>
+                </TableRow>
+                
+                {/* Total Retenido */}
+                <TableRow className="bg-accent/20 font-semibold h-10">
+                  <TableCell className="font-rubik py-2">
+                    Total Retenido
+                  </TableCell>
+                  <TableCell className="font-rubik text-right py-2">
+                    {formatCurrency(totalRetenido)}
+                  </TableCell>
+                </TableRow>
+                
+                {/* Saldo por Retener */}
+                <TableRow className="bg-primary/10 font-bold border-t-2 h-10">
+                  <TableCell className="font-rubik py-2">
+                    Saldo por Retener
+                  </TableCell>
+                  <TableCell className="font-rubik text-right py-2">
+                    {formatCurrency(saldoPorRetener)}
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

@@ -26,6 +26,8 @@ export const usePresupuesto = (projectId: string) => {
   const [presupuesto, setPresupuesto] = useState<Presupuesto[]>([]);
   const [anticipos, setAnticipos] = useState<ControlData>({ total: 0, acumulado: 0, actual: 0 });
   const [retenciones, setRetenciones] = useState<ControlData>({ total: 0, acumulado: 0, actual: 0 });
+  const [gastosGenerales, setGastosGenerales] = useState<number>(0);
+  const [utilidad, setUtilidad] = useState<number>(0);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -64,6 +66,8 @@ export const usePresupuesto = (projectId: string) => {
       const regularItems: any[] = [];
       let anticiposData: ControlData = { total: 0, acumulado: 0, actual: 0 };
       let retencionesData: ControlData = { total: 0, acumulado: 0, actual: 0 };
+      let ggValue = 0;
+      let utilValue = 0;
       
       presupuestoData?.forEach((item: any) => {
         if (item.Item === 'Control de Anticipos') {
@@ -78,6 +82,10 @@ export const usePresupuesto = (projectId: string) => {
             acumulado: item['Avance Acumulado'] || 0,
             actual: item['Avance Parcial'] || 0
           };
+        } else if (item.Item === 'Gastos Generales') {
+          ggValue = item.PU || 0;
+        } else if (item.Item === 'Utilidad') {
+          utilValue = item.PU || 0;
         } else {
           regularItems.push(item);
         }
@@ -86,6 +94,8 @@ export const usePresupuesto = (projectId: string) => {
       setPresupuesto(regularItems);
       setAnticipos(anticiposData);
       setRetenciones(retencionesData);
+      setGastosGenerales(ggValue);
+      setUtilidad(utilValue);
     } catch (error) {
       console.error('❌ CRITICAL ERROR in fetchPresupuesto:', error);
       toast({
@@ -106,6 +116,8 @@ export const usePresupuesto = (projectId: string) => {
     presupuesto,
     anticipos,
     retenciones,
+    gastosGenerales,
+    utilidad,
     loading,
     refetch: fetchPresupuesto
   };

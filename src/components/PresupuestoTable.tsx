@@ -73,7 +73,7 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
           .from('Presupuesto' as any)
           .select('*')
           .eq('Project_ID', projectId)
-          .in('Item', ['Control de Anticipos', 'Control de Retenciones']);
+          .in('Item', ['Control de Anticipos', 'Control de Retenciones', 'Gastos Generales', 'Utilidad']);
         
         if (error) throw error;
         
@@ -88,6 +88,10 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
             setRetencionAcumulado(item['Avance Acumulado'] || 0);
             setRetencionActual(item['Avance Parcial'] || 0);
             setRetencionesId(item.id);
+          } else if (item.Item === 'Gastos Generales') {
+            setGastosGenerales(item.PU || 0); // Usamos PU para guardar el porcentaje
+          } else if (item.Item === 'Utilidad') {
+            setUtilidad(item.PU || 0); // Usamos PU para guardar el porcentaje
           }
         });
         
@@ -206,6 +210,51 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
           .select()
           .single();
         if (data && !error) setRetencionesId((data as any).id);
+      }
+
+      // Guardar Gastos Generales y Utilidad
+      const { data: existingGG, error: ggError } = await supabase
+        .from('Presupuesto' as any)
+        .select('id')
+        .eq('Project_ID', projectId)
+        .eq('Item', 'Gastos Generales')
+        .maybeSingle();
+
+      if (!ggError && existingGG && 'id' in existingGG) {
+        await supabase
+          .from('Presupuesto' as any)
+          .update({ PU: gastosGenerales })
+          .eq('id', existingGG.id);
+      } else if (gastosGenerales > 0) {
+        await supabase
+          .from('Presupuesto' as any)
+          .insert({
+            Project_ID: projectId,
+            Item: 'Gastos Generales',
+            PU: gastosGenerales,
+          });
+      }
+
+      const { data: existingUtil, error: utilError } = await supabase
+        .from('Presupuesto' as any)
+        .select('id')
+        .eq('Project_ID', projectId)
+        .eq('Item', 'Utilidad')
+        .maybeSingle();
+
+      if (!utilError && existingUtil && 'id' in existingUtil) {
+        await supabase
+          .from('Presupuesto' as any)
+          .update({ PU: utilidad })
+          .eq('id', existingUtil.id);
+      } else if (utilidad > 0) {
+        await supabase
+          .from('Presupuesto' as any)
+          .insert({
+            Project_ID: projectId,
+            Item: 'Utilidad',
+            PU: utilidad,
+          });
       }
 
       // Actualizar estados locales después de guardar

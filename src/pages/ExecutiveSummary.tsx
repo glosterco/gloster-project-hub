@@ -15,15 +15,24 @@ const ExecutiveSummary = () => {
   const mandanteAccess = sessionStorage.getItem('mandanteAccess');
   const isCC = mandanteAccess ? JSON.parse(mandanteAccess).userType === 'cc' : false;
   
-  const { summaryData, loading, error } = isCC ? useExecutiveSummaryCC() : useExecutiveSummary();
   const [selectedProjects, setSelectedProjects] = React.useState<number[]>([]);
-
-  // Initialize selected projects when data loads
+  const [allProjects, setAllProjects] = React.useState<{ id: number; name: string }[]>([]);
+  
+  // First fetch to get all projects
+  const { summaryData: initialData } = isCC ? useExecutiveSummaryCC() : useExecutiveSummary();
+  
+  // Initialize all projects and selected projects
   React.useEffect(() => {
-    if (summaryData?.projects && selectedProjects.length === 0) {
-      setSelectedProjects(summaryData.projects.map(p => p.id));
+    if (initialData?.projects && allProjects.length === 0) {
+      setAllProjects(initialData.projects);
+      setSelectedProjects(initialData.projects.map(p => p.id));
     }
-  }, [summaryData]);
+  }, [initialData]);
+
+  // Second fetch with filtered projects
+  const { summaryData, loading, error } = isCC 
+    ? useExecutiveSummaryCC() 
+    : useExecutiveSummary(selectedProjects.length > 0 ? selectedProjects : undefined);
 
   if (loading) {
     return (
@@ -112,7 +121,7 @@ const ExecutiveSummary = () => {
 
           {/* Project Filter */}
           <ProjectFilter
-            projects={summaryData?.projects || []}
+            projects={allProjects}
             selectedProjects={selectedProjects}
             onProjectsChange={setSelectedProjects}
           />

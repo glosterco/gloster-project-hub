@@ -1,7 +1,6 @@
 import React from 'react';
-import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { X, Filter } from 'lucide-react';
+import { X, Filter, Folder, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Command,
@@ -9,12 +8,16 @@ import {
   CommandGroup,
   CommandInput,
   CommandItem,
+  CommandSeparator,
 } from '@/components/ui/command';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { useMandanteFolders } from '@/hooks/useMandanteFolders';
+import { useAuth } from '@/hooks/useAuth';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface ProjectFilterProps {
   projects: { id: number; name: string }[];
@@ -28,6 +31,30 @@ export const ProjectFilter: React.FC<ProjectFilterProps> = ({
   onProjectsChange,
 }) => {
   const [open, setOpen] = React.useState(false);
+  const { user } = useAuth();
+  const [mandanteId, setMandanteId] = React.useState<number | null>(null);
+  
+  // Get mandante ID from user roles
+  React.useEffect(() => {
+    const getUserMandanteId = async () => {
+      if (!user) return;
+      
+      const { data: userRoles } = await (await import('@/integrations/supabase/client')).supabase
+        .from('user_roles')
+        .select('entity_id, role_type')
+        .eq('auth_user_id', user.id)
+        .eq('role_type', 'mandante')
+        .single();
+      
+      if (userRoles) {
+        setMandanteId(userRoles.entity_id);
+      }
+    };
+    
+    getUserMandanteId();
+  }, [user]);
+
+  const { folders } = useMandanteFolders(mandanteId);
 
   const handleSelectAll = () => {
     onProjectsChange(projects.map(p => p.id));
@@ -45,106 +72,112 @@ export const ProjectFilter: React.FC<ProjectFilterProps> = ({
     }
   };
 
-  const handleRemoveProject = (projectId: number) => {
-    onProjectsChange(selectedProjects.filter(id => id !== projectId));
+  const handleSelectFolder = (projectIds: number[]) => {
+    // Add all projects from folder that aren't already selected
+    const newSelected = [...new Set([...selectedProjects, ...projectIds])];
+    onProjectsChange(newSelected);
+    setOpen(false);
   };
 
-  const selectedProjectNames = projects
-    .filter(p => selectedProjects.includes(p.id))
-    .map(p => p.name);
+  const selectedCount = selectedProjects.length;
+  const totalCount = projects.length;
 
   return (
-    <Card className="p-4 mb-6">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-medium">Filtrar por Proyectos</span>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSelectAll}
-            disabled={selectedProjects.length === projects.length}
-          >
-            Seleccionar todos
+    <div className="flex items-center gap-2 mb-6 flex-wrap">
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button variant="outline" size="sm" className="h-9">
+            <Filter className="h-4 w-4 mr-2" />
+            Filtrar proyectos
+            <ChevronDown className="h-4 w-4 ml-2" />
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleClearAll}
-            disabled={selectedProjects.length === 0}
-          >
-            Limpiar
-          </Button>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap gap-2 mb-3">
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" className="h-8">
-              <Filter className="h-4 w-4 mr-2" />
-              Buscar proyectos
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-[300px] p-0" align="start">
-            <Command>
-              <CommandInput placeholder="Buscar proyecto..." />
-              <CommandEmpty>No se encontraron proyectos.</CommandEmpty>
-              <CommandGroup className="max-h-64 overflow-auto">
-                {projects.map((project) => (
-                  <CommandItem
-                    key={project.id}
-                    value={project.name}
-                    onSelect={() => {
-                      handleToggleProject(project.id);
-                    }}
-                  >
-                    <div className="flex items-center justify-between w-full">
-                      <span>{project.name}</span>
-                      {selectedProjects.includes(project.id) && (
-                        <Badge variant="default" className="ml-2">
-                          ✓
-                        </Badge>
-                      )}
-                    </div>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </Command>
-          </PopoverContent>
-        </Popover>
-
-        {selectedProjectNames.map((name, index) => {
-          const project = projects.find(p => p.name === name);
-          if (!project) return null;
-          
-          return (
-            <Badge
-              key={project.id}
-              variant="secondary"
-              className="flex items-center gap-1 px-2 py-1"
-            >
-              {name}
-              <button
-                onClick={() => handleRemoveProject(project.id)}
-                className="ml-1 hover:bg-muted rounded-full p-0.5"
+        </PopoverTrigger>
+        <PopoverContent className="w-[400px] p-0" align="start">
+          <Command>
+            <CommandInput placeholder="Buscar..." />
+            <div className="p-2 border-b flex gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSelectAll}
+                className="flex-1 h-8"
               >
-                <X className="h-3 w-3" />
-              </button>
-            </Badge>
-          );
-        })}
+                Todos
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearAll}
+                className="flex-1 h-8"
+              >
+                Ninguno
+              </Button>
+            </div>
+            <CommandEmpty>No se encontraron resultados.</CommandEmpty>
+            
+            {folders && folders.length > 0 && (
+              <>
+                <CommandGroup heading="Carpetas">
+                  {folders.map((folder) => (
+                    <CommandItem
+                      key={folder.id}
+                      value={folder.folder_name}
+                      onSelect={() => handleSelectFolder(folder.project_ids)}
+                      className="cursor-pointer"
+                    >
+                      <Folder className="h-4 w-4 mr-2 text-muted-foreground" />
+                      <span className="flex-1">{folder.folder_name}</span>
+                      <Badge variant="secondary" className="ml-2">
+                        {folder.project_ids.length}
+                      </Badge>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+                <CommandSeparator />
+              </>
+            )}
+            
+            <CommandGroup heading="Proyectos">
+              {projects.map((project) => (
+                <CommandItem
+                  key={project.id}
+                  value={project.name}
+                  onSelect={() => handleToggleProject(project.id)}
+                  className="cursor-pointer"
+                >
+                  <Checkbox
+                    checked={selectedProjects.includes(project.id)}
+                    className="mr-2"
+                  />
+                  <span className="flex-1">{project.name}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </Command>
+        </PopoverContent>
+      </Popover>
+
+      <div className="text-sm text-muted-foreground">
+        {selectedCount === 0 ? (
+          'Ningún proyecto'
+        ) : selectedCount === totalCount ? (
+          `Todos (${totalCount})`
+        ) : (
+          `${selectedCount} de ${totalCount}`
+        )}
       </div>
 
-      <div className="text-xs text-muted-foreground">
-        {selectedProjects.length === 0
-          ? 'Ningún proyecto seleccionado'
-          : selectedProjects.length === projects.length
-          ? `Todos los proyectos seleccionados (${projects.length})`
-          : `${selectedProjects.length} de ${projects.length} proyectos seleccionados`}
-      </div>
-    </Card>
+      {selectedCount > 0 && selectedCount < totalCount && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleClearAll}
+          className="h-7 text-xs"
+        >
+          <X className="h-3 w-3 mr-1" />
+          Limpiar
+        </Button>
+      )}
+    </div>
   );
 };

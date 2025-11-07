@@ -55,7 +55,7 @@ export interface ExecutiveSummaryData {
   projects: { id: number; name: string }[];
 }
 
-export const useExecutiveSummaryMandante = () => {
+export const useExecutiveSummaryMandante = (selectedProjectIds?: number[]) => {
   const [summaryData, setSummaryData] = useState<ExecutiveSummaryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -159,7 +159,11 @@ export const useExecutiveSummaryMandante = () => {
         return;
       }
 
-      const projectIds = projects.map(p => p.id);
+      // Apply project filter if selectedProjectIds is provided
+      let projectIds = projects.map(p => p.id);
+      if (selectedProjectIds && selectedProjectIds.length > 0) {
+        projectIds = projectIds.filter(id => selectedProjectIds.includes(id));
+      }
 
       // Fetch payment states excluding "Programado" status
       const { data: payments, error: paymentsError } = await supabase
@@ -365,7 +369,7 @@ export const useExecutiveSummaryMandante = () => {
 
   useEffect(() => {
     fetchExecutiveSummary();
-  }, []);
+  }, [selectedProjectIds]);
 
   return {
     summaryData,

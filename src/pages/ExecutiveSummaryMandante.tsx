@@ -14,8 +14,25 @@ import { supabase } from '@/integrations/supabase/client';
 import { ProjectFilter } from '@/components/ProjectFilter';
 
 const ExecutiveSummaryMandante = () => {
-  const { summaryData, loading, error } = useExecutiveSummaryMandante();
   const [selectedProjects, setSelectedProjects] = React.useState<number[]>([]);
+  const [allProjects, setAllProjects] = React.useState<{ id: number; name: string }[]>([]);
+  
+  // First fetch to get all projects
+  const { summaryData: initialData } = useExecutiveSummaryMandante();
+  
+  // Initialize all projects and selected projects
+  React.useEffect(() => {
+    if (initialData?.projects && allProjects.length === 0) {
+      setAllProjects(initialData.projects);
+      setSelectedProjects(initialData.projects.map(p => p.id));
+    }
+  }, [initialData]);
+
+  // Second fetch with filtered projects
+  const { summaryData, loading, error } = useExecutiveSummaryMandante(
+    selectedProjects.length > 0 ? selectedProjects : undefined
+  );
+  
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const [mandanteInfo, setMandanteInfo] = React.useState<{
@@ -210,13 +227,11 @@ const ExecutiveSummaryMandante = () => {
           </TabsList>
 
           {/* Project Filter */}
-          {summaryData?.projects && (
-            <ProjectFilter
-              projects={summaryData.projects}
-              selectedProjects={selectedProjects}
-              onProjectsChange={setSelectedProjects}
-            />
-          )}
+          <ProjectFilter
+            projects={allProjects}
+            selectedProjects={selectedProjects}
+            onProjectsChange={setSelectedProjects}
+          />
 
           {/* Estados de Pago Tab */}
           <TabsContent value="estados-pago">

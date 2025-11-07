@@ -110,13 +110,13 @@ const ExecutiveSummary = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="estados-pago" className="w-full">
-          <TabsList className="grid w-full grid-cols-6 mb-8">
+          <TabsList className={`grid w-full mb-8`} style={{ gridTemplateColumns: `repeat(${1 + (summaryData?.features.Adicionales ? 1 : 0) + (summaryData?.features.Documentos ? 1 : 0) + (summaryData?.features.Fotos ? 1 : 0) + (summaryData?.features.Presupuesto ? 1 : 0) + (summaryData?.features.Reuniones ? 1 : 0)}, minmax(0, 1fr))` }}>
             <TabsTrigger value="estados-pago">Estados de pago</TabsTrigger>
-            <TabsTrigger value="adicionales">Adicionales</TabsTrigger>
-            <TabsTrigger value="documentos">Documentos</TabsTrigger>
-            <TabsTrigger value="fotos">Fotos</TabsTrigger>
-            <TabsTrigger value="presupuesto">Presupuesto</TabsTrigger>
-            <TabsTrigger value="reuniones">Reuniones</TabsTrigger>
+            {summaryData?.features.Adicionales && <TabsTrigger value="adicionales">Adicionales</TabsTrigger>}
+            {summaryData?.features.Documentos && <TabsTrigger value="documentos">Documentos</TabsTrigger>}
+            {summaryData?.features.Fotos && <TabsTrigger value="fotos">Fotos</TabsTrigger>}
+            {summaryData?.features.Presupuesto && <TabsTrigger value="presupuesto">Presupuesto</TabsTrigger>}
+            {summaryData?.features.Reuniones && <TabsTrigger value="reuniones">Reuniones</TabsTrigger>}
           </TabsList>
 
           {/* Project Filter */}

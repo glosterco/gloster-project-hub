@@ -53,6 +53,15 @@ export interface ExecutiveSummaryData {
   // Reuniones metrics
   totalReuniones: number;
   projects: { id: number; name: string }[];
+  // Contratista features configuration
+  features: {
+    Adicionales: boolean;
+    Documentos: boolean;
+    Fotos: boolean;
+    Presupuesto: boolean;
+    Reuniones: boolean;
+    Licitaciones: boolean;
+  };
 }
 
 export const useExecutiveSummary = (selectedProjectIds?: number[]) => {
@@ -75,6 +84,22 @@ export const useExecutiveSummary = (selectedProjectIds?: number[]) => {
       // Get user's mandante and contratista IDs
       const mandanteIds = await getUserMandanteIds(user.id);
       const contratistaIds = await getUserContratistaIds(user.id);
+
+      // Fetch contratista features configuration
+      const { data: contratistaConfig } = await supabase
+        .from('Contratistas')
+        .select('Adicionales, Documentos, Fotos, Presupuesto, Reuniones, Licitaciones')
+        .in('id', contratistaIds.split(',').map(Number))
+        .maybeSingle();
+
+      const features = {
+        Adicionales: contratistaConfig?.Adicionales || false,
+        Documentos: contratistaConfig?.Documentos || false,
+        Fotos: contratistaConfig?.Fotos || false,
+        Presupuesto: contratistaConfig?.Presupuesto || false,
+        Reuniones: contratistaConfig?.Reuniones || false,
+        Licitaciones: contratistaConfig?.Licitaciones || false,
+      };
 
       // Fetch projects with related data - using proper filter syntax
       const { data: projects, error: projectsError } = await supabase
@@ -130,7 +155,8 @@ export const useExecutiveSummary = (selectedProjectIds?: number[]) => {
           avancePromedioPresupuesto: 0,
           montoTotalPresupuesto: 0,
           totalReuniones: 0,
-          projects: []
+          projects: [],
+          features
         });
         return;
       }
@@ -302,7 +328,8 @@ export const useExecutiveSummary = (selectedProjectIds?: number[]) => {
         avancePromedioPresupuesto,
         montoTotalPresupuesto,
         totalReuniones,
-        projects: projects.map(p => ({ id: p.id, name: p.Name || 'Sin nombre' }))
+        projects: projects.map(p => ({ id: p.id, name: p.Name || 'Sin nombre' })),
+        features
       });
 
     } catch (error: any) {

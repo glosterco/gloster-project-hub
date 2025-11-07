@@ -82,6 +82,26 @@ Deno.serve(async (req) => {
       throw projectsError;
     }
 
+    // Fetch contratista features configuration
+    const { data: contratistaConfig, error: configError } = await supabase
+      .from('Contratistas')
+      .select('Adicionales, Documentos, Fotos, Presupuesto, Reuniones, Licitaciones')
+      .eq('id', contratistaId)
+      .maybeSingle();
+
+    if (configError) {
+      console.error('Error fetching contratista config:', configError);
+    }
+
+    const features = {
+      Adicionales: contratistaConfig?.Adicionales || false,
+      Documentos: contratistaConfig?.Documentos || false,
+      Fotos: contratistaConfig?.Fotos || false,
+      Presupuesto: contratistaConfig?.Presupuesto || false,
+      Reuniones: contratistaConfig?.Reuniones || false,
+      Licitaciones: contratistaConfig?.Licitaciones || false,
+    };
+
     if (!projects || projects.length === 0) {
       return new Response(JSON.stringify({
         totalProjects: 0,
@@ -92,7 +112,24 @@ Deno.serve(async (req) => {
         approvedPaymentsAmount: 0,
         rejectedPayments: 0,
         rejectedPaymentsAmount: 0,
-        projectSummaries: []
+        projectSummaries: [],
+        totalAdicionales: 0,
+        montoPresentadoAdicionales: 0,
+        montoAprobadoAdicionales: 0,
+        adicionalesPendientes: 0,
+        adicionalesAprobados: 0,
+        adicionalesRechazados: 0,
+        totalDocumentos: 0,
+        totalSizeDocumentos: 0,
+        documentosPorTipo: [],
+        totalFotos: 0,
+        fotosPorProyecto: [],
+        totalPresupuestoItems: 0,
+        avancePromedioPresupuesto: 0,
+        montoTotalPresupuesto: 0,
+        totalReuniones: 0,
+        projects: [],
+        features
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
@@ -130,6 +167,35 @@ Deno.serve(async (req) => {
       throw paymentsError;
     }
 
+    // Fetch adicionales data
+    const { data: adicionales } = await supabase
+      .from('Adicionales')
+      .select('id, Monto_presentado, Monto_aprobado, Status, Proyecto')
+      .in('Proyecto', projectIds);
+
+    // Fetch documentos data
+    const { data: documentos } = await supabase
+      .from('Documentos')
+      .select('id, Tipo, Size, Proyecto')
+      .in('Proyecto', projectIds);
+
+    // Fetch fotos data
+    const { data: fotos } = await supabase
+      .from('Fotos')
+      .select('id, Proyecto')
+      .in('Proyecto', projectIds);
+
+    // Fetch presupuesto data
+    const { data: presupuesto } = await supabase
+      .from('Presupuesto')
+      .select('id, Total, "Avance Acumulado", Project_ID')
+      .in('Project_ID', projectIds);
+
+    // Fetch reuniones data
+    const { data: reuniones } = await supabase
+      .from('Reuniones')
+      .select('id');
+
     // Calculate metrics
     const totalProjects = projects.length;
     const totalValue = projects.reduce((sum, project) => sum + (project.Budget || 0), 0);
@@ -142,6 +208,44 @@ Deno.serve(async (req) => {
     
     const rejectedPayments = payments?.filter(p => p.Status === 'Rechazado').length || 0;
     const rejectedPaymentsAmount = payments?.filter(p => p.Status === 'Rechazado').reduce((sum, p) => sum + (p.Total || 0), 0) || 0;
+
+    // Calculate adicionales metrics
+    const totalAdicionales = adicionales?.length || 0;
+    const montoPresentadoAdicionales = adicionales?.reduce((sum, a) => sum + (a.Monto_presentado || 0), 0) || 0;
+    const montoAprobadoAdicionales = adicionales?.reduce((sum, a) => sum + (a.Monto_aprobado || 0), 0) || 0;
+    const adicionalesPendientes = adicionales?.filter(a => a.Status === 'Pendiente').length || 0;
+    const adicionalesAprobados = adicionales?.filter(a => a.Status === 'Aprobado').length || 0;
+    const adicionalesRechazados = adicionales?.filter(a => a.Status === 'Rechazado').length || 0;
+
+    // Calculate documentos metrics
+    const totalDocumentos = documentos?.length || 0;
+    const totalSizeDocumentos = documentos?.reduce((sum, d) => sum + (d.Size || 0), 0) || 0;
+    const documentosPorTipo = Object.entries(
+      documentos?.reduce((acc, d) => {
+        const tipo = d.Tipo || 'Sin tipo';
+        acc[tipo] = (acc[tipo] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>) || {}
+    ).map(([tipo, count]) => ({ tipo, count }));
+
+    // Calculate fotos metrics
+    const totalFotos = fotos?.length || 0;
+    const fotosPorProyecto = Object.entries(
+      fotos?.reduce((acc, f) => {
+        acc[f.Proyecto] = (acc[f.Proyecto] || 0) + 1;
+        return acc;
+      }, {} as Record<number, number>) || {}
+    ).map(([projectId, count]) => ({ projectId: Number(projectId), count }));
+
+    // Calculate presupuesto metrics
+    const totalPresupuestoItems = presupuesto?.length || 0;
+    const avancePromedioPresupuesto = presupuesto?.length 
+      ? presupuesto.reduce((sum, p) => sum + (p['Avance Acumulado'] || 0), 0) / presupuesto.length 
+      : 0;
+    const montoTotalPresupuesto = presupuesto?.reduce((sum, p) => sum + (p.Total || 0), 0) || 0;
+
+    // Calculate reuniones metrics
+    const totalReuniones = reuniones?.length || 0;
 
     // Create project summaries with last 2 payments each
     const projectSummaries = projects.map(project => {
@@ -179,7 +283,24 @@ Deno.serve(async (req) => {
       approvedPaymentsAmount,
       rejectedPayments,
       rejectedPaymentsAmount,
-      projectSummaries
+      projectSummaries,
+      totalAdicionales,
+      montoPresentadoAdicionales,
+      montoAprobadoAdicionales,
+      adicionalesPendientes,
+      adicionalesAprobados,
+      adicionalesRechazados,
+      totalDocumentos,
+      totalSizeDocumentos,
+      documentosPorTipo,
+      totalFotos,
+      fotosPorProyecto,
+      totalPresupuestoItems,
+      avancePromedioPresupuesto,
+      montoTotalPresupuesto,
+      totalReuniones,
+      projects: projects.map(p => ({ id: p.id, name: p.Name || 'Sin nombre' })),
+      features
     };
 
     console.log('✅ CC Executive Summary data prepared:', { 

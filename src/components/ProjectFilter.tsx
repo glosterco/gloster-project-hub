@@ -111,23 +111,28 @@ export const ProjectFilter: React.FC<ProjectFilterProps> = ({
            !allFolderProjectsSelected(projectIds);
   };
 
+  const selectedProjectNames = projects
+    .filter(p => selectedProjects.includes(p.id))
+    .map(p => p.name);
+
   return (
-    <div className="flex items-center gap-3 mb-6">
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetTrigger asChild>
-          <Button variant="outline" className="relative h-9 pl-3 pr-10">
-            <Filter className="h-4 w-4 mr-2" />
-            Proyectos
-            {selectedCount > 0 && selectedCount < totalCount && (
-              <Badge 
-                variant="secondary" 
-                className="ml-2 h-5 min-w-5 px-1.5 text-xs font-medium"
-              >
-                {selectedCount}
-              </Badge>
-            )}
-          </Button>
-        </SheetTrigger>
+    <div className="flex flex-col gap-3 mb-6">
+      <div className="flex items-center gap-3">
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetTrigger asChild>
+            <Button variant="outline" className="relative h-9 pl-3 pr-10">
+              <Filter className="h-4 w-4 mr-2" />
+              Proyectos
+              {selectedCount > 0 && selectedCount < totalCount && (
+                <Badge 
+                  variant="secondary" 
+                  className="ml-2 h-5 min-w-5 px-1.5 text-xs font-medium"
+                >
+                  {selectedCount}
+                </Badge>
+              )}
+            </Button>
+          </SheetTrigger>
         
         <SheetContent side="right" className="w-full sm:w-[400px] p-0">
           <SheetHeader className="px-6 py-4 border-b">
@@ -302,15 +307,31 @@ export const ProjectFilter: React.FC<ProjectFilterProps> = ({
         </SheetContent>
       </Sheet>
 
-      <div className="text-sm text-muted-foreground">
-        {selectedCount === 0 ? (
-          'Ningún proyecto seleccionado'
-        ) : selectedCount === totalCount ? (
-          <span className="text-foreground font-medium">Todos los proyectos ({totalCount})</span>
-        ) : (
-          <span><span className="text-foreground font-medium">{selectedCount}</span> de {totalCount} proyectos</span>
-        )}
+        <div className="text-sm text-muted-foreground">
+          {selectedCount === 0 ? (
+            'Ningún proyecto seleccionado'
+          ) : selectedCount === totalCount ? (
+            <span className="text-foreground font-medium">Todos los proyectos ({totalCount})</span>
+          ) : (
+            <span><span className="text-foreground font-medium">{selectedCount}</span> de {totalCount} proyectos</span>
+          )}
+        </div>
       </div>
+
+      {/* Selected Projects Display */}
+      {selectedCount > 0 && selectedCount < totalCount && (
+        <div className="flex flex-wrap gap-2">
+          {selectedProjectNames.map((name) => (
+            <Badge 
+              key={name}
+              variant="secondary"
+              className="px-3 py-1 text-xs"
+            >
+              {name}
+            </Badge>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

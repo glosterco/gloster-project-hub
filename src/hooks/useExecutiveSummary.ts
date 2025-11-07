@@ -85,20 +85,20 @@ export const useExecutiveSummary = (selectedProjectIds?: number[]) => {
       const mandanteIds = await getUserMandanteIds(user.id);
       const contratistaIds = await getUserContratistaIds(user.id);
 
-      // Fetch contratista features configuration
-      const { data: contratistaConfig } = await supabase
+      // Fetch contratista features configuration - get all contratistas
+      const { data: contratistaConfigs } = await supabase
         .from('Contratistas')
         .select('Adicionales, Documentos, Fotos, Presupuesto, Reuniones, Licitaciones')
-        .in('id', contratistaIds.split(',').map(Number))
-        .maybeSingle();
+        .in('id', contratistaIds.split(',').map(Number));
 
+      // OR logic: if ANY contratista has a feature enabled, show it
       const features = {
-        Adicionales: contratistaConfig?.Adicionales || false,
-        Documentos: contratistaConfig?.Documentos || false,
-        Fotos: contratistaConfig?.Fotos || false,
-        Presupuesto: contratistaConfig?.Presupuesto || false,
-        Reuniones: contratistaConfig?.Reuniones || false,
-        Licitaciones: contratistaConfig?.Licitaciones || false,
+        Adicionales: contratistaConfigs?.some(c => c.Adicionales) || false,
+        Documentos: contratistaConfigs?.some(c => c.Documentos) || false,
+        Fotos: contratistaConfigs?.some(c => c.Fotos) || false,
+        Presupuesto: contratistaConfigs?.some(c => c.Presupuesto) || false,
+        Reuniones: contratistaConfigs?.some(c => c.Reuniones) || false,
+        Licitaciones: contratistaConfigs?.some(c => c.Licitaciones) || false,
       };
 
       // Fetch projects with related data - using proper filter syntax

@@ -87,7 +87,7 @@ Deno.serve(async (req) => {
       .from('Contratistas')
       .select('Adicionales, Documentos, Fotos, Presupuesto, Reuniones, Licitaciones')
       .eq('id', contratistaId)
-      .maybeSingle();
+      .single();
 
     if (configError) {
       console.error('Error fetching contratista config:', configError);

@@ -84,20 +84,20 @@ export const useExecutiveSummaryMandante = (selectedProjectIds?: number[]) => {
       // Get user's mandante IDs only
       const mandanteIds = await getUserMandanteIds(user.id);
 
-      // Fetch mandante features configuration
-      const { data: mandanteConfig } = await supabase
+      // Fetch mandante features configuration - get all mandantes
+      const { data: mandanteConfigs } = await supabase
         .from('Mandantes')
         .select('Adicionales, Documentos, Fotos, Presupuesto, Reuniones, Licitaciones')
-        .in('id', mandanteIds.split(',').map(Number))
-        .maybeSingle();
+        .in('id', mandanteIds.split(',').map(Number));
 
+      // OR logic: if ANY mandante has a feature enabled, show it
       const features = {
-        Adicionales: mandanteConfig?.Adicionales || false,
-        Documentos: mandanteConfig?.Documentos || false,
-        Fotos: mandanteConfig?.Fotos || false,
-        Presupuesto: mandanteConfig?.Presupuesto || false,
-        Reuniones: mandanteConfig?.Reuniones || false,
-        Licitaciones: mandanteConfig?.Licitaciones || false,
+        Adicionales: mandanteConfigs?.some(m => m.Adicionales) || false,
+        Documentos: mandanteConfigs?.some(m => m.Documentos) || false,
+        Fotos: mandanteConfigs?.some(m => m.Fotos) || false,
+        Presupuesto: mandanteConfigs?.some(m => m.Presupuesto) || false,
+        Reuniones: mandanteConfigs?.some(m => m.Reuniones) || false,
+        Licitaciones: mandanteConfigs?.some(m => m.Licitaciones) || false,
       };
 
       if (!mandanteIds || mandanteIds === '0') {

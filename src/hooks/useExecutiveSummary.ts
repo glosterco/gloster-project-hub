@@ -85,20 +85,25 @@ export const useExecutiveSummary = (selectedProjectIds?: number[]) => {
       const mandanteIds = await getUserMandanteIds(user.id);
       const contratistaIds = await getUserContratistaIds(user.id);
 
-      // Fetch contratista features configuration - get all contratistas
+      // Fetch features configuration from both Mandantes and Contratistas and OR them
+      const { data: mandanteConfigs } = await supabase
+        .from('Mandantes')
+        .select('Adicionales, Documentos, Fotos, Presupuesto, Reuniones, Licitaciones')
+        .in('id', mandanteIds.split(',').map(Number));
+
       const { data: contratistaConfigs } = await supabase
         .from('Contratistas')
         .select('Adicionales, Documentos, Fotos, Presupuesto, Reuniones, Licitaciones')
         .in('id', contratistaIds.split(',').map(Number));
 
-      // OR logic: if ANY contratista has a feature enabled, show it
+      // OR logic across both sources
       const features = {
-        Adicionales: contratistaConfigs?.some(c => c.Adicionales) || false,
-        Documentos: contratistaConfigs?.some(c => c.Documentos) || false,
-        Fotos: contratistaConfigs?.some(c => c.Fotos) || false,
-        Presupuesto: contratistaConfigs?.some(c => c.Presupuesto) || false,
-        Reuniones: contratistaConfigs?.some(c => c.Reuniones) || false,
-        Licitaciones: contratistaConfigs?.some(c => c.Licitaciones) || false,
+        Adicionales: (mandanteConfigs?.some(m => m.Adicionales) || contratistaConfigs?.some(c => c.Adicionales)) || false,
+        Documentos: (mandanteConfigs?.some(m => m.Documentos) || contratistaConfigs?.some(c => c.Documentos)) || false,
+        Fotos: (mandanteConfigs?.some(m => m.Fotos) || contratistaConfigs?.some(c => c.Fotos)) || false,
+        Presupuesto: (mandanteConfigs?.some(m => m.Presupuesto) || contratistaConfigs?.some(c => c.Presupuesto)) || false,
+        Reuniones: (mandanteConfigs?.some(m => m.Reuniones) || contratistaConfigs?.some(c => c.Reuniones)) || false,
+        Licitaciones: (mandanteConfigs?.some(m => m.Licitaciones) || contratistaConfigs?.some(c => c.Licitaciones)) || false,
       };
 
       // Fetch projects with related data - using proper filter syntax

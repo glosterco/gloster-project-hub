@@ -150,25 +150,29 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
 
   const saveControls = async () => {
     try {
+      // Calcular nuevos acumulados sumando el actual
+      const newDevolucionAcumulado = devolucionAcumulado + devolucionActual;
+      const newRetencionAcumulado = retencionAcumulado + retencionActual;
+
       // Guardar Control de Anticipos
       if (anticiposId) {
         await supabase
           .from('Presupuesto' as any)
           .update({
             Total: totalAnticipos,
-            'Avance Acumulado': devolucionAcumulado,
+            'Avance Acumulado': newDevolucionAcumulado,
             'Avance Parcial': devolucionActual,
             'Ult. Actualizacion': new Date().toISOString(),
           })
           .eq('id', anticiposId);
-      } else {
+      } else if (totalAnticipos > 0 || devolucionActual > 0) {
         const { data, error } = await supabase
           .from('Presupuesto' as any)
           .insert({
             Project_ID: projectId,
             Item: 'Control de Anticipos',
             Total: totalAnticipos,
-            'Avance Acumulado': devolucionAcumulado,
+            'Avance Acumulado': newDevolucionAcumulado,
             'Avance Parcial': devolucionActual,
             'Ult. Actualizacion': new Date().toISOString(),
           })
@@ -183,19 +187,19 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
           .from('Presupuesto' as any)
           .update({
             Total: totalRetenciones,
-            'Avance Acumulado': retencionAcumulado,
+            'Avance Acumulado': newRetencionAcumulado,
             'Avance Parcial': retencionActual,
             'Ult. Actualizacion': new Date().toISOString(),
           })
           .eq('id', retencionesId);
-      } else {
+      } else if (totalRetenciones > 0 || retencionActual > 0) {
         const { data, error } = await supabase
           .from('Presupuesto' as any)
           .insert({
             Project_ID: projectId,
             Item: 'Control de Retenciones',
             Total: totalRetenciones,
-            'Avance Acumulado': retencionAcumulado,
+            'Avance Acumulado': newRetencionAcumulado,
             'Avance Parcial': retencionActual,
             'Ult. Actualizacion': new Date().toISOString(),
           })
@@ -203,6 +207,12 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
           .single();
         if (data && !error) setRetencionesId((data as any).id);
       }
+
+      // Actualizar estados locales después de guardar
+      setDevolucionAcumulado(newDevolucionAcumulado);
+      setRetencionAcumulado(newRetencionAcumulado);
+      setDevolucionActual(0);
+      setRetencionActual(0);
     } catch (error) {
       console.error('Error saving controls:', error);
       throw error;
@@ -553,16 +563,8 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
                   <TableCell className="font-rubik py-2">
                     Devolución de Anticipo Acumulado
                   </TableCell>
-                  <TableCell className="font-rubik text-right py-2">
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="0"
-                      value={devolucionAcumulado || ''}
-                      onChange={(e) => setDevolucionAcumulado(parseFloat(e.target.value) || 0)}
-                      className="w-32 text-right font-rubik ml-auto h-8"
-                    />
+                  <TableCell className="font-rubik text-right font-semibold py-2">
+                    {formatCurrency(devolucionAcumulado)}
                   </TableCell>
                 </TableRow>
                 
@@ -645,16 +647,8 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
                   <TableCell className="font-rubik py-2">
                     Retención de Anticipo Acumulado
                   </TableCell>
-                  <TableCell className="font-rubik text-right py-2">
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="0"
-                      value={retencionAcumulado || ''}
-                      onChange={(e) => setRetencionAcumulado(parseFloat(e.target.value) || 0)}
-                      className="w-32 text-right font-rubik ml-auto h-8"
-                    />
+                  <TableCell className="font-rubik text-right font-semibold py-2">
+                    {formatCurrency(retencionAcumulado)}
                   </TableCell>
                 </TableRow>
                 

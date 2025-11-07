@@ -832,25 +832,25 @@ const ProjectDetailMandante = () => {
 
                       // Segunda página - Resumen del Período y Controles
                       const page2 = document.createElement('div');
-                      page2.style.padding = '20px 30px 30px 30px';
+                      page2.style.padding = '30px';
                       page2.style.fontFamily = 'Rubik, sans-serif';
                       page2.style.pageBreakAfter = 'always';
                       
                       page2.innerHTML = `
-                        <div style="text-align: center; margin-bottom: 10px;">
+                        <div style="text-align: center; margin-bottom: 15px;">
                           <h1 style="color: #1F2937; margin-bottom: 5px; font-size: 20px; font-weight: bold;">Resumen del Período Actualizado</h1>
                         </div>
                         
                         <div style="margin-bottom: 15px;">
                           <table style="width: 100%; max-width: 700px; margin: 0 auto; border-collapse: collapse; font-size: 11px;">
                             <!-- Información de fecha y avance -->
-                            <tr style="background-color: #F8FAFC;">
+                            <tr style="background-color: #FFFBEB;">
                               <td style="padding: 8px; border: 1px solid #E5E7EB; color: #6B7280; font-weight: 600; width: 60%;">Fecha de Actualización</td>
                               <td style="padding: 8px; text-align: right; border: 1px solid #E5E7EB; color: #1F2937; font-weight: 600; width: 40%;">${new Date().toLocaleDateString('es-CL')}</td>
                             </tr>
-                            <tr style="background-color: #F8FAFC;">
-                              <td style="padding: 8px; border: 1px solid #E5E7EB; border-bottom: 3px solid #6B7280; color: #6B7280; font-weight: 600;">Porcentaje de Avance Financiero</td>
-                              <td style="padding: 8px; text-align: right; border: 1px solid #E5E7EB; border-bottom: 3px solid #6B7280; color: #1F2937; font-weight: 700; font-size: 12px;">${porcentajeAvance}%</td>
+                            <tr style="background-color: #FFFBEB;">
+                              <td style="padding: 8px; border: 1px solid #E5E7EB; border-bottom: 3px solid #F5DF4D; color: #6B7280; font-weight: 600;">Porcentaje de Avance Financiero</td>
+                              <td style="padding: 8px; text-align: right; border: 1px solid #E5E7EB; border-bottom: 3px solid #F5DF4D; color: #1F2937; font-weight: 700; font-size: 12px;">${porcentajeAvance}%</td>
                             </tr>
                             
                             <!-- Encabezado de tabla -->
@@ -898,9 +898,9 @@ const ProjectDetailMandante = () => {
                                 <td style="padding: 7px 8px; border: 1px solid #E5E7EB; color: #6B7280;">Devolución Anticipo (${anticipos.total > 0 ? ((anticipos.actual / anticipos.total) * 100).toFixed(1) : '0.0'}%)</td>
                                 <td style="padding: 7px 8px; text-align: right; border: 1px solid #E5E7EB; color: #6B7280;">-${formatCurrency(anticipos.actual || 0, project?.Currency)}</td>
                               </tr>
-                              <tr style="background-color: #FFFBEB;">
-                                <td style="padding: 8px; border: 1px solid #E5E7EB; border-top: 2px solid #F5DF4D; color: #1F2937; font-weight: 700;">Subtotal Neto</td>
-                                <td style="padding: 8px; text-align: right; border: 1px solid #E5E7EB; border-top: 2px solid #F5DF4D; color: #1F2937; font-weight: 700;">${formatCurrency(subtotalNeto, project?.Currency)}</td>
+                              <tr style="background-color: #FFFFFF;">
+                                <td style="padding: 8px; border: 1px solid #E5E7EB; border-top: 2px solid #6B7280; color: #1F2937; font-weight: 700;">Subtotal Neto</td>
+                                <td style="padding: 8px; text-align: right; border: 1px solid #E5E7EB; border-top: 2px solid #6B7280; color: #1F2937; font-weight: 700;">${formatCurrency(subtotalNeto, project?.Currency)}</td>
                               </tr>
                               <tr style="background-color: #F8FAFC;">
                                 <td style="padding: 7px 8px; border: 1px solid #E5E7EB; color: #6B7280;">IVA (19%)</td>
@@ -914,7 +914,7 @@ const ProjectDetailMandante = () => {
                           </table>
                         </div>
                         
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 18px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px;">
                           <div style="padding: 12px; background-color: #FFFBEB; border-radius: 6px; border: 2px solid #F5DF4D;">
                             <h4 style="color: #1F2937; margin-bottom: 10px; font-size: 12px; font-weight: bold;">Control de Anticipos</h4>
                             <table style="width: 100%; font-size: 10px;">
@@ -1018,10 +1018,11 @@ const ProjectDetailMandante = () => {
                         </table>
                       `;
 
-                      // Contenedor con las dos páginas
+                      // Contenedor con las tres páginas
                       const container = document.createElement('div');
                       container.appendChild(page1);
                       container.appendChild(page2);
+                      container.appendChild(page3);
 
                       const opt = {
                         margin: 10,

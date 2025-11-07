@@ -832,124 +832,129 @@ const ProjectDetailMandante = () => {
 
                       // Segunda página - Resumen del Período y Controles
                       const page2 = document.createElement('div');
-                      page2.style.padding = '40px';
+                      page2.style.padding = '30px';
                       page2.style.fontFamily = 'Rubik, sans-serif';
                       page2.style.pageBreakAfter = 'always';
                       
                       page2.innerHTML = `
-                        <div style="text-align: center; margin-bottom: 30px;">
-                          <h1 style="color: #1F2937; margin-bottom: 10px; font-size: 24px; font-weight: bold;">Resumen del Período Actualizado</h1>
+                        <div style="text-align: center; margin-bottom: 20px;">
+                          <h1 style="color: #1F2937; margin-bottom: 5px; font-size: 20px; font-weight: bold;">Resumen del Período Actualizado</h1>
                         </div>
                         
-                        <div style="margin-bottom: 30px; padding: 20px; background-color: #E0F2FE; border-radius: 8px; border-left: 4px solid #0EA5E9;">
-                          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
-                            <div>
-                              <p style="color: #6B7280; font-size: 12px; margin-bottom: 5px;">Fecha de Actualización</p>
-                              <p style="color: #1F2937; font-size: 14px; font-weight: 600;">${new Date().toLocaleDateString('es-CL')}</p>
+                        <div style="margin-bottom: 18px;">
+                          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
+                            <div style="padding: 10px; background-color: #F8FAFC; border-radius: 6px; border-left: 3px solid #6B7280;">
+                              <p style="color: #6B7280; font-size: 11px; margin-bottom: 3px;">Fecha de Actualización</p>
+                              <p style="color: #1F2937; font-size: 13px; font-weight: 600;">${new Date().toLocaleDateString('es-CL')}</p>
                             </div>
-                            <div>
-                              <p style="color: #6B7280; font-size: 12px; margin-bottom: 5px;">Porcentaje de Avance Financiero</p>
-                              <p style="color: #0EA5E9; font-size: 16px; font-weight: 700;">${porcentajeAvance}%</p>
+                            <div style="padding: 10px; background-color: #FFFBEB; border-radius: 6px; border-left: 3px solid #F5DF4D;">
+                              <p style="color: #6B7280; font-size: 11px; margin-bottom: 3px;">Porcentaje de Avance Financiero</p>
+                              <p style="color: #1F2937; font-size: 13px; font-weight: 700;">${porcentajeAvance}%</p>
                             </div>
                           </div>
                           
-                          <table style="width: 100%; max-width: 650px; margin: 0 auto; border-collapse: collapse; font-size: 11px;">
+                          <table style="width: 100%; max-width: 700px; margin: 0 auto; border-collapse: collapse; font-size: 11px;">
                             <thead>
-                              <tr style="background-color: #1F2937; color: white;">
-                                <th style="padding: 10px 8px; text-align: left; font-weight: 600; border: 1px solid #374151; width: 60%;">Concepto</th>
-                                <th style="padding: 10px 8px; text-align: right; font-weight: 600; border: 1px solid #374151; width: 40%;">Monto</th>
+                              <tr style="background-color: #F5DF4D;">
+                                <th style="padding: 8px; text-align: left; font-weight: 600; border: 1px solid #E5E7EB; width: 60%; color: #1F2937;">Concepto</th>
+                                <th style="padding: 8px; text-align: right; font-weight: 600; border: 1px solid #E5E7EB; width: 40%; color: #1F2937;">Monto</th>
                               </tr>
                             </thead>
                             <tbody>
+                              <!-- SECCIÓN: COSTO DIRECTO -->
                               <tr style="background-color: #FFFFFF;">
-                                <td style="padding: 8px; border: 1px solid #E5E7EB; color: #1F2937;">Avance Acumulado Actual - Costo Directo</td>
-                                <td style="padding: 8px; text-align: right; border: 1px solid #E5E7EB; color: #1F2937; font-weight: 600;">${formatCurrency(avanceAcumuladoTotal, project?.Currency)}</td>
+                                <td style="padding: 7px 8px; border: 1px solid #E5E7EB; color: #1F2937;">Avance Acumulado Actual - Costo Directo</td>
+                                <td style="padding: 7px 8px; text-align: right; border: 1px solid #E5E7EB; color: #1F2937; font-weight: 600;">${formatCurrency(avanceAcumuladoTotal, project?.Currency)}</td>
                               </tr>
                               <tr style="background-color: #F8FAFC;">
-                                <td style="padding: 8px; border: 1px solid #E5E7EB; color: #1F2937;">Avance Acumulado Anterior - Costo Directo</td>
-                                <td style="padding: 8px; text-align: right; border: 1px solid #E5E7EB; color: #6B7280; font-weight: 500;">${formatCurrency(avanceAcumuladoAnterior, project?.Currency)}</td>
-                              </tr>
-                              <tr style="background-color: #FFFBEB; border-top: 3px solid #F5DF4D; border-bottom: 3px solid #F5DF4D;">
-                                <td style="padding: 8px; border: 1px solid #E5E7EB; color: #1F2937; font-weight: 600;">Avance Parcial - Costo Directo</td>
-                                <td style="padding: 8px; text-align: right; border: 1px solid #E5E7EB; color: #1F2937; font-weight: 700;">${formatCurrency(avanceParcialTotal, project?.Currency)}</td>
-                              </tr>
-                              <tr style="background-color: #FFFFFF;">
-                                <td style="padding: 8px; border: 1px solid #E5E7EB; color: #6B7280;">Gastos Generales (${gastosGenerales.toFixed(1)}%)</td>
-                                <td style="padding: 8px; text-align: right; border: 1px solid #E5E7EB; color: #1F2937; font-weight: 600;">${formatCurrency(montoGastosGeneralesParcial, project?.Currency)}</td>
-                              </tr>
-                              <tr style="background-color: #F8FAFC; border-bottom: 3px solid #F5DF4D;">
-                                <td style="padding: 8px; border: 1px solid #E5E7EB; color: #6B7280;">Utilidad (${utilidad.toFixed(1)}%)</td>
-                                <td style="padding: 8px; text-align: right; border: 1px solid #E5E7EB; color: #1F2937; font-weight: 600;">${formatCurrency(montoUtilidadParcial, project?.Currency)}</td>
-                              </tr>
-                              <tr style="background-color: #FFFBEB; border-bottom: 3px solid #0EA5E9;">
-                                <td style="padding: 10px 8px; border: 1px solid #E5E7EB; color: #1F2937; font-weight: 700;">Subtotal</td>
-                                <td style="padding: 10px 8px; text-align: right; border: 1px solid #E5E7EB; color: #1F2937; font-weight: 700;">${formatCurrency(subtotal, project?.Currency)}</td>
-                              </tr>
-                              <tr style="background-color: #F8FAFC;">
-                                <td style="padding: 8px; border: 1px solid #E5E7EB; color: #6B7280;">Retenciones (${retenciones.total > 0 ? ((retenciones.actual / retenciones.total) * 100).toFixed(1) : '0.0'}%)</td>
-                                <td style="padding: 8px; text-align: right; border: 1px solid #E5E7EB; color: #6B7280; font-weight: 600;">-${formatCurrency(retenciones.actual || 0, project?.Currency)}</td>
-                              </tr>
-                              <tr style="background-color: #FFFFFF; border-bottom: 3px solid #0EA5E9;">
-                                <td style="padding: 8px; border: 1px solid #E5E7EB; color: #6B7280;">Devolución Anticipo (${anticipos.total > 0 ? ((anticipos.actual / anticipos.total) * 100).toFixed(1) : '0.0'}%)</td>
-                                <td style="padding: 8px; text-align: right; border: 1px solid #E5E7EB; color: #6B7280; font-weight: 600;">-${formatCurrency(anticipos.actual || 0, project?.Currency)}</td>
-                              </tr>
-                              <tr style="background-color: #E0F2FE; border-bottom: 3px solid #6B7280;">
-                                <td style="padding: 10px 8px; border: 1px solid #E5E7EB; color: #1F2937; font-weight: 700;">Subtotal Neto</td>
-                                <td style="padding: 10px 8px; text-align: right; border: 1px solid #E5E7EB; color: #1F2937; font-weight: 700;">${formatCurrency(subtotalNeto, project?.Currency)}</td>
-                              </tr>
-                              <tr style="background-color: #F8FAFC; border-bottom: 3px solid #6B7280;">
-                                <td style="padding: 8px; border: 1px solid #E5E7EB; color: #6B7280;">IVA (19%)</td>
-                                <td style="padding: 8px; text-align: right; border: 1px solid #E5E7EB; color: #1F2937; font-weight: 600;">${formatCurrency(ivaTotal, project?.Currency)}</td>
+                                <td style="padding: 7px 8px; border: 1px solid #E5E7EB; color: #6B7280;">Avance Acumulado Anterior - Costo Directo</td>
+                                <td style="padding: 7px 8px; text-align: right; border: 1px solid #E5E7EB; color: #6B7280;">${formatCurrency(avanceAcumuladoAnterior, project?.Currency)}</td>
                               </tr>
                               <tr style="background-color: #FFFBEB;">
-                                <td style="padding: 12px 8px; border: 1px solid #E5E7EB; color: #1F2937; font-weight: 800; font-size: 13px;">TOTAL</td>
-                                <td style="padding: 12px 8px; text-align: right; border: 1px solid #E5E7EB; color: #1F2937; font-weight: 800; font-size: 14px;">${formatCurrency(totalFinal, project?.Currency)}</td>
+                                <td style="padding: 7px 8px; border: 1px solid #E5E7EB; border-bottom: 2px solid #F5DF4D; color: #1F2937; font-weight: 600;">Avance Parcial - Costo Directo</td>
+                                <td style="padding: 7px 8px; text-align: right; border: 1px solid #E5E7EB; border-bottom: 2px solid #F5DF4D; color: #1F2937; font-weight: 700;">${formatCurrency(avanceParcialTotal, project?.Currency)}</td>
+                              </tr>
+                              
+                              <!-- SECCIÓN: GASTOS GENERALES Y UTILIDAD -->
+                              <tr style="background-color: #FFFFFF;">
+                                <td style="padding: 7px 8px; border: 1px solid #E5E7EB; color: #6B7280;">Gastos Generales (${gastosGenerales.toFixed(1)}%)</td>
+                                <td style="padding: 7px 8px; text-align: right; border: 1px solid #E5E7EB; color: #6B7280;">${formatCurrency(montoGastosGeneralesParcial, project?.Currency)}</td>
+                              </tr>
+                              <tr style="background-color: #F8FAFC;">
+                                <td style="padding: 7px 8px; border: 1px solid #E5E7EB; border-bottom: 2px solid #F5DF4D; color: #6B7280;">Utilidad (${utilidad.toFixed(1)}%)</td>
+                                <td style="padding: 7px 8px; text-align: right; border: 1px solid #E5E7EB; border-bottom: 2px solid #F5DF4D; color: #6B7280;">${formatCurrency(montoUtilidadParcial, project?.Currency)}</td>
+                              </tr>
+                              
+                              <!-- SECCIÓN: SUBTOTALES -->
+                              <tr style="background-color: #FFFBEB;">
+                                <td style="padding: 8px; border: 1px solid #E5E7EB; color: #1F2937; font-weight: 700;">Subtotal</td>
+                                <td style="padding: 8px; text-align: right; border: 1px solid #E5E7EB; color: #1F2937; font-weight: 700;">${formatCurrency(subtotal, project?.Currency)}</td>
+                              </tr>
+                              <tr style="background-color: #FFFFFF;">
+                                <td style="padding: 7px 8px; border: 1px solid #E5E7EB; color: #6B7280;">Retenciones (${retenciones.total > 0 ? ((retenciones.actual / retenciones.total) * 100).toFixed(1) : '0.0'}%)</td>
+                                <td style="padding: 7px 8px; text-align: right; border: 1px solid #E5E7EB; color: #6B7280;">-${formatCurrency(retenciones.actual || 0, project?.Currency)}</td>
+                              </tr>
+                              <tr style="background-color: #F8FAFC;">
+                                <td style="padding: 7px 8px; border: 1px solid #E5E7EB; color: #6B7280;">Devolución Anticipo (${anticipos.total > 0 ? ((anticipos.actual / anticipos.total) * 100).toFixed(1) : '0.0'}%)</td>
+                                <td style="padding: 7px 8px; text-align: right; border: 1px solid #E5E7EB; color: #6B7280;">-${formatCurrency(anticipos.actual || 0, project?.Currency)}</td>
+                              </tr>
+                              <tr style="background-color: #FFFFFF;">
+                                <td style="padding: 8px; border: 1px solid #E5E7EB; border-top: 2px solid #6B7280; color: #1F2937; font-weight: 700;">Subtotal Neto</td>
+                                <td style="padding: 8px; text-align: right; border: 1px solid #E5E7EB; border-top: 2px solid #6B7280; color: #1F2937; font-weight: 700;">${formatCurrency(subtotalNeto, project?.Currency)}</td>
+                              </tr>
+                              <tr style="background-color: #F8FAFC;">
+                                <td style="padding: 7px 8px; border: 1px solid #E5E7EB; color: #6B7280;">IVA (19%)</td>
+                                <td style="padding: 7px 8px; text-align: right; border: 1px solid #E5E7EB; color: #6B7280;">${formatCurrency(ivaTotal, project?.Currency)}</td>
+                              </tr>
+                              <tr style="background-color: #FFFBEB;">
+                                <td style="padding: 10px 8px; border: 1px solid #E5E7EB; border-top: 3px solid #F5DF4D; color: #1F2937; font-weight: 800; font-size: 12px;">TOTAL</td>
+                                <td style="padding: 10px 8px; text-align: right; border: 1px solid #E5E7EB; border-top: 3px solid #F5DF4D; color: #1F2937; font-weight: 800; font-size: 12px;">${formatCurrency(totalFinal, project?.Currency)}</td>
                               </tr>
                             </tbody>
                           </table>
                         </div>
                         
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 30px;">
-                          <div style="padding: 20px; background-color: #FFFBEB; border-radius: 8px; border: 2px solid #F5DF4D;">
-                            <h4 style="color: #1F2937; margin-bottom: 15px; font-size: 14px; font-weight: bold;">Control de Anticipos</h4>
-                            <table style="width: 100%; font-size: 11px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px;">
+                          <div style="padding: 12px; background-color: #FFFBEB; border-radius: 6px; border: 2px solid #F5DF4D;">
+                            <h4 style="color: #1F2937; margin-bottom: 10px; font-size: 12px; font-weight: bold;">Control de Anticipos</h4>
+                            <table style="width: 100%; font-size: 10px;">
                               <tr>
-                                <td style="color: #6B7280; padding: 5px 0;">Total Anticipos:</td>
+                                <td style="color: #6B7280; padding: 4px 0;">Total Anticipos:</td>
                                 <td style="color: #1F2937; font-weight: 600; text-align: right;">${formatCurrency(anticipos.total || 0, project?.Currency)}</td>
                               </tr>
                               <tr>
-                                <td style="color: #6B7280; padding: 5px 0;">Devolución Actual:</td>
-                                <td style="color: #0EA5E9; font-weight: 600; text-align: right;">${formatCurrency(anticipos.actual || 0, project?.Currency)}</td>
+                                <td style="color: #6B7280; padding: 4px 0;">Devolución Actual:</td>
+                                <td style="color: #1F2937; font-weight: 600; text-align: right;">${formatCurrency(anticipos.actual || 0, project?.Currency)}</td>
                               </tr>
                               <tr>
-                                <td style="color: #6B7280; padding: 5px 0;">Devolución Acumulada:</td>
+                                <td style="color: #6B7280; padding: 4px 0;">Devolución Acumulada:</td>
                                 <td style="color: #1F2937; font-weight: 600; text-align: right;">${formatCurrency(anticipos.acumulado || 0, project?.Currency)}</td>
                               </tr>
                               <tr style="border-top: 2px solid #F5DF4D;">
-                                <td style="color: #1F2937; padding: 8px 0 0 0; font-weight: 700;">Saldo por Devolver:</td>
-                                <td style="color: #1F2937; font-weight: 700; text-align: right; padding-top: 8px; font-size: 12px;">${formatCurrency((anticipos.total || 0) - (anticipos.acumulado || 0), project?.Currency)}</td>
+                                <td style="color: #1F2937; padding: 6px 0 0 0; font-weight: 700;">Saldo por Devolver:</td>
+                                <td style="color: #1F2937; font-weight: 700; text-align: right; padding-top: 6px; font-size: 11px;">${formatCurrency((anticipos.total || 0) - (anticipos.acumulado || 0), project?.Currency)}</td>
                               </tr>
                             </table>
                           </div>
                           
-                          <div style="padding: 20px; background-color: #E0F2FE; border-radius: 8px; border: 2px solid #0EA5E9;">
-                            <h4 style="color: #1F2937; margin-bottom: 15px; font-size: 14px; font-weight: bold;">Control de Retenciones</h4>
-                            <table style="width: 100%; font-size: 11px;">
+                          <div style="padding: 12px; background-color: #F8FAFC; border-radius: 6px; border: 2px solid #6B7280;">
+                            <h4 style="color: #1F2937; margin-bottom: 10px; font-size: 12px; font-weight: bold;">Control de Retenciones</h4>
+                            <table style="width: 100%; font-size: 10px;">
                               <tr>
-                                <td style="color: #6B7280; padding: 5px 0;">Total Retenciones:</td>
+                                <td style="color: #6B7280; padding: 4px 0;">Total Retenciones:</td>
                                 <td style="color: #1F2937; font-weight: 600; text-align: right;">${formatCurrency(retenciones.total || 0, project?.Currency)}</td>
                               </tr>
                               <tr>
-                                <td style="color: #6B7280; padding: 5px 0;">Retención Actual:</td>
-                                <td style="color: #6B7280; font-weight: 600; text-align: right;">${formatCurrency(retenciones.actual || 0, project?.Currency)}</td>
+                                <td style="color: #6B7280; padding: 4px 0;">Retención Actual:</td>
+                                <td style="color: #1F2937; font-weight: 600; text-align: right;">${formatCurrency(retenciones.actual || 0, project?.Currency)}</td>
                               </tr>
                               <tr>
-                                <td style="color: #6B7280; padding: 5px 0;">Retención Acumulada:</td>
+                                <td style="color: #6B7280; padding: 4px 0;">Retención Acumulada:</td>
                                 <td style="color: #1F2937; font-weight: 600; text-align: right;">${formatCurrency(retenciones.acumulado || 0, project?.Currency)}</td>
                               </tr>
-                              <tr style="border-top: 2px solid #0EA5E9;">
-                                <td style="color: #1F2937; padding: 8px 0 0 0; font-weight: 700;">Saldo por Retener:</td>
-                                <td style="color: #1F2937; font-weight: 700; text-align: right; padding-top: 8px; font-size: 12px;">${formatCurrency((retenciones.total || 0) - (retenciones.acumulado || 0), project?.Currency)}</td>
+                              <tr style="border-top: 2px solid #6B7280;">
+                                <td style="color: #1F2937; padding: 6px 0 0 0; font-weight: 700;">Saldo por Retener:</td>
+                                <td style="color: #1F2937; font-weight: 700; text-align: right; padding-top: 6px; font-size: 11px;">${formatCurrency((retenciones.total || 0) - (retenciones.acumulado || 0), project?.Currency)}</td>
                               </tr>
                             </table>
                           </div>

@@ -306,30 +306,37 @@ export const ProjectFilter: React.FC<ProjectFilterProps> = ({
           </ScrollArea>
         </SheetContent>
       </Sheet>
-
-        <div className="text-sm text-muted-foreground">
-          {selectedCount === 0 ? (
-            'Ningún proyecto seleccionado'
-          ) : selectedCount === totalCount ? (
-            <span className="text-foreground font-medium">Todos los proyectos ({totalCount})</span>
-          ) : (
-            <span><span className="text-foreground font-medium">{selectedCount}</span> de {totalCount} proyectos</span>
-          )}
-        </div>
       </div>
 
       {/* Selected Projects Display */}
-      {selectedCount > 0 && selectedCount < totalCount && (
-        <div className="flex flex-wrap gap-2">
-          {selectedProjectNames.map((name) => (
-            <Badge 
-              key={name}
-              variant="secondary"
-              className="px-3 py-1 text-xs"
-            >
-              {name}
-            </Badge>
-          ))}
+      {selectedCount > 0 && (
+        <div className="space-y-2">
+          <div className="text-sm font-medium text-muted-foreground">
+            Proyectos seleccionados:
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {selectedProjectNames.map((name) => {
+              const projectId = projects.find(p => p.name === name)?.id;
+              return (
+                <Badge 
+                  key={name}
+                  variant="secondary"
+                  className="px-3 py-1 text-xs flex items-center gap-1.5 hover:bg-secondary/80 transition-colors"
+                >
+                  {name}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (projectId) handleToggleProject(projectId);
+                    }}
+                    className="hover:text-foreground transition-colors"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>

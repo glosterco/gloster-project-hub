@@ -24,7 +24,26 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
   const [editingValues, setEditingValues] = useState<{ [key: number]: number }>({});
   const [gastosGenerales, setGastosGenerales] = useState<number>(0);
   const [utilidad, setUtilidad] = useState<number>(0);
+  
+  // Estados para Control de Anticipos
+  const [totalAnticipos, setTotalAnticipos] = useState<number>(0);
+  const [devolucionActual, setDevolucionActual] = useState<number>(0);
+  const [devolucionAcumulado, setDevolucionAcumulado] = useState<number>(0);
+  
+  // Estados para Control de Retenciones
+  const [totalRetenciones, setTotalRetenciones] = useState<number>(0);
+  const [retencionActual, setRetencionActual] = useState<number>(0);
+  const [retencionAcumulado, setRetencionAcumulado] = useState<number>(0);
+  
   const { toast } = useToast();
+  
+  // Cálculos para Anticipos
+  const totalDevuelto = devolucionAcumulado + devolucionActual;
+  const saldoPorDevolver = totalAnticipos - totalDevuelto;
+  
+  // Cálculos para Retenciones
+  const totalRetenido = retencionAcumulado + retencionActual;
+  const saldoPorRetener = totalRetenciones - totalRetenido;
 
   const formatCurrency = (amount: number) => {
     if (currency === 'UF') {
@@ -288,24 +307,81 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
             <TableHeader>
               <TableRow>
                 <TableHead className="font-rubik">Concepto</TableHead>
-                <TableHead className="font-rubik">Unidad</TableHead>
-                <TableHead className="font-rubik text-right">Cantidad</TableHead>
-                <TableHead className="font-rubik text-right">P.U.</TableHead>
-                <TableHead className="font-rubik text-right">Total</TableHead>
+                <TableHead className="font-rubik text-right">Monto</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground font-rubik">
-                  No hay anticipos registrados
-                </TableCell>
-              </TableRow>
-              <TableRow className="bg-muted/50 font-semibold border-t-2">
-                <TableCell colSpan={4} className="font-rubik text-right">
-                  Total Anticipos:
+              {/* Total Anticipos */}
+              <TableRow className="bg-muted/50 font-semibold">
+                <TableCell className="font-rubik">
+                  Total Anticipos
                 </TableCell>
                 <TableCell className="font-rubik text-right">
-                  {formatCurrency(0)}
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0"
+                    value={totalAnticipos || ''}
+                    onChange={(e) => setTotalAnticipos(parseFloat(e.target.value) || 0)}
+                    className="w-32 text-right font-rubik ml-auto"
+                  />
+                </TableCell>
+              </TableRow>
+              
+              {/* Devolución Actual */}
+              <TableRow className="hover:bg-muted/50">
+                <TableCell className="font-rubik">
+                  Devolución de Anticipo Actual
+                </TableCell>
+                <TableCell className="font-rubik text-right">
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0"
+                    value={devolucionActual || ''}
+                    onChange={(e) => setDevolucionActual(parseFloat(e.target.value) || 0)}
+                    className="w-32 text-right font-rubik ml-auto"
+                  />
+                </TableCell>
+              </TableRow>
+              
+              {/* Devolución Acumulado */}
+              <TableRow className="hover:bg-muted/50">
+                <TableCell className="font-rubik">
+                  Devolución de Anticipo Acumulado
+                </TableCell>
+                <TableCell className="font-rubik text-right">
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0"
+                    value={devolucionAcumulado || ''}
+                    onChange={(e) => setDevolucionAcumulado(parseFloat(e.target.value) || 0)}
+                    className="w-32 text-right font-rubik ml-auto"
+                  />
+                </TableCell>
+              </TableRow>
+              
+              {/* Total Devuelto */}
+              <TableRow className="bg-accent/20 font-semibold">
+                <TableCell className="font-rubik">
+                  Total Devuelto
+                </TableCell>
+                <TableCell className="font-rubik text-right">
+                  {formatCurrency(totalDevuelto)}
+                </TableCell>
+              </TableRow>
+              
+              {/* Saldo por Devolver */}
+              <TableRow className="bg-primary/10 font-bold border-t-2">
+                <TableCell className="font-rubik">
+                  Saldo por Devolver
+                </TableCell>
+                <TableCell className="font-rubik text-right">
+                  {formatCurrency(saldoPorDevolver)}
                 </TableCell>
               </TableRow>
             </TableBody>
@@ -323,24 +399,81 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
             <TableHeader>
               <TableRow>
                 <TableHead className="font-rubik">Concepto</TableHead>
-                <TableHead className="font-rubik">Unidad</TableHead>
-                <TableHead className="font-rubik text-right">Cantidad</TableHead>
-                <TableHead className="font-rubik text-right">P.U.</TableHead>
-                <TableHead className="font-rubik text-right">Total</TableHead>
+                <TableHead className="font-rubik text-right">Monto</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground font-rubik">
-                  No hay retenciones registradas
-                </TableCell>
-              </TableRow>
-              <TableRow className="bg-muted/50 font-semibold border-t-2">
-                <TableCell colSpan={4} className="font-rubik text-right">
-                  Total Retenciones:
+              {/* Total Retenciones */}
+              <TableRow className="bg-muted/50 font-semibold">
+                <TableCell className="font-rubik">
+                  Total Retenciones
                 </TableCell>
                 <TableCell className="font-rubik text-right">
-                  {formatCurrency(0)}
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0"
+                    value={totalRetenciones || ''}
+                    onChange={(e) => setTotalRetenciones(parseFloat(e.target.value) || 0)}
+                    className="w-32 text-right font-rubik ml-auto"
+                  />
+                </TableCell>
+              </TableRow>
+              
+              {/* Retención Actual */}
+              <TableRow className="hover:bg-muted/50">
+                <TableCell className="font-rubik">
+                  Retención de Anticipo Actual
+                </TableCell>
+                <TableCell className="font-rubik text-right">
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0"
+                    value={retencionActual || ''}
+                    onChange={(e) => setRetencionActual(parseFloat(e.target.value) || 0)}
+                    className="w-32 text-right font-rubik ml-auto"
+                  />
+                </TableCell>
+              </TableRow>
+              
+              {/* Retención Acumulado */}
+              <TableRow className="hover:bg-muted/50">
+                <TableCell className="font-rubik">
+                  Retención de Anticipo Acumulado
+                </TableCell>
+                <TableCell className="font-rubik text-right">
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0"
+                    value={retencionAcumulado || ''}
+                    onChange={(e) => setRetencionAcumulado(parseFloat(e.target.value) || 0)}
+                    className="w-32 text-right font-rubik ml-auto"
+                  />
+                </TableCell>
+              </TableRow>
+              
+              {/* Total Retenido */}
+              <TableRow className="bg-accent/20 font-semibold">
+                <TableCell className="font-rubik">
+                  Total Retenido
+                </TableCell>
+                <TableCell className="font-rubik text-right">
+                  {formatCurrency(totalRetenido)}
+                </TableCell>
+              </TableRow>
+              
+              {/* Saldo por Retener */}
+              <TableRow className="bg-primary/10 font-bold border-t-2">
+                <TableCell className="font-rubik">
+                  Saldo por Retener
+                </TableCell>
+                <TableCell className="font-rubik text-right">
+                  {formatCurrency(saldoPorRetener)}
                 </TableCell>
               </TableRow>
             </TableBody>

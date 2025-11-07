@@ -54,7 +54,7 @@ export const ProjectFilter: React.FC<ProjectFilterProps> = ({
     getUserMandanteId();
   }, [user]);
 
-  const { folders } = useMandanteFolders(mandanteId);
+  const { folders = [] } = useMandanteFolders(mandanteId);
 
   const handleSelectAll = () => {
     onProjectsChange(projects.map(p => p.id));
@@ -115,7 +115,7 @@ export const ProjectFilter: React.FC<ProjectFilterProps> = ({
             </div>
             <CommandEmpty>No se encontraron resultados.</CommandEmpty>
             
-            {folders && folders.length > 0 && (
+            {folders.length > 0 && (
               <>
                 <CommandGroup heading="Carpetas">
                   {folders.map((folder) => (
@@ -138,7 +138,7 @@ export const ProjectFilter: React.FC<ProjectFilterProps> = ({
             )}
             
             <CommandGroup heading="Proyectos">
-              {projects.map((project) => (
+              {projects && projects.length > 0 ? projects.map((project) => (
                 <CommandItem
                   key={project.id}
                   value={project.name}
@@ -151,7 +151,9 @@ export const ProjectFilter: React.FC<ProjectFilterProps> = ({
                   />
                   <span className="flex-1">{project.name}</span>
                 </CommandItem>
-              ))}
+              )) : (
+                <CommandItem disabled>No hay proyectos disponibles</CommandItem>
+              )}
             </CommandGroup>
           </Command>
         </PopoverContent>

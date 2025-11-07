@@ -17,21 +17,18 @@ const ExecutiveSummaryMandante = () => {
   const [selectedProjects, setSelectedProjects] = React.useState<number[]>([]);
   const [allProjects, setAllProjects] = React.useState<{ id: number; name: string }[]>([]);
   
-  // First fetch to get all projects
-  const { summaryData: initialData } = useExecutiveSummaryMandante();
-  
-  // Initialize all projects and selected projects
-  React.useEffect(() => {
-    if (initialData?.projects && allProjects.length === 0) {
-      setAllProjects(initialData.projects);
-      setSelectedProjects(initialData.projects.map(p => p.id));
-    }
-  }, [initialData]);
-
-  // Second fetch with filtered projects
+  // Fetch summary with selected projects
   const { summaryData, loading, error } = useExecutiveSummaryMandante(
     selectedProjects.length > 0 ? selectedProjects : undefined
   );
+  
+  // Initialize projects list and select all by default
+  React.useEffect(() => {
+    if (summaryData?.projects && allProjects.length === 0) {
+      setAllProjects(summaryData.projects);
+      setSelectedProjects(summaryData.projects.map(p => p.id));
+    }
+  }, [summaryData?.projects, allProjects.length]);
   
   const navigate = useNavigate();
   const { signOut } = useAuth();
@@ -69,13 +66,6 @@ const ExecutiveSummaryMandante = () => {
 
     fetchMandanteInfo();
   }, []);
-
-  // Initialize selected projects when data loads
-  React.useEffect(() => {
-    if (summaryData?.projects && selectedProjects.length === 0) {
-      setSelectedProjects(summaryData.projects.map(p => p.id));
-    }
-  }, [summaryData]);
 
   const handleLogout = async () => {
     await signOut();

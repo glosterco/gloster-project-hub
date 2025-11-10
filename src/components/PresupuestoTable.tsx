@@ -44,12 +44,12 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
   
   const { toast } = useToast();
   
-  // Cálculos para Anticipos
-  const totalDevuelto = devolucionAcumulado + devolucionActual;
+  // Cálculos para Anticipos - NO sumar el actual hasta que se actualice
+  const totalDevuelto = devolucionAcumulado;
   const saldoPorDevolver = totalAnticipos - totalDevuelto;
   
-  // Cálculos para Retenciones
-  const totalRetenido = retencionAcumulado + retencionActual;
+  // Cálculos para Retenciones - NO sumar el actual hasta que se actualice
+  const totalRetenido = retencionAcumulado;
   const saldoPorRetener = totalRetenciones - totalRetenido;
 
   const formatCurrency = (amount: number) => {
@@ -105,19 +105,33 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
   }, [projectId, controlsLoaded]);
 
   const handleAvanceParcialChange = (id: number, value: string) => {
-    const numValue = parseFloat(value) || 0;
+    const numValue = parseFloat(value.replace(/[^0-9.-]/g, '')) || 0;
     setEditingValues(prev => ({ ...prev, [id]: numValue }));
   };
 
   const handleUpdatePresupuesto = async (item: Presupuesto) => {
-    const avanceParcial = editingValues[item.id] || 0;
-    const newAvanceAcumulado = (item['Avance Acumulado'] || 0) + avanceParcial;
+    const avanceParcialMonto = editingValues[item.id] || 0;
+    if (avanceParcialMonto === 0) {
+      toast({
+        title: "Error",
+        description: "Ingrese una cantidad válida para actualizar",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Calcular el nuevo avance acumulado como monto
+    const avanceAcumuladoMonto = item.Total ? (item.Total * ((item['Avance Acumulado'] || 0) / 100)) : 0;
+    const newAvanceAcumuladoMonto = avanceAcumuladoMonto + avanceParcialMonto;
+    
+    // Convertir a porcentaje
+    const newAvanceAcumulado = item.Total ? (newAvanceAcumuladoMonto / item.Total) * 100 : 0;
 
     try {
       const { error } = await supabase
         .from('Presupuesto' as any)
         .update({
-          'Avance Parcial': avanceParcial,
+          'Avance Parcial': 0, // Resetear a 0 después de actualizar
           'Avance Acumulado': newAvanceAcumulado,
           'Ult. Actualizacion': new Date().toISOString()
         })
@@ -284,8 +298,9 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
     const monto = (item.Total || 0) * ((item['Avance Acumulado'] || 0) / 100);
     return sum + monto;
   }, 0);
+  // Avance parcial ahora es la suma de las cantidades ingresadas, NO porcentajes
   const avanceParcialTotal = presupuesto.reduce((sum, item) => {
-    const monto = (item.Total || 0) * ((editingValues[item.id] || 0) / 100);
+    const monto = editingValues[item.id] || 0;
     return sum + monto;
   }, 0);
   
@@ -324,12 +339,13 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
               <TableHead className="font-rubik text-right py-2">Avance Acum.</TableHead>
               <TableHead className="font-rubik text-right py-2">Avance Parcial</TableHead>
               <TableHead className="font-rubik py-2">Última Actualización</TableHead>
+              <TableHead className="font-rubik py-2">Acción</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody className="[&_tr]:h-10">
             {presupuesto.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8">
+                <TableCell colSpan={9} className="text-center py-8">
                   <div className="flex flex-col items-center justify-center text-center">
                     <ClipboardList className="h-10 w-10 text-muted-foreground mb-2" />
                     <p className="text-muted-foreground font-rubik text-sm">No hay partidas registradas</p>
@@ -368,19 +384,11 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
                   </TableCell>
                   <TableCell className="font-rubik py-2">
                     <Input
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      max="100"
-                      placeholder="0.0"
-                      value={editingValues[item.id] ?? ''}
+                      type="text"
+                      placeholder="0"
+                      value={editingValues[item.id] ? formatCurrency(editingValues[item.id]) : ''}
                       onChange={(e) => handleAvanceParcialChange(item.id, e.target.value)}
-                      onBlur={() => {
-                        if (editingValues[item.id] !== undefined) {
-                          handleUpdatePresupuesto(item);
-                        }
-                      }}
-                      className="w-24 text-right font-rubik h-8"
+                      className="w-32 text-right font-rubik h-8"
                     />
                   </TableCell>
                   <TableCell className="font-rubik text-sm text-muted-foreground py-2">
@@ -391,6 +399,15 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
                           year: 'numeric'
                         })
                       : '-'}
+                  </TableCell>
+                  <TableCell className="font-rubik py-2">
+                    <button
+                      onClick={() => handleUpdatePresupuesto(item)}
+                      disabled={!editingValues[item.id] || editingValues[item.id] === 0}
+                      className="px-3 py-1 text-xs bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Actualizar
+                    </button>
                   </TableCell>
                 </TableRow>
               ))
@@ -420,7 +437,7 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
                   </span>
                 </div>
               </TableCell>
-              <TableCell></TableCell>
+              <TableCell colSpan={2}></TableCell>
             </TableRow>
             
             {/* Gastos Generales */}
@@ -446,16 +463,14 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
               <TableCell className="font-rubik text-right py-2">
                 <div className="flex flex-col">
                   <span className="font-semibold">{formatCurrency(montoGastosGeneralesAcum)}</span>
-                  <span className="text-xs text-muted-foreground">{gastosGenerales.toFixed(1)}%</span>
                 </div>
               </TableCell>
               <TableCell className="font-rubik text-right py-2">
                 <div className="flex flex-col">
                   <span className="font-semibold">{formatCurrency(montoGastosGeneralesParcial)}</span>
-                  <span className="text-xs text-muted-foreground">{gastosGenerales.toFixed(1)}%</span>
                 </div>
               </TableCell>
-              <TableCell></TableCell>
+              <TableCell colSpan={2}></TableCell>
             </TableRow>
             
             {/* Utilidad */}
@@ -481,33 +496,41 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
               <TableCell className="font-rubik text-right py-2">
                 <div className="flex flex-col">
                   <span className="font-semibold">{formatCurrency(montoUtilidadAcum)}</span>
-                  <span className="text-xs text-muted-foreground">{utilidad.toFixed(1)}%</span>
                 </div>
               </TableCell>
               <TableCell className="font-rubik text-right py-2">
                 <div className="flex flex-col">
                   <span className="font-semibold">{formatCurrency(montoUtilidadParcial)}</span>
-                  <span className="text-xs text-muted-foreground">{utilidad.toFixed(1)}%</span>
                 </div>
               </TableCell>
-              <TableCell></TableCell>
+              <TableCell colSpan={2}></TableCell>
             </TableRow>
             
-            {/* Total Neto */}
-            <TableRow className="bg-muted/50 font-semibold border-t-2 h-10">
+            {/* Subtotal Neto */}
+            <TableRow className="bg-amber-50 dark:bg-amber-950/50 font-semibold border-t-2 h-10">
               <TableCell colSpan={4} className="font-rubik text-right py-2">
-                Total Neto:
+                Subtotal Neto:
               </TableCell>
               <TableCell className="font-rubik text-right py-2">
                 {formatCurrency(totalNeto)}
               </TableCell>
               <TableCell className="font-rubik text-right py-2">
-                {formatCurrency(totalNetoAcum)}
+                <div className="flex flex-col">
+                  <span className="font-semibold">{formatCurrency(totalNetoAcum)}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {totalNeto > 0 ? ((totalNetoAcum / totalNeto) * 100).toFixed(1) : 0}%
+                  </span>
+                </div>
               </TableCell>
               <TableCell className="font-rubik text-right py-2">
-                {formatCurrency(totalNetoParcial)}
+                <div className="flex flex-col">
+                  <span className="font-semibold">{formatCurrency(totalNetoParcial)}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {totalNeto > 0 ? ((totalNetoParcial / totalNeto) * 100).toFixed(1) : 0}%
+                  </span>
+                </div>
               </TableCell>
-              <TableCell></TableCell>
+              <TableCell colSpan={2}></TableCell>
             </TableRow>
             
             {/* IVA */}
@@ -523,33 +546,41 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
               <TableCell className="font-rubik text-right py-2">
                 <div className="flex flex-col">
                   <span className="font-semibold">{formatCurrency(ivaAcum)}</span>
-                  <span className="text-xs text-muted-foreground">19.0%</span>
                 </div>
               </TableCell>
               <TableCell className="font-rubik text-right py-2">
                 <div className="flex flex-col">
                   <span className="font-semibold">{formatCurrency(ivaParcial)}</span>
-                  <span className="text-xs text-muted-foreground">19.0%</span>
                 </div>
               </TableCell>
-              <TableCell></TableCell>
+              <TableCell colSpan={2}></TableCell>
             </TableRow>
             
             {/* Total Final */}
             <TableRow className="bg-primary/10 font-bold border-t-2 h-11">
               <TableCell colSpan={4} className="font-rubik text-right py-2">
-                Total Final:
+                TOTAL CON IVA:
               </TableCell>
               <TableCell className="font-rubik text-right py-2">
                 {formatCurrency(totalFinal)}
               </TableCell>
               <TableCell className="font-rubik text-right py-2">
-                {formatCurrency(totalFinalAcum)}
+                <div className="flex flex-col">
+                  <span className="font-semibold">{formatCurrency(totalFinalAcum)}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {totalFinal > 0 ? ((totalFinalAcum / totalFinal) * 100).toFixed(1) : 0}%
+                  </span>
+                </div>
               </TableCell>
               <TableCell className="font-rubik text-right py-2">
-                {formatCurrency(totalFinalParcial)}
+                <div className="flex flex-col">
+                  <span className="font-semibold">{formatCurrency(totalFinalParcial)}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {totalFinal > 0 ? ((totalFinalParcial / totalFinal) * 100).toFixed(1) : 0}%
+                  </span>
+                </div>
               </TableCell>
-              <TableCell></TableCell>
+              <TableCell colSpan={2}></TableCell>
             </TableRow>
           </TableBody>
         </Table>

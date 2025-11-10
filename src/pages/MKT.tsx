@@ -36,7 +36,7 @@ const MKT = () => {
     window.open("https://loom.com/share/folder/a4fd94baeb5642bcb1339ced7936e4b5", "_blank");
   };
   const handleHomeClick = () => {
-    window.open("https://loom.com/share/folder/a4fd94baeb5642bcb1339ced7936e4b5", "_blank");
+    window.open("https://gloster-project-hub.lovable.app/", "_blank");
   };
 
   const handleKnowPlatformClick = () => {

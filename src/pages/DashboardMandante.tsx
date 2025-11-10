@@ -98,6 +98,15 @@ const DashboardMandante: React.FC = () => {
           return;
         }
 
+        // CRITICAL: Check active role first for users with multiple roles
+        const activeRole = sessionStorage.getItem('activeRole');
+        
+        if (activeRole === 'contratista') {
+          console.log('🔄 User has contratista as active role, redirecting to contractor dashboard');
+          navigate('/dashboard');
+          return;
+        }
+
         // Limpiar accesos limitados previos
         sessionStorage.removeItem("mandanteAccess");
 
@@ -137,7 +146,12 @@ const DashboardMandante: React.FC = () => {
           setMandanteInfo(null);
         }
         setMandanteId(mandanteRole.entity_id); // Ensure mandanteId is set
-        sessionStorage.setItem("activeRole", "mandante");
+        
+        // Set active role if not already set
+        if (!activeRole) {
+          sessionStorage.setItem("activeRole", "mandante");
+        }
+        
         console.log("✅ Verified mandante access via user_roles");
 
         // Check if user has multiple roles

@@ -12,12 +12,25 @@ interface PaymentActionButtonsProps {
 const PaymentActionButtons: React.FC<PaymentActionButtonsProps> = ({ paymentId, status }) => {
   const navigate = useNavigate();
 
+  // Detectar rol activo desde sessionStorage para navegar correctamente
+  const getNavigationPath = () => {
+    const activeRole = sessionStorage.getItem('activeRole');
+    
+    // Si hay rol activo definido, usarlo
+    if (activeRole === 'mandante') {
+      return `/submission/${paymentId}`;
+    }
+    
+    // Por defecto o si es contratista, usar payment
+    return `/payment/${paymentId}`;
+  };
+
   const handleManageDocuments = () => {
-    navigate(`/payment/${paymentId}`);
+    navigate(getNavigationPath());
   };
 
   const handleViewDocuments = () => {
-    navigate(`/payment/${paymentId}`);
+    navigate(getNavigationPath());
   };
 
   // Check if status is one of the completed states - CORRIGIENDO LÓGICA

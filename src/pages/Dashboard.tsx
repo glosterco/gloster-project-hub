@@ -34,6 +34,15 @@ const Dashboard = () => {
           return;
         }
 
+        // CRITICAL: Check active role first for users with multiple roles
+        const activeRole = sessionStorage.getItem('activeRole');
+        
+        if (activeRole === 'mandante') {
+          console.log('🔄 User has mandante as active role, redirecting to mandante dashboard');
+          navigate('/dashboard-mandante');
+          return;
+        }
+
         // STRICT: Verify user is authenticated contractor with user_auth_id
         const { data: contratistaData } = await supabase
           .from('Contratistas')
@@ -61,9 +70,10 @@ const Dashboard = () => {
           return;
         }
 
-        // REMOVED: Don't auto-redirect based on activeRole - respect current page
-        // Users with multiple roles should use role selector to switch
-        console.log('✅ Contractor access verified, staying on contractor dashboard');
+        // User has contractor access - set active role if not set
+        if (!activeRole) {
+          sessionStorage.setItem('activeRole', 'contratista');
+        }
 
         console.log('✅ Verified authenticated contractor access');
       } catch (error) {

@@ -9,6 +9,9 @@ export const RouteProtection = ({ children }: RouteProtectionProps) => {
   const location = useLocation();
 
   useEffect(() => {
+    const activeRole = sessionStorage.getItem('activeRole');
+    const currentPath = location.pathname;
+    
     // Check if user has mandante access with limited permissions
     const mandanteAccess = sessionStorage.getItem('mandanteAccess');
     
@@ -18,8 +21,6 @@ export const RouteProtection = ({ children }: RouteProtectionProps) => {
         
         // If mandante has limited access (no user_auth_id), restrict to specific views
         if (accessData.isLimitedAccess || !accessData.hasFullAccess) {
-          const currentPath = location.pathname;
-          
           // Allow access patterns based on user type
           let allowedPaths: string[] = [];
           
@@ -54,6 +55,33 @@ export const RouteProtection = ({ children }: RouteProtectionProps) => {
         }
       } catch (error) {
         console.error('Error parsing mandanteAccess in RouteProtection:', error);
+      }
+    }
+    
+    // CRITICAL: Enforce role separation for users with multiple roles
+    if (activeRole) {
+      // Define contractor-only routes
+      const contractorRoutes = ['/dashboard', '/payment/'];
+      
+      // Define mandante-only routes
+      const mandanteRoutes = ['/dashboard-mandante', '/submission/', '/project-mandante/', '/executive-summary-mandante'];
+      
+      if (activeRole === 'contratista') {
+        // Block access to mandante-only routes
+        const isMandanteRoute = mandanteRoutes.some(route => currentPath.startsWith(route));
+        if (isMandanteRoute) {
+          console.log('🚫 RouteProtection: Contratista blocked from mandante route:', currentPath);
+          window.location.href = '/dashboard';
+          return;
+        }
+      } else if (activeRole === 'mandante') {
+        // Block access to contractor-only routes
+        const isContractorRoute = contractorRoutes.some(route => currentPath.startsWith(route));
+        if (isContractorRoute) {
+          console.log('🚫 RouteProtection: Mandante blocked from contractor route:', currentPath);
+          window.location.href = '/dashboard-mandante';
+          return;
+        }
       }
     }
   }, [location.pathname]);

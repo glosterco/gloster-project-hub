@@ -119,11 +119,11 @@ const ProjectDetail = () => {
       // Determine which role to use based on activeRole in sessionStorage
       const activeRole = sessionStorage.getItem('activeRole');
       
+      // CRITICAL: ProjectDetail is a CONTRACTOR-ONLY page
+      // If user has mandante as active role, redirect to mandante dashboard
       if (activeRole === 'mandante' && mandanteData?.auth_user_id === user.id) {
-        // User explicitly selected mandante role
-        console.log('✅ User selected mandante role for this session');
-        setUserType('mandante');
-        setUserEntity(mandanteData);
+        console.log('🔄 User has mandante as active role, redirecting to mandante dashboard');
+        navigate('/dashboard-mandante');
         return;
       }
       
@@ -141,14 +141,17 @@ const ProjectDetail = () => {
         console.log('✅ Default: Using contratista role for ProjectDetail');
         setUserType('contratista');
         setUserEntity(contratistaData);
+        // Set active role if not set
+        if (!activeRole) {
+          sessionStorage.setItem('activeRole', 'contratista');
+        }
         return;
       }
       
-      // Otherwise use mandante if available
+      // If user only has mandante role, redirect to mandante dashboard
       if (mandanteData?.auth_user_id === user.id) {
-        console.log('✅ Using mandante role for ProjectDetail');
-        setUserType('mandante');
-        setUserEntity(mandanteData);
+        console.log('🔄 User only has mandante role, redirecting to mandante dashboard');
+        navigate('/dashboard-mandante');
         return;
       }
       

@@ -131,6 +131,13 @@ export const useAccessVerification = (payment: PaymentDetail | null, paymentId: 
                 return;
               }
               
+              // CRITICAL: Block contractor access to submission views
+              if (window.location.pathname.startsWith('/submission/')) {
+                console.log('❌ Contractor blocked from submission view - redirecting to payment');
+                window.location.href = `/payment/${paymentId}`;
+                return;
+              }
+              
               console.log('✅ Contractor access granted from sessionStorage');
               setHasAccess(true);
               setIsMandante(false);

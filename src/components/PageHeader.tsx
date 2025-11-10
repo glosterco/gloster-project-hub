@@ -86,7 +86,10 @@ const PageHeader = () => {
               <Button 
                 variant={location.pathname === '/dashboard' || location.pathname === '/dashboard-mandante' ? 'default' : 'ghost'} 
                 size="sm" 
-                onClick={() => navigate('/dashboard')}
+                onClick={() => {
+                  const role = sessionStorage.getItem('activeRole');
+                  navigate(role === 'mandante' ? '/dashboard-mandante' : '/dashboard');
+                }}
                 className="font-rubik"
               >
                 <Home className="h-4 w-4 mr-1" />

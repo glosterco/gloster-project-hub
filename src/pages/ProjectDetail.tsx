@@ -31,7 +31,7 @@ import { useDocumentos } from '@/hooks/useDocumentos';
 import { useFotos } from '@/hooks/useFotos';
 import { usePresupuesto } from '@/hooks/usePresupuesto';
 import { useReuniones } from '@/hooks/useReuniones';
-import { DocumentosTable } from '@/components/DocumentosTable';
+import { DocumentosTableWithSidebar } from '@/components/DocumentosTableWithSidebar';
 import { FotosGrid } from '@/components/FotosGrid';
 import { PresupuestoTable } from '@/components/PresupuestoTable';
 import { ReunionesTable } from '@/components/ReunionesTable';
@@ -834,11 +834,11 @@ const ProjectDetail = () => {
                       'Cargar Nuevo Documento', 
                       () => setShowDocumentUpload(true)
                     )}
-                    <Card>
-                      <CardContent className="pt-6">
-                        <DocumentosTable documentos={documentos} loading={documentosLoading} />
-                      </CardContent>
-                    </Card>
+                    <DocumentosTableWithSidebar 
+                      documentos={documentos} 
+                      loading={documentosLoading} 
+                      projectId={id || ""} 
+                    />
                   </TabsContent>
                 )}
 
@@ -865,11 +865,7 @@ const ProjectDetail = () => {
                       'Cargar Nueva Foto', 
                       () => setShowPhotoUpload(true)
                     )}
-                    <Card>
-                      <CardContent className="pt-6">
-                        <FotosGrid fotos={fotos} loading={fotosLoading} />
-                      </CardContent>
-                    </Card>
+                    <FotosGrid fotos={fotos} loading={fotosLoading} />
                   </TabsContent>
                 )}
 

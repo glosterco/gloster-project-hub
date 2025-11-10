@@ -746,6 +746,42 @@ export type Database = {
           },
         ]
       }
+      PresupuestoHistoricoDetalle: {
+        Row: {
+          created_at: string
+          id: number
+          Item_ID: number
+          Item_Nombre: string | null
+          Monto_Parcial: number
+          Monto_Total: number | null
+          Porcentaje_Acumulado: number | null
+          Porcentaje_Parcial: number | null
+          Project_ID: number
+        }
+        Insert: {
+          created_at?: string
+          id?: never
+          Item_ID: number
+          Item_Nombre?: string | null
+          Monto_Parcial?: number
+          Monto_Total?: number | null
+          Porcentaje_Acumulado?: number | null
+          Porcentaje_Parcial?: number | null
+          Project_ID: number
+        }
+        Update: {
+          created_at?: string
+          id?: never
+          Item_ID?: number
+          Item_Nombre?: string | null
+          Monto_Parcial?: number
+          Monto_Total?: number | null
+          Porcentaje_Acumulado?: number | null
+          Porcentaje_Parcial?: number | null
+          Project_ID?: number
+        }
+        Relationships: []
+      }
       Proyectos: {
         Row: {
           Budget: number | null

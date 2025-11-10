@@ -166,51 +166,94 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
         
         // El monto parcial de este ítem específico
         const montoParcialItem = avanceParcialMonto;
+        const porcentajeParcial = item.Total ? (montoParcialItem / item.Total) * 100 : 0;
         
-        // Buscar si ya existe un registro histórico para hoy
+        // 1. Guardar el detalle de esta actualización individual
+        await supabase
+          .from('PresupuestoHistoricoDetalle' as any)
+          .insert({
+            Project_ID: Number(projectId),
+            Item_ID: item.id,
+            Item_Nombre: item.Item,
+            Monto_Parcial: montoParcialItem,
+            Monto_Total: item.Total,
+            Porcentaje_Parcial: porcentajeParcial,
+            Porcentaje_Acumulado: newAvanceAcumulado
+          });
+        
+        console.log('✅ Detalle guardado para ítem:', item.Item, 'Monto:', montoParcialItem);
+        
+        // 2. Calcular el TotalParcial del día sumando solo la última actualización de cada ítem
         const today = new Date();
         const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
         const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
         
+        // Obtener todas las actualizaciones del día agrupadas por ítem
+        const { data: detallesHoy, error: detallesError } = await supabase
+          .from('PresupuestoHistoricoDetalle' as any)
+          .select('*')
+          .eq('Project_ID', Number(projectId))
+          .gte('created_at', startOfDay.toISOString())
+          .lt('created_at', endOfDay.toISOString())
+          .order('created_at', { ascending: false });
+        
+        if (detallesError) {
+          console.error('❌ Error al obtener detalles:', detallesError);
+        }
+        
+        // Agrupar por Item_ID y tomar solo la última actualización de cada uno
+        const ultimasActualizacionesPorItem = new Map();
+        if (detallesHoy) {
+          (detallesHoy as any[]).forEach((detalle: any) => {
+            if (!ultimasActualizacionesPorItem.has(detalle.Item_ID)) {
+              ultimasActualizacionesPorItem.set(detalle.Item_ID, detalle.Monto_Parcial);
+            }
+          });
+        }
+        
+        // Sumar los montos parciales de las últimas actualizaciones
+        const totalParcialDelDia = Array.from(ultimasActualizacionesPorItem.values()).reduce(
+          (sum, monto) => sum + (monto || 0),
+          0
+        );
+        
+        console.log('📊 Total parcial calculado del día:', totalParcialDelDia, 'Items únicos actualizados:', ultimasActualizacionesPorItem.size);
+        
+        // 3. Actualizar o crear el registro en PresupuestoHistorico
         const { data: existingRecord, error: fetchError } = await supabase
           .from('PresupuestoHistorico' as any)
           .select('*')
           .eq('Project_ID', Number(projectId))
           .gte('created_at', startOfDay.toISOString())
           .lt('created_at', endOfDay.toISOString())
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
+          .maybeSingle();
         
-        if (fetchError && fetchError.code !== 'PGRST116') {
+        if (fetchError) {
           console.error('❌ Error al buscar registro histórico:', fetchError);
         }
         
-        if (existingRecord && !fetchError) {
-          // Si existe un registro de hoy, sumar el nuevo monto parcial
-          const record = existingRecord as any;
-          const newTotalParcial = (record.TotalParcial || 0) + montoParcialItem;
-          
+        if (existingRecord) {
+          // Actualizar el registro existente
           await supabase
             .from('PresupuestoHistorico' as any)
             .update({
               TotalAcumulado: totalAcumulado,
-              TotalParcial: newTotalParcial
+              TotalParcial: totalParcialDelDia
             })
-            .eq('id', record.id);
+            .eq('id', (existingRecord as any).id);
           
-          console.log('✅ Histórico actualizado - Sumado monto parcial:', montoParcialItem, 'Total parcial:', newTotalParcial);
+          console.log('✅ Histórico actualizado - Total parcial:', totalParcialDelDia);
         } else {
-          // Si no existe, crear uno nuevo
+          // Crear un nuevo registro
           await supabase
             .from('PresupuestoHistorico' as any)
             .insert({
               Project_ID: Number(projectId),
               TotalAcumulado: totalAcumulado,
-              TotalParcial: montoParcialItem
+              TotalParcial: totalParcialDelDia
             });
           
-          console.log('✅ Histórico creado - Monto parcial inicial:', montoParcialItem);
+          console.log('✅ Histórico creado - Total parcial:', totalParcialDelDia);
         }
       }
 

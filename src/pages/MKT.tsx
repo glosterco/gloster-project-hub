@@ -82,7 +82,7 @@ const MKT = () => {
               <Button
                 size="lg"
                 variant="outline"
-                className="bg-gray-50 text-primary hover:bg-primary-foreground hover:text-primary px-8 py-4 text-lg"
+                className="bg-white/10 backdrop-blur-sm rounded-lg p-6 text-primary hover:bg-primary-foreground hover:text-primary px-8 py-4 text-lg"
                 onClick={handleKnowPlatformClick}
               >
                 Solicitar cotización

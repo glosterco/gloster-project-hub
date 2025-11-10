@@ -35,6 +35,9 @@ const MKT = () => {
   const handleDemoClick = () => {
     window.open("https://loom.com/share/folder/a4fd94baeb5642bcb1339ced7936e4b5", "_blank");
   };
+  const handleHomeClick = () => {
+    window.open("https://loom.com/share/folder/a4fd94baeb5642bcb1339ced7936e4b5", "_blank");
+  };
 
   const handleKnowPlatformClick = () => {
     setIsContactModalOpen(true);
@@ -63,7 +66,7 @@ const MKT = () => {
               <Button
                 size="lg"
                 className="bg-brand-yellow text-brand-yellow-foreground hover:bg-brand-yellow/90 px-8 py-4 text-lg"
-                onClick={handleKnowPlatformClick}
+                onClick={handleHomeClick}
               >
                 Conocer la Plataforma
                 <ArrowRight className="ml-2 w-5 h-5" />
@@ -75,6 +78,14 @@ const MKT = () => {
                 onClick={handleDemoClick}
               >
                 Ver Demo
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-primary-foreground text-primary hover:bg-primary-foreground hover:text-primary px-8 py-4 text-lg"
+                onClick={handleKnowPlatformClick}
+              >
+                Solicita tu cotización
               </Button>
             </div>
           </div>

@@ -424,9 +424,9 @@ const MKT = () => {
             <Button
               size="lg"
               className="bg-brand-yellow text-brand-yellow-foreground hover:bg-brand-yellow/90 px-8 py-4 text-lg"
-              onClick={handleKnowPlatformClick}
+              onClick={handleHomeClick}
             >
-              Conocer la plataforma
+              Conocer la Plataforma
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
             <Button
@@ -436,6 +436,14 @@ const MKT = () => {
               onClick={handleDemoClick}
             >
               Ver Demo
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="border-primary-foreground text-primary hover:bg-primary-foreground hover:text-primary px-8 py-4 text-lg"
+              onClick={handleKnowPlatformClick}
+            >
+              Solicita tu cotización
             </Button>
           </div>
 

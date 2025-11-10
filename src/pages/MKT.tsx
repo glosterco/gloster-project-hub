@@ -71,8 +71,6 @@ const MKT = () => {
                 Conocer la Plataforma
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button
                 size="lg"
                 variant="outline"
@@ -84,7 +82,7 @@ const MKT = () => {
               <Button
                 size="lg"
                 variant="outline"
-                className="border-primary-foreground text-primary hover:bg-primary-foreground hover:text-primary px-8 py-4 text-lg"
+                className="border-primary-foreground bg-gray-50 text-primary hover:bg-primary-foreground hover:text-primary px-8 py-4 text-lg"
                 onClick={handleKnowPlatformClick}
               >
                 Solicitar cotización
@@ -431,8 +429,6 @@ const MKT = () => {
               Conocer la Plataforma
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
             <Button
               size="lg"
               variant="outline"

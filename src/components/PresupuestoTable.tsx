@@ -157,25 +157,61 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
 
       // Guardar en histórico después de actualizar
       if (projectId) {
+        // Calcular el total acumulado de todo el proyecto
         const totalAcumulado = presupuesto.reduce((sum, p) => {
           const avanceAcum = p.id === item.id ? newAvanceAcumulado : (p['Avance Acumulado'] || 0);
           const totalItem = p.Total || 0;
           return sum + (totalItem * avanceAcum / 100);
         }, 0);
         
-        const totalParcial = presupuesto.reduce((sum, p) => {
-          const avanceParcial = p['Avance Parcial'] || 0;
-          const totalItem = p.Total || 0;
-          return sum + (totalItem * avanceParcial / 100);
-        }, 0);
+        // El monto parcial de este ítem específico
+        const montoParcialItem = avanceParcialMonto;
         
-        await supabase
+        // Buscar si ya existe un registro histórico para hoy
+        const today = new Date();
+        const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+        
+        const { data: existingRecord, error: fetchError } = await supabase
           .from('PresupuestoHistorico' as any)
-          .insert({
-            Project_ID: Number(projectId),
-            TotalAcumulado: totalAcumulado,
-            TotalParcial: totalParcial
-          });
+          .select('*')
+          .eq('Project_ID', Number(projectId))
+          .gte('created_at', startOfDay.toISOString())
+          .lt('created_at', endOfDay.toISOString())
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+        
+        if (fetchError && fetchError.code !== 'PGRST116') {
+          console.error('❌ Error al buscar registro histórico:', fetchError);
+        }
+        
+        if (existingRecord && !fetchError) {
+          // Si existe un registro de hoy, sumar el nuevo monto parcial
+          const record = existingRecord as any;
+          const newTotalParcial = (record.TotalParcial || 0) + montoParcialItem;
+          
+          await supabase
+            .from('PresupuestoHistorico' as any)
+            .update({
+              TotalAcumulado: totalAcumulado,
+              TotalParcial: newTotalParcial
+            })
+            .eq('id', record.id);
+          
+          console.log('✅ Histórico actualizado - Sumado monto parcial:', montoParcialItem, 'Total parcial:', newTotalParcial);
+        } else {
+          // Si no existe, crear uno nuevo
+          await supabase
+            .from('PresupuestoHistorico' as any)
+            .insert({
+              Project_ID: Number(projectId),
+              TotalAcumulado: totalAcumulado,
+              TotalParcial: montoParcialItem
+            });
+          
+          console.log('✅ Histórico creado - Monto parcial inicial:', montoParcialItem);
+        }
       }
 
       // Guardar controles también

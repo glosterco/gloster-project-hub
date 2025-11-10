@@ -44,7 +44,7 @@ const Dashboard = () => {
         if (!contratistaData || contratistaData.auth_user_id !== user.id) {
           console.log('❌ Access DENIED: User is not an authenticated contratista with user_auth_id');
           
-          // Check if they're an authenticated mandante and redirect appropriately
+          // Only redirect to mandante if they explicitly don't have contractor role
           const { data: mandanteData } = await supabase
             .from('Mandantes')
             .select('id, auth_user_id')
@@ -52,31 +52,18 @@ const Dashboard = () => {
             .maybeSingle();
             
           if (mandanteData && mandanteData.auth_user_id === user.id) {
-            console.log('🔄 Redirecting authenticated mandante to mandante dashboard');
+            console.log('🔄 User is mandante, not contractor - redirecting to mandante dashboard');
             navigate('/dashboard-mandante');
           } else {
-            console.log('❌ User has no valid authentication, redirecting to home');
+            console.log('❌ User has no valid role, redirecting to home');
             navigate('/');
           }
           return;
         }
 
-        // Si el usuario tiene ambos roles, verificar si seleccionó mandante
-        const activeRole = sessionStorage.getItem('activeRole');
-        if (activeRole === 'mandante') {
-          // Verificar que también tenga rol de mandante
-          const { data: mandanteData } = await supabase
-            .from('Mandantes')
-            .select('id, auth_user_id')
-            .eq('auth_user_id', user.id)
-            .maybeSingle();
-            
-          if (mandanteData && mandanteData.auth_user_id === user.id) {
-            console.log('🔄 User selected mandante role, redirecting to mandante dashboard');
-            navigate('/dashboard-mandante');
-            return;
-          }
-        }
+        // REMOVED: Don't auto-redirect based on activeRole - respect current page
+        // Users with multiple roles should use role selector to switch
+        console.log('✅ Contractor access verified, staying on contractor dashboard');
 
         console.log('✅ Verified authenticated contractor access');
       } catch (error) {

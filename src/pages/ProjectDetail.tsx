@@ -102,30 +102,53 @@ const ProjectDetail = () => {
         return;
       }
       
-      // STRICT: Only authenticated users with user_auth_id can access project details
-      const { data: mandanteData } = await supabase
-        .from('Mandantes')
-        .select('*')
-        .eq('auth_user_id', user.id)
-        .maybeSingle();
-        
-      if (mandanteData && mandanteData.auth_user_id === user.id) {
-        setUserType('mandante');
-        console.log('🔍 DEBUG: mandanteData.Adicionales =', (mandanteData as any).Adicionales, 'type:', typeof (mandanteData as any).Adicionales);
-        setUserEntity(mandanteData);
-        return;
-      }
-      
+      // Check BOTH roles to determine which one to use for THIS page
+      // Priority: Check contractor FIRST since this is ProjectDetail (contractor page)
       const { data: contratistaData } = await supabase
         .from('Contratistas')
         .select('*')
         .eq('auth_user_id', user.id)
         .maybeSingle();
         
-      if (contratistaData && contratistaData.auth_user_id === user.id) {
+      const { data: mandanteData } = await supabase
+        .from('Mandantes')
+        .select('*')
+        .eq('auth_user_id', user.id)
+        .maybeSingle();
+      
+      // Determine which role to use based on activeRole in sessionStorage
+      const activeRole = sessionStorage.getItem('activeRole');
+      
+      if (activeRole === 'mandante' && mandanteData?.auth_user_id === user.id) {
+        // User explicitly selected mandante role
+        console.log('✅ User selected mandante role for this session');
+        setUserType('mandante');
+        setUserEntity(mandanteData);
+        return;
+      }
+      
+      if (activeRole === 'contratista' && contratistaData?.auth_user_id === user.id) {
+        // User explicitly selected contratista role
+        console.log('✅ User selected contratista role for this session');
         setUserType('contratista');
-        console.log('🔍 DEBUG: contratistaData.Adicionales =', (contratistaData as any).Adicionales, 'type:', typeof (contratistaData as any).Adicionales);
         setUserEntity(contratistaData);
+        return;
+      }
+      
+      // No explicit role selected - use default logic
+      // If user has contractor role, use it (since this is ProjectDetail)
+      if (contratistaData?.auth_user_id === user.id) {
+        console.log('✅ Default: Using contratista role for ProjectDetail');
+        setUserType('contratista');
+        setUserEntity(contratistaData);
+        return;
+      }
+      
+      // Otherwise use mandante if available
+      if (mandanteData?.auth_user_id === user.id) {
+        console.log('✅ Using mandante role for ProjectDetail');
+        setUserType('mandante');
+        setUserEntity(mandanteData);
         return;
       }
       

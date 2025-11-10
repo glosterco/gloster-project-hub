@@ -88,6 +88,10 @@ const DashboardMandante: React.FC = () => {
   useEffect(() => {
     const fetchMandanteInfo = async () => {
       setVerifyingAccess(true);
+      const timeout = setTimeout(() => {
+        console.warn('Access verification timeout');
+        setVerifyingAccess(false);
+      }, 8000);
       try {
         const {
           data: { user },
@@ -96,6 +100,7 @@ const DashboardMandante: React.FC = () => {
         // CRÍTICO: Solo usuarios autenticados pueden acceder al dashboard de mandante
         if (!user) {
           console.log("❌ No authenticated user, redirecting to home");
+          clearTimeout(timeout);
           setVerifyingAccess(false);
           navigate("/");
           return;
@@ -106,6 +111,7 @@ const DashboardMandante: React.FC = () => {
         
         if (activeRole === 'contratista') {
           console.log('🔄 User has contratista as active role, redirecting to contractor dashboard');
+          clearTimeout(timeout);
           setVerifyingAccess(false);
           navigate('/dashboard');
           return;
@@ -131,9 +137,11 @@ const DashboardMandante: React.FC = () => {
           const contratistaRole = userRoles?.find((role) => role.role_type === "contratista");
           if (contratistaRole) {
             sessionStorage.setItem("activeRole", "contratista");
+            clearTimeout(timeout);
             setVerifyingAccess(false);
             navigate("/dashboard");
           } else {
+            clearTimeout(timeout);
             setVerifyingAccess(false);
             navigate("/");
           }

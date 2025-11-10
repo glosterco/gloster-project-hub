@@ -40,13 +40,15 @@ export interface ProjectWithDetailsMandante {
 export const useProjectsWithDetailsMandante = (mandanteId?: number) => {
   const [projects, setProjects] = useState<ProjectWithDetailsMandante[]>([]);
   const [mandante, setMandante] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
     if (user && mandanteId) {
       fetchProjectsWithDetails();
+    } else {
+      setLoading(false);
     }
   }, [user, mandanteId]);
 

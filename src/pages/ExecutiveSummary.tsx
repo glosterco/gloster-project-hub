@@ -9,6 +9,7 @@ import { useExecutiveSummary } from '@/hooks/useExecutiveSummary';
 import { useExecutiveSummaryCC } from '@/hooks/useExecutiveSummaryCC';
 import { formatCurrency } from '@/utils/currencyUtils';
 import { ProjectFilter } from '@/components/ProjectFilter';
+import { PresupuestoHistoricoChart } from '@/components/PresupuestoHistoricoChart';
 
 const ExecutiveSummary = () => {
   // Verificar si es acceso CC
@@ -543,6 +544,11 @@ const ExecutiveSummary = () => {
 
           {/* Presupuesto Tab */}
           <TabsContent value="presupuesto">
+            {/* Gráfico de histórico */}
+            <div className="mb-8">
+              <PresupuestoHistoricoChart historico={summaryData?.presupuestoHistorico || []} />
+            </div>
+            
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

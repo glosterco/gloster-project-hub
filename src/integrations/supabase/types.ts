@@ -714,6 +714,38 @@ export type Database = {
           },
         ]
       }
+      PresupuestoHistorico: {
+        Row: {
+          created_at: string
+          id: number
+          Project_ID: number
+          TotalAcumulado: number
+          TotalParcial: number
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          Project_ID: number
+          TotalAcumulado?: number
+          TotalParcial?: number
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          Project_ID?: number
+          TotalAcumulado?: number
+          TotalParcial?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_project"
+            columns: ["Project_ID"]
+            isOneToOne: false
+            referencedRelation: "Proyectos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       Proyectos: {
         Row: {
           Budget: number | null

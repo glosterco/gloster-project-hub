@@ -155,6 +155,29 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
       
       console.log('✅ Presupuesto actualizado correctamente');
 
+      // Guardar en histórico después de actualizar
+      if (projectId) {
+        const totalAcumulado = presupuesto.reduce((sum, p) => {
+          const avanceAcum = p.id === item.id ? newAvanceAcumulado : (p['Avance Acumulado'] || 0);
+          const totalItem = p.Total || 0;
+          return sum + (totalItem * avanceAcum / 100);
+        }, 0);
+        
+        const totalParcial = presupuesto.reduce((sum, p) => {
+          const avanceParcial = p['Avance Parcial'] || 0;
+          const totalItem = p.Total || 0;
+          return sum + (totalItem * avanceParcial / 100);
+        }, 0);
+        
+        await supabase
+          .from('PresupuestoHistorico' as any)
+          .insert({
+            Project_ID: Number(projectId),
+            TotalAcumulado: totalAcumulado,
+            TotalParcial: totalParcial
+          });
+      }
+
       // Guardar controles también
       await saveControls();
 

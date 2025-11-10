@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { ProjectFilter } from '@/components/ProjectFilter';
+import { PresupuestoHistoricoChart } from '@/components/PresupuestoHistoricoChart';
 
 const ExecutiveSummaryMandante = () => {
   const [selectedProjects, setSelectedProjects] = React.useState<number[]>([]);
@@ -640,6 +641,11 @@ const ExecutiveSummaryMandante = () => {
 
           {/* Presupuesto Tab */}
           <TabsContent value="presupuesto">
+            {/* Gráfico de histórico */}
+            <div className="mb-8">
+              <PresupuestoHistoricoChart historico={summaryData?.presupuestoHistorico || []} />
+            </div>
+            
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

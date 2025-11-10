@@ -50,6 +50,12 @@ export interface ExecutiveSummaryData {
   totalPresupuestoItems: number;
   avancePromedioPresupuesto: number;
   montoTotalPresupuesto: number;
+  presupuestoHistorico: Array<{
+    id: number;
+    TotalAcumulado: number;
+    TotalParcial: number;
+    created_at: string;
+  }>;
   // Reuniones metrics
   totalReuniones: number;
   projects: { id: number; name: string }[];
@@ -125,6 +131,7 @@ export const useExecutiveSummaryMandante = (selectedProjectIds?: number[]) => {
           totalPresupuestoItems: 0,
           avancePromedioPresupuesto: 0,
           montoTotalPresupuesto: 0,
+          presupuestoHistorico: [],
           totalReuniones: 0,
           projects: [],
           features
@@ -179,6 +186,7 @@ export const useExecutiveSummaryMandante = (selectedProjectIds?: number[]) => {
           totalPresupuestoItems: 0,
           avancePromedioPresupuesto: 0,
           montoTotalPresupuesto: 0,
+          presupuestoHistorico: [],
           totalReuniones: 0,
           projects: [],
           features
@@ -240,6 +248,13 @@ export const useExecutiveSummaryMandante = (selectedProjectIds?: number[]) => {
         .from('Presupuesto')
         .select('id, Total, "Avance Acumulado", Project_ID')
         .in('Project_ID', projectIds);
+      
+      // Fetch presupuesto historico
+      const { data: historicoData } = await supabase
+        .from('PresupuestoHistorico' as any)
+        .select('*')
+        .in('Project_ID', projectIds)
+        .order('created_at', { ascending: true });
 
       // Fetch reuniones data
       const { data: reuniones } = await supabase
@@ -324,6 +339,12 @@ export const useExecutiveSummaryMandante = (selectedProjectIds?: number[]) => {
         ? presupuesto.reduce((sum, p) => sum + (p['Avance Acumulado'] || 0), 0) / presupuesto.length 
         : 0;
       const montoTotalPresupuesto = presupuesto?.reduce((sum, p) => sum + (p.Total || 0), 0) || 0;
+      const presupuestoHistorico = ((historicoData || []) as unknown) as Array<{
+        id: number;
+        TotalAcumulado: number;
+        TotalParcial: number;
+        created_at: string;
+      }>;
 
       // Calculate reuniones metrics
       const totalReuniones = reuniones?.length || 0;
@@ -352,6 +373,7 @@ export const useExecutiveSummaryMandante = (selectedProjectIds?: number[]) => {
         totalPresupuestoItems,
         avancePromedioPresupuesto,
         montoTotalPresupuesto,
+        presupuestoHistorico,
         totalReuniones,
         projects: projects.map(p => ({ id: p.id, name: p.Name || 'Sin nombre' })),
         features

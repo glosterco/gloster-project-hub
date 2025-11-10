@@ -71,6 +71,8 @@ const MKT = () => {
                 Conocer la Plataforma
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button
                 size="lg"
                 variant="outline"

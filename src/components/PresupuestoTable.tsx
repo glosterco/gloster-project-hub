@@ -265,12 +265,8 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
         description: "El avance del presupuesto ha sido actualizado correctamente",
       });
 
-      // Limpiar el valor editado
-      setEditingValues(prev => {
-        const newValues = { ...prev };
-        delete newValues[item.id];
-        return newValues;
-      });
+      // NO limpiar el valor editado - mantener hasta cerrar pestaña
+      // Los valores parciales se mantienen visibles para el usuario
 
       // Refrescar datos
       if (onUpdate) onUpdate();

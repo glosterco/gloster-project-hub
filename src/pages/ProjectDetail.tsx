@@ -56,7 +56,15 @@ const ProjectDetail = () => {
   const { adicionales, loading: adicionalesLoading, refetch: refetchAdicionales } = useAdicionales(id || '');
   const { documentos, loading: documentosLoading, refetch: refetchDocumentos } = useDocumentos(id || '');
   const { fotos, loading: fotosLoading, refetch: refetchFotos } = useFotos(id || '');
-  const { presupuesto, loading: presupuestoLoading, refetch: refetchPresupuesto } = usePresupuesto(id || '');
+  const { 
+    presupuesto, 
+    anticipos, 
+    retenciones, 
+    gastosGenerales, 
+    utilidad, 
+    loading: presupuestoLoading, 
+    refetch: refetchPresupuesto 
+  } = usePresupuesto(id || '');
   const { reuniones, loading: reunionesLoading, refetch: refetchReuniones } = useReuniones(id || '');
   
   // Estado para búsqueda, filtrado y orden de cada pestaña
@@ -887,11 +895,7 @@ const ProjectDetail = () => {
                       setPresupuestoSearch,
                       async () => {
                         try {
-                          const { anticipos, retenciones, gastosGenerales, utilidad } = await import('@/hooks/usePresupuesto').then(m => {
-                            const result = m.usePresupuesto(id || '');
-                            return result;
-                          });
-
+                          // Usar valores ya disponibles del hook
                           const formatCurrency = (value: number, currency?: string) => {
                             return new Intl.NumberFormat('es-CL', {
                               style: 'currency',

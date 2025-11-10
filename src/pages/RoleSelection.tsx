@@ -83,6 +83,10 @@ const RoleSelection: React.FC = () => {
   };
 
   const handleRoleSelection = (role: 'contratista' | 'mandante') => {
+    // Limpiar datos previos de sessionStorage para evitar conflictos
+    sessionStorage.removeItem('mandanteAccess');
+    sessionStorage.removeItem('contractorAccess');
+    
     // Guardar el rol seleccionado en sessionStorage
     sessionStorage.setItem('activeRole', role);
     

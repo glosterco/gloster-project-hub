@@ -64,6 +64,7 @@ const DashboardMandante: React.FC = () => {
     CompanyName: string;
   } | null>(null);
   const [hasMultipleRoles, setHasMultipleRoles] = useState(false);
+  const [verifyingAccess, setVerifyingAccess] = useState(true);
   
   const { projects, mandante, loading } = useProjectsWithDetailsMandante(mandanteId);
   const { folders, createFolder, updateFolder, deleteFolder } = useMandanteFolders(mandante?.id || null);
@@ -86,6 +87,7 @@ const DashboardMandante: React.FC = () => {
 
   useEffect(() => {
     const fetchMandanteInfo = async () => {
+      setVerifyingAccess(true);
       try {
         const {
           data: { user },
@@ -107,8 +109,8 @@ const DashboardMandante: React.FC = () => {
           return;
         }
 
-        // Limpiar accesos limitados previos
-        sessionStorage.removeItem("mandanteAccess");
+        // Si no hay activeRole establecido, establecerlo temporalmente para verificación
+        const needsRoleSet = !activeRole;
 
         // Verificar si el usuario tiene rol de mandante en user_roles
         const { data: userRoles } = await supabase
@@ -148,8 +150,9 @@ const DashboardMandante: React.FC = () => {
         setMandanteId(mandanteRole.entity_id); // Ensure mandanteId is set
         
         // Set active role if not already set
-        if (!activeRole) {
+        if (needsRoleSet) {
           sessionStorage.setItem("activeRole", "mandante");
+          console.log("✅ Set activeRole to mandante");
         }
         
         console.log("✅ Verified mandante access via user_roles");
@@ -159,6 +162,8 @@ const DashboardMandante: React.FC = () => {
       } catch (error) {
         console.error("Error fetching mandante info:", error);
         navigate("/");
+      } finally {
+        setVerifyingAccess(false);
       }
     };
 
@@ -479,12 +484,14 @@ const DashboardMandante: React.FC = () => {
     }
   };
 
-  if (loading) {
+  if (loading || verifyingAccess) {
     return (
       <div className="min-h-screen bg-slate-50 font-rubik flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gloster-yellow mx-auto mb-4"></div>
-          <p className="text-gloster-gray">Cargando dashboard...</p>
+          <p className="text-gloster-gray">
+            {verifyingAccess ? "Verificando acceso..." : "Cargando dashboard..."}
+          </p>
         </div>
       </div>
     );

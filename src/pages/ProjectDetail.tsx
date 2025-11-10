@@ -36,6 +36,7 @@ import { FotosGrid } from '@/components/FotosGrid';
 import { PresupuestoTable } from '@/components/PresupuestoTable';
 import { ReunionesTable } from '@/components/ReunionesTable';
 import { ProjectPhotoUpload } from '@/components/ProjectPhotoUpload';
+import { ProjectDocumentUpload } from '@/components/ProjectDocumentUpload';
 
 const ProjectDetail = () => {
   console.log('🎨 ProjectDetail component rendering with SECURE MODE...');
@@ -49,6 +50,7 @@ const ProjectDetail = () => {
   const [activeTab, setActiveTab] = useState('estados-pago');
   const [showAdicionalesForm, setShowAdicionalesForm] = useState(false);
   const [showPhotoUpload, setShowPhotoUpload] = useState(false);
+  const [showDocumentUpload, setShowDocumentUpload] = useState(false);
   const [selectedAdicional, setSelectedAdicional] = useState<any>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const { adicionales, loading: adicionalesLoading, refetch: refetchAdicionales } = useAdicionales(id || '');
@@ -822,7 +824,7 @@ const ProjectDetail = () => {
                       documentosSearch, 
                       setDocumentosSearch, 
                       'Cargar Nuevo Documento', 
-                      () => toast({ title: "Función en desarrollo", description: "Próximamente podrás cargar documentos" })
+                      () => setShowDocumentUpload(true)
                     )}
                     <Card>
                       <CardContent className="pt-6">
@@ -831,6 +833,13 @@ const ProjectDetail = () => {
                     </Card>
                   </TabsContent>
                 )}
+
+                <ProjectDocumentUpload
+                  projectId={parseInt(id || '0')}
+                  open={showDocumentUpload}
+                  onOpenChange={setShowDocumentUpload}
+                  onUploadComplete={refetchDocumentos}
+                />
 
                 {features.fotos && (
                   <TabsContent value="fotos" className="space-y-6">
@@ -855,6 +864,13 @@ const ProjectDetail = () => {
                     </Card>
                   </TabsContent>
                 )}
+
+                <ProjectPhotoUpload
+                  projectId={parseInt(id || '0')}
+                  open={showPhotoUpload}
+                  onOpenChange={setShowPhotoUpload}
+                  onUploadComplete={refetchFotos}
+                />
 
                 {features.presupuesto && (
                   <TabsContent value="presupuesto" className="space-y-6">

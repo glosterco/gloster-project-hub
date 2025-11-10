@@ -96,6 +96,7 @@ const DashboardMandante: React.FC = () => {
         // CRÍTICO: Solo usuarios autenticados pueden acceder al dashboard de mandante
         if (!user) {
           console.log("❌ No authenticated user, redirecting to home");
+          setVerifyingAccess(false);
           navigate("/");
           return;
         }
@@ -105,12 +106,15 @@ const DashboardMandante: React.FC = () => {
         
         if (activeRole === 'contratista') {
           console.log('🔄 User has contratista as active role, redirecting to contractor dashboard');
+          setVerifyingAccess(false);
           navigate('/dashboard');
           return;
         }
 
         // Si no hay activeRole establecido, establecerlo temporalmente para verificación
         const needsRoleSet = !activeRole;
+        // Limpiar accesos limitados previos para evitar bloqueos de RouteProtection
+        sessionStorage.removeItem("mandanteAccess");
 
         // Verificar si el usuario tiene rol de mandante en user_roles
         const { data: userRoles } = await supabase
@@ -127,8 +131,10 @@ const DashboardMandante: React.FC = () => {
           const contratistaRole = userRoles?.find((role) => role.role_type === "contratista");
           if (contratistaRole) {
             sessionStorage.setItem("activeRole", "contratista");
+            setVerifyingAccess(false);
             navigate("/dashboard");
           } else {
+            setVerifyingAccess(false);
             navigate("/");
           }
           return;

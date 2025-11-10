@@ -12,49 +12,51 @@ export const RouteProtection = ({ children }: RouteProtectionProps) => {
     const activeRole = sessionStorage.getItem('activeRole');
     const currentPath = location.pathname;
     
-    // Check if user has mandante access with limited permissions
-    const mandanteAccess = sessionStorage.getItem('mandanteAccess');
-    
-    if (mandanteAccess) {
-      try {
-        const accessData = JSON.parse(mandanteAccess);
-        
-        // If mandante has limited access (no user_auth_id), restrict to specific views
-        if (accessData.isLimitedAccess || !accessData.hasFullAccess) {
-          // Allow access patterns based on user type
-          let allowedPaths: string[] = [];
+    // If user is not authenticated with an active role, enforce limited-access restrictions
+    if (!activeRole) {
+      const mandanteAccess = sessionStorage.getItem('mandanteAccess');
+      
+      if (mandanteAccess) {
+        try {
+          const accessData = JSON.parse(mandanteAccess);
           
-          if (accessData.userType === 'cc') {
-            // CC users can access executive summary and related routes
-            allowedPaths = ['/executive-summary'];
-          } else if (accessData.paymentId) {
-            // Regular limited mandante users can only access submission view
-            allowedPaths = [`/submission/${accessData.paymentId}`];
-          }
-          
-          // Check if current path is allowed
-          const isAllowedPath = allowedPaths.some(path => currentPath === path);
-          
-          if (!isAllowedPath) {
-            console.log('🚫 RouteProtection: Limited access user blocked from accessing:', {
-              currentPath,
-              allowedPaths,
-              email: accessData.email,
-              userType: accessData.userType,
-              isLimitedAccess: accessData.isLimitedAccess,
-              hasFullAccess: accessData.hasFullAccess
-            });
+          // If mandante has limited access (no user_auth_id), restrict to specific views
+          if (accessData.isLimitedAccess || !accessData.hasFullAccess) {
+            // Allow access patterns based on user type
+            let allowedPaths: string[] = [];
             
-            // Redirect to appropriate allowed path
-            const redirectPath = allowedPaths[0];
-            if (redirectPath) {
-              window.location.href = redirectPath;
-              return;
+            if (accessData.userType === 'cc') {
+              // CC users can access executive summary and related routes
+              allowedPaths = ['/executive-summary'];
+            } else if (accessData.paymentId) {
+              // Regular limited mandante users can only access submission view
+              allowedPaths = [`/submission/${accessData.paymentId}`];
+            }
+            
+            // Check if current path is allowed (support exact and startsWith)
+            const isAllowedPath = allowedPaths.some(path => currentPath === path || currentPath.startsWith(path));
+            
+            if (!isAllowedPath) {
+              console.log('🚫 RouteProtection: Limited access user blocked from accessing:', {
+                currentPath,
+                allowedPaths,
+                email: accessData.email,
+                userType: accessData.userType,
+                isLimitedAccess: accessData.isLimitedAccess,
+                hasFullAccess: accessData.hasFullAccess
+              });
+              
+              // Redirect to appropriate allowed path
+              const redirectPath = allowedPaths[0];
+              if (redirectPath) {
+                window.location.href = redirectPath;
+                return;
+              }
             }
           }
+        } catch (error) {
+          console.error('Error parsing mandanteAccess in RouteProtection:', error);
         }
-      } catch (error) {
-        console.error('Error parsing mandanteAccess in RouteProtection:', error);
       }
     }
     

@@ -126,6 +126,17 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
     
     // Convertir a porcentaje
     const newAvanceAcumulado = item.Total ? (newAvanceAcumuladoMonto / item.Total) * 100 : 0;
+    
+    console.log('📊 Actualizando presupuesto:', {
+      itemId: item.id,
+      itemName: item.Item,
+      totalItem: item.Total,
+      avanceAcumuladoAnterior: item['Avance Acumulado'],
+      avanceAcumuladoMontoAnterior: avanceAcumuladoMonto,
+      avanceParcialMonto: avanceParcialMonto,
+      newAvanceAcumuladoMonto: newAvanceAcumuladoMonto,
+      newAvanceAcumuladoPorcentaje: newAvanceAcumulado
+    });
 
     try {
       const { error } = await supabase
@@ -137,7 +148,12 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
         })
         .eq('id', item.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error al actualizar:', error);
+        throw error;
+      }
+      
+      console.log('✅ Presupuesto actualizado correctamente');
 
       // Guardar controles también
       await saveControls();

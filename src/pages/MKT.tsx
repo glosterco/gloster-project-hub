@@ -82,7 +82,6 @@ const MKT = () => {
               <Button
                 size="lg"
                 variant="outline"
-                style="background-color:#c7c7c7;"
                 className="border-primary-foreground text-primary hover:bg-primary-foreground hover:text-primary px-8 py-4 text-lg"
                 onClick={handleKnowPlatformClick}
               >

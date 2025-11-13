@@ -129,9 +129,9 @@ export const PresupuestoHistoricoChart: React.FC<PresupuestoHistoricoChartProps>
             <Line 
               type="monotone" 
               dataKey="acumulado" 
-              stroke="hsl(var(--chart-2))" 
+              stroke="hsl(45, 100%, 51%)" 
               strokeWidth={3}
-              dot={{ fill: 'hsl(var(--chart-2))', r: 5 }}
+              dot={{ fill: 'hsl(45, 100%, 51%)', r: 5 }}
               activeDot={{ r: 7 }}
               name="acumulado"
               connectNulls={true}

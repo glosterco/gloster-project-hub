@@ -42,7 +42,19 @@ export const PresupuestoHistoricoChart: React.FC<PresupuestoHistoricoChartProps>
   }, {} as Record<string, any>);
 
   // Convertir a array y ordenar por fecha cronológicamente
-  const chartData = Object.values(groupedData).sort((a: any, b: any) => a.timestamp - b.timestamp);
+  const sortedData = Object.values(groupedData).sort((a: any, b: any) => a.timestamp - b.timestamp);
+  
+  // Agregar punto inicial en el origen para que la línea conecte desde 0
+  const chartData = [
+    {
+      fecha: 'Inicio',
+      fechaCompleta: 'Inicio del proyecto',
+      acumulado: 0,
+      parcial: 0,
+      timestamp: 0
+    },
+    ...sortedData
+  ];
 
   if (chartData.length === 0) {
     return (

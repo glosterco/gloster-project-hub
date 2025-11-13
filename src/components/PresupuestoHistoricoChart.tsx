@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { ComposedChart, Line, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { TrendingUp } from 'lucide-react';
 import { formatCurrency } from '@/utils/currencyUtils';
 import { format } from 'date-fns';
@@ -20,13 +20,32 @@ export const PresupuestoHistoricoChart: React.FC<PresupuestoHistoricoChartProps>
   historico,
   currency = 'CLP'
 }) => {
-  // Transformar los datos para el gráfico
-  const chartData = historico.map(item => ({
-    fecha: format(new Date(item.created_at), 'dd/MM/yy', { locale: es }),
-    fechaCompleta: format(new Date(item.created_at), 'dd/MM/yyyy HH:mm', { locale: es }),
-    acumulado: item.TotalAcumulado,
-    parcial: item.TotalParcial
-  }));
+  // Agrupar datos por fecha (día) y sumar parciales del mismo día
+  const groupedData = historico.reduce((acc, item) => {
+    const fecha = format(new Date(item.created_at), 'dd/MM/yy', { locale: es });
+    const fechaCompleta = format(new Date(item.created_at), 'dd/MM/yyyy', { locale: es });
+    
+    if (!acc[fecha]) {
+      acc[fecha] = {
+        fecha,
+        fechaCompleta,
+        acumulado: item.TotalAcumulado,
+        parcial: item.TotalParcial,
+        timestamp: new Date(item.created_at).getTime()
+      };
+    } else {
+      // Si hay múltiples registros del mismo día, tomar el último acumulado y sumar parciales
+      if (new Date(item.created_at).getTime() > acc[fecha].timestamp) {
+        acc[fecha].acumulado = item.TotalAcumulado;
+        acc[fecha].timestamp = new Date(item.created_at).getTime();
+      }
+      acc[fecha].parcial += item.TotalParcial;
+    }
+    return acc;
+  }, {} as Record<string, any>);
+
+  // Convertir a array y ordenar por fecha
+  const chartData = Object.values(groupedData).sort((a: any, b: any) => a.timestamp - b.timestamp);
 
   if (chartData.length === 0) {
     return (
@@ -59,7 +78,7 @@ export const PresupuestoHistoricoChart: React.FC<PresupuestoHistoricoChartProps>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={400}>
-          <LineChart data={chartData}>
+          <ComposedChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
             <XAxis 
               dataKey="fecha" 
@@ -87,30 +106,27 @@ export const PresupuestoHistoricoChart: React.FC<PresupuestoHistoricoChartProps>
             <Legend 
               wrapperStyle={{ paddingTop: '20px' }}
               formatter={(value) => {
-                if (value === 'acumulado') return 'Total Acumulado';
-                if (value === 'parcial') return 'Total Parcial';
+                if (value === 'acumulado') return 'Total Acumulado (Línea)';
+                if (value === 'parcial') return 'Avance Parcial (Barras)';
                 return value;
               }}
+            />
+            <Bar 
+              dataKey="parcial" 
+              fill="hsl(var(--primary))"
+              name="parcial"
+              radius={[4, 4, 0, 0]}
             />
             <Line 
               type="monotone" 
               dataKey="acumulado" 
-              stroke="#22c55e" 
-              strokeWidth={2}
-              dot={{ fill: '#22c55e', r: 4 }}
-              activeDot={{ r: 6 }}
+              stroke="hsl(var(--chart-2))" 
+              strokeWidth={3}
+              dot={{ fill: 'hsl(var(--chart-2))', r: 5 }}
+              activeDot={{ r: 7 }}
               name="acumulado"
             />
-            <Line 
-              type="monotone" 
-              dataKey="parcial" 
-              stroke="#3b82f6" 
-              strokeWidth={2}
-              dot={{ fill: '#3b82f6', r: 4 }}
-              activeDot={{ r: 6 }}
-              name="parcial"
-            />
-          </LineChart>
+          </ComposedChart>
         </ResponsiveContainer>
       </CardContent>
     </Card>

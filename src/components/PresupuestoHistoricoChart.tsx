@@ -122,6 +122,8 @@ export const PresupuestoHistoricoChart: React.FC<PresupuestoHistoricoChartProps>
               dot={{ fill: 'hsl(var(--chart-2))', r: 5 }}
               activeDot={{ r: 7 }}
               name="acumulado"
+              connectNulls={true}
+              isAnimationActive={true}
             />
           </ComposedChart>
         </ResponsiveContainer>

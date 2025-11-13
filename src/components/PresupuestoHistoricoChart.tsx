@@ -20,32 +20,24 @@ export const PresupuestoHistoricoChart: React.FC<PresupuestoHistoricoChartProps>
   historico,
   currency = 'CLP'
 }) => {
-  // Agrupar datos por fecha (día)
+  // Agrupar datos por fecha (día) - Tomar solo el ÚLTIMO registro del día
   const groupedData = historico.reduce((acc, item) => {
     const fecha = format(new Date(item.created_at), 'dd/MM/yy', { locale: es });
     const fechaCompleta = format(new Date(item.created_at), 'dd/MM/yyyy', { locale: es });
     const timestamp = new Date(item.created_at).getTime();
     
-    if (!acc[fecha]) {
+    // Si no existe el día o este registro es más reciente, lo usamos
+    if (!acc[fecha] || timestamp > acc[fecha].timestamp) {
       acc[fecha] = {
         fecha,
         fechaCompleta,
-        // Para el acumulado, tomamos el valor directamente (ya es la suma total acumulada)
+        // Tomamos el último registro del día (el más actualizado)
         acumulado: item.TotalAcumulado,
-        // Para el parcial, sumamos todos los parciales del mismo día
         parcial: item.TotalParcial,
         timestamp: timestamp
       };
-    } else {
-      // Si hay múltiples registros del mismo día:
-      // 1. Tomar el ÚLTIMO TotalAcumulado (es el más actualizado del día)
-      if (timestamp > acc[fecha].timestamp) {
-        acc[fecha].acumulado = item.TotalAcumulado;
-        acc[fecha].timestamp = timestamp;
-      }
-      // 2. SUMAR todos los TotalParcial del día (pueden ser múltiples actualizaciones)
-      acc[fecha].parcial += item.TotalParcial;
     }
+    
     return acc;
   }, {} as Record<string, any>);
 

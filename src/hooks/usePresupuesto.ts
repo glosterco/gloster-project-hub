@@ -44,6 +44,23 @@ export const usePresupuesto = (projectId: string) => {
     
     try {
       console.log('🔎 Fetching presupuesto for projectId:', pid);
+      
+      // Primero obtener los valores de GG y Utilidades desde la tabla Proyectos
+      const { data: projectData, error: projectError } = await supabase
+        .from('Proyectos' as any)
+        .select('GG, Utilidades')
+        .eq('id', pid)
+        .single();
+      
+      if (projectError) {
+        console.error('❌ Error fetching project data:', projectError);
+      }
+      
+      const projectGG = (projectData as any)?.GG || 0;
+      const projectUtilidades = (projectData as any)?.Utilidades || 0;
+      console.log('📊 Valores del proyecto - GG:', projectGG, 'Utilidades:', projectUtilidades);
+      
+      // Luego obtener los datos del presupuesto
       const { data: presupuestoData, error } = await supabase
         .from('Presupuesto' as any)
         .select('*')
@@ -66,8 +83,8 @@ export const usePresupuesto = (projectId: string) => {
       const regularItems: any[] = [];
       let anticiposData: ControlData = { total: 0, acumulado: 0, actual: 0 };
       let retencionesData: ControlData = { total: 0, acumulado: 0, actual: 0 };
-      let ggValue = 0;
-      let utilValue = 0;
+      let ggValue = projectGG; // Inicializar con valor del proyecto
+      let utilValue = projectUtilidades; // Inicializar con valor del proyecto
       
       presupuestoData?.forEach((item: any) => {
         if (item.Item === 'Control de Anticipos') {
@@ -82,10 +99,12 @@ export const usePresupuesto = (projectId: string) => {
             acumulado: item['Avance Acumulado'] || 0,
             actual: item['Avance Parcial'] || 0
           };
-        } else if (item.Item === 'Gastos Generales') {
-          ggValue = item.PU || 0;
-        } else if (item.Item === 'Utilidad') {
-          utilValue = item.PU || 0;
+        } else if (item.Item === 'Gastos Generales' && item.PU !== null && item.PU !== undefined) {
+          // Solo sobrescribir si hay un valor guardado en la tabla Presupuesto
+          ggValue = item.PU;
+        } else if (item.Item === 'Utilidad' && item.PU !== null && item.PU !== undefined) {
+          // Solo sobrescribir si hay un valor guardado en la tabla Presupuesto
+          utilValue = item.PU;
         } else {
           regularItems.push(item);
         }

@@ -1252,6 +1252,8 @@ const ProjectDetailMandante = () => {
                   currency={project?.Currency}
                   onUpdate={refetchPresupuesto}
                   projectId={parseInt(id || "0")}
+                  gastosGeneralesFromProject={gastosGenerales}
+                  utilidadFromProject={utilidad}
                 />
                 <div className="flex justify-center mt-6">
                   <Button

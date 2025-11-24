@@ -14,6 +14,8 @@ interface PresupuestoTableProps {
   currency?: string;
   onUpdate?: () => void;
   projectId: number;
+  gastosGeneralesFromProject?: number;
+  utilidadFromProject?: number;
 }
 
 export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
@@ -21,11 +23,13 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
   loading, 
   currency = 'CLP',
   onUpdate,
-  projectId
+  projectId,
+  gastosGeneralesFromProject = 0,
+  utilidadFromProject = 0
 }) => {
   const [editingValues, setEditingValues] = useState<{ [key: number]: number }>({});
-  const [gastosGenerales, setGastosGenerales] = useState<number>(0);
-  const [utilidad, setUtilidad] = useState<number>(0);
+  const [gastosGenerales, setGastosGenerales] = useState<number>(gastosGeneralesFromProject);
+  const [utilidad, setUtilidad] = useState<number>(utilidadFromProject);
   
   // Estados para Control de Anticipos
   const [totalAnticipos, setTotalAnticipos] = useState<number>(0);
@@ -77,6 +81,9 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
         
         if (error) throw error;
         
+        let hasGGValue = false;
+        let hasUtilidadValue = false;
+        
         data?.forEach((item: any) => {
           if (item.Item === 'Control de Anticipos') {
             setTotalAnticipos(item.Total || 0);
@@ -88,12 +95,22 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
             setRetencionAcumulado(item['Avance Acumulado'] || 0);
             setRetencionActual(item['Avance Parcial'] || 0);
             setRetencionesId(item.id);
-          } else if (item.Item === 'Gastos Generales') {
-            setGastosGenerales(item.PU || 0); // Usamos PU para guardar el porcentaje
-          } else if (item.Item === 'Utilidad') {
-            setUtilidad(item.PU || 0); // Usamos PU para guardar el porcentaje
+          } else if (item.Item === 'Gastos Generales' && item.PU !== null && item.PU !== undefined) {
+            setGastosGenerales(item.PU); // Sobrescribir con valor guardado
+            hasGGValue = true;
+          } else if (item.Item === 'Utilidad' && item.PU !== null && item.PU !== undefined) {
+            setUtilidad(item.PU); // Sobrescribir con valor guardado
+            hasUtilidadValue = true;
           }
         });
+        
+        // Si no hay valores guardados, usar los del proyecto
+        if (!hasGGValue && gastosGeneralesFromProject > 0) {
+          setGastosGenerales(gastosGeneralesFromProject);
+        }
+        if (!hasUtilidadValue && utilidadFromProject > 0) {
+          setUtilidad(utilidadFromProject);
+        }
         
         setControlsLoaded(true);
       } catch (error) {
@@ -102,7 +119,7 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
     };
     
     loadControls();
-  }, [projectId, controlsLoaded]);
+  }, [projectId, controlsLoaded, gastosGeneralesFromProject, utilidadFromProject]);
 
   const handleAvanceParcialChange = (id: number, value: string) => {
     const numValue = parseFloat(value.replace(/[^0-9.-]/g, '')) || 0;

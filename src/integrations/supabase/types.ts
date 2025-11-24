@@ -791,6 +791,7 @@ export type Database = {
           Duration: number | null
           ExpiryRate: number | null
           FirstPayment: string | null
+          GG: number | null
           id: number
           Location: string | null
           Name: string | null
@@ -801,6 +802,7 @@ export type Database = {
           URL: string | null
           URL_docs: string | null
           URL_Fotos: string | null
+          Utilidades: number | null
         }
         Insert: {
           Budget?: number | null
@@ -810,6 +812,7 @@ export type Database = {
           Duration?: number | null
           ExpiryRate?: number | null
           FirstPayment?: string | null
+          GG?: number | null
           id?: number
           Location?: string | null
           Name?: string | null
@@ -820,6 +823,7 @@ export type Database = {
           URL?: string | null
           URL_docs?: string | null
           URL_Fotos?: string | null
+          Utilidades?: number | null
         }
         Update: {
           Budget?: number | null
@@ -829,6 +833,7 @@ export type Database = {
           Duration?: number | null
           ExpiryRate?: number | null
           FirstPayment?: string | null
+          GG?: number | null
           id?: number
           Location?: string | null
           Name?: string | null
@@ -839,6 +844,7 @@ export type Database = {
           URL?: string | null
           URL_docs?: string | null
           URL_Fotos?: string | null
+          Utilidades?: number | null
         }
         Relationships: [
           {

@@ -1371,6 +1371,8 @@ const ProjectDetail = () => {
                           currency={project?.Currency}
                           onUpdate={refetchPresupuesto}
                           projectId={parseInt(id || '0')}
+                          gastosGeneralesFromProject={gastosGenerales}
+                          utilidadFromProject={utilidad}
                         />
                       </CardContent>
                     </Card>

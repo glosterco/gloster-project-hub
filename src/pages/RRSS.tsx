@@ -1,10 +1,12 @@
 import { Building2, FileCheck, Users, ChevronLeft, ChevronRight, Download } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import domtoimage from "dom-to-image-more";
 
 const RRSS = () => {
   const [currentBanner, setCurrentBanner] = useState(0);
+  const bannerRef = useRef<HTMLDivElement>(null);
   const banners = [
     { src: "/linkedin-banner-crane.jpg", name: "Grúa Torre" },
     { src: "/linkedin-banner-buildings.jpg", name: "Edificios en Construcción" }
@@ -19,83 +21,21 @@ const RRSS = () => {
   };
 
   const downloadBanner = async () => {
+    if (!bannerRef.current) return;
+    
     try {
-      const canvas = document.createElement('canvas');
-      canvas.width = 1568;
-      canvas.height = 256;
-      const ctx = canvas.getContext('2d');
-      
-      if (!ctx) {
-        throw new Error('Could not get canvas context');
-      }
-
-      // Load background image
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      
-      await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = reject;
-        img.src = banners[currentBanner].src;
+      const dataUrl = await domtoimage.toJpeg(bannerRef.current, {
+        width: 1568,
+        height: 256,
+        quality: 0.95,
+        bgcolor: '#000000'
       });
 
-      // Draw background
-      ctx.drawImage(img, 0, 0, 1568, 256);
-
-      // Draw overlay content
-      // Text
-      ctx.font = '14px Rubik, sans-serif';
-      ctx.fillStyle = 'white';
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-      ctx.shadowBlur = 4;
-      ctx.textAlign = 'right';
-      ctx.fillText('Simplifica la gestión de tus proyectos de construcción', 1536, 205);
-      
-      // Reset shadow for icons
-      ctx.shadowBlur = 0;
-
-      // Helper function to draw icon circles
-      const drawIconCircle = (x: number, y: number, text: string) => {
-        // Yellow circle
-        ctx.fillStyle = 'rgba(254, 204, 0, 0.9)';
-        ctx.beginPath();
-        ctx.arc(x, y, 10, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // Icon text (simplified - using text instead of actual icons)
-        ctx.fillStyle = '#1a1a1a';
-        ctx.font = 'bold 9px Rubik, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(text.substring(0, 1).toUpperCase(), x, y + 3);
-        
-        // Label below
-        ctx.fillStyle = 'white';
-        ctx.font = '9px Rubik, sans-serif';
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-        ctx.shadowBlur = 2;
-        ctx.fillText(text, x, y + 20);
-        ctx.shadowBlur = 0;
-      };
-
-      // Draw three icon circles
-      drawIconCircle(1465, 220, 'Proyectos');
-      drawIconCircle(1500, 220, 'Documentación');
-      drawIconCircle(1535, 220, 'Colaboración');
-
-      // Convert canvas to blob and download
-      canvas.toBlob((blob) => {
-        if (!blob) {
-          throw new Error('Could not create blob');
-        }
-        
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.download = `linkedin-banner-${banners[currentBanner].name.toLowerCase().replace(/\s+/g, "-")}.jpg`;
-        link.href = url;
-        link.click();
-        window.URL.revokeObjectURL(url);
-        toast.success("Banner descargado exitosamente");
-      }, 'image/jpeg', 0.95);
+      const link = document.createElement('a');
+      link.download = `linkedin-banner-${banners[currentBanner].name.toLowerCase().replace(/\s+/g, "-")}.jpg`;
+      link.href = dataUrl;
+      link.click();
+      toast.success("Banner descargado exitosamente");
     } catch (error) {
       console.error("Error downloading banner:", error);
       toast.error("Error al descargar el banner");
@@ -120,12 +60,17 @@ const RRSS = () => {
               Banner de LinkedIn
             </h2>
             <div className="relative">
-              <div className="rounded-lg overflow-hidden border border-border relative" style={{ height: '256px' }}>
+              <div 
+                ref={bannerRef}
+                className="rounded-lg overflow-hidden border border-border relative" 
+                style={{ height: '256px', width: '1568px', maxWidth: '100%' }}
+              >
                 {/* Background Image */}
                 <img
                   src={banners[currentBanner].src}
                   alt={banners[currentBanner].name}
                   className="w-full h-full object-cover"
+                  crossOrigin="anonymous"
                 />
                 
                 {/* Overlay Content */}

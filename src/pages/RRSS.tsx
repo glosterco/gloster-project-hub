@@ -28,35 +28,31 @@ const RRSS = () => {
               />
               
               {/* Overlay Content */}
-              <div className="absolute inset-0 flex flex-col justify-between px-16 py-12">
-                {/* Top - Text */}
-                <div className="space-y-2">
-                  <p className="text-3xl text-white/95 drop-shadow-md max-w-xl font-medium">
-                    Simplifica la gestión de tus proyectos de construcción
-                  </p>
-                </div>
+              <div className="absolute inset-0 flex flex-col items-center justify-end px-16 pb-8">
+                {/* Text centered above icons */}
+                <p className="text-xl text-white/95 drop-shadow-md font-medium mb-3 whitespace-nowrap">
+                  Simplifica la gestión de tus proyectos de construcción
+                </p>
 
-                {/* Bottom Right - Icons */}
-                <div className="flex justify-end">
-                  <div className="flex gap-4">
-                    <div className="flex flex-col items-center gap-1">
-                      <div className="w-10 h-10 rounded-full bg-gloster-yellow/90 flex items-center justify-center">
-                        <Building2 className="w-5 h-5 text-gloster-gray" />
-                      </div>
-                      <span className="text-xs text-white drop-shadow-md">Proyectos</span>
+                {/* Icons at bottom */}
+                <div className="flex gap-4">
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="w-10 h-10 rounded-full bg-gloster-yellow/90 flex items-center justify-center">
+                      <Building2 className="w-5 h-5 text-gloster-gray" />
                     </div>
-                    <div className="flex flex-col items-center gap-1">
-                      <div className="w-10 h-10 rounded-full bg-gloster-yellow/90 flex items-center justify-center">
-                        <FileCheck className="w-5 h-5 text-gloster-gray" />
-                      </div>
-                      <span className="text-xs text-white drop-shadow-md">Documentación</span>
+                    <span className="text-xs text-white drop-shadow-md">Proyectos</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="w-10 h-10 rounded-full bg-gloster-yellow/90 flex items-center justify-center">
+                      <FileCheck className="w-5 h-5 text-gloster-gray" />
                     </div>
-                    <div className="flex flex-col items-center gap-1">
-                      <div className="w-10 h-10 rounded-full bg-gloster-yellow/90 flex items-center justify-center">
-                        <Users className="w-5 h-5 text-gloster-gray" />
-                      </div>
-                      <span className="text-xs text-white drop-shadow-md">Colaboración</span>
+                    <span className="text-xs text-white drop-shadow-md">Documentación</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="w-10 h-10 rounded-full bg-gloster-yellow/90 flex items-center justify-center">
+                      <Users className="w-5 h-5 text-gloster-gray" />
                     </div>
+                    <span className="text-xs text-white drop-shadow-md">Colaboración</span>
                   </div>
                 </div>
               </div>

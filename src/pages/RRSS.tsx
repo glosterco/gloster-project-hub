@@ -1,14 +1,12 @@
 import linkedinBannerCrane from "@/assets/linkedin-banner-crane.jpg";
 import linkedinBannerBuildings from "@/assets/linkedin-banner-buildings.jpg";
 import { Building2, FileCheck, Users, ChevronLeft, ChevronRight, Download } from "lucide-react";
-import { useState, useRef } from "react";
-import html2canvas from "html2canvas";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 const RRSS = () => {
   const [currentBanner, setCurrentBanner] = useState(0);
-  const bannerRef = useRef<HTMLDivElement>(null);
   const banners = [
     { src: linkedinBannerCrane, name: "Grúa Torre" },
     { src: linkedinBannerBuildings, name: "Edificios en Construcción" }
@@ -22,35 +20,13 @@ const RRSS = () => {
     setCurrentBanner((prev) => (prev - 1 + banners.length) % banners.length);
   };
 
-  const downloadBannerWithOverlay = async () => {
-    if (!bannerRef.current) return;
-    
-    try {
-      const canvas = await html2canvas(bannerRef.current, {
-        backgroundColor: null,
-        scale: 2,
-        useCORS: true,
-      });
-      
-      const link = document.createElement("a");
-      link.download = `linkedin-banner-${banners[currentBanner].name.toLowerCase().replace(/\s+/g, "-")}.png`;
-      link.href = canvas.toDataURL("image/png");
-      link.click();
-      
-      toast.success("Banner descargado exitosamente");
-    } catch (error) {
-      console.error("Error downloading banner:", error);
-      toast.error("Error al descargar el banner");
-    }
-  };
-
-  const downloadBackgroundOnly = () => {
+  const downloadBanner = () => {
     const link = document.createElement("a");
-    link.download = `linkedin-banner-bg-${banners[currentBanner].name.toLowerCase().replace(/\s+/g, "-")}.jpg`;
+    link.download = `linkedin-banner-${banners[currentBanner].name.toLowerCase().replace(/\s+/g, "-")}.jpg`;
     link.href = banners[currentBanner].src;
     link.click();
     
-    toast.success("Imagen de fondo descargada");
+    toast.success("Banner descargado exitosamente");
   };
 
   return (
@@ -71,40 +47,40 @@ const RRSS = () => {
               Banner de LinkedIn
             </h2>
             <div className="relative">
-              <div ref={bannerRef} className="rounded-lg overflow-hidden border border-border relative">
-                {/* Background Image */}
+              <div className="rounded-lg overflow-hidden border border-border relative" style={{ height: '256px' }}>
+                {/* Background Image - scaled to half height */}
                 <img
                   src={banners[currentBanner].src}
                   alt={banners[currentBanner].name}
-                  className="w-full h-auto"
+                  className="w-full h-full object-cover"
                 />
                 
-                {/* Overlay Content */}
-                <div className="absolute inset-0 flex flex-col items-end justify-end px-16 pb-8">
+                {/* Overlay Content - scaled for half height */}
+                <div className="absolute inset-0 flex flex-col items-end justify-end px-8 pb-3">
                   {/* Text aligned right above icons */}
-                  <p className="text-xl text-white drop-shadow-lg font-medium mb-3 whitespace-nowrap">
+                  <p className="text-sm text-white drop-shadow-lg font-medium mb-1.5 whitespace-nowrap">
                     Simplifica la gestión de tus proyectos de construcción
                   </p>
 
-                  {/* Icons at bottom right */}
-                  <div className="flex gap-4">
-                    <div className="flex flex-col items-center gap-1">
-                      <div className="w-10 h-10 rounded-full bg-gloster-yellow/90 flex items-center justify-center">
-                        <Building2 className="w-5 h-5 text-gloster-gray" />
+                  {/* Icons at bottom right - smaller */}
+                  <div className="flex gap-2">
+                    <div className="flex flex-col items-center gap-0.5">
+                      <div className="w-5 h-5 rounded-full bg-gloster-yellow/90 flex items-center justify-center">
+                        <Building2 className="w-2.5 h-2.5 text-gloster-gray" />
                       </div>
-                      <span className="text-xs text-white drop-shadow-md">Proyectos</span>
+                      <span className="text-[9px] text-white drop-shadow-md">Proyectos</span>
                     </div>
-                    <div className="flex flex-col items-center gap-1">
-                      <div className="w-10 h-10 rounded-full bg-gloster-yellow/90 flex items-center justify-center">
-                        <FileCheck className="w-5 h-5 text-gloster-gray" />
+                    <div className="flex flex-col items-center gap-0.5">
+                      <div className="w-5 h-5 rounded-full bg-gloster-yellow/90 flex items-center justify-center">
+                        <FileCheck className="w-2.5 h-2.5 text-gloster-gray" />
                       </div>
-                      <span className="text-xs text-white drop-shadow-md">Documentación</span>
+                      <span className="text-[9px] text-white drop-shadow-md">Documentación</span>
                     </div>
-                    <div className="flex flex-col items-center gap-1">
-                      <div className="w-10 h-10 rounded-full bg-gloster-yellow/90 flex items-center justify-center">
-                        <Users className="w-5 h-5 text-gloster-gray" />
+                    <div className="flex flex-col items-center gap-0.5">
+                      <div className="w-5 h-5 rounded-full bg-gloster-yellow/90 flex items-center justify-center">
+                        <Users className="w-2.5 h-2.5 text-gloster-gray" />
                       </div>
-                      <span className="text-xs text-white drop-shadow-md">Colaboración</span>
+                      <span className="text-[9px] text-white drop-shadow-md">Colaboración</span>
                     </div>
                   </div>
                 </div>
@@ -113,45 +89,34 @@ const RRSS = () => {
               {/* Carousel Controls */}
               <button
                 onClick={prevBanner}
-                className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors"
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors"
               >
-                <ChevronLeft className="w-6 h-6 text-white" />
+                <ChevronLeft className="w-4 h-4 text-white" />
               </button>
               <button
                 onClick={nextBanner}
-                className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors"
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors"
               >
-                <ChevronRight className="w-6 h-6 text-white" />
+                <ChevronRight className="w-4 h-4 text-white" />
               </button>
             </div>
             <div className="flex items-center justify-between mt-4">
               <div className="flex flex-col gap-1">
                 <p className="text-sm text-muted-foreground">
-                  Dimensiones: 1568 x 512 px
+                  Vista previa: 1568 x 256 px
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {banners[currentBanner].name} ({currentBanner + 1}/{banners.length})
                 </p>
               </div>
-              <div className="flex gap-2">
-                <Button
-                  onClick={downloadBackgroundOnly}
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                >
-                  <Download className="w-4 h-4" />
-                  Descargar fondo
-                </Button>
-                <Button
-                  onClick={downloadBannerWithOverlay}
-                  size="sm"
-                  className="gap-2"
-                >
-                  <Download className="w-4 h-4" />
-                  Descargar banner completo
-                </Button>
-              </div>
+              <Button
+                onClick={downloadBanner}
+                size="sm"
+                className="gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Descargar banner
+              </Button>
             </div>
           </div>
         </div>

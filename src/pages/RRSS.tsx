@@ -1,5 +1,3 @@
-import linkedinBannerCrane from "@/assets/linkedin-banner-crane.jpg";
-import linkedinBannerBuildings from "@/assets/linkedin-banner-buildings.jpg";
 import { Building2, FileCheck, Users, ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -8,8 +6,8 @@ import { toast } from "sonner";
 const RRSS = () => {
   const [currentBanner, setCurrentBanner] = useState(0);
   const banners = [
-    { src: linkedinBannerCrane, name: "Grúa Torre" },
-    { src: linkedinBannerBuildings, name: "Edificios en Construcción" }
+    { src: "/linkedin-banner-crane.jpg", name: "Grúa Torre" },
+    { src: "/linkedin-banner-buildings.jpg", name: "Edificios en Construcción" }
   ];
 
   const nextBanner = () => {
@@ -20,13 +18,23 @@ const RRSS = () => {
     setCurrentBanner((prev) => (prev - 1 + banners.length) % banners.length);
   };
 
-  const downloadBanner = () => {
-    const link = document.createElement("a");
-    link.download = `linkedin-banner-${banners[currentBanner].name.toLowerCase().replace(/\s+/g, "-")}.jpg`;
-    link.href = banners[currentBanner].src;
-    link.click();
-    
-    toast.success("Banner descargado exitosamente");
+  const downloadBanner = async () => {
+    try {
+      const response = await fetch(banners[currentBanner].src);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      
+      const link = document.createElement("a");
+      link.download = `linkedin-banner-${banners[currentBanner].name.toLowerCase().replace(/\s+/g, "-")}.jpg`;
+      link.href = url;
+      link.click();
+      
+      window.URL.revokeObjectURL(url);
+      toast.success("Banner descargado exitosamente");
+    } catch (error) {
+      console.error("Error downloading banner:", error);
+      toast.error("Error al descargar el banner");
+    }
   };
 
   return (
@@ -48,21 +56,19 @@ const RRSS = () => {
             </h2>
             <div className="relative">
               <div className="rounded-lg overflow-hidden border border-border relative" style={{ height: '256px' }}>
-                {/* Background Image - scaled to half height */}
+                {/* Background Image */}
                 <img
                   src={banners[currentBanner].src}
                   alt={banners[currentBanner].name}
                   className="w-full h-full object-cover"
                 />
                 
-                {/* Overlay Content - scaled for half height */}
+                {/* Overlay Content */}
                 <div className="absolute inset-0 flex flex-col items-end justify-end px-8 pb-3">
-                  {/* Text aligned right above icons */}
                   <p className="text-sm text-white drop-shadow-lg font-medium mb-1.5 whitespace-nowrap">
                     Simplifica la gestión de tus proyectos de construcción
                   </p>
 
-                  {/* Icons at bottom right - smaller */}
                   <div className="flex gap-2">
                     <div className="flex flex-col items-center gap-0.5">
                       <div className="w-5 h-5 rounded-full bg-gloster-yellow/90 flex items-center justify-center">
@@ -86,7 +92,6 @@ const RRSS = () => {
                 </div>
               </div>
               
-              {/* Carousel Controls */}
               <button
                 onClick={prevBanner}
                 className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors"
@@ -103,7 +108,7 @@ const RRSS = () => {
             <div className="flex items-center justify-between mt-4">
               <div className="flex flex-col gap-1">
                 <p className="text-sm text-muted-foreground">
-                  Vista previa: 1568 x 256 px
+                  Dimensiones originales: 1568 x 512 px
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {banners[currentBanner].name} ({currentBanner + 1}/{banners.length})

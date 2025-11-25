@@ -24,6 +24,7 @@ import ExecutiveSummary from "./pages/ExecutiveSummary";
 import ExecutiveSummaryMandante from "./pages/ExecutiveSummaryMandante";
 import Licitaciones from "./pages/Licitaciones";
 import MKT from "./pages/MKT";
+import RRSS from "./pages/RRSS";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -58,6 +59,7 @@ const App = () => (
               <Route path="/executive-summary-mandante" element={<ExecutiveSummaryMandante />} />
               <Route path="/licitaciones" element={<Licitaciones />} />
               <Route path="/home" element={<MKT />} />
+              <Route path="/rrss" element={<RRSS />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </TooltipProvider>

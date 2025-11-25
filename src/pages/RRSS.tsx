@@ -2,7 +2,6 @@ import { Building2, FileCheck, Users, ChevronLeft, ChevronRight, Download } from
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import domtoimage from "dom-to-image-more";
 
 const RRSS = () => {
   const [currentBanner, setCurrentBanner] = useState(0);
@@ -21,21 +20,75 @@ const RRSS = () => {
   };
 
   const downloadBanner = async () => {
-    if (!bannerRef.current) return;
-    
     try {
-      const dataUrl = await domtoimage.toJpeg(bannerRef.current, {
-        width: 1568,
-        height: 256,
-        quality: 0.95,
-        bgcolor: '#000000'
+      // Create canvas
+      const canvas = document.createElement('canvas');
+      canvas.width = 1568;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx) {
+        throw new Error('Could not get canvas context');
+      }
+
+      // Load and draw background image
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = banners[currentBanner].src;
       });
 
-      const link = document.createElement('a');
-      link.download = `linkedin-banner-${banners[currentBanner].name.toLowerCase().replace(/\s+/g, "-")}.jpg`;
-      link.href = dataUrl;
-      link.click();
-      toast.success("Banner descargado exitosamente");
+      ctx.drawImage(img, 0, 0, 1568, 256);
+
+      // Draw text overlay
+      ctx.font = '14px Rubik, sans-serif';
+      ctx.fillStyle = 'white';
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+      ctx.shadowBlur = 4;
+      ctx.textAlign = 'right';
+      ctx.fillText('Simplifica la gestión de tus proyectos de construcción', 1536, 205);
+
+      // Draw icon circles
+      const drawIcon = (x: number, y: number, label: string) => {
+        ctx.shadowBlur = 0;
+        
+        // Yellow circle
+        ctx.fillStyle = 'rgba(254, 204, 0, 0.9)';
+        ctx.beginPath();
+        ctx.arc(x, y, 10, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Label
+        ctx.fillStyle = 'white';
+        ctx.font = '9px Rubik, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        ctx.shadowBlur = 2;
+        ctx.fillText(label, x, y + 20);
+      };
+
+      drawIcon(1465, 220, 'Proyectos');
+      drawIcon(1500, 220, 'Documentación');
+      drawIcon(1535, 220, 'Colaboración');
+
+      // Download
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          toast.error("Error al crear la imagen");
+          return;
+        }
+        
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.download = `linkedin-banner-${banners[currentBanner].name.toLowerCase().replace(/\s+/g, "-")}.jpg`;
+        link.href = url;
+        link.click();
+        window.URL.revokeObjectURL(url);
+        toast.success("Banner descargado exitosamente");
+      }, 'image/jpeg', 0.95);
     } catch (error) {
       console.error("Error downloading banner:", error);
       toast.error("Error al descargar el banner");

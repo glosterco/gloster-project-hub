@@ -1,10 +1,14 @@
 import linkedinBannerCrane from "@/assets/linkedin-banner-crane.jpg";
 import linkedinBannerBuildings from "@/assets/linkedin-banner-buildings.jpg";
-import { Building2, FileCheck, Users, ChevronLeft, ChevronRight } from "lucide-react";
-import { useState } from "react";
+import { Building2, FileCheck, Users, ChevronLeft, ChevronRight, Download } from "lucide-react";
+import { useState, useRef } from "react";
+import html2canvas from "html2canvas";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 const RRSS = () => {
   const [currentBanner, setCurrentBanner] = useState(0);
+  const bannerRef = useRef<HTMLDivElement>(null);
   const banners = [
     { src: linkedinBannerCrane, name: "Grúa Torre" },
     { src: linkedinBannerBuildings, name: "Edificios en Construcción" }
@@ -16,6 +20,37 @@ const RRSS = () => {
 
   const prevBanner = () => {
     setCurrentBanner((prev) => (prev - 1 + banners.length) % banners.length);
+  };
+
+  const downloadBannerWithOverlay = async () => {
+    if (!bannerRef.current) return;
+    
+    try {
+      const canvas = await html2canvas(bannerRef.current, {
+        backgroundColor: null,
+        scale: 2,
+        useCORS: true,
+      });
+      
+      const link = document.createElement("a");
+      link.download = `linkedin-banner-${banners[currentBanner].name.toLowerCase().replace(/\s+/g, "-")}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+      
+      toast.success("Banner descargado exitosamente");
+    } catch (error) {
+      console.error("Error downloading banner:", error);
+      toast.error("Error al descargar el banner");
+    }
+  };
+
+  const downloadBackgroundOnly = () => {
+    const link = document.createElement("a");
+    link.download = `linkedin-banner-bg-${banners[currentBanner].name.toLowerCase().replace(/\s+/g, "-")}.jpg`;
+    link.href = banners[currentBanner].src;
+    link.click();
+    
+    toast.success("Imagen de fondo descargada");
   };
 
   return (
@@ -36,7 +71,7 @@ const RRSS = () => {
               Banner de LinkedIn
             </h2>
             <div className="relative">
-              <div className="rounded-lg overflow-hidden border border-border relative">
+              <div ref={bannerRef} className="rounded-lg overflow-hidden border border-border relative">
                 {/* Background Image */}
                 <img
                   src={banners[currentBanner].src}
@@ -90,12 +125,33 @@ const RRSS = () => {
               </button>
             </div>
             <div className="flex items-center justify-between mt-4">
-              <p className="text-sm text-muted-foreground">
-                Dimensiones: 1568 x 512 px
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {banners[currentBanner].name} ({currentBanner + 1}/{banners.length})
-              </p>
+              <div className="flex flex-col gap-1">
+                <p className="text-sm text-muted-foreground">
+                  Dimensiones: 1568 x 512 px
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {banners[currentBanner].name} ({currentBanner + 1}/{banners.length})
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={downloadBackgroundOnly}
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Descargar fondo
+                </Button>
+                <Button
+                  onClick={downloadBannerWithOverlay}
+                  size="sm"
+                  className="gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Descargar banner completo
+                </Button>
+              </div>
             </div>
           </div>
         </div>

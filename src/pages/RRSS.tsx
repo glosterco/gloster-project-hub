@@ -101,8 +101,8 @@ const RRSS = () => {
       };
 
       drawIcon(2620, 440, 'Proyectos', 'building');
-      drawIcon(2860, 440, 'Documentación', 'check');
-      drawIcon(3080, 440, 'Colaboración', 'users');
+      drawIcon(2840, 440, 'Documentación', 'check');
+      drawIcon(3040, 440, 'Colaboración', 'users');
 
       // Download with maximum quality
       canvas.toBlob((blob) => {
@@ -162,7 +162,7 @@ const RRSS = () => {
                       Simplifica la gestión de tus proyectos de construcción
                     </p>
 
-                    <div className="flex gap-[230px]">
+                    <div className="flex gap-[210px]">
                       <div className="flex flex-col items-center gap-2">
                         <div className="w-14 h-14 rounded-full bg-gloster-yellow/95 flex items-center justify-center">
                           <Building2 className="w-7 h-7 text-gloster-gray" />

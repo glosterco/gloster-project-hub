@@ -44,12 +44,12 @@ const RRSS = () => {
       ctx.drawImage(img, 0, 0, 1568, 256);
 
       // Draw text overlay
-      ctx.font = '14px Rubik, sans-serif';
+      ctx.font = 'bold 20px Rubik, sans-serif';
       ctx.fillStyle = 'white';
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-      ctx.shadowBlur = 4;
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+      ctx.shadowBlur = 6;
       ctx.textAlign = 'right';
-      ctx.fillText('Simplifica la gestión de tus proyectos de construcción', 1536, 205);
+      ctx.fillText('Simplifica la gestión de tus proyectos de construcción', 1536, 210);
 
       // Draw icon circles
       const drawIcon = (x: number, y: number, label: string) => {
@@ -58,21 +58,21 @@ const RRSS = () => {
         // Yellow circle
         ctx.fillStyle = 'rgba(254, 204, 0, 0.9)';
         ctx.beginPath();
-        ctx.arc(x, y, 10, 0, Math.PI * 2);
+        ctx.arc(x, y, 14, 0, Math.PI * 2);
         ctx.fill();
         
         // Label
         ctx.fillStyle = 'white';
-        ctx.font = '9px Rubik, sans-serif';
+        ctx.font = 'bold 12px Rubik, sans-serif';
         ctx.textAlign = 'center';
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-        ctx.shadowBlur = 2;
-        ctx.fillText(label, x, y + 20);
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+        ctx.shadowBlur = 3;
+        ctx.fillText(label, x, y + 26);
       };
 
-      drawIcon(1465, 220, 'Proyectos');
-      drawIcon(1500, 220, 'Documentación');
-      drawIcon(1535, 220, 'Colaboración');
+      drawIcon(1455, 215, 'Proyectos');
+      drawIcon(1500, 215, 'Documentación');
+      drawIcon(1545, 215, 'Colaboración');
 
       // Download
       canvas.toBlob((blob) => {
@@ -127,29 +127,29 @@ const RRSS = () => {
                 />
                 
                 {/* Overlay Content */}
-                <div className="absolute inset-0 flex flex-col items-end justify-end px-8 pb-3">
-                  <p className="text-sm text-white drop-shadow-lg font-medium mb-1.5 whitespace-nowrap">
+                <div className="absolute inset-0 flex flex-col items-end justify-end px-8 pb-4">
+                  <p className="text-base text-white drop-shadow-lg font-semibold mb-2 whitespace-nowrap">
                     Simplifica la gestión de tus proyectos de construcción
                   </p>
 
-                  <div className="flex gap-2">
-                    <div className="flex flex-col items-center gap-0.5">
-                      <div className="w-5 h-5 rounded-full bg-gloster-yellow/90 flex items-center justify-center">
-                        <Building2 className="w-2.5 h-2.5 text-gloster-gray" />
+                  <div className="flex gap-3">
+                    <div className="flex flex-col items-center gap-1">
+                      <div className="w-7 h-7 rounded-full bg-gloster-yellow/90 flex items-center justify-center">
+                        <Building2 className="w-3.5 h-3.5 text-gloster-gray" />
                       </div>
-                      <span className="text-[9px] text-white drop-shadow-md">Proyectos</span>
+                      <span className="text-[11px] text-white drop-shadow-md font-semibold">Proyectos</span>
                     </div>
-                    <div className="flex flex-col items-center gap-0.5">
-                      <div className="w-5 h-5 rounded-full bg-gloster-yellow/90 flex items-center justify-center">
-                        <FileCheck className="w-2.5 h-2.5 text-gloster-gray" />
+                    <div className="flex flex-col items-center gap-1">
+                      <div className="w-7 h-7 rounded-full bg-gloster-yellow/90 flex items-center justify-center">
+                        <FileCheck className="w-3.5 h-3.5 text-gloster-gray" />
                       </div>
-                      <span className="text-[9px] text-white drop-shadow-md">Documentación</span>
+                      <span className="text-[11px] text-white drop-shadow-md font-semibold">Documentación</span>
                     </div>
-                    <div className="flex flex-col items-center gap-0.5">
-                      <div className="w-5 h-5 rounded-full bg-gloster-yellow/90 flex items-center justify-center">
-                        <Users className="w-2.5 h-2.5 text-gloster-gray" />
+                    <div className="flex flex-col items-center gap-1">
+                      <div className="w-7 h-7 rounded-full bg-gloster-yellow/90 flex items-center justify-center">
+                        <Users className="w-3.5 h-3.5 text-gloster-gray" />
                       </div>
-                      <span className="text-[9px] text-white drop-shadow-md">Colaboración</span>
+                      <span className="text-[11px] text-white drop-shadow-md font-semibold">Colaboración</span>
                     </div>
                   </div>
                 </div>

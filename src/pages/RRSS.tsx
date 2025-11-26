@@ -107,10 +107,10 @@ const RRSS = () => {
               <h2 className="text-2xl font-semibold text-foreground mb-4">
                 {banner.name}
               </h2>
-              <div className="overflow-x-auto">
+              <div className="w-full overflow-auto">
                 <div 
-                  className="rounded-lg overflow-hidden border border-border relative" 
-                  style={{ height: '512px', width: '3138px' }}
+                  className="relative inline-block cursor-zoom-in hover:scale-105 transition-transform duration-300" 
+                  style={{ width: '3138px', height: '512px' }}
                 >
                   {/* Background Image */}
                   <img
@@ -121,7 +121,7 @@ const RRSS = () => {
                   />
                   
                   {/* Overlay Content */}
-                  <div className="absolute inset-0 flex flex-col items-end justify-end px-8 pb-4">
+                  <div className="absolute inset-0 flex flex-col items-end justify-end px-8 pb-4 pointer-events-none">
                     <p className="text-[40px] text-white drop-shadow-lg font-semibold mb-4 whitespace-nowrap">
                       Simplifica la gestión de tus proyectos de construcción
                     </p>

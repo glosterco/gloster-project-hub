@@ -23,7 +23,7 @@ const RRSS = () => {
     try {
       // Create canvas at full resolution (match actual image dimensions)
       const canvas = document.createElement('canvas');
-      canvas.width = 1568;
+      canvas.width = 3138;
       canvas.height = 512;
       const ctx = canvas.getContext('2d', { alpha: false });
       
@@ -45,7 +45,7 @@ const RRSS = () => {
         img.src = banners[currentBanner].src;
       });
 
-      ctx.drawImage(img, 0, 0, 1568, 512);
+      ctx.drawImage(img, 0, 0, 3138, 512);
 
       // Draw text overlay (scaled for 512px height)
       ctx.font = 'bold 40px Rubik, sans-serif';
@@ -53,7 +53,7 @@ const RRSS = () => {
       ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
       ctx.shadowBlur = 12;
       ctx.textAlign = 'right';
-      ctx.fillText('Simplifica la gestión de tus proyectos de construcción', 1520, 425);
+      ctx.fillText('Simplifica la gestión de tus proyectos de construcción', 3040, 425);
 
       // Draw icon circles (scaled for 512px height)
       const drawIcon = (x: number, y: number, label: string) => {
@@ -74,9 +74,9 @@ const RRSS = () => {
         ctx.fillText(label, x, y + 52);
       };
 
-      drawIcon(1360, 435, 'Proyectos');
-      drawIcon(1450, 435, 'Documentación');
-      drawIcon(1540, 435, 'Colaboración');
+      drawIcon(2720, 435, 'Proyectos');
+      drawIcon(2900, 435, 'Documentación');
+      drawIcon(3060, 435, 'Colaboración');
 
       // Download with maximum quality
       canvas.toBlob((blob) => {
@@ -175,7 +175,7 @@ const RRSS = () => {
             <div className="flex items-center justify-between mt-4">
               <div className="flex flex-col gap-1">
                 <p className="text-sm text-muted-foreground">
-                  Dimensiones de descarga: 1568 x 512 px (alta calidad)
+                  Dimensiones de descarga: 3138 x 512 px (alta calidad)
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {banners[currentBanner].name} ({currentBanner + 1}/{banners.length})

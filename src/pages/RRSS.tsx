@@ -43,7 +43,7 @@ const RRSS = () => {
       ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
       ctx.shadowBlur = 12;
       ctx.textAlign = 'right';
-      ctx.fillText('Simplifica la gestión de tus proyectos de construcción', 3040, 425);
+      ctx.fillText('Simplifica la gestión de tus proyectos de construcción', 3090, 360);
 
       // Draw icon circles (scaled for 512px height)
       const drawIcon = (x: number, y: number, label: string) => {
@@ -61,12 +61,12 @@ const RRSS = () => {
         ctx.textAlign = 'center';
         ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
         ctx.shadowBlur = 6;
-        ctx.fillText(label, x, y + 52);
+        ctx.fillText(label, x, y + 60);
       };
 
-      drawIcon(2720, 435, 'Proyectos');
-      drawIcon(2900, 435, 'Documentación');
-      drawIcon(3060, 435, 'Colaboración');
+      drawIcon(2680, 440, 'Proyectos');
+      drawIcon(2870, 440, 'Documentación');
+      drawIcon(3050, 440, 'Colaboración');
 
       // Download with maximum quality
       canvas.toBlob((blob) => {
@@ -121,12 +121,12 @@ const RRSS = () => {
                   />
                   
                   {/* Overlay Content */}
-                  <div className="absolute inset-0 flex flex-col items-end justify-end px-8 pb-4 pointer-events-none">
-                    <p className="text-[40px] text-white drop-shadow-lg font-semibold mb-4 whitespace-nowrap">
+                  <div className="absolute inset-0 flex flex-col items-end justify-end px-12 pb-8 pointer-events-none">
+                    <p className="text-[40px] text-white drop-shadow-lg font-semibold mb-12 whitespace-nowrap">
                       Simplifica la gestión de tus proyectos de construcción
                     </p>
 
-                    <div className="flex gap-12">
+                    <div className="flex gap-16">
                       <div className="flex flex-col items-center gap-2">
                         <div className="w-14 h-14 rounded-full bg-gloster-yellow/95 flex items-center justify-center">
                           <Building2 className="w-7 h-7 text-gloster-gray" />

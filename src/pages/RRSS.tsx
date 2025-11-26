@@ -21,17 +21,21 @@ const RRSS = () => {
 
   const downloadBanner = async () => {
     try {
-      // Create canvas
+      // Create canvas at full resolution (match actual image dimensions)
       const canvas = document.createElement('canvas');
       canvas.width = 1568;
-      canvas.height = 256;
-      const ctx = canvas.getContext('2d');
+      canvas.height = 512;
+      const ctx = canvas.getContext('2d', { alpha: false });
       
       if (!ctx) {
         throw new Error('Could not get canvas context');
       }
 
-      // Load and draw background image
+      // Enable high quality rendering
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+
+      // Load and draw background image at full resolution
       const img = new Image();
       img.crossOrigin = 'anonymous';
       
@@ -41,40 +45,40 @@ const RRSS = () => {
         img.src = banners[currentBanner].src;
       });
 
-      ctx.drawImage(img, 0, 0, 1568, 256);
+      ctx.drawImage(img, 0, 0, 1568, 512);
 
-      // Draw text overlay
-      ctx.font = 'bold 20px Rubik, sans-serif';
+      // Draw text overlay (scaled for 512px height)
+      ctx.font = 'bold 40px Rubik, sans-serif';
       ctx.fillStyle = 'white';
       ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
-      ctx.shadowBlur = 6;
+      ctx.shadowBlur = 12;
       ctx.textAlign = 'right';
-      ctx.fillText('Simplifica la gestión de tus proyectos de construcción', 1536, 210);
+      ctx.fillText('Simplifica la gestión de tus proyectos de construcción', 1520, 425);
 
-      // Draw icon circles
+      // Draw icon circles (scaled for 512px height)
       const drawIcon = (x: number, y: number, label: string) => {
         ctx.shadowBlur = 0;
         
         // Yellow circle
-        ctx.fillStyle = 'rgba(254, 204, 0, 0.9)';
+        ctx.fillStyle = 'rgba(254, 204, 0, 0.95)';
         ctx.beginPath();
-        ctx.arc(x, y, 14, 0, Math.PI * 2);
+        ctx.arc(x, y, 28, 0, Math.PI * 2);
         ctx.fill();
         
         // Label
         ctx.fillStyle = 'white';
-        ctx.font = 'bold 12px Rubik, sans-serif';
+        ctx.font = 'bold 24px Rubik, sans-serif';
         ctx.textAlign = 'center';
         ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
-        ctx.shadowBlur = 3;
-        ctx.fillText(label, x, y + 26);
+        ctx.shadowBlur = 6;
+        ctx.fillText(label, x, y + 52);
       };
 
-      drawIcon(1455, 215, 'Proyectos');
-      drawIcon(1500, 215, 'Documentación');
-      drawIcon(1545, 215, 'Colaboración');
+      drawIcon(1360, 435, 'Proyectos');
+      drawIcon(1450, 435, 'Documentación');
+      drawIcon(1540, 435, 'Colaboración');
 
-      // Download
+      // Download with maximum quality
       canvas.toBlob((blob) => {
         if (!blob) {
           toast.error("Error al crear la imagen");
@@ -88,7 +92,7 @@ const RRSS = () => {
         link.click();
         window.URL.revokeObjectURL(url);
         toast.success("Banner descargado exitosamente");
-      }, 'image/jpeg', 0.95);
+      }, 'image/jpeg', 1.0);
     } catch (error) {
       console.error("Error downloading banner:", error);
       toast.error("Error al descargar el banner");
@@ -171,7 +175,7 @@ const RRSS = () => {
             <div className="flex items-center justify-between mt-4">
               <div className="flex flex-col gap-1">
                 <p className="text-sm text-muted-foreground">
-                  Dimensiones originales: 1568 x 512 px
+                  Dimensiones de descarga: 1568 x 512 px (alta calidad)
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {banners[currentBanner].name} ({currentBanner + 1}/{banners.length})

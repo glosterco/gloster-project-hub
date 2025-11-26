@@ -1,25 +1,15 @@
-import { Building2, FileCheck, Users, ChevronLeft, ChevronRight, Download } from "lucide-react";
-import { useState, useRef } from "react";
+import { Building2, FileCheck, Users, Download } from "lucide-react";
+import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 const RRSS = () => {
-  const [currentBanner, setCurrentBanner] = useState(0);
-  const bannerRef = useRef<HTMLDivElement>(null);
   const banners = [
     { src: "/linkedin-banner-crane.jpg", name: "Grúa Torre" },
     { src: "/linkedin-banner-buildings.jpg", name: "Edificios en Construcción" }
   ];
 
-  const nextBanner = () => {
-    setCurrentBanner((prev) => (prev + 1) % banners.length);
-  };
-
-  const prevBanner = () => {
-    setCurrentBanner((prev) => (prev - 1 + banners.length) % banners.length);
-  };
-
-  const downloadBanner = async () => {
+  const downloadBanner = async (bannerSrc: string, bannerName: string) => {
     try {
       // Create canvas at full resolution (match actual image dimensions)
       const canvas = document.createElement('canvas');
@@ -42,7 +32,7 @@ const RRSS = () => {
       await new Promise((resolve, reject) => {
         img.onload = resolve;
         img.onerror = reject;
-        img.src = banners[currentBanner].src;
+        img.src = bannerSrc;
       });
 
       ctx.drawImage(img, 0, 0, 3138, 512);
@@ -87,7 +77,7 @@ const RRSS = () => {
         
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
-        link.download = `linkedin-banner-${banners[currentBanner].name.toLowerCase().replace(/\s+/g, "-")}.jpg`;
+        link.download = `linkedin-banner-${bannerName.toLowerCase().replace(/\s+/g, "-")}.jpg`;
         link.href = url;
         link.click();
         window.URL.revokeObjectURL(url);
@@ -112,85 +102,68 @@ const RRSS = () => {
         </div>
 
         <div className="space-y-6">
-          <div className="bg-card rounded-lg border border-border p-6 shadow-sm">
-            <h2 className="text-2xl font-semibold text-foreground mb-4">
-              Banner de LinkedIn
-            </h2>
-            <div className="relative">
-              <div 
-                ref={bannerRef}
-                className="rounded-lg overflow-hidden border border-border relative overflow-x-auto" 
-                style={{ height: '512px', width: '3138px' }}
-              >
-                {/* Background Image */}
-                <img
-                  src={banners[currentBanner].src}
-                  alt={banners[currentBanner].name}
-                  className="w-full h-full object-cover"
-                  crossOrigin="anonymous"
-                />
-                
-                {/* Overlay Content */}
-                <div className="absolute inset-0 flex flex-col items-end justify-end px-8 pb-4">
-                  <p className="text-[40px] text-white drop-shadow-lg font-semibold mb-4 whitespace-nowrap">
-                    Simplifica la gestión de tus proyectos de construcción
-                  </p>
+          {banners.map((banner, index) => (
+            <div key={index} className="bg-card rounded-lg border border-border p-6 shadow-sm">
+              <h2 className="text-2xl font-semibold text-foreground mb-4">
+                {banner.name}
+              </h2>
+              <div className="overflow-x-auto">
+                <div 
+                  className="rounded-lg overflow-hidden border border-border relative" 
+                  style={{ height: '512px', width: '3138px' }}
+                >
+                  {/* Background Image */}
+                  <img
+                    src={banner.src}
+                    alt={banner.name}
+                    className="w-full h-full object-cover"
+                    crossOrigin="anonymous"
+                  />
+                  
+                  {/* Overlay Content */}
+                  <div className="absolute inset-0 flex flex-col items-end justify-end px-8 pb-4">
+                    <p className="text-[40px] text-white drop-shadow-lg font-semibold mb-4 whitespace-nowrap">
+                      Simplifica la gestión de tus proyectos de construcción
+                    </p>
 
-                  <div className="flex gap-12">
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="w-14 h-14 rounded-full bg-gloster-yellow/95 flex items-center justify-center">
-                        <Building2 className="w-7 h-7 text-gloster-gray" />
+                    <div className="flex gap-12">
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="w-14 h-14 rounded-full bg-gloster-yellow/95 flex items-center justify-center">
+                          <Building2 className="w-7 h-7 text-gloster-gray" />
+                        </div>
+                        <span className="text-2xl text-white drop-shadow-md font-semibold">Proyectos</span>
                       </div>
-                      <span className="text-2xl text-white drop-shadow-md font-semibold">Proyectos</span>
-                    </div>
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="w-14 h-14 rounded-full bg-gloster-yellow/95 flex items-center justify-center">
-                        <FileCheck className="w-7 h-7 text-gloster-gray" />
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="w-14 h-14 rounded-full bg-gloster-yellow/95 flex items-center justify-center">
+                          <FileCheck className="w-7 h-7 text-gloster-gray" />
+                        </div>
+                        <span className="text-2xl text-white drop-shadow-md font-semibold">Documentación</span>
                       </div>
-                      <span className="text-2xl text-white drop-shadow-md font-semibold">Documentación</span>
-                    </div>
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="w-14 h-14 rounded-full bg-gloster-yellow/95 flex items-center justify-center">
-                        <Users className="w-7 h-7 text-gloster-gray" />
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="w-14 h-14 rounded-full bg-gloster-yellow/95 flex items-center justify-center">
+                          <Users className="w-7 h-7 text-gloster-gray" />
+                        </div>
+                        <span className="text-2xl text-white drop-shadow-md font-semibold">Colaboración</span>
                       </div>
-                      <span className="text-2xl text-white drop-shadow-md font-semibold">Colaboración</span>
                     </div>
                   </div>
                 </div>
               </div>
-              
-              <button
-                onClick={prevBanner}
-                className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors"
-              >
-                <ChevronLeft className="w-4 h-4 text-white" />
-              </button>
-              <button
-                onClick={nextBanner}
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors"
-              >
-                <ChevronRight className="w-4 h-4 text-white" />
-              </button>
-            </div>
-            <div className="flex items-center justify-between mt-4">
-              <div className="flex flex-col gap-1">
+              <div className="flex items-center justify-between mt-4">
                 <p className="text-sm text-muted-foreground">
                   Dimensiones de descarga: 3138 x 512 px (alta calidad)
                 </p>
-                <p className="text-sm text-muted-foreground">
-                  {banners[currentBanner].name} ({currentBanner + 1}/{banners.length})
-                </p>
+                <Button
+                  onClick={() => downloadBanner(banner.src, banner.name)}
+                  size="sm"
+                  className="gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Descargar banner
+                </Button>
               </div>
-              <Button
-                onClick={downloadBanner}
-                size="sm"
-                className="gap-2"
-              >
-                <Download className="w-4 h-4" />
-                Descargar banner
-              </Button>
             </div>
-          </div>
+          ))}
         </div>
       </div>
     </div>

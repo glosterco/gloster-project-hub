@@ -119,8 +119,8 @@ const RRSS = () => {
             <div className="relative">
               <div 
                 ref={bannerRef}
-                className="rounded-lg overflow-hidden border border-border relative" 
-                style={{ height: '256px', width: '1568px', maxWidth: '100%' }}
+                className="rounded-lg overflow-hidden border border-border relative overflow-x-auto" 
+                style={{ height: '512px', width: '3138px' }}
               >
                 {/* Background Image */}
                 <img
@@ -132,28 +132,28 @@ const RRSS = () => {
                 
                 {/* Overlay Content */}
                 <div className="absolute inset-0 flex flex-col items-end justify-end px-8 pb-4">
-                  <p className="text-base text-white drop-shadow-lg font-semibold mb-2 whitespace-nowrap">
+                  <p className="text-[40px] text-white drop-shadow-lg font-semibold mb-4 whitespace-nowrap">
                     Simplifica la gestión de tus proyectos de construcción
                   </p>
 
-                  <div className="flex gap-3">
-                    <div className="flex flex-col items-center gap-1">
-                      <div className="w-7 h-7 rounded-full bg-gloster-yellow/90 flex items-center justify-center">
-                        <Building2 className="w-3.5 h-3.5 text-gloster-gray" />
+                  <div className="flex gap-12">
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="w-14 h-14 rounded-full bg-gloster-yellow/95 flex items-center justify-center">
+                        <Building2 className="w-7 h-7 text-gloster-gray" />
                       </div>
-                      <span className="text-[11px] text-white drop-shadow-md font-semibold">Proyectos</span>
+                      <span className="text-2xl text-white drop-shadow-md font-semibold">Proyectos</span>
                     </div>
-                    <div className="flex flex-col items-center gap-1">
-                      <div className="w-7 h-7 rounded-full bg-gloster-yellow/90 flex items-center justify-center">
-                        <FileCheck className="w-3.5 h-3.5 text-gloster-gray" />
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="w-14 h-14 rounded-full bg-gloster-yellow/95 flex items-center justify-center">
+                        <FileCheck className="w-7 h-7 text-gloster-gray" />
                       </div>
-                      <span className="text-[11px] text-white drop-shadow-md font-semibold">Documentación</span>
+                      <span className="text-2xl text-white drop-shadow-md font-semibold">Documentación</span>
                     </div>
-                    <div className="flex flex-col items-center gap-1">
-                      <div className="w-7 h-7 rounded-full bg-gloster-yellow/90 flex items-center justify-center">
-                        <Users className="w-3.5 h-3.5 text-gloster-gray" />
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="w-14 h-14 rounded-full bg-gloster-yellow/95 flex items-center justify-center">
+                        <Users className="w-7 h-7 text-gloster-gray" />
                       </div>
-                      <span className="text-[11px] text-white drop-shadow-md font-semibold">Colaboración</span>
+                      <span className="text-2xl text-white drop-shadow-md font-semibold">Colaboración</span>
                     </div>
                   </div>
                 </div>

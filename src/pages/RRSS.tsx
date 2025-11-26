@@ -46,7 +46,7 @@ const RRSS = () => {
       ctx.fillText('Simplifica la gestión de tus proyectos de construcción', 3090, 360);
 
       // Draw icon circles (scaled for 512px height)
-      const drawIcon = (x: number, y: number, label: string) => {
+      const drawIcon = (x: number, y: number, label: string, iconType: string) => {
         ctx.shadowBlur = 0;
         
         // Yellow circle
@@ -54,6 +54,42 @@ const RRSS = () => {
         ctx.beginPath();
         ctx.arc(x, y, 28, 0, Math.PI * 2);
         ctx.fill();
+        
+        // Draw icon (simplified shapes)
+        ctx.strokeStyle = 'rgba(52, 73, 94, 1)';
+        ctx.fillStyle = 'rgba(52, 73, 94, 1)';
+        ctx.lineWidth = 3;
+        
+        if (iconType === 'building') {
+          // Building icon
+          ctx.strokeRect(x - 10, y - 12, 20, 24);
+          ctx.fillRect(x - 6, y - 8, 4, 4);
+          ctx.fillRect(x + 2, y - 8, 4, 4);
+          ctx.fillRect(x - 6, y + 0, 4, 4);
+          ctx.fillRect(x + 2, y + 0, 4, 4);
+        } else if (iconType === 'check') {
+          // File check icon
+          ctx.strokeRect(x - 8, y - 10, 16, 20);
+          ctx.beginPath();
+          ctx.moveTo(x - 4, y + 2);
+          ctx.lineTo(x - 1, y + 5);
+          ctx.lineTo(x + 5, y - 3);
+          ctx.stroke();
+        } else if (iconType === 'users') {
+          // Users icon
+          ctx.beginPath();
+          ctx.arc(x - 6, y - 4, 5, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(x + 6, y - 4, 5, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(x - 6, y + 8, 8, Math.PI, 0, true);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(x + 6, y + 8, 8, Math.PI, 0, true);
+          ctx.stroke();
+        }
         
         // Label
         ctx.fillStyle = 'white';
@@ -64,9 +100,9 @@ const RRSS = () => {
         ctx.fillText(label, x, y + 60);
       };
 
-      drawIcon(2680, 440, 'Proyectos');
-      drawIcon(2870, 440, 'Documentación');
-      drawIcon(3050, 440, 'Colaboración');
+      drawIcon(2620, 440, 'Proyectos', 'building');
+      drawIcon(2860, 440, 'Documentación', 'check');
+      drawIcon(3080, 440, 'Colaboración', 'users');
 
       // Download with maximum quality
       canvas.toBlob((blob) => {
@@ -126,7 +162,7 @@ const RRSS = () => {
                       Simplifica la gestión de tus proyectos de construcción
                     </p>
 
-                    <div className="flex gap-16">
+                    <div className="flex gap-[230px]">
                       <div className="flex flex-col items-center gap-2">
                         <div className="w-14 h-14 rounded-full bg-gloster-yellow/95 flex items-center justify-center">
                           <Building2 className="w-7 h-7 text-gloster-gray" />

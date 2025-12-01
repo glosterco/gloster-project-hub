@@ -625,6 +625,7 @@ export type Database = {
           Licitaciones: boolean | null
           Presupuesto: boolean | null
           Reuniones: boolean | null
+          RFI: boolean | null
           Status: boolean | null
         }
         Insert: {
@@ -641,6 +642,7 @@ export type Database = {
           Licitaciones?: boolean | null
           Presupuesto?: boolean | null
           Reuniones?: boolean | null
+          RFI?: boolean | null
           Status?: boolean | null
         }
         Update: {
@@ -657,6 +659,7 @@ export type Database = {
           Licitaciones?: boolean | null
           Presupuesto?: boolean | null
           Reuniones?: boolean | null
+          RFI?: boolean | null
           Status?: boolean | null
         }
         Relationships: []

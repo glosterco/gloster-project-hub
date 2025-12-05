@@ -185,7 +185,7 @@ const handler = async (req: Request): Promise<Response> => {
           userType = null;
         }
       } else if (accessType === 'mandante') {
-        // ESCENARIO 1: Verificar ContactEmail del mandante Y también el campo CC
+        // ESCENARIO 1: Verificar ContactEmail del mandante, campo CC, O aprobadores del proyecto
         const { data: mandante } = await supabaseAdmin
           .from('Mandantes')
           .select('ContactEmail, CC')
@@ -195,12 +195,20 @@ const handler = async (req: Request): Promise<Response> => {
         const contactEmailMatch = mandante?.ContactEmail && mandante.ContactEmail.toLowerCase().trim() === email.toLowerCase().trim();
         const ccEmailMatch = mandante?.CC && mandante.CC.toLowerCase().trim() === email.toLowerCase().trim();
 
-        if (contactEmailMatch || ccEmailMatch) {
-          console.log('✅ Email MANDANTE verificado exitosamente');
+        // NUEVO: Verificar si el email está en la lista de aprobadores del proyecto
+        const { data: approverAccess } = await supabaseAdmin
+          .rpc('verify_approver_email_access', { 
+            payment_id: parseInt(paymentId),
+            user_email: email 
+          });
+
+        if (contactEmailMatch || ccEmailMatch || approverAccess) {
+          console.log('✅ Email MANDANTE/APROBADOR verificado exitosamente');
         } else {
-          console.log('❌ Email MANDANTE no coincide');
+          console.log('❌ Email MANDANTE/APROBADOR no coincide');
           console.log('    ContactEmail esperado:', mandante?.ContactEmail || 'null');
           console.log('    CC esperado:', mandante?.CC || 'null');
+          console.log('    Es aprobador:', approverAccess);
           console.log('    Recibido:', email);
           userType = null;
         }

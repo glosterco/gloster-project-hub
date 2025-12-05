@@ -240,6 +240,7 @@ export type Database = {
       "Estados de pago": {
         Row: {
           Año: number | null
+          approval_progress: number | null
           Completion: boolean | null
           ExpiryDate: string | null
           id: number
@@ -250,12 +251,14 @@ export type Database = {
           Project: number | null
           Status: string | null
           Total: number | null
+          total_approvals_required: number | null
           URL: string | null
           URLContratista: string | null
           URLMandante: string | null
         }
         Insert: {
           Año?: number | null
+          approval_progress?: number | null
           Completion?: boolean | null
           ExpiryDate?: string | null
           id?: number
@@ -266,12 +269,14 @@ export type Database = {
           Project?: number | null
           Status?: string | null
           Total?: number | null
+          total_approvals_required?: number | null
           URL?: string | null
           URLContratista?: string | null
           URLMandante?: string | null
         }
         Update: {
           Año?: number | null
+          approval_progress?: number | null
           Completion?: boolean | null
           ExpiryDate?: string | null
           id?: number
@@ -282,6 +287,7 @@ export type Database = {
           Project?: number | null
           Status?: string | null
           Total?: number | null
+          total_approvals_required?: number | null
           URL?: string | null
           URLContratista?: string | null
           URLMandante?: string | null
@@ -664,6 +670,47 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_approvals: {
+        Row: {
+          approval_status: string
+          approved_at: string | null
+          approver_email: string
+          approver_name: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          payment_id: number
+        }
+        Insert: {
+          approval_status?: string
+          approved_at?: string | null
+          approver_email: string
+          approver_name?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          payment_id: number
+        }
+        Update: {
+          approval_status?: string
+          approved_at?: string | null
+          approver_email?: string
+          approver_name?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          payment_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_approvals_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "Estados de pago"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       Presupuesto: {
         Row: {
           "Avance Acumulado": number | null
@@ -784,6 +831,76 @@ export type Database = {
           Project_ID?: number
         }
         Relationships: []
+      }
+      project_approval_config: {
+        Row: {
+          approval_order_matters: boolean
+          created_at: string
+          id: string
+          project_id: number
+          required_approvals: number
+          updated_at: string
+        }
+        Insert: {
+          approval_order_matters?: boolean
+          created_at?: string
+          id?: string
+          project_id: number
+          required_approvals?: number
+          updated_at?: string
+        }
+        Update: {
+          approval_order_matters?: boolean
+          created_at?: string
+          id?: string
+          project_id?: number
+          required_approvals?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_approval_config_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
+            referencedRelation: "Proyectos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_approvers: {
+        Row: {
+          approval_order: number
+          approver_email: string
+          approver_name: string | null
+          config_id: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          approval_order?: number
+          approver_email: string
+          approver_name?: string | null
+          config_id: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          approval_order?: number
+          approver_email?: string
+          approver_name?: string | null
+          config_id?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_approvers_config_id_fkey"
+            columns: ["config_id"]
+            isOneToOne: false
+            referencedRelation: "project_approval_config"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       Proyectos: {
         Row: {
@@ -955,6 +1072,10 @@ export type Database = {
         Returns: undefined
       }
       update_payment_states_weekly: { Args: never; Returns: undefined }
+      verify_approver_email_access: {
+        Args: { payment_id: number; user_email: string }
+        Returns: boolean
+      }
       verify_email_payment_access: {
         Args: { payment_id: number; user_email: string }
         Returns: boolean

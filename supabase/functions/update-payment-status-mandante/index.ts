@@ -8,9 +8,11 @@ const corsHeaders = {
 
 interface UpdatePaymentStatusRequest {
   paymentId: string;
-  status: 'Aprobado' | 'Rechazado';
+  status: string;
   notes: string;
-  mandanteEmail: string; // Para verificación de acceso
+  mandanteEmail: string;
+  approvalProgress?: number;
+  totalRequired?: number;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -19,7 +21,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { paymentId, status, notes, mandanteEmail }: UpdatePaymentStatusRequest = await req.json();
+    const { paymentId, status, notes, mandanteEmail, approvalProgress, totalRequired }: UpdatePaymentStatusRequest = await req.json();
     
     console.log('🔄 Mandante update payment status request:', { 
       paymentId, 
@@ -84,12 +86,24 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // STEP 2: Verify mandante email access
+    // STEP 2: Verify mandante email access OR approver access
     const mandanteContactEmail = paymentData.projectData?.ownerData?.ContactEmail;
-    if (!mandanteContactEmail || mandanteContactEmail.toLowerCase() !== mandanteEmail.toLowerCase()) {
-      console.error('❌ Mandante email verification failed:', {
+    let hasAccess = mandanteContactEmail && mandanteContactEmail.toLowerCase() === mandanteEmail.toLowerCase();
+
+    // If not mandante, check if user is an approver
+    if (!hasAccess) {
+      const { data: approverAccess } = await supabase
+        .rpc('verify_approver_email_access', { 
+          payment_id: parseInt(paymentId),
+          user_email: mandanteEmail 
+        });
+      hasAccess = approverAccess === true;
+    }
+
+    if (!hasAccess) {
+      console.error('❌ Access verification failed:', {
         provided: mandanteEmail,
-        expected: mandanteContactEmail
+        mandanteEmail: mandanteContactEmail
       });
       return new Response(
         JSON.stringify({ 
@@ -106,12 +120,22 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('✅ Mandante access verified, updating payment status...');
 
     // STEP 3: Update payment status (using service role, bypasses all RLS)
+    const updateData: any = { 
+      Status: status,
+      Notes: notes
+    };
+    
+    // Add approval progress fields if provided
+    if (typeof approvalProgress === 'number') {
+      updateData.approval_progress = approvalProgress;
+    }
+    if (typeof totalRequired === 'number') {
+      updateData.total_approvals_required = totalRequired;
+    }
+
     const { error: updateError } = await supabase
       .from('Estados de pago')
-      .update({ 
-        Status: status,
-        Notes: notes
-      })
+      .update(updateData)
       .eq('id', parseInt(paymentId));
 
     if (updateError) {

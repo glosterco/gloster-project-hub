@@ -1,11 +1,10 @@
-
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 interface PaymentApprovalHookProps {
   paymentId: string;
-  payment?: any; // Recibir payment data directamente en lugar de hacer query separada
+  payment?: any;
   onStatusChange?: () => void;
 }
 
@@ -13,108 +12,190 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
+  const getCurrentUserEmail = (): string | null => {
+    const mandanteAccess = sessionStorage.getItem('mandanteAccess');
+    if (mandanteAccess) {
+      const data = JSON.parse(mandanteAccess);
+      return data.email || null;
+    }
+    return null;
+  };
+
+  const getApprovalConfig = async (projectId: number) => {
+    const { data: config, error } = await supabase
+      .from('project_approval_config')
+      .select('id, required_approvals, approval_order_matters')
+      .eq('project_id', projectId)
+      .single();
+
+    if (error) {
+      console.log('No approval config found, using defaults');
+      return { required_approvals: 1, approval_order_matters: false };
+    }
+
+    return config;
+  };
+
+  const getApprovalCount = async () => {
+    const { data, error } = await supabase
+      .from('payment_approvals')
+      .select('id')
+      .eq('payment_id', parseInt(paymentId))
+      .eq('approval_status', 'Aprobado');
+
+    if (error) {
+      console.error('Error getting approval count:', error);
+      return 0;
+    }
+
+    return data?.length || 0;
+  };
+
+  const recordIndividualApproval = async (
+    status: 'Aprobado' | 'Rechazado',
+    notes: string
+  ) => {
+    const userEmail = getCurrentUserEmail();
+    if (!userEmail) {
+      throw new Error('No se pudo determinar el email del usuario');
+    }
+
+    const mandanteAccess = sessionStorage.getItem('mandanteAccess');
+    const userName = mandanteAccess ? JSON.parse(mandanteAccess).name || userEmail : userEmail;
+
+    // Upsert: update if exists, insert if not
+    const { error } = await supabase
+      .from('payment_approvals')
+      .upsert({
+        payment_id: parseInt(paymentId),
+        approver_email: userEmail.toLowerCase().trim(),
+        approver_name: userName,
+        approval_status: status,
+        notes: notes || null,
+        approved_at: status === 'Aprobado' ? new Date().toISOString() : null
+      }, {
+        onConflict: 'payment_id,approver_email'
+      });
+
+    if (error) {
+      console.error('Error recording individual approval:', error);
+      throw error;
+    }
+
+    console.log(`✅ Individual ${status} recorded for ${userEmail}`);
+  };
+
   const updatePaymentStatus = async (status: 'Aprobado' | 'Rechazado', notes: string) => {
     console.log('🔄 Starting updatePaymentStatus with:', { paymentId, status, notes });
     
-    // LOG: Verificar el contexto actual del usuario
     const mandanteAccess = sessionStorage.getItem('mandanteAccess');
-    const contractorAccess = sessionStorage.getItem('contractorAccess');
     const { data: { user } } = await supabase.auth.getUser();
     
     console.log('🔍 DEBUGGING APPROVAL CONTEXT:', {
       paymentId,
       status,
       hasMandanteAccess: !!mandanteAccess,
-      hasContractorAccess: !!contractorAccess,
-      mandanteAccessData: mandanteAccess ? JSON.parse(mandanteAccess) : null,
-      contractorAccessData: contractorAccess ? JSON.parse(contractorAccess) : null,
-      authUser: user ? { id: user.id, email: user.email } : null,
       timestamp: new Date().toISOString()
     });
     
     try {
       setLoading(true);
       
-      // DETERMINAR EL MÉTODO DE ACTUALIZACIÓN SEGÚN EL TIPO DE USUARIO
-      const mandanteAccess = sessionStorage.getItem('mandanteAccess');
-      let useServiceFunction = false;
-      let mandanteEmail = '';
+      // 1. Record individual approval first
+      await recordIndividualApproval(status, notes);
+
+      // 2. If rejection, update payment status immediately
+      if (status === 'Rechazado') {
+        await updatePaymentRecord('Rechazado', notes, 0, 0);
+        return;
+      }
+
+      // 3. For approvals, check if we have enough
+      const projectId = payment?.projectData?.id || payment?.Project;
+      if (!projectId) {
+        throw new Error('No se pudo determinar el proyecto');
+      }
+
+      const config = await getApprovalConfig(projectId);
+      const currentApprovals = await getApprovalCount();
       
-      if (mandanteAccess) {
-        const accessData = JSON.parse(mandanteAccess);
-        // Si es mandante sin user_auth_id (acceso limitado), usar edge function
-        if (accessData.userType === 'mandante' && (accessData.isLimitedAccess || !accessData.hasFullAccess)) {
-          useServiceFunction = true;
-          mandanteEmail = accessData.email;
-          console.log('🔧 Using service function for mandante without user_auth_id');
-        }
-      }
+      console.log('📊 Approval progress:', {
+        currentApprovals,
+        requiredApprovals: config.required_approvals
+      });
 
-      if (useServiceFunction) {
-        // MÉTODO 1: Usar edge function para mandantes sin user_auth_id
-        console.log('📡 Calling update-payment-status-mandante edge function...');
-        const { data: result, error: functionError } = await supabase.functions.invoke(
-          'update-payment-status-mandante',
-          {
-            body: {
-              paymentId,
-              status,
-              notes,
-              mandanteEmail
-            }
-          }
-        );
-
-        if (functionError || !result?.success) {
-          console.error('❌ Error in edge function:', functionError || result?.error);
-          throw new Error(`Error al actualizar el estado del pago: ${functionError?.message || result?.error}`);
-        }
-
-        console.log('✅ Payment status updated via edge function:', result);
+      // 4. Update payment with progress
+      if (currentApprovals >= config.required_approvals) {
+        // All approvals received - mark as fully approved
+        await updatePaymentRecord('Aprobado', notes, currentApprovals, config.required_approvals);
       } else {
-        // MÉTODO 2: Usar cliente directo para usuarios autenticados
-        console.log('💾 Attempting to update payment status via direct client...');
-        const { error } = await supabase
-          .from('Estados de pago')
-          .update({ 
-            Status: status,
-            Notes: notes || null
-          })
-          .eq('id', parseInt(paymentId));
-
-        if (error) {
-          console.error('❌ Error updating payment status:', error);
-          throw new Error(`Error al actualizar el estado del pago: ${error.message}`);
-        }
-
-        console.log(`✅ Payment status updated to ${status} successfully via direct client`);
+        // Partial approval - keep as "En Revisión" or similar
+        await updatePaymentRecord('En Revisión', `${currentApprovals}/${config.required_approvals} aprobaciones`, currentApprovals, config.required_approvals);
       }
+
     } finally {
       setLoading(false);
     }
   };
 
-  const sendContractorNotification = async (paymentData: any, status: 'Aprobado' | 'Rechazado', rejectionReason?: string) => {
-    console.log('📤 Starting contractor notification process...', {
-      paymentId,
-      status,
-      rejectionReason,
-      hasProjectData: !!paymentData.projectData,
-      hasContractor: !!paymentData.projectData?.Contratista
-    });
+  const updatePaymentRecord = async (
+    status: string,
+    notes: string,
+    approvalProgress: number,
+    totalRequired: number
+  ) => {
+    const mandanteAccess = sessionStorage.getItem('mandanteAccess');
+    let useServiceFunction = false;
+    let mandanteEmail = '';
+    
+    if (mandanteAccess) {
+      const accessData = JSON.parse(mandanteAccess);
+      if (accessData.userType === 'mandante' && (accessData.isLimitedAccess || !accessData.hasFullAccess)) {
+        useServiceFunction = true;
+        mandanteEmail = accessData.email;
+      }
+    }
 
-    // Validar que existe el email del contratista usando los datos ya disponibles
+    if (useServiceFunction) {
+      const { data: result, error: functionError } = await supabase.functions.invoke(
+        'update-payment-status-mandante',
+        {
+          body: {
+            paymentId,
+            status,
+            notes,
+            mandanteEmail,
+            approvalProgress,
+            totalRequired
+          }
+        }
+      );
+
+      if (functionError || !result?.success) {
+        throw new Error(`Error al actualizar: ${functionError?.message || result?.error}`);
+      }
+    } else {
+      const { error } = await supabase
+        .from('Estados de pago')
+        .update({ 
+          Status: status,
+          Notes: notes || null,
+          approval_progress: approvalProgress,
+          total_approvals_required: totalRequired
+        })
+        .eq('id', parseInt(paymentId));
+
+      if (error) {
+        throw new Error(`Error al actualizar: ${error.message}`);
+      }
+    }
+  };
+
+  const sendContractorNotification = async (paymentData: any, status: 'Aprobado' | 'Rechazado', rejectionReason?: string) => {
     const contractorEmail = paymentData.projectData?.Contratista?.ContactEmail;
-    console.log('📧 Contractor email validation:', {
-      found: !!contractorEmail,
-      email: contractorEmail,
-      contractorData: paymentData.projectData?.Contratista
-    });
 
     if (!contractorEmail) {
-      console.error('❌ No contractor email found in provided payment data');
-      console.log('🔍 Available contractor data:', paymentData.projectData?.Contratista);
-      throw new Error('No se encontró email del contratista en los datos del pago');
+      throw new Error('No se encontró email del contratista');
     }
 
     const contractorNotificationData = {
@@ -132,82 +213,57 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
       rejectionReason: rejectionReason || '',
       platformUrl: `https://gloster-project-hub.lovable.app/contractor-access/${paymentId}`,
     };
-
-    console.log('📤 Invoking send-contractor-notification with data:', contractorNotificationData);
     
-    try {
-      const { data: result, error } = await supabase.functions.invoke('send-contractor-notification', {
-        body: contractorNotificationData,
-      });
+    const { data: result, error } = await supabase.functions.invoke('send-contractor-notification', {
+      body: contractorNotificationData,
+    });
 
-      console.log('📡 Edge function response:', { result, error });
-
-      if (error) {
-        console.error('❌ Error calling send-contractor-notification:', error);
-        throw new Error(`Error en edge function: ${error.message}`);
-      }
-
-      if (!result || !result.success) {
-        console.error('❌ Edge function returned unsuccessful result:', result);
-        throw new Error(result?.error || 'La función de notificación no fue exitosa');
-      }
-
-      console.log('✅ Contractor notification sent successfully:', result);
-      return { success: true, messageId: result.messageId };
-    } catch (error) {
-      console.error('❌ Error in sendContractorNotification:', error);
-      throw error;
+    if (error || !result?.success) {
+      throw new Error(result?.error || 'La función de notificación no fue exitosa');
     }
+
+    return { success: true, messageId: result.messageId };
   };
 
   const handleApprove = async () => {
-    console.log('🟢 handleApprove called with paymentId:', paymentId);
-    
-    if (loading) {
-      console.log('⏳ Already processing, skipping...');
-      return;
-    }
-
-    if (!payment || !payment.projectData) {
-      console.error('❌ No payment data available for approval');
-      toast({
-        title: "Error",
-        description: "No se pueden cargar los datos del estado de pago",
-        variant: "destructive"
-      });
+    if (loading || !payment?.projectData) {
+      if (!payment?.projectData) {
+        toast({
+          title: "Error",
+          description: "No se pueden cargar los datos del estado de pago",
+          variant: "destructive"
+        });
+      }
       return;
     }
     
     setLoading(true);
     
     try {
-      console.log('🟢 Starting approval process for payment:', paymentId);
-      console.log('🟢 Using payment data:', payment.projectData?.Contratista);
-
-      // 1. Update payment status FIRST
-      const approvalNotes = `Aprobado el ${new Date().toLocaleString('es-CL')}`;
-      console.log('🔄 About to call updatePaymentStatus...');
+      const approvalNotes = `Aprobado el ${new Date().toLocaleString('es-CL')} por ${getCurrentUserEmail()}`;
       await updatePaymentStatus('Aprobado', approvalNotes);
-      console.log('✅ updatePaymentStatus completed');
 
-      // 2. Send notification using existing payment data (no additional query needed)
-      console.log('📤 About to send contractor notification...');
-      await sendContractorNotification(payment, 'Aprobado');
-      console.log('✅ sendContractorNotification completed');
+      // Check if fully approved to send notification
+      const projectId = payment?.projectData?.id;
+      const config = await getApprovalConfig(projectId);
+      const currentApprovals = await getApprovalCount();
 
-      toast({
-        title: "Estado de pago aprobado",
-        description: "El estado de pago ha sido aprobado exitosamente y se ha notificado al contratista.",
-      });
+      if (currentApprovals >= config.required_approvals) {
+        await sendContractorNotification(payment, 'Aprobado');
+        toast({
+          title: "Estado de pago aprobado",
+          description: "El estado de pago ha sido aprobado completamente y se ha notificado al contratista.",
+        });
+      } else {
+        toast({
+          title: "Aprobación registrada",
+          description: `Tu aprobación ha sido registrada. ${currentApprovals}/${config.required_approvals} aprobaciones completadas.`,
+        });
+      }
 
-      // 3. Update UI immediately
-      console.log('🔄 Calling onStatusChange...');
       onStatusChange?.();
-      
-      console.log('✅ Approval process completed successfully');
 
-    } catch (error) {
-      console.error('❌ Error in approval process:', error);
+    } catch (error: any) {
       toast({
         title: "Error en el proceso",
         description: error.message || "Hubo un problema en el proceso de aprobación.",
@@ -219,8 +275,6 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
   };
 
   const handleReject = async (rejectionReason: string) => {
-    console.log('🔴 handleReject called with:', { paymentId, rejectionReason });
-    
     if (!rejectionReason.trim()) {
       toast({
         title: "Motivo requerido",
@@ -230,30 +284,22 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
       return;
     }
 
-    if (loading) {
-      console.log('⏳ Already processing, skipping...');
-      return;
-    }
-
-    if (!payment || !payment.projectData) {
-      console.error('❌ No payment data available for rejection');
-      toast({
-        title: "Error",
-        description: "No se pueden cargar los datos del estado de pago",
-        variant: "destructive"
-      });
+    if (loading || !payment?.projectData) {
+      if (!payment?.projectData) {
+        toast({
+          title: "Error",
+          description: "No se pueden cargar los datos del estado de pago",
+          variant: "destructive"
+        });
+      }
       return;
     }
 
     setLoading(true);
     try {
-      console.log('🔴 Starting rejection process for payment:', paymentId);
-
-      // 1. Update payment status with rejection notes
-      const rejectionNotes = `Rechazado el ${new Date().toLocaleString('es-CL')}: ${rejectionReason}`;
+      const rejectionNotes = `Rechazado el ${new Date().toLocaleString('es-CL')} por ${getCurrentUserEmail()}: ${rejectionReason}`;
       await updatePaymentStatus('Rechazado', rejectionNotes);
 
-      // 2. Send rejection notification using existing payment data
       await sendContractorNotification(payment, 'Rechazado', rejectionReason);
 
       toast({
@@ -261,13 +307,9 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
         description: "El estado de pago ha sido rechazado y se ha notificado al contratista.",
       });
 
-      // 3. Update UI immediately
       onStatusChange?.();
-      
-      console.log('✅ Rejection process completed successfully');
 
-    } catch (error) {
-      console.error('❌ Error in rejection process:', error);
+    } catch (error: any) {
       toast({
         title: "Error en el proceso",
         description: error.message || "Hubo un problema en el proceso de rechazo.",
@@ -284,3 +326,4 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
     handleReject
   };
 };
+

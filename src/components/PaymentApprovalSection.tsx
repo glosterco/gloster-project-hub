@@ -1,10 +1,13 @@
 
 import React, { useState } from 'react';
 import { usePaymentApproval } from '@/hooks/usePaymentApproval';
+import { usePaymentApprovalStatus } from '@/hooks/usePaymentApprovalStatus';
 import { useGoogleDriveIntegration } from '@/hooks/useGoogleDriveIntegration';
 import PaymentInfoHeader from '@/components/approval/PaymentInfoHeader';
 import ApprovalButtons from '@/components/approval/ApprovalButtons';
 import RejectionForm from '@/components/approval/RejectionForm';
+import { ApprovalProgressBar } from '@/components/approval/ApprovalProgressBar';
+import { ApprovalsList } from '@/components/approval/ApprovalsList';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Upload, X, FileText, CheckCircle } from 'lucide-react';
@@ -37,18 +40,36 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
   const { toast } = useToast();
   const { uploadDocumentsToDrive } = useGoogleDriveIntegration();
   
-  console.log('🏗️ PaymentApprovalSection rendering with:', { paymentId, hasPaymentData: !!payment });
+  // Get current user email from session
+  const mandanteAccess = sessionStorage.getItem('mandanteAccess');
+  const currentUserEmail = mandanteAccess ? JSON.parse(mandanteAccess).email : undefined;
+  
+  // Fetch approval status
+  const { status: approvalStatus, refetch: refetchApprovalStatus } = usePaymentApprovalStatus(
+    paymentId ? parseInt(paymentId) : null,
+    currentUserEmail
+  );
+  
+  console.log('🏗️ PaymentApprovalSection rendering with:', { paymentId, hasPaymentData: !!payment, approvalStatus });
   
   const { loading, handleApprove, handleReject } = usePaymentApproval({
     paymentId,
-    payment, // Pasar los datos del payment
-    onStatusChange
+    payment,
+    onStatusChange: () => {
+      refetchApprovalStatus();
+      onStatusChange?.();
+    }
   });
 
   // Verificar si el pago ya fue procesado
   const isProcessed = payment?.Status === 'Aprobado' || payment?.Status === 'Rechazado';
+  const isInReview = payment?.Status === 'En Revisión';
   const currentStatus = payment?.Status;
   const statusNotes = payment?.Notes;
+  
+  // Check if current user can approve (hasn't approved yet and is in approvers list)
+  const canUserApprove = approvalStatus?.canUserApprove ?? true;
+  const hasUserApproved = approvalStatus?.currentUserApproval?.approval_status === 'Aprobado';
 
   const onApprove = () => {
     console.log('✅ PaymentApprovalSection onApprove clicked - showing file upload');
@@ -185,6 +206,23 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
         formattedAmount={paymentState.formattedAmount || ''}
       />
 
+      {/* Approval Progress - Show when there are multiple approvers */}
+      {approvalStatus && approvalStatus.totalRequired > 1 && (
+        <div className="mb-6 space-y-4">
+          <ApprovalProgressBar
+            totalRequired={approvalStatus.totalRequired}
+            totalApproved={approvalStatus.totalApproved}
+            totalRejected={approvalStatus.totalRejected}
+            isFullyApproved={approvalStatus.isFullyApproved}
+            hasRejection={approvalStatus.hasRejection}
+          />
+          <ApprovalsList
+            approvals={approvalStatus.approvals}
+            pendingApprovers={approvalStatus.pendingApprovers}
+          />
+        </div>
+      )}
+
       {isProcessed ? (
         <div className="space-y-4">
           <div className={`p-4 rounded-lg border-l-4 ${
@@ -219,12 +257,29 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
         </div>
       ) : (
         <>
+          {/* Show message if user already approved but payment needs more approvals */}
+          {hasUserApproved && !isProcessed && (
+            <div className="mb-4 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-lg">
+              <p className="text-blue-800 text-sm">
+                Ya has registrado tu aprobación. Esperando aprobaciones adicionales.
+              </p>
+            </div>
+          )}
+          
           {!showRejectionForm && !showApprovalForm ? (
-            <ApprovalButtons
-              loading={loading}
-              onApprove={onApprove}
-              onReject={onReject}
-            />
+            canUserApprove ? (
+              <ApprovalButtons
+                loading={loading}
+                onApprove={onApprove}
+                onReject={onReject}
+              />
+            ) : !hasUserApproved ? (
+              <div className="p-4 bg-muted/50 rounded-lg text-center">
+                <p className="text-muted-foreground">
+                  No tienes permisos para aprobar este estado de pago.
+                </p>
+              </div>
+            ) : null
           ) : showRejectionForm ? (
             <RejectionForm
               loading={loading}

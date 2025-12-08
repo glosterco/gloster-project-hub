@@ -112,8 +112,9 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
         });
       }
       
-      // Force immediate UI update by updating local state
-      payment.Status = 'Aprobado';
+      // Refresh approval status to get updated state
+      await refetchApprovalStatus();
+      
       setShowApprovalForm(false);
       setMandanteFiles([]);
       setUploadedFileNames([]);
@@ -183,10 +184,9 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
     console.log('❌ PaymentApprovalSection onConfirmReject clicked with reason:', rejectionReason);
     try {
       await handleReject(rejectionReason);
+      await refetchApprovalStatus();
       setShowRejectionForm(false);
       setRejectionReason('');
-      // Force immediate UI update by updating local state
-      payment.Status = 'Rechazado';
     } catch (error) {
       console.error('❌ Error in onConfirmReject:', error);
     }

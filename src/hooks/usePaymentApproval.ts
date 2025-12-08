@@ -243,12 +243,15 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
       const approvalNotes = `Aprobado el ${new Date().toLocaleString('es-CL')} por ${getCurrentUserEmail()}`;
       await updatePaymentStatus('Aprobado', approvalNotes);
 
-      // Check if fully approved to send notification
+      // Re-fetch approval count after recording to get accurate numbers
       const projectId = payment?.projectData?.id;
       const config = await getApprovalConfig(projectId);
       const currentApprovals = await getApprovalCount();
+      
+      console.log('📊 Final approval check:', { currentApprovals, required: config.required_approvals });
 
       if (currentApprovals >= config.required_approvals) {
+        // Fully approved - send notification to contractor
         await sendContractorNotification(payment, 'Aprobado');
         toast({
           title: "Estado de pago aprobado",

@@ -318,7 +318,8 @@ const createEmailHtml = (data: NotificationRequest & { projectBudget?: number; a
 
 
 const isValidEmail = (email: string): boolean => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  // More strict validation - TLD must be at least 2 characters
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
   return emailRegex.test(email);
 };
 

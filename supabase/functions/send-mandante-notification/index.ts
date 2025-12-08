@@ -115,12 +115,19 @@ const formatCurrency = (amount: number, currency?: string, projectBudget?: numbe
 };
 
 
-const createEmailHtml = (data: NotificationRequest & { projectBudget?: number }): string => {
+const createEmailHtml = (data: NotificationRequest & { projectBudget?: number; approverName?: string; totalApprovers?: number }): string => {
   const accessInstructions = `
           <div class="important-note">
             <strong>Nota Importante:</strong> Este enlace le dará acceso directo y seguro al estado de pago donde podrá revisar toda la documentación adjunta y proceder con la aprobación o solicitar modificaciones según corresponda.
           </div>
   `;
+
+  // Add multi-approver info if applicable
+  const multiApproverInfo = data.totalApprovers && data.totalApprovers > 1 ? `
+          <div class="multi-approver-info" style="background: #e0f2fe; border: 1px solid #0ea5e9; padding: 12px; border-radius: 4px; margin: 15px 0; font-size: 14px;">
+            <strong>Proceso de Aprobación:</strong> Este estado de pago requiere la aprobación de ${data.totalApprovers} personas. Su aprobación será registrada individualmente.
+          </div>
+  ` : '';
 
   return `
     <!DOCTYPE html>
@@ -254,10 +261,12 @@ const createEmailHtml = (data: NotificationRequest & { projectBudget?: number })
         
         <div class="content">
           <div class="greeting">
-            Estimado equipo de <strong>${data.mandanteCompany}</strong>,
+            ${data.approverName ? `Estimado/a <strong>${data.approverName}</strong>,` : `Estimado equipo de <strong>${data.mandanteCompany}</strong>,`}
           </div>
           
           <p>Se ha registrado un nuevo estado de pago que requiere su revisión y aprobación. A continuación se detallan los datos correspondientes:</p>
+          
+          ${multiApproverInfo}
           
           <div class="highlight-box">
             <h3 class="section-title">Información del Estado de Pago</h3>
@@ -320,7 +329,7 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const data: NotificationRequest = await req.json();
-    console.log("📧 Sending mandante notification with data:", JSON.stringify({...data, accessUrl: data.accessUrl ? data.accessUrl.replace(/https:\/\/.*?(?=\/email-access)/, 'https://gloster-project-hub.lovable.app') : data.accessUrl}, null, 2));
+    console.log("📧 Sending mandante notification with data:", JSON.stringify({...data, accessUrl: data.accessUrl ? '***hidden***' : undefined}, null, 2));
 
     // Validar que tenemos los datos mínimos necesarios
     if (!data.paymentId) {
@@ -346,40 +355,104 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("💰 Validated amount:", validAmount);
 
-    // Get CC email and project budget from database for this payment
-    let ccEmail = null;
-    let projectBudget = null;
+    // Get project data, CC email, budget, and approvers list
+    let ccEmail: string | null = null;
+    let projectBudget: number | null = null;
+    let approvers: Array<{ email: string; name: string | null }> = [];
+    let projectId: number | null = null;
+
     try {
+      // First get the project ID from the payment
       const { data: paymentData, error: paymentError } = await supabase
         .from('Estados de pago')
-        .select(`
-          Project (
-            Budget,
-            Owner (
-              CC
-            )
-          )
-        `)
+        .select('Project')
         .eq('id', data.paymentId)
         .single();
       
-      if (!paymentError && paymentData?.Project) {
-        if (paymentData.Project.Owner?.CC) {
-          ccEmail = paymentData.Project.Owner.CC;
-          console.log('📧 Found CC email for mandante:', ccEmail);
-        }
-        projectBudget = paymentData.Project.Budget;
-        console.log('💰 Found project budget:', projectBudget);
+      if (paymentError) {
+        console.error('❌ Error fetching payment:', paymentError);
+        throw paymentError;
       }
-    } catch (ccError) {
-      console.log('⚠️ Could not retrieve CC email or project budget:', ccError);
-      // Continue without CC, don't fail the main notification
+      
+      projectId = paymentData?.Project;
+      console.log('📋 Found project ID:', projectId);
+
+      if (projectId) {
+        // Get project details including budget
+        const { data: projectData, error: projectError } = await supabase
+          .from('Proyectos')
+          .select('Budget, Owner')
+          .eq('id', projectId)
+          .single();
+        
+        if (!projectError && projectData) {
+          projectBudget = projectData.Budget;
+          console.log('💰 Found project budget:', projectBudget);
+
+          // Get mandante CC email
+          if (projectData.Owner) {
+            const { data: mandanteData, error: mandanteError } = await supabase
+              .from('Mandantes')
+              .select('CC')
+              .eq('id', projectData.Owner)
+              .single();
+            
+            if (!mandanteError && mandanteData?.CC) {
+              ccEmail = mandanteData.CC;
+              console.log('📧 Found CC email:', ccEmail);
+            }
+          }
+        }
+
+        // Get approvers from project_approval_config and project_approvers
+        const { data: configData, error: configError } = await supabase
+          .from('project_approval_config')
+          .select('id, required_approvals')
+          .eq('project_id', projectId)
+          .single();
+
+        if (!configError && configData) {
+          console.log('📋 Found approval config:', configData);
+          
+          const { data: approversData, error: approversError } = await supabase
+            .from('project_approvers')
+            .select('approver_email, approver_name, approval_order')
+            .eq('config_id', configData.id)
+            .order('approval_order', { ascending: true });
+
+          if (!approversError && approversData) {
+            approvers = approversData.map(a => ({ email: a.approver_email, name: a.approver_name }));
+            console.log('👥 Found approvers:', approvers.length);
+          }
+        }
+      }
+    } catch (dbError) {
+      console.warn('⚠️ Error fetching project data:', dbError);
+      // Continue without extra data, don't fail the main notification
     }
 
     const accessToken = await getAccessToken();
     const fromEmail = Deno.env.get("GMAIL_FROM_EMAIL");
 
-    // Crear el objeto de datos con valores por defecto seguros
+    // Build recipients list - include mandante email plus all approvers
+    const allRecipients = new Set<string>();
+    allRecipients.add(data.mandanteEmail);
+    
+    // Add all approvers to recipients
+    approvers.forEach(approver => {
+      if (approver.email && isValidEmail(approver.email)) {
+        allRecipients.add(approver.email.toLowerCase());
+      }
+    });
+
+    // Add CC if valid
+    if (ccEmail && isValidEmail(ccEmail)) {
+      allRecipients.add(ccEmail);
+    }
+
+    console.log('📧 All recipients:', Array.from(allRecipients));
+
+    // Create email data with default values
     const emailData = {
       ...data,
       amount: validAmount,
@@ -390,18 +463,14 @@ const handler = async (req: Request): Promise<Response> => {
       mandanteCompany: data.mandanteCompany || 'Empresa no especificada',
       dueDate: data.dueDate || 'Fecha no especificada',
       currency: data.currency || 'CLP',
-      projectBudget: projectBudget
+      projectBudget: projectBudget,
+      totalApprovers: approvers.length > 0 ? approvers.length : undefined
     };
 
     const emailHtml = createEmailHtml(emailData);
     const subject = `Estado de Pago ${emailData.mes} ${emailData.año} - ${emailData.proyecto}`;
     
-    // Prepare email recipients
-    let recipients = data.mandanteEmail;
-    if (ccEmail && isValidEmail(ccEmail)) {
-      recipients = `${data.mandanteEmail}, ${ccEmail}`;
-      console.log('📧 Adding CC recipient:', ccEmail);
-    }
+    const recipients = Array.from(allRecipients).join(', ');
 
     const emailPayload = {
       raw: encodeBase64UTF8(
@@ -438,10 +507,31 @@ ${emailHtml}`
     }
 
     const result = await response.json();
-    console.log("✅ Email sent successfully:", result);
+    console.log("✅ Email sent successfully to", allRecipients.size, "recipients:", result);
+
+    // Reset approval records for this payment (clear any previous approvals when re-sending)
+    try {
+      await supabase
+        .from('payment_approvals')
+        .delete()
+        .eq('payment_id', parseInt(data.paymentId));
+      
+      // Reset approval progress on the payment
+      await supabase
+        .from('Estados de pago')
+        .update({ 
+          approval_progress: 0,
+          total_approvals_required: approvers.length > 0 ? approvers.length : 1
+        })
+        .eq('id', parseInt(data.paymentId));
+      
+      console.log('🔄 Reset approval records for payment:', data.paymentId);
+    } catch (resetError) {
+      console.warn('⚠️ Could not reset approval records:', resetError);
+    }
 
     return new Response(
-      JSON.stringify({ success: true, messageId: result.id }),
+      JSON.stringify({ success: true, messageId: result.id, recipientCount: allRecipients.size }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,

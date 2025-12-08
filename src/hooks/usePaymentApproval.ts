@@ -54,7 +54,7 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
   const recordIndividualApproval = async (
     status: 'Aprobado' | 'Rechazado',
     notes: string
-  ) => {
+  ): Promise<number> => {
     const userEmail = getCurrentUserEmail();
     if (!userEmail) {
       throw new Error('No se pudo determinar el email del usuario');
@@ -62,80 +62,108 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
 
     const mandanteAccess = sessionStorage.getItem('mandanteAccess');
     const userName = mandanteAccess ? JSON.parse(mandanteAccess).name || userEmail : userEmail;
+    const normalizedEmail = userEmail.toLowerCase().trim();
 
-    // Upsert: update if exists, insert if not
-    const { error } = await supabase
+    console.log('📝 Recording individual approval:', { paymentId, status, email: normalizedEmail });
+
+    // First check if this user already has an approval
+    const { data: existing } = await supabase
       .from('payment_approvals')
-      .upsert({
-        payment_id: parseInt(paymentId),
-        approver_email: userEmail.toLowerCase().trim(),
-        approver_name: userName,
-        approval_status: status,
-        notes: notes || null,
-        approved_at: status === 'Aprobado' ? new Date().toISOString() : null
-      }, {
-        onConflict: 'payment_id,approver_email'
-      });
+      .select('id, approval_status')
+      .eq('payment_id', parseInt(paymentId))
+      .eq('approver_email', normalizedEmail)
+      .maybeSingle();
 
-    if (error) {
-      console.error('Error recording individual approval:', error);
-      throw error;
+    if (existing) {
+      // Update existing
+      const { error } = await supabase
+        .from('payment_approvals')
+        .update({
+          approval_status: status,
+          approver_name: userName,
+          notes: notes || null,
+          approved_at: status === 'Aprobado' ? new Date().toISOString() : null
+        })
+        .eq('id', existing.id);
+
+      if (error) {
+        console.error('Error updating approval:', error);
+        throw error;
+      }
+      console.log(`✅ Updated existing approval to ${status} for ${normalizedEmail}`);
+    } else {
+      // Insert new
+      const { error } = await supabase
+        .from('payment_approvals')
+        .insert({
+          payment_id: parseInt(paymentId),
+          approver_email: normalizedEmail,
+          approver_name: userName,
+          approval_status: status,
+          notes: notes || null,
+          approved_at: status === 'Aprobado' ? new Date().toISOString() : null
+        });
+
+      if (error) {
+        console.error('Error inserting approval:', error);
+        throw error;
+      }
+      console.log(`✅ Inserted new ${status} for ${normalizedEmail}`);
     }
 
-    console.log(`✅ Individual ${status} recorded for ${userEmail}`);
+    // Get current approval count AFTER the insert/update
+    const { data: approvals, error: countError } = await supabase
+      .from('payment_approvals')
+      .select('id')
+      .eq('payment_id', parseInt(paymentId))
+      .eq('approval_status', 'Aprobado');
+
+    if (countError) {
+      console.error('Error counting approvals:', countError);
+      return 1;
+    }
+
+    const count = approvals?.length || 0;
+    console.log(`📊 Current approval count after recording: ${count}`);
+    return count;
   };
 
-  const updatePaymentStatus = async (status: 'Aprobado' | 'Rechazado', notes: string) => {
+  const updatePaymentStatus = async (status: 'Aprobado' | 'Rechazado', notes: string): Promise<{ currentApprovals: number; requiredApprovals: number }> => {
     console.log('🔄 Starting updatePaymentStatus with:', { paymentId, status, notes });
     
-    const mandanteAccess = sessionStorage.getItem('mandanteAccess');
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    console.log('🔍 DEBUGGING APPROVAL CONTEXT:', {
-      paymentId,
-      status,
-      hasMandanteAccess: !!mandanteAccess,
-      timestamp: new Date().toISOString()
-    });
-    
-    try {
-      setLoading(true);
-      
-      // 1. Record individual approval first
-      await recordIndividualApproval(status, notes);
-
-      // 2. If rejection, update payment status immediately
-      if (status === 'Rechazado') {
-        await updatePaymentRecord('Rechazado', notes, 0, 0);
-        return;
-      }
-
-      // 3. For approvals, check if we have enough
-      const projectId = payment?.projectData?.id || payment?.Project;
-      if (!projectId) {
-        throw new Error('No se pudo determinar el proyecto');
-      }
-
-      const config = await getApprovalConfig(projectId);
-      const currentApprovals = await getApprovalCount();
-      
-      console.log('📊 Approval progress:', {
-        currentApprovals,
-        requiredApprovals: config.required_approvals
-      });
-
-      // 4. Update payment with progress
-      if (currentApprovals >= config.required_approvals) {
-        // All approvals received - mark as fully approved
-        await updatePaymentRecord('Aprobado', notes, currentApprovals, config.required_approvals);
-      } else {
-        // Partial approval - keep as "En Revisión" or similar
-        await updatePaymentRecord('En Revisión', `${currentApprovals}/${config.required_approvals} aprobaciones`, currentApprovals, config.required_approvals);
-      }
-
-    } finally {
-      setLoading(false);
+    // 1. Get project config first
+    const projectId = payment?.projectData?.id || payment?.Project;
+    if (!projectId) {
+      throw new Error('No se pudo determinar el proyecto');
     }
+
+    const config = await getApprovalConfig(projectId);
+    const requiredApprovals = config.required_approvals;
+    
+    console.log('📋 Approval config:', { requiredApprovals, orderMatters: config.approval_order_matters });
+
+    // 2. Record individual approval and get current count
+    const currentApprovals = await recordIndividualApproval(status, notes);
+
+    console.log('📊 Approval progress after recording:', { currentApprovals, requiredApprovals });
+
+    // 3. If rejection, update payment status immediately
+    if (status === 'Rechazado') {
+      await updatePaymentRecord('Rechazado', notes, 0, requiredApprovals);
+      return { currentApprovals: 0, requiredApprovals };
+    }
+
+    // 4. Update payment based on progress
+    if (currentApprovals >= requiredApprovals) {
+      // All approvals received - mark as fully approved
+      await updatePaymentRecord('Aprobado', notes, currentApprovals, requiredApprovals);
+    } else {
+      // Partial approval - keep as "En Revisión"
+      const progressNotes = `${currentApprovals}/${requiredApprovals} aprobaciones completadas`;
+      await updatePaymentRecord('En Revisión', progressNotes, currentApprovals, requiredApprovals);
+    }
+
+    return { currentApprovals, requiredApprovals };
   };
 
   const updatePaymentRecord = async (
@@ -241,16 +269,11 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
     
     try {
       const approvalNotes = `Aprobado el ${new Date().toLocaleString('es-CL')} por ${getCurrentUserEmail()}`;
-      await updatePaymentStatus('Aprobado', approvalNotes);
+      const { currentApprovals, requiredApprovals } = await updatePaymentStatus('Aprobado', approvalNotes);
 
-      // Re-fetch approval count after recording to get accurate numbers
-      const projectId = payment?.projectData?.id;
-      const config = await getApprovalConfig(projectId);
-      const currentApprovals = await getApprovalCount();
-      
-      console.log('📊 Final approval check:', { currentApprovals, required: config.required_approvals });
+      console.log('📊 Final approval result:', { currentApprovals, requiredApprovals });
 
-      if (currentApprovals >= config.required_approvals) {
+      if (currentApprovals >= requiredApprovals) {
         // Fully approved - send notification to contractor
         await sendContractorNotification(payment, 'Aprobado');
         toast({
@@ -260,7 +283,7 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
       } else {
         toast({
           title: "Aprobación registrada",
-          description: `Tu aprobación ha sido registrada. ${currentApprovals}/${config.required_approvals} aprobaciones completadas.`,
+          description: `Tu aprobación ha sido registrada. ${currentApprovals}/${requiredApprovals} aprobaciones completadas.`,
         });
       }
 

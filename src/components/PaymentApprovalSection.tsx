@@ -61,9 +61,9 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
     }
   });
 
-  // Verificar si el pago ya fue procesado
+  // Verificar si el pago ya fue procesado (solo Aprobado o Rechazado son finales)
   const isProcessed = payment?.Status === 'Aprobado' || payment?.Status === 'Rechazado';
-  const isInReview = payment?.Status === 'En Revisión';
+  const isInReview = payment?.Status === 'En Revisión' || payment?.Status === 'Enviado';
   const currentStatus = payment?.Status;
   const statusNotes = payment?.Notes;
   
@@ -206,8 +206,8 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
         formattedAmount={paymentState.formattedAmount || ''}
       />
 
-      {/* Approval Progress - Show when there are multiple approvers */}
-      {approvalStatus && approvalStatus.totalRequired > 1 && (
+      {/* Approval Progress - Always show when there's approval config */}
+      {approvalStatus && (
         <div className="mb-6 space-y-4">
           <ApprovalProgressBar
             totalRequired={approvalStatus.totalRequired}
@@ -262,6 +262,17 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
             <div className="mb-4 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-lg">
               <p className="text-blue-800 text-sm">
                 Ya has registrado tu aprobación. Esperando aprobaciones adicionales.
+              </p>
+            </div>
+          )}
+          
+          {/* Show message if it's not user's turn (order matters) */}
+          {!hasUserApproved && approvalStatus?.canUserApprove === false && approvalStatus?.pendingApprovers?.some(
+            p => p.email.toLowerCase() === currentUserEmail?.toLowerCase()
+          ) && (
+            <div className="mb-4 p-4 bg-amber-50 border-l-4 border-amber-500 rounded-lg">
+              <p className="text-amber-800 text-sm">
+                Aún no es tu turno de aprobar. Se requiere aprobación previa de otros usuarios.
               </p>
             </div>
           )}

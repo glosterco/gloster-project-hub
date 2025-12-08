@@ -85,12 +85,32 @@ export const usePaymentApprovalStatus = (paymentId: number | null, currentUserEm
         ? typedApprovals.find(a => a.approver_email.toLowerCase() === currentUserEmail.toLowerCase()) || null
         : null;
 
-      // Determine if user can approve
+      // Determine if user can approve (check order if it matters)
       const isApprover = currentUserEmail && approvers?.some(
         a => a.approver_email.toLowerCase() === currentUserEmail.toLowerCase()
       );
       const hasNotApprovedYet = !currentUserApproval || currentUserApproval.approval_status === 'Pendiente';
-      const canUserApprove = !!(isApprover && hasNotApprovedYet);
+      
+      // Check if order matters and if it's this user's turn
+      let isUsersTurn = true;
+      if (config?.approval_order_matters && approvers && currentUserEmail) {
+        const userApprover = approvers.find(
+          a => a.approver_email.toLowerCase() === currentUserEmail.toLowerCase()
+        );
+        if (userApprover) {
+          // Check if all previous approvers (lower order) have approved
+          const previousApprovers = approvers.filter(a => a.approval_order < userApprover.approval_order);
+          const previousApproverEmails = previousApprovers.map(a => a.approver_email.toLowerCase());
+          const allPreviousApproved = previousApproverEmails.every(email =>
+            typedApprovals.some(a => 
+              a.approver_email.toLowerCase() === email && a.approval_status === 'Aprobado'
+            )
+          );
+          isUsersTurn = allPreviousApproved;
+        }
+      }
+      
+      const canUserApprove = !!(isApprover && hasNotApprovedYet && isUsersTurn);
 
       // Find pending approvers
       const approvedEmails = typedApprovals

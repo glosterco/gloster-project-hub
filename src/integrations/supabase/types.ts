@@ -872,6 +872,7 @@ export type Database = {
           approval_order: number
           approver_email: string
           approver_name: string | null
+          Area: string | null
           config_id: string
           created_at: string
           id: string
@@ -880,6 +881,7 @@ export type Database = {
           approval_order?: number
           approver_email: string
           approver_name?: string | null
+          Area?: string | null
           config_id: string
           created_at?: string
           id?: string
@@ -888,6 +890,7 @@ export type Database = {
           approval_order?: number
           approver_email?: string
           approver_name?: string | null
+          Area?: string | null
           config_id?: string
           created_at?: string
           id?: string

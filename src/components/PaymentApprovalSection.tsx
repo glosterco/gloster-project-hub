@@ -15,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 
 interface PaymentApprovalSectionProps {
   paymentId: string;
-  payment?: any; // Agregar payment data para pasarlo al hook
+  payment?: any;
   paymentState: {
     month: string;
     amount: number;
@@ -36,6 +36,8 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
   const [showApprovalForm, setShowApprovalForm] = useState(false);
   const [mandanteFiles, setMandanteFiles] = useState<File[]>([]);
   const [uploadedFileNames, setUploadedFileNames] = useState<string[]>([]);
+  const [justApproved, setJustApproved] = useState(false);
+  const [justRejected, setJustRejected] = useState(false);
   
   const { toast } = useToast();
   const { uploadDocumentsToDrive } = useGoogleDriveIntegration();
@@ -50,7 +52,7 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
     currentUserEmail
   );
   
-  console.log('🏗️ PaymentApprovalSection rendering with:', { paymentId, hasPaymentData: !!payment, approvalStatus });
+  console.log('🏗️ PaymentApprovalSection rendering with:', { paymentId, hasPaymentData: !!payment, approvalStatus, justApproved });
   
   const { loading, handleApprove, handleReject } = usePaymentApproval({
     paymentId,
@@ -63,34 +65,24 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
 
   // Verificar si el pago ya fue procesado (solo Aprobado o Rechazado son finales)
   const isProcessed = payment?.Status === 'Aprobado' || payment?.Status === 'Rechazado';
-  const isInReview = payment?.Status === 'En Revisión' || payment?.Status === 'Enviado';
   const currentStatus = payment?.Status;
   const statusNotes = payment?.Notes;
   
-  // Check if current user can approve (hasn't approved yet and is in approvers list)
-  const canUserApprove = approvalStatus?.canUserApprove ?? true;
-  const hasUserApproved = approvalStatus?.currentUserApproval?.approval_status === 'Aprobado';
+  // Check if current user can approve - use local state OR server state
+  const hasUserApproved = justApproved || approvalStatus?.currentUserApproval?.approval_status === 'Aprobado';
+  const hasUserRejected = justRejected || approvalStatus?.currentUserApproval?.approval_status === 'Rechazado';
+  // User can only approve if they haven't already and the server says they can
+  const canUserApprove = !hasUserApproved && !hasUserRejected && (approvalStatus?.canUserApprove ?? false);
 
   const onApprove = () => {
     console.log('✅ PaymentApprovalSection onApprove clicked - showing file upload');
-    console.log('📦 Payment object:', payment);
-    console.log('📦 Payment projectData:', payment?.projectData);
-    console.log('📦 Payment ID:', paymentId);
     setShowApprovalForm(true);
   };
 
   const onConfirmApprove = async () => {
-    console.log('🚀🚀🚀 onConfirmApprove INICIANDO 🚀🚀🚀');
-    console.log('📦 Estado actual:', {
-      paymentId,
-      hasPayment: !!payment,
-      hasProjectData: !!payment?.projectData,
-      loading,
-      currentUserEmail
-    });
+    console.log('🚀 onConfirmApprove INICIANDO');
     
     if (!payment) {
-      console.error('❌ CRÍTICO: payment es null/undefined');
       toast({
         title: "Error",
         description: "No se pudo cargar el estado de pago. Recarga la página.",
@@ -100,8 +92,6 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
     }
     
     if (!payment.projectData) {
-      console.error('❌ CRÍTICO: payment.projectData es null/undefined');
-      console.error('❌ Payment completo:', JSON.stringify(payment, null, 2));
       toast({
         title: "Error",
         description: "No se pudo cargar los datos del proyecto. Recarga la página.",
@@ -111,16 +101,13 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
     }
     
     try {
-      console.log('📤 Llamando handleApprove...');
-      // First approve the payment
       await handleApprove();
-      console.log('✅ handleApprove completado exitosamente');
+      
+      // Mark as approved immediately for UI
+      setJustApproved(true);
       
       // Upload mandante files if any
       if (mandanteFiles.length > 0) {
-        console.log('📤 Uploading mandante files:', mandanteFiles.map(f => f.name));
-        
-        // Prepare files for upload with correct structure
         const uploadedFilesMap: { [key: string]: string[] } = {};
         const fileObjectsMap: { [key: string]: File[] } = {};
         const documentStatusMap: { [key: string]: boolean } = {};
@@ -132,7 +119,6 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
           documentStatusMap[docKey] = true;
         });
         
-        // Upload to Google Drive
         await uploadDocumentsToDrive(
           parseInt(paymentId),
           uploadedFilesMap,
@@ -149,15 +135,12 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
       // Wait for DB to commit, then refresh approval status
       await new Promise(resolve => setTimeout(resolve, 500));
       await refetchApprovalStatus();
-      console.log('🔄 Approval status refetched after approval');
       
       setShowApprovalForm(false);
       setMandanteFiles([]);
       setUploadedFileNames([]);
     } catch (error: any) {
-      console.error('❌❌❌ ERROR en onConfirmApprove:', error);
-      console.error('❌ Error message:', error?.message);
-      console.error('❌ Error stack:', error?.stack);
+      console.error('❌ ERROR en onConfirmApprove:', error);
       toast({
         title: "Error en aprobación",
         description: error?.message || "Error al procesar la aprobación",
@@ -193,7 +176,6 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
       });
     }
 
-    // Clear input
     event.target.value = '';
   };
 
@@ -214,18 +196,15 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
   };
 
   const onReject = () => {
-    console.log('❌ PaymentApprovalSection onReject clicked');
     setShowRejectionForm(true);
   };
 
   const onConfirmReject = async () => {
-    console.log('❌ PaymentApprovalSection onConfirmReject clicked with reason:', rejectionReason);
     try {
       await handleReject(rejectionReason);
-      // Wait for DB to commit, then refresh
+      setJustRejected(true);
       await new Promise(resolve => setTimeout(resolve, 500));
       await refetchApprovalStatus();
-      console.log('🔄 Approval status refetched after rejection');
       setShowRejectionForm(false);
       setRejectionReason('');
     } catch (error) {
@@ -234,7 +213,6 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
   };
 
   const onCancel = () => {
-    console.log('🚫 PaymentApprovalSection onCancel clicked');
     setShowRejectionForm(false);
     setRejectionReason('');
   };
@@ -252,10 +230,10 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
         <div className="mb-6 space-y-4">
           <ApprovalProgressBar
             totalRequired={approvalStatus.totalRequired}
-            totalApproved={approvalStatus.totalApproved}
-            totalRejected={approvalStatus.totalRejected}
+            totalApproved={justApproved ? approvalStatus.totalApproved + 1 : approvalStatus.totalApproved}
+            totalRejected={justRejected ? approvalStatus.totalRejected + 1 : approvalStatus.totalRejected}
             isFullyApproved={approvalStatus.isFullyApproved}
-            hasRejection={approvalStatus.hasRejection}
+            hasRejection={approvalStatus.hasRejection || justRejected}
           />
           <ApprovalsList
             approvals={approvalStatus.approvals}
@@ -299,16 +277,34 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
       ) : (
         <>
           {/* Show message if user already approved but payment needs more approvals */}
-          {hasUserApproved && !isProcessed && (
-            <div className="mb-4 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-lg">
-              <p className="text-blue-800 text-sm">
-                Ya has registrado tu aprobación. Esperando aprobaciones adicionales.
+          {hasUserApproved && (
+            <div className="mb-4 p-4 bg-green-50 border-l-4 border-green-500 rounded-lg">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+                <p className="text-green-800 font-medium">
+                  Has registrado tu aprobación exitosamente
+                </p>
+              </div>
+              <p className="text-green-700 text-sm mt-1">
+                Esperando aprobaciones adicionales de otros responsables.
               </p>
             </div>
           )}
           
+          {/* Show message if user already rejected */}
+          {hasUserRejected && (
+            <div className="mb-4 p-4 bg-red-50 border-l-4 border-red-500 rounded-lg">
+              <div className="flex items-center gap-2">
+                <X className="h-5 w-5 text-red-600" />
+                <p className="text-red-800 font-medium">
+                  Has rechazado este estado de pago
+                </p>
+              </div>
+            </div>
+          )}
+          
           {/* Show message if it's not user's turn (order matters) */}
-          {!hasUserApproved && approvalStatus?.canUserApprove === false && approvalStatus?.pendingApprovers?.some(
+          {!hasUserApproved && !hasUserRejected && approvalStatus?.canUserApprove === false && approvalStatus?.pendingApprovers?.some(
             p => p.email.toLowerCase() === currentUserEmail?.toLowerCase()
           ) && (
             <div className="mb-4 p-4 bg-amber-50 border-l-4 border-amber-500 rounded-lg">
@@ -318,105 +314,107 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
             </div>
           )}
           
-          {!showRejectionForm && !showApprovalForm ? (
-            canUserApprove ? (
-              <ApprovalButtons
-                loading={loading}
-                onApprove={onApprove}
-                onReject={onReject}
-              />
-            ) : !hasUserApproved ? (
-              <div className="p-4 bg-muted/50 rounded-lg text-center">
-                <p className="text-muted-foreground">
-                  No tienes permisos para aprobar este estado de pago.
-                </p>
-              </div>
-            ) : null
-          ) : showRejectionForm ? (
-            <RejectionForm
-              loading={loading}
-              rejectionReason={rejectionReason}
-              onReasonChange={setRejectionReason}
-              onConfirmReject={onConfirmReject}
-              onCancel={onCancel}
-            />
-          ) : (
-            <Card className="border border-primary/20 bg-primary/5">
-              <CardContent className="p-6">
-                <h3 className="font-semibold text-lg mb-4 text-primary">Documentos Adicionales (Opcional)</h3>
-                <p className="text-muted-foreground mb-4">
-                  Puedes cargar documentos adicionales necesarios para la aprobación, como documentos firmados u otros relevantes.
-                </p>
-                
-                {/* Upload Area */}
-                <div className="border-2 border-dashed border-border rounded-lg p-6 mb-4 text-center">
-                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground mb-4">
-                    Arrastra archivos aquí o haz clic para seleccionar
-                  </p>
-                  <input
-                    type="file"
-                    multiple
-                    accept=".pdf,.csv,.xlsx,.xlsm,.docx"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                    id="mandante-file-upload"
+          {/* Only show buttons/forms if user hasn't acted yet */}
+          {!hasUserApproved && !hasUserRejected && (
+            <>
+              {!showRejectionForm && !showApprovalForm ? (
+                canUserApprove ? (
+                  <ApprovalButtons
+                    loading={loading}
+                    onApprove={onApprove}
+                    onReject={onReject}
                   />
-                  <Button
-                    onClick={() => document.getElementById('mandante-file-upload')?.click()}
-                    variant="outline"
-                    className="mb-2"
-                  >
-                    <Upload className="h-4 w-4 mr-2" />
-                    Seleccionar Archivos
-                  </Button>
-                  <p className="text-sm text-muted-foreground">
-                    Formatos soportados: PDF, CSV, XLSX, XLSM, DOCX
-                  </p>
-                </div>
-
-                {/* Uploaded Files */}
-                {uploadedFileNames.length > 0 && (
-                  <div className="space-y-2 mb-6">
-                    <h4 className="font-medium text-sm">Archivos cargados:</h4>
-                    {uploadedFileNames.map((fileName, index) => (
-                      <div key={index} className="flex items-center justify-between bg-success/10 p-3 rounded-lg border border-success/20">
-                        <div className="flex items-center space-x-2">
-                          <CheckCircle className="h-4 w-4 text-success" />
-                          <span className="text-sm font-medium text-success-foreground">{fileName}</span>
-                        </div>
-                        <Button
-                          onClick={() => handleFileRemove(index)}
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 w-6 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ))}
+                ) : (
+                  <div className="p-4 bg-muted/50 rounded-lg text-center">
+                    <p className="text-muted-foreground">
+                      No tienes permisos para aprobar este estado de pago.
+                    </p>
                   </div>
-                )}
+                )
+              ) : showRejectionForm ? (
+                <RejectionForm
+                  loading={loading}
+                  rejectionReason={rejectionReason}
+                  onReasonChange={setRejectionReason}
+                  onConfirmReject={onConfirmReject}
+                  onCancel={onCancel}
+                />
+              ) : (
+                <Card className="border border-primary/20 bg-primary/5">
+                  <CardContent className="p-6">
+                    <h3 className="font-semibold text-lg mb-4 text-primary">Documentos Adicionales (Opcional)</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Puedes cargar documentos adicionales necesarios para la aprobación, como documentos firmados u otros relevantes.
+                    </p>
+                    
+                    <div className="border-2 border-dashed border-border rounded-lg p-6 mb-4 text-center">
+                      <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground mb-4">
+                        Arrastra archivos aquí o haz clic para seleccionar
+                      </p>
+                      <input
+                        type="file"
+                        multiple
+                        accept=".pdf,.csv,.xlsx,.xlsm,.docx"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                        id="mandante-file-upload"
+                      />
+                      <Button
+                        onClick={() => document.getElementById('mandante-file-upload')?.click()}
+                        variant="outline"
+                        className="mb-2"
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Seleccionar Archivos
+                      </Button>
+                      <p className="text-sm text-muted-foreground">
+                        Formatos soportados: PDF, CSV, XLSX, XLSM, DOCX
+                      </p>
+                    </div>
 
-                {/* Action Buttons */}
-                <div className="flex space-x-4">
-                  <Button
-                    onClick={onConfirmApprove}
-                    disabled={loading}
-                    className="bg-green-600 hover:bg-green-700 text-white"
-                  >
-                    {loading ? 'Procesando...' : 'Confirmar Aprobación'}
-                  </Button>
-                  <Button
-                    onClick={onCancelApproval}
-                    variant="outline"
-                    disabled={loading}
-                  >
-                    Cancelar
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+                    {uploadedFileNames.length > 0 && (
+                      <div className="space-y-2 mb-6">
+                        <h4 className="font-medium text-sm">Archivos cargados:</h4>
+                        {uploadedFileNames.map((fileName, index) => (
+                          <div key={index} className="flex items-center justify-between bg-success/10 p-3 rounded-lg border border-success/20">
+                            <div className="flex items-center space-x-2">
+                              <CheckCircle className="h-4 w-4 text-success" />
+                              <span className="text-sm font-medium text-success-foreground">{fileName}</span>
+                            </div>
+                            <Button
+                              onClick={() => handleFileRemove(index)}
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="flex space-x-4">
+                      <Button
+                        onClick={onConfirmApprove}
+                        disabled={loading}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        {loading ? 'Procesando...' : 'Confirmar Aprobación'}
+                      </Button>
+                      <Button
+                        onClick={onCancelApproval}
+                        variant="outline"
+                        disabled={loading}
+                      >
+                        Cancelar
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </>
           )}
         </>
       )}

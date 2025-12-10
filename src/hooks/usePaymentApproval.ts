@@ -269,14 +269,21 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
   };
 
   const handleApprove = async () => {
-    if (loading || !payment?.projectData) {
-      if (!payment?.projectData) {
-        toast({
-          title: "Error",
-          description: "No se pueden cargar los datos del estado de pago",
-          variant: "destructive"
-        });
-      }
+    console.log('🚀 handleApprove called');
+    console.log('🔍 Current state:', { loading, hasProjectData: !!payment?.projectData, payment });
+    
+    if (loading) {
+      console.log('⚠️ Already loading, returning early');
+      return;
+    }
+    
+    if (!payment?.projectData) {
+      console.error('❌ No projectData available on payment');
+      toast({
+        title: "Error",
+        description: "No se pueden cargar los datos del estado de pago. Por favor, recarga la página.",
+        variant: "destructive"
+      });
       return;
     }
     

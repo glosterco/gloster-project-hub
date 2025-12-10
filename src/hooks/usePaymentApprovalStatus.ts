@@ -74,6 +74,18 @@ export const usePaymentApprovalStatus = (paymentId: number | null, currentUserEm
 
       if (approvalsError) throw approvalsError;
 
+      // 5. Check if current user is the mandante of the project
+      let isMandanteOfProject = false;
+      if (currentUserEmail) {
+        const { data: mandanteCheck } = await supabase
+          .rpc('verify_mandante_email_access', {
+            payment_id: paymentId,
+            email: currentUserEmail
+          });
+        isMandanteOfProject = mandanteCheck === true;
+        console.log('🔍 Is mandante of project:', isMandanteOfProject, 'for email:', currentUserEmail);
+      }
+
       const typedApprovals = (approvals || []) as PaymentApproval[];
 
       const totalApproved = typedApprovals.filter(a => a.approval_status === 'Aprobado').length;
@@ -85,10 +97,15 @@ export const usePaymentApprovalStatus = (paymentId: number | null, currentUserEm
         ? typedApprovals.find(a => a.approver_email.toLowerCase() === currentUserEmail.toLowerCase()) || null
         : null;
 
-      // Determine if user can approve (check order if it matters)
-      const isApprover = currentUserEmail && approvers?.some(
+      // Determine if user can approve:
+      // 1. User is in project_approvers list, OR
+      // 2. User is the mandante of the project
+      const isInApproversList = currentUserEmail && approvers?.some(
         a => a.approver_email.toLowerCase() === currentUserEmail.toLowerCase()
       );
+      const isApprover = isInApproversList || isMandanteOfProject;
+      
+      console.log('🔐 Approval check:', { currentUserEmail, isInApproversList, isMandanteOfProject, isApprover });
       const hasNotApprovedYet = !currentUserApproval || currentUserApproval.approval_status === 'Pendiente';
       
       // Check if order matters and if it's this user's turn

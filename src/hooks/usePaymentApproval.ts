@@ -57,7 +57,7 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
   const recordIndividualApproval = async (
     status: 'Aprobado' | 'Rechazado',
     notes: string
-  ): Promise<number> => {
+  ): Promise<{ approvalCount: number; requiredApprovals: number }> => {
     const userEmail = getCurrentUserEmail();
     if (!userEmail) {
       console.error('❌ No user email found in session');
@@ -68,82 +68,44 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
     const userName = mandanteAccess ? JSON.parse(mandanteAccess).name || userEmail : userEmail;
     const normalizedEmail = userEmail.toLowerCase().trim();
 
-    console.log('📝 Recording individual approval:', { 
+    console.log('📝 Recording individual approval via edge function:', { 
       paymentId, 
       status, 
       email: normalizedEmail,
       userName 
     });
 
-    // First check if this user already has an approval for this payment
-    const { data: existing, error: existingError } = await supabase
-      .from('payment_approvals')
-      .select('id, approval_status')
-      .eq('payment_id', parseInt(paymentId))
-      .eq('approver_email', normalizedEmail)
-      .maybeSingle();
-
-    if (existingError) {
-      console.error('❌ Error checking existing approval:', existingError);
-      throw new Error(`Error verificando aprobación existente: ${existingError.message}`);
-    }
-
-    if (existing) {
-      // Update existing approval
-      console.log('📝 Updating existing approval record:', existing.id);
-      const { error: updateError } = await supabase
-        .from('payment_approvals')
-        .update({
-          approval_status: status,
-          approver_name: userName,
-          notes: notes || null,
-          approved_at: status === 'Aprobado' ? new Date().toISOString() : null
-        })
-        .eq('id', existing.id);
-
-      if (updateError) {
-        console.error('❌ Error updating approval:', updateError);
-        throw new Error(`Error actualizando aprobación: ${updateError.message}`);
+    // ALWAYS use the edge function to record approvals
+    // This ensures the approval is recorded using service role (bypasses RLS issues)
+    const { data: result, error: functionError } = await supabase.functions.invoke(
+      'record-payment-approval',
+      {
+        body: {
+          paymentId,
+          approverEmail: normalizedEmail,
+          approverName: userName,
+          status,
+          notes: notes || ''
+        }
       }
-      console.log(`✅ Updated existing approval to ${status} for ${normalizedEmail}`);
-    } else {
-      // Insert new approval record
-      console.log('📝 Inserting new approval record');
-      const { data: insertedData, error: insertError } = await supabase
-        .from('payment_approvals')
-        .insert({
-          payment_id: parseInt(paymentId),
-          approver_email: normalizedEmail,
-          approver_name: userName,
-          approval_status: status,
-          notes: notes || null,
-          approved_at: status === 'Aprobado' ? new Date().toISOString() : null
-        })
-        .select('id')
-        .single();
+    );
 
-      if (insertError) {
-        console.error('❌ Error inserting approval:', insertError);
-        throw new Error(`Error insertando aprobación: ${insertError.message}`);
-      }
-      console.log(`✅ Inserted new approval with id ${insertedData?.id} - ${status} for ${normalizedEmail}`);
+    if (functionError) {
+      console.error('❌ Error calling record-payment-approval:', functionError);
+      throw new Error(`Error registrando aprobación: ${functionError.message}`);
     }
 
-    // Get current approval count AFTER the insert/update - critical for multi-approver logic
-    const { data: approvals, error: countError } = await supabase
-      .from('payment_approvals')
-      .select('id, approver_email, approval_status')
-      .eq('payment_id', parseInt(paymentId))
-      .eq('approval_status', 'Aprobado');
-
-    if (countError) {
-      console.error('❌ Error counting approvals:', countError);
-      throw new Error(`Error contando aprobaciones: ${countError.message}`);
+    if (!result?.success) {
+      console.error('❌ record-payment-approval failed:', result?.error);
+      throw new Error(result?.error || 'Error al registrar la aprobación');
     }
 
-    const count = approvals?.length || 0;
-    console.log(`📊 Current APPROVED count after recording: ${count}`, approvals);
-    return count;
+    console.log('✅ Approval recorded via edge function:', result);
+    
+    return {
+      approvalCount: result.approvalCount || 0,
+      requiredApprovals: result.requiredApprovals || 1
+    };
   };
 
   const updatePaymentStatus = async (status: 'Aprobado' | 'Rechazado', notes: string): Promise<{ currentApprovals: number; requiredApprovals: number }> => {
@@ -156,21 +118,13 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
       throw new Error('No se pudo determinar el proyecto');
     }
 
-    const config = await getApprovalConfig(projectId);
-    const requiredApprovals = config.required_approvals || 1;
-    
-    console.log('📋 Approval config for project', projectId, ':', { 
-      requiredApprovals, 
-      orderMatters: config.approval_order_matters 
-    });
-
-    // 2. Record individual approval and get current count
-    const currentApprovals = await recordIndividualApproval(status, notes);
+    // 2. Record individual approval via edge function - this returns the counts
+    const { approvalCount, requiredApprovals } = await recordIndividualApproval(status, notes);
 
     console.log('📊 CRITICAL CHECK - Approval progress:', { 
-      currentApprovals, 
+      currentApprovals: approvalCount, 
       requiredApprovals,
-      isFullyApproved: currentApprovals >= requiredApprovals,
+      isFullyApproved: approvalCount >= requiredApprovals,
       status
     });
 
@@ -182,18 +136,18 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
     }
 
     // 4. Update payment based on progress - THIS IS THE CRITICAL MULTI-APPROVER LOGIC
-    if (currentApprovals >= requiredApprovals) {
+    if (approvalCount >= requiredApprovals) {
       // All approvals received - mark as fully approved
       console.log('✅ ALL APPROVALS RECEIVED - Marking as Aprobado');
-      await updatePaymentRecord('Aprobado', notes, currentApprovals, requiredApprovals);
+      await updatePaymentRecord('Aprobado', notes, approvalCount, requiredApprovals);
     } else {
       // Partial approval - keep as "En Revisión" - NOT fully approved yet
-      console.log(`⏳ PARTIAL APPROVAL - ${currentApprovals}/${requiredApprovals} - Keeping as En Revisión`);
-      const progressNotes = `${currentApprovals}/${requiredApprovals} aprobaciones completadas. Esperando ${requiredApprovals - currentApprovals} aprobación(es) adicional(es).`;
-      await updatePaymentRecord('En Revisión', progressNotes, currentApprovals, requiredApprovals);
+      console.log(`⏳ PARTIAL APPROVAL - ${approvalCount}/${requiredApprovals} - Keeping as En Revisión`);
+      const progressNotes = `${approvalCount}/${requiredApprovals} aprobaciones completadas. Esperando ${requiredApprovals - approvalCount} aprobación(es) adicional(es).`;
+      await updatePaymentRecord('En Revisión', progressNotes, approvalCount, requiredApprovals);
     }
 
-    return { currentApprovals, requiredApprovals };
+    return { currentApprovals: approvalCount, requiredApprovals };
   };
 
   const updatePaymentRecord = async (

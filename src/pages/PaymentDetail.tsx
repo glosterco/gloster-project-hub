@@ -16,8 +16,10 @@ import { useUniqueAccessUrl } from '@/hooks/useUniqueAccessUrl';
 import { usePaymentValidation } from '@/hooks/usePaymentValidation';
 import { usePaymentActions } from '@/hooks/usePaymentActions';
 import { useContractorResubmission } from '@/hooks/useContractorResubmission';
+import { usePaymentApprovalStatus } from '@/hooks/usePaymentApprovalStatus';
 import { supabase } from '@/integrations/supabase/client';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import PageHeader from '@/components/PageHeader';
 import DocumentUploadCard from '@/components/DocumentUploadCard';
 import LoadingModal from '@/components/LoadingModal';
@@ -26,6 +28,8 @@ import PaymentSummaryCard from '@/components/payment/PaymentSummaryCard';
 import ValidationWarningCard from '@/components/payment/ValidationWarningCard';
 import DriveFilesCard from '@/components/payment/DriveFilesCard';
 import SendDocumentsBanner from '@/components/payment/SendDocumentsBanner';
+import { ApprovalProgressBar } from '@/components/approval/ApprovalProgressBar';
+import { ApprovalsList } from '@/components/approval/ApprovalsList';
 import { DOCUMENT_CATALOG, DocumentDefinition, matchRequirementToDocument, buildOtherIdFromName } from '@/constants/documentsCatalog';
 
 const PaymentDetail = () => {
@@ -75,9 +79,19 @@ const PaymentDetail = () => {
   const { downloadDocument, isDocumentLoading } = useDirectDriveDownload();
   const { handleResubmission, loading: resubmissionLoading } = useContractorResubmission();
 
+  // Hook para obtener el estado de aprobaciones
+  const { status: approvalStatus, loading: approvalStatusLoading } = usePaymentApprovalStatus(
+    payment?.id || null
+  );
+
   // CORRIGIENDO: Función para mostrar archivos del Drive si el status es "Enviado", "Aprobado" o "Rechazado"
   const shouldShowDriveFiles = () => {
-    return payment?.Status === 'Enviado' || payment?.Status === 'Aprobado' || payment?.Status === 'Rechazado';
+    return payment?.Status === 'Enviado' || payment?.Status === 'Aprobado' || payment?.Status === 'Rechazado' || payment?.Status === 'En Revisión';
+  };
+  
+  // Función para mostrar el progreso de aprobación
+  const shouldShowApprovalProgress = () => {
+    return payment?.Status === 'Enviado' || payment?.Status === 'En Revisión' || payment?.Status === 'Aprobado';
   };
 
   const { driveFiles, loading: driveFilesLoading, refetch: refetchDriveFiles } = useDriveFiles(
@@ -1183,6 +1197,53 @@ const PaymentDetail = () => {
               onFileRemove={handleDriveFileRemove}
               fileObjects={fileObjects} // Pasar archivos cargados localmente para vista previa
             />
+          )}
+
+          {/* Sección de Progreso de Aprobación para Contratistas */}
+          {shouldShowApprovalProgress() && approvalStatus && (
+            <Card className="mb-8">
+              <CardHeader>
+                <CardTitle className="text-lg font-rubik">Estado de Revisión</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <ApprovalProgressBar
+                  totalRequired={approvalStatus.totalRequired}
+                  totalApproved={approvalStatus.totalApproved}
+                  totalRejected={approvalStatus.totalRejected}
+                  isFullyApproved={approvalStatus.isFullyApproved}
+                  hasRejection={approvalStatus.hasRejection}
+                />
+                
+                <ApprovalsList
+                  approvals={approvalStatus.approvals}
+                  pendingApprovers={approvalStatus.pendingApprovers}
+                />
+                
+                {approvalStatus.isFullyApproved && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <p className="text-green-700 text-sm font-medium">
+                      ✓ Este estado de pago ha sido completamente aprobado
+                    </p>
+                  </div>
+                )}
+                
+                {approvalStatus.hasRejection && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <p className="text-red-700 text-sm font-medium">
+                      Este estado de pago ha sido rechazado. Revisa las observaciones y realiza las correcciones necesarias.
+                    </p>
+                  </div>
+                )}
+                
+                {!approvalStatus.isFullyApproved && !approvalStatus.hasRejection && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <p className="text-amber-700 text-sm font-medium">
+                      Tu estado de pago está en proceso de revisión. {approvalStatus.totalPending} aprobación(es) pendiente(s).
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           )}
 
           {/* Documents List - Para todos los casos donde no es "Enviado" o "Aprobado" */}

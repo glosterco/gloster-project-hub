@@ -69,3 +69,6 @@ verify_jwt = false
 
 [functions.upload-project-photos]
 verify_jwt = false
+
+[functions.record-payment-approval]
+verify_jwt = false

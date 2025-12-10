@@ -232,6 +232,8 @@ const ProjectDetail = () => {
         return 'bg-blue-100 text-blue-700';
       case 'enviado':
         return 'bg-purple-100 text-purple-700';
+      case 'en revisión':
+        return 'bg-amber-100 text-amber-700';
       case 'rechazado':
         return 'bg-red-100 text-red-700';
       case 'sin estado':
@@ -450,7 +452,7 @@ const ProjectDetail = () => {
                   </TooltipProvider>
                 )}
                 
-                {(status === 'Aprobado' || status === 'Enviado' || status === 'Rechazado') && (
+                {(status === 'Aprobado' || status === 'Enviado' || status === 'Rechazado' || status === 'En Revisión') && (
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>

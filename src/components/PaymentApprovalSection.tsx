@@ -73,14 +73,48 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
 
   const onApprove = () => {
     console.log('✅ PaymentApprovalSection onApprove clicked - showing file upload');
+    console.log('📦 Payment object:', payment);
+    console.log('📦 Payment projectData:', payment?.projectData);
+    console.log('📦 Payment ID:', paymentId);
     setShowApprovalForm(true);
   };
 
   const onConfirmApprove = async () => {
-    console.log('✅ PaymentApprovalSection onConfirmApprove clicked');
+    console.log('🚀🚀🚀 onConfirmApprove INICIANDO 🚀🚀🚀');
+    console.log('📦 Estado actual:', {
+      paymentId,
+      hasPayment: !!payment,
+      hasProjectData: !!payment?.projectData,
+      loading,
+      currentUserEmail
+    });
+    
+    if (!payment) {
+      console.error('❌ CRÍTICO: payment es null/undefined');
+      toast({
+        title: "Error",
+        description: "No se pudo cargar el estado de pago. Recarga la página.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!payment.projectData) {
+      console.error('❌ CRÍTICO: payment.projectData es null/undefined');
+      console.error('❌ Payment completo:', JSON.stringify(payment, null, 2));
+      toast({
+        title: "Error",
+        description: "No se pudo cargar los datos del proyecto. Recarga la página.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     try {
+      console.log('📤 Llamando handleApprove...');
       // First approve the payment
       await handleApprove();
+      console.log('✅ handleApprove completado exitosamente');
       
       // Upload mandante files if any
       if (mandanteFiles.length > 0) {
@@ -118,11 +152,13 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
       setShowApprovalForm(false);
       setMandanteFiles([]);
       setUploadedFileNames([]);
-    } catch (error) {
-      console.error('❌ Error in onConfirmApprove:', error);
+    } catch (error: any) {
+      console.error('❌❌❌ ERROR en onConfirmApprove:', error);
+      console.error('❌ Error message:', error?.message);
+      console.error('❌ Error stack:', error?.stack);
       toast({
-        title: "Error",
-        description: "Error al procesar la aprobación",
+        title: "Error en aprobación",
+        description: error?.message || "Error al procesar la aprobación",
         variant: "destructive"
       });
     }

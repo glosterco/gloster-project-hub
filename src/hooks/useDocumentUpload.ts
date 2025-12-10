@@ -64,8 +64,17 @@ export const useDocumentUpload = (onUploadComplete?: () => void, projectRequirem
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // DOCX
       'application/msword', // DOC
       'image/jpeg', // JPG
-      'image/png' // PNG
+      'image/png', // PNG
+      'application/acad', // DWG
+      'application/x-acad', // DWG
+      'application/dwg', // DWG
+      'application/x-dwg', // DWG
+      'image/vnd.dwg', // DWG
+      'image/x-dwg' // DWG
     ];
+    
+    // Also check file extension for DWG files (some browsers may not detect MIME type correctly)
+    const isDwgByExtension = (file: File) => file.name.toLowerCase().endsWith('.dwg');
     
     const fileArray = Array.from(files);
     const validFiles = fileArray.filter(file => {
@@ -83,7 +92,7 @@ export const useDocumentUpload = (onUploadComplete?: () => void, projectRequirem
         return false;
       }
       
-      if (!allowedTypes.includes(file.type)) {
+      if (!allowedTypes.includes(file.type) && !isDwgByExtension(file)) {
         console.error(`❌ Invalid file format: ${file.name} (${file.type})`);
         toast({
           title: "Formato no válido",

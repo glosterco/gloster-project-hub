@@ -21,13 +21,21 @@ export const useProjectDocumentUpload = (projectId: number) => {
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     'image/jpeg',
     'image/png',
-    'image/jpg'
+    'image/jpg',
+    'application/acad', // DWG
+    'application/x-acad', // DWG
+    'application/dwg', // DWG
+    'application/x-dwg', // DWG
+    'image/vnd.dwg', // DWG
+    'image/x-dwg' // DWG
   ];
+
+  const isDwgByExtension = (file: File) => file.name.toLowerCase().endsWith('.dwg');
 
   const MAX_FILE_SIZE = 12 * 1024 * 1024; // 12MB
 
   const validateFile = (file: File): boolean => {
-    if (!ALLOWED_TYPES.includes(file.type)) {
+    if (!ALLOWED_TYPES.includes(file.type) && !isDwgByExtension(file)) {
       toast.error(`Tipo de archivo no permitido: ${file.name}`);
       return false;
     }

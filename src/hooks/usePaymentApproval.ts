@@ -54,22 +54,28 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
     return data?.length || 0;
   };
 
+  /**
+   * CRITICAL FUNCTION: Records individual approval via edge function
+   * This MUST succeed before the payment status can be updated
+   */
   const recordIndividualApproval = async (
     status: 'Aprobado' | 'Rechazado',
     notes: string
   ): Promise<{ approvalCount: number; requiredApprovals: number }> => {
-    console.log('🔴🔴🔴 recordIndividualApproval INICIANDO 🔴🔴🔴');
+    console.log('═══════════════════════════════════════════════════════════');
+    console.log('🔴 recordIndividualApproval STARTING');
+    console.log('═══════════════════════════════════════════════════════════');
     
     const userEmail = getCurrentUserEmail();
-    console.log('📧 User email from session:', userEmail);
+    console.log('📧 Step 1: User email from session:', userEmail);
     
     if (!userEmail) {
-      console.error('❌❌❌ CRÍTICO: No user email found in session');
+      console.error('❌ FATAL: No user email found in session');
       throw new Error('No se pudo determinar el email del usuario. Por favor, vuelve a acceder desde el enlace de email.');
     }
 
     const mandanteAccess = sessionStorage.getItem('mandanteAccess');
-    console.log('📋 mandanteAccess from session:', mandanteAccess);
+    console.log('📋 Step 2: mandanteAccess raw:', mandanteAccess);
     
     const userName = mandanteAccess ? JSON.parse(mandanteAccess).name || userEmail : userEmail;
     const normalizedEmail = userEmail.toLowerCase().trim();
@@ -82,54 +88,61 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
       notes: notes || ''
     };
 
-    console.log('📤📤📤 CALLING record-payment-approval edge function:', requestBody);
-    console.log('🔗 Function URL: https://mqzuvqwsaeguphqjwvap.supabase.co/functions/v1/record-payment-approval');
+    console.log('📤 Step 3: Preparing to call record-payment-approval');
+    console.log('📤 Request body:', JSON.stringify(requestBody, null, 2));
+    console.log('🔗 Target URL: https://mqzuvqwsaeguphqjwvap.supabase.co/functions/v1/record-payment-approval');
 
-    // ALWAYS use the edge function to record approvals
-    let result: any;
-    let functionError: any;
+    // CRITICAL: Call the edge function to record the approval
+    console.log('⏳ Step 4: Invoking supabase.functions.invoke NOW...');
     
+    let response: any;
     try {
-      console.log('⏳ Invocando supabase.functions.invoke...');
-      const response = await supabase.functions.invoke('record-payment-approval', {
+      response = await supabase.functions.invoke('record-payment-approval', {
         body: requestBody
       });
-      
-      console.log('📨 Raw response from invoke:', response);
-      result = response.data;
-      functionError = response.error;
-      
-      console.log('📨 Parsed response:', { result, functionError });
+      console.log('✅ Step 5: invoke() completed without throwing');
+      console.log('📨 Raw response object:', response);
+      console.log('📨 response.data:', response?.data);
+      console.log('📨 response.error:', response?.error);
     } catch (invokeError: any) {
-      console.error('❌❌❌ EXCEPTION en invoke:', invokeError);
+      console.error('❌ Step 5 FAILED: invoke() threw an exception');
       console.error('❌ Error type:', typeof invokeError);
+      console.error('❌ Error name:', invokeError?.name);
       console.error('❌ Error message:', invokeError?.message);
       console.error('❌ Error stack:', invokeError?.stack);
-      throw new Error(`Error de conexión con el servidor: ${invokeError.message || 'Unknown error'}`);
+      throw new Error(`Error de conexión: ${invokeError?.message || 'Unknown error'}`);
     }
 
+    const result = response?.data;
+    const functionError = response?.error;
+
+    console.log('📋 Step 6: Parsing response');
+    console.log('📋 result:', result);
+    console.log('📋 functionError:', functionError);
+
     if (functionError) {
-      console.error('❌❌❌ functionError presente:', functionError);
-      throw new Error(`Error registrando aprobación: ${functionError.message || JSON.stringify(functionError)}`);
+      console.error('❌ Step 6 FAILED: functionError present');
+      console.error('❌ functionError.message:', functionError?.message);
+      console.error('❌ functionError full:', JSON.stringify(functionError, null, 2));
+      throw new Error(`Error registrando aprobación: ${functionError?.message || JSON.stringify(functionError)}`);
     }
 
     if (!result) {
-      console.error('❌❌❌ result es null/undefined');
-      throw new Error('El servidor no respondió correctamente. Intente nuevamente.');
+      console.error('❌ Step 6 FAILED: result is null/undefined');
+      throw new Error('El servidor no respondió correctamente. La función record-payment-approval puede no estar desplegada.');
     }
 
-    console.log('📋 Result completo:', JSON.stringify(result, null, 2));
-
     if (!result.success) {
-      console.error('❌❌❌ result.success es false:', result.error);
+      console.error('❌ Step 6 FAILED: result.success is false');
+      console.error('❌ result.error:', result.error);
       throw new Error(result.error || 'Error al registrar la aprobación');
     }
 
-    console.log('✅✅✅ Approval recorded successfully via edge function:', {
-      approvalCount: result.approvalCount,
-      requiredApprovals: result.requiredApprovals,
-      isFullyApproved: result.isFullyApproved
-    });
+    console.log('✅ Step 7: Approval recorded successfully');
+    console.log('✅ approvalCount:', result.approvalCount);
+    console.log('✅ requiredApprovals:', result.requiredApprovals);
+    console.log('✅ isFullyApproved:', result.isFullyApproved);
+    console.log('═══════════════════════════════════════════════════════════');
     
     return {
       approvalCount: result.approvalCount,
@@ -137,28 +150,52 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
     };
   };
 
+  /**
+   * MAIN APPROVAL LOGIC: Updates payment status based on approval count
+   * CRITICAL: This must WAIT for recordIndividualApproval to complete
+   */
   const updatePaymentStatus = async (status: 'Aprobado' | 'Rechazado', notes: string): Promise<{ currentApprovals: number; requiredApprovals: number }> => {
-    console.log('🔄 ========== STARTING updatePaymentStatus ==========');
+    console.log('═══════════════════════════════════════════════════════════');
+    console.log('🔄 updatePaymentStatus STARTING');
+    console.log('═══════════════════════════════════════════════════════════');
     console.log('📋 Input:', { paymentId, status, notes: notes.substring(0, 50) + '...' });
     
-    // 1. Get project config first
+    // 1. Get project ID
     const projectId = payment?.projectData?.id || payment?.Project;
     if (!projectId) {
-      console.error('❌ Could not determine project ID from payment:', payment);
+      console.error('❌ FATAL: Could not determine project ID');
+      console.error('❌ payment object:', JSON.stringify(payment, null, 2));
       throw new Error('No se pudo determinar el proyecto');
     }
     console.log('📋 Project ID:', projectId);
 
-    // 2. Record individual approval via edge function - this returns the counts
-    // THIS MUST SUCCEED BEFORE WE UPDATE THE PAYMENT STATUS
-    console.log('📝 Step 2: Calling recordIndividualApproval...');
-    const { approvalCount, requiredApprovals } = await recordIndividualApproval(status, notes);
+    // 2. CRITICAL: Record individual approval FIRST via edge function
+    // This MUST complete successfully before we determine the final status
+    console.log('═══════════════════════════════════════════════════════════');
+    console.log('📝 CALLING recordIndividualApproval - AWAITING RESULT...');
+    console.log('═══════════════════════════════════════════════════════════');
+    
+    let approvalResult: { approvalCount: number; requiredApprovals: number };
+    
+    try {
+      approvalResult = await recordIndividualApproval(status, notes);
+      console.log('✅ recordIndividualApproval COMPLETED SUCCESSFULLY');
+      console.log('✅ approvalResult:', approvalResult);
+    } catch (approvalError: any) {
+      console.error('❌ recordIndividualApproval FAILED');
+      console.error('❌ Error:', approvalError?.message);
+      // RE-THROW the error - DO NOT continue with approval
+      throw approvalError;
+    }
 
-    console.log('📊 ========== MULTI-APPROVER CHECK ==========');
+    const { approvalCount, requiredApprovals } = approvalResult;
+
+    console.log('═══════════════════════════════════════════════════════════');
+    console.log('📊 MULTI-APPROVER DECISION POINT');
+    console.log('═══════════════════════════════════════════════════════════');
     console.log('📊 approvalCount:', approvalCount);
     console.log('📊 requiredApprovals:', requiredApprovals);
-    console.log('📊 isFullyApproved:', approvalCount >= requiredApprovals);
-    console.log('📊 ==========================================');
+    console.log('📊 Comparison: approvalCount >= requiredApprovals ?', approvalCount >= requiredApprovals);
 
     // 3. If rejection, update payment status immediately
     if (status === 'Rechazado') {
@@ -167,48 +204,64 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
       return { currentApprovals: 0, requiredApprovals };
     }
 
-    // 4. CRITICAL MULTI-APPROVER LOGIC - Only approve if ALL approvals are received
+    // 4. CRITICAL MULTI-APPROVER LOGIC
+    // Only set status to "Aprobado" if ALL required approvals are received
     let finalStatus: string;
     let finalNotes: string;
     
     if (approvalCount >= requiredApprovals) {
-      // All approvals received - mark as fully approved
       finalStatus = 'Aprobado';
       finalNotes = notes;
-      console.log('✅ ALL APPROVALS RECEIVED - Setting status to Aprobado');
+      console.log('✅ DECISION: ALL APPROVALS RECEIVED → Status = Aprobado');
     } else {
-      // Partial approval - keep as "En Revisión" - NOT fully approved yet
       finalStatus = 'En Revisión';
       finalNotes = `${approvalCount}/${requiredApprovals} aprobaciones completadas. Esperando ${requiredApprovals - approvalCount} aprobación(es) adicional(es).`;
-      console.log(`⏳ PARTIAL APPROVAL - ${approvalCount}/${requiredApprovals} - Setting status to En Revisión`);
+      console.log(`⏳ DECISION: PARTIAL APPROVAL (${approvalCount}/${requiredApprovals}) → Status = En Revisión`);
     }
     
-    console.log('📝 Step 4: Updating payment record with:', { finalStatus, approvalCount, requiredApprovals });
+    console.log('📝 Calling updatePaymentRecord with:', { finalStatus, approvalCount, requiredApprovals });
     await updatePaymentRecord(finalStatus, finalNotes, approvalCount, requiredApprovals);
     
-    console.log('🔄 ========== updatePaymentStatus COMPLETE ==========');
+    console.log('═══════════════════════════════════════════════════════════');
+    console.log('🔄 updatePaymentStatus COMPLETED');
+    console.log('═══════════════════════════════════════════════════════════');
+    
     return { currentApprovals: approvalCount, requiredApprovals };
   };
 
+  /**
+   * Updates the payment record in the database
+   */
   const updatePaymentRecord = async (
     status: string,
     notes: string,
     approvalProgress: number,
     totalRequired: number
   ) => {
+    console.log('📝 updatePaymentRecord called with:', { status, notes: notes.substring(0, 50), approvalProgress, totalRequired });
+    
     const mandanteAccess = sessionStorage.getItem('mandanteAccess');
     let useServiceFunction = false;
     let mandanteEmail = '';
     
     if (mandanteAccess) {
       const accessData = JSON.parse(mandanteAccess);
+      console.log('📋 accessData:', { 
+        userType: accessData.userType, 
+        isLimitedAccess: accessData.isLimitedAccess, 
+        hasFullAccess: accessData.hasFullAccess 
+      });
+      
       if (accessData.userType === 'mandante' && (accessData.isLimitedAccess || !accessData.hasFullAccess)) {
         useServiceFunction = true;
         mandanteEmail = accessData.email;
       }
     }
 
+    console.log('📋 useServiceFunction:', useServiceFunction);
+
     if (useServiceFunction) {
+      console.log('📤 Calling update-payment-status-mandante edge function');
       const { data: result, error: functionError } = await supabase.functions.invoke(
         'update-payment-status-mandante',
         {
@@ -223,10 +276,16 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
         }
       );
 
+      console.log('📨 update-payment-status-mandante response:', { result, functionError });
+
       if (functionError || !result?.success) {
+        console.error('❌ update-payment-status-mandante failed');
         throw new Error(`Error al actualizar: ${functionError?.message || result?.error}`);
       }
+      
+      console.log('✅ update-payment-status-mandante succeeded');
     } else {
+      console.log('📤 Updating directly via Supabase client');
       const { error } = await supabase
         .from('Estados de pago')
         .update({ 
@@ -238,8 +297,11 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
         .eq('id', parseInt(paymentId));
 
       if (error) {
+        console.error('❌ Direct update failed:', error);
         throw new Error(`Error al actualizar: ${error.message}`);
       }
+      
+      console.log('✅ Direct update succeeded');
     }
   };
 
@@ -278,8 +340,10 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
   };
 
   const handleApprove = async () => {
-    console.log('🚀🚀🚀 handleApprove INICIANDO 🚀🚀🚀');
-    console.log('📋 Estado inicial:', { 
+    console.log('═══════════════════════════════════════════════════════════');
+    console.log('🚀 handleApprove STARTING');
+    console.log('═══════════════════════════════════════════════════════════');
+    console.log('📋 Initial state:', { 
       loading, 
       hasPayment: !!payment,
       hasProjectData: !!payment?.projectData, 
@@ -293,7 +357,7 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
     }
     
     if (!payment) {
-      console.error('❌❌❌ CRÍTICO: payment es null/undefined');
+      console.error('❌ FATAL: payment is null/undefined');
       toast({
         title: "Error",
         description: "No se encontró el estado de pago. Recarga la página.",
@@ -303,8 +367,8 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
     }
     
     if (!payment.projectData) {
-      console.error('❌❌❌ CRÍTICO: payment.projectData es null/undefined');
-      console.error('❌ Payment object:', JSON.stringify(payment, null, 2));
+      console.error('❌ FATAL: payment.projectData is null/undefined');
+      console.error('❌ payment object:', JSON.stringify(payment, null, 2));
       toast({
         title: "Error",
         description: "No se encontraron los datos del proyecto. Recarga la página.",
@@ -315,7 +379,7 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
     
     const userEmail = getCurrentUserEmail();
     if (!userEmail) {
-      console.error('❌❌❌ CRÍTICO: No se encontró email del usuario en sesión');
+      console.error('❌ FATAL: No user email in session');
       toast({
         title: "Error",
         description: "No se pudo identificar tu email. Vuelve a acceder desde el enlace de email.",
@@ -324,19 +388,19 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
       return;
     }
     
-    console.log('✅ Validaciones pasadas, iniciando proceso de aprobación');
+    console.log('✅ All validations passed, starting approval process');
     setLoading(true);
     
     try {
       const approvalNotes = `Aprobado el ${new Date().toLocaleString('es-CL')} por ${userEmail}`;
-      console.log('📝 Calling updatePaymentStatus with notes:', approvalNotes);
+      console.log('📝 Calling updatePaymentStatus...');
       
       const { currentApprovals, requiredApprovals } = await updatePaymentStatus('Aprobado', approvalNotes);
 
-      console.log('📊 updatePaymentStatus completado:', { currentApprovals, requiredApprovals });
+      console.log('📊 updatePaymentStatus completed:', { currentApprovals, requiredApprovals });
 
       if (currentApprovals >= requiredApprovals) {
-        console.log('📤 Todas las aprobaciones recibidas, enviando notificación al contratista...');
+        console.log('📤 All approvals received, sending contractor notification...');
         await sendContractorNotification(payment, 'Aprobado');
         toast({
           title: "Estado de pago aprobado",
@@ -349,12 +413,16 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
         });
       }
 
-      console.log('🔄 Llamando onStatusChange...');
+      console.log('🔄 Calling onStatusChange...');
       onStatusChange?.();
-      console.log('✅✅✅ handleApprove COMPLETADO ✅✅✅');
+      console.log('═══════════════════════════════════════════════════════════');
+      console.log('✅ handleApprove COMPLETED SUCCESSFULLY');
+      console.log('═══════════════════════════════════════════════════════════');
 
     } catch (error: any) {
-      console.error('❌❌❌ ERROR en handleApprove:', error);
+      console.error('═══════════════════════════════════════════════════════════');
+      console.error('❌ handleApprove FAILED');
+      console.error('═══════════════════════════════════════════════════════════');
       console.error('❌ Error message:', error?.message);
       console.error('❌ Error stack:', error?.stack);
       toast({
@@ -419,4 +487,3 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
     handleReject
   };
 };
-

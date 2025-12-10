@@ -141,16 +141,73 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('✅ Access verified:', { accessType, email: mandanteEmail });
 
     // ═══════════════════════════════════════════════════════════════════════
-    // STEP 3: CRITICAL - Verify approval requirements before setting "Aprobado"
+    // STEP 3: Record individual approval in payment_approvals table
     // ═══════════════════════════════════════════════════════════════════════
     let finalStatus = status;
     let finalNotes = notes;
     let finalApprovalProgress = approvalProgress ?? 0;
     let finalTotalRequired = totalRequired ?? 1;
 
+    if (status === 'Aprobado' || status === 'Rechazado') {
+      console.log('═══════════════════════════════════════════════════════════');
+      console.log('📝 Step 3a: RECORDING INDIVIDUAL APPROVAL');
+      console.log('═══════════════════════════════════════════════════════════');
+      
+      const normalizedEmail = mandanteEmail.toLowerCase().trim();
+      
+      // Check if this user already has an approval record
+      const { data: existingApproval } = await supabase
+        .from('payment_approvals')
+        .select('id, approval_status')
+        .eq('payment_id', paymentIdNum)
+        .eq('approver_email', normalizedEmail)
+        .maybeSingle();
+
+      if (existingApproval) {
+        console.log('📝 Updating existing approval record:', existingApproval.id);
+        const { error: updateApprovalError } = await supabase
+          .from('payment_approvals')
+          .update({
+            approval_status: status === 'Aprobado' ? 'Aprobado' : 'Rechazado',
+            approved_at: status === 'Aprobado' ? new Date().toISOString() : null,
+            notes: notes || null
+          })
+          .eq('id', existingApproval.id);
+
+        if (updateApprovalError) {
+          console.error('❌ Error updating approval:', updateApprovalError);
+        } else {
+          console.log('✅ Approval record updated successfully');
+        }
+      } else {
+        console.log('📝 Inserting new approval record for:', normalizedEmail);
+        const { data: insertedApproval, error: insertApprovalError } = await supabase
+          .from('payment_approvals')
+          .insert({
+            payment_id: paymentIdNum,
+            approver_email: normalizedEmail,
+            approver_name: normalizedEmail.split('@')[0],
+            approval_status: status === 'Aprobado' ? 'Aprobado' : 'Rechazado',
+            approved_at: status === 'Aprobado' ? new Date().toISOString() : null,
+            notes: notes || null
+          })
+          .select('id')
+          .single();
+
+        if (insertApprovalError) {
+          console.error('❌ Error inserting approval:', insertApprovalError);
+        } else {
+          console.log('✅ Approval record inserted with id:', insertedApproval?.id);
+        }
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // STEP 3b: VERIFY APPROVAL REQUIREMENTS before setting final status
+    // ═══════════════════════════════════════════════════════════════════════
     if (status === 'Aprobado') {
       console.log('═══════════════════════════════════════════════════════════');
-      console.log('🔍 Step 3: VERIFYING APPROVAL REQUIREMENTS');
+      console.log('🔍 Step 3b: VERIFYING APPROVAL REQUIREMENTS');
       console.log('═══════════════════════════════════════════════════════════');
 
       // Get approval config for this project
@@ -163,7 +220,7 @@ const handler = async (req: Request): Promise<Response> => {
       const requiredApprovals = config?.required_approvals || 1;
       console.log('📋 Required approvals from config:', requiredApprovals);
 
-      // Count actual approved approvals in payment_approvals table
+      // Count actual approved approvals in payment_approvals table (AFTER insert)
       const { data: approvals, error: approvalsError } = await supabase
         .from('payment_approvals')
         .select('id, approver_email, approval_status, approved_at')

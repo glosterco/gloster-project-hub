@@ -68,18 +68,21 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
     const userName = mandanteAccess ? JSON.parse(mandanteAccess).name || userEmail : userEmail;
     const normalizedEmail = userEmail.toLowerCase().trim();
 
-    console.log('📝 Recording individual approval via edge function:', { 
+    console.log('📝 CALLING record-payment-approval edge function:', { 
       paymentId, 
       status, 
       email: normalizedEmail,
-      userName 
+      userName,
+      timestamp: new Date().toISOString()
     });
 
     // ALWAYS use the edge function to record approvals
     // This ensures the approval is recorded using service role (bypasses RLS issues)
-    const { data: result, error: functionError } = await supabase.functions.invoke(
-      'record-payment-approval',
-      {
+    let result: any;
+    let functionError: any;
+    
+    try {
+      const response = await supabase.functions.invoke('record-payment-approval', {
         body: {
           paymentId,
           approverEmail: normalizedEmail,
@@ -87,29 +90,47 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
           status,
           notes: notes || ''
         }
-      }
-    );
+      });
+      
+      result = response.data;
+      functionError = response.error;
+      
+      console.log('📨 record-payment-approval response:', { result, functionError });
+    } catch (invokeError: any) {
+      console.error('❌ CRITICAL: Failed to invoke record-payment-approval:', invokeError);
+      throw new Error(`Error de conexión con el servidor: ${invokeError.message || 'Unknown error'}`);
+    }
 
     if (functionError) {
       console.error('❌ Error calling record-payment-approval:', functionError);
-      throw new Error(`Error registrando aprobación: ${functionError.message}`);
+      throw new Error(`Error registrando aprobación: ${functionError.message || JSON.stringify(functionError)}`);
     }
 
-    if (!result?.success) {
-      console.error('❌ record-payment-approval failed:', result?.error);
-      throw new Error(result?.error || 'Error al registrar la aprobación');
+    if (!result) {
+      console.error('❌ record-payment-approval returned null/undefined');
+      throw new Error('El servidor no respondió correctamente. Intente nuevamente.');
     }
 
-    console.log('✅ Approval recorded via edge function:', result);
+    if (!result.success) {
+      console.error('❌ record-payment-approval failed:', result.error);
+      throw new Error(result.error || 'Error al registrar la aprobación');
+    }
+
+    console.log('✅ Approval recorded successfully via edge function:', {
+      approvalCount: result.approvalCount,
+      requiredApprovals: result.requiredApprovals,
+      isFullyApproved: result.isFullyApproved
+    });
     
     return {
-      approvalCount: result.approvalCount || 0,
-      requiredApprovals: result.requiredApprovals || 1
+      approvalCount: result.approvalCount,
+      requiredApprovals: result.requiredApprovals
     };
   };
 
   const updatePaymentStatus = async (status: 'Aprobado' | 'Rechazado', notes: string): Promise<{ currentApprovals: number; requiredApprovals: number }> => {
-    console.log('🔄 Starting updatePaymentStatus with:', { paymentId, status, notes });
+    console.log('🔄 ========== STARTING updatePaymentStatus ==========');
+    console.log('📋 Input:', { paymentId, status, notes: notes.substring(0, 50) + '...' });
     
     // 1. Get project config first
     const projectId = payment?.projectData?.id || payment?.Project;
@@ -117,16 +138,18 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
       console.error('❌ Could not determine project ID from payment:', payment);
       throw new Error('No se pudo determinar el proyecto');
     }
+    console.log('📋 Project ID:', projectId);
 
     // 2. Record individual approval via edge function - this returns the counts
+    // THIS MUST SUCCEED BEFORE WE UPDATE THE PAYMENT STATUS
+    console.log('📝 Step 2: Calling recordIndividualApproval...');
     const { approvalCount, requiredApprovals } = await recordIndividualApproval(status, notes);
 
-    console.log('📊 CRITICAL CHECK - Approval progress:', { 
-      currentApprovals: approvalCount, 
-      requiredApprovals,
-      isFullyApproved: approvalCount >= requiredApprovals,
-      status
-    });
+    console.log('📊 ========== MULTI-APPROVER CHECK ==========');
+    console.log('📊 approvalCount:', approvalCount);
+    console.log('📊 requiredApprovals:', requiredApprovals);
+    console.log('📊 isFullyApproved:', approvalCount >= requiredApprovals);
+    console.log('📊 ==========================================');
 
     // 3. If rejection, update payment status immediately
     if (status === 'Rechazado') {
@@ -135,18 +158,26 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
       return { currentApprovals: 0, requiredApprovals };
     }
 
-    // 4. Update payment based on progress - THIS IS THE CRITICAL MULTI-APPROVER LOGIC
+    // 4. CRITICAL MULTI-APPROVER LOGIC - Only approve if ALL approvals are received
+    let finalStatus: string;
+    let finalNotes: string;
+    
     if (approvalCount >= requiredApprovals) {
       // All approvals received - mark as fully approved
-      console.log('✅ ALL APPROVALS RECEIVED - Marking as Aprobado');
-      await updatePaymentRecord('Aprobado', notes, approvalCount, requiredApprovals);
+      finalStatus = 'Aprobado';
+      finalNotes = notes;
+      console.log('✅ ALL APPROVALS RECEIVED - Setting status to Aprobado');
     } else {
       // Partial approval - keep as "En Revisión" - NOT fully approved yet
-      console.log(`⏳ PARTIAL APPROVAL - ${approvalCount}/${requiredApprovals} - Keeping as En Revisión`);
-      const progressNotes = `${approvalCount}/${requiredApprovals} aprobaciones completadas. Esperando ${requiredApprovals - approvalCount} aprobación(es) adicional(es).`;
-      await updatePaymentRecord('En Revisión', progressNotes, approvalCount, requiredApprovals);
+      finalStatus = 'En Revisión';
+      finalNotes = `${approvalCount}/${requiredApprovals} aprobaciones completadas. Esperando ${requiredApprovals - approvalCount} aprobación(es) adicional(es).`;
+      console.log(`⏳ PARTIAL APPROVAL - ${approvalCount}/${requiredApprovals} - Setting status to En Revisión`);
     }
-
+    
+    console.log('📝 Step 4: Updating payment record with:', { finalStatus, approvalCount, requiredApprovals });
+    await updatePaymentRecord(finalStatus, finalNotes, approvalCount, requiredApprovals);
+    
+    console.log('🔄 ========== updatePaymentStatus COMPLETE ==========');
     return { currentApprovals: approvalCount, requiredApprovals };
   };
 

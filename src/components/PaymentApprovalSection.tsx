@@ -146,8 +146,10 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
         });
       }
       
-      // Refresh approval status to get updated state
+      // Wait for DB to commit, then refresh approval status
+      await new Promise(resolve => setTimeout(resolve, 500));
       await refetchApprovalStatus();
+      console.log('🔄 Approval status refetched after approval');
       
       setShowApprovalForm(false);
       setMandanteFiles([]);
@@ -220,7 +222,10 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
     console.log('❌ PaymentApprovalSection onConfirmReject clicked with reason:', rejectionReason);
     try {
       await handleReject(rejectionReason);
+      // Wait for DB to commit, then refresh
+      await new Promise(resolve => setTimeout(resolve, 500));
       await refetchApprovalStatus();
+      console.log('🔄 Approval status refetched after rejection');
       setShowRejectionForm(false);
       setRejectionReason('');
     } catch (error) {

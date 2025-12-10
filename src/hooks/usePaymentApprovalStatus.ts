@@ -29,10 +29,12 @@ export const usePaymentApprovalStatus = (paymentId: number | null, currentUserEm
   const [status, setStatus] = useState<ApprovalStatus | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const fetchApprovalStatus = async () => {
     if (!paymentId) return;
 
+    console.log('🔄 fetchApprovalStatus called for paymentId:', paymentId);
     setLoading(true);
     setError(null);
 
@@ -87,10 +89,13 @@ export const usePaymentApprovalStatus = (paymentId: number | null, currentUserEm
       }
 
       const typedApprovals = (approvals || []) as PaymentApproval[];
+      console.log('📊 Fetched approvals:', typedApprovals.length, typedApprovals);
 
       const totalApproved = typedApprovals.filter(a => a.approval_status === 'Aprobado').length;
       const totalRejected = typedApprovals.filter(a => a.approval_status === 'Rechazado').length;
       const totalPending = totalRequired - totalApproved;
+      
+      console.log('📈 Approval counts:', { totalApproved, totalRejected, totalRequired, totalPending });
 
       // Find current user's approval if they have one
       const currentUserApproval = currentUserEmail
@@ -160,12 +165,18 @@ export const usePaymentApprovalStatus = (paymentId: number | null, currentUserEm
 
   useEffect(() => {
     fetchApprovalStatus();
-  }, [paymentId, currentUserEmail]);
+  }, [paymentId, currentUserEmail, refreshKey]);
+
+  const refetch = async () => {
+    console.log('🔄 Manual refetch triggered');
+    setRefreshKey(prev => prev + 1);
+    await fetchApprovalStatus();
+  };
 
   return {
     status,
     loading,
     error,
-    refetch: fetchApprovalStatus
+    refetch
   };
 };

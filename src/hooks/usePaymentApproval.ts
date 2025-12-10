@@ -58,65 +58,74 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
     status: 'Aprobado' | 'Rechazado',
     notes: string
   ): Promise<{ approvalCount: number; requiredApprovals: number }> => {
+    console.log('🔴🔴🔴 recordIndividualApproval INICIANDO 🔴🔴🔴');
+    
     const userEmail = getCurrentUserEmail();
+    console.log('📧 User email from session:', userEmail);
+    
     if (!userEmail) {
-      console.error('❌ No user email found in session');
+      console.error('❌❌❌ CRÍTICO: No user email found in session');
       throw new Error('No se pudo determinar el email del usuario. Por favor, vuelve a acceder desde el enlace de email.');
     }
 
     const mandanteAccess = sessionStorage.getItem('mandanteAccess');
+    console.log('📋 mandanteAccess from session:', mandanteAccess);
+    
     const userName = mandanteAccess ? JSON.parse(mandanteAccess).name || userEmail : userEmail;
     const normalizedEmail = userEmail.toLowerCase().trim();
 
-    console.log('📝 CALLING record-payment-approval edge function:', { 
-      paymentId, 
-      status, 
-      email: normalizedEmail,
-      userName,
-      timestamp: new Date().toISOString()
-    });
+    const requestBody = {
+      paymentId,
+      approverEmail: normalizedEmail,
+      approverName: userName,
+      status,
+      notes: notes || ''
+    };
+
+    console.log('📤📤📤 CALLING record-payment-approval edge function:', requestBody);
+    console.log('🔗 Function URL: https://mqzuvqwsaeguphqjwvap.supabase.co/functions/v1/record-payment-approval');
 
     // ALWAYS use the edge function to record approvals
-    // This ensures the approval is recorded using service role (bypasses RLS issues)
     let result: any;
     let functionError: any;
     
     try {
+      console.log('⏳ Invocando supabase.functions.invoke...');
       const response = await supabase.functions.invoke('record-payment-approval', {
-        body: {
-          paymentId,
-          approverEmail: normalizedEmail,
-          approverName: userName,
-          status,
-          notes: notes || ''
-        }
+        body: requestBody
       });
       
+      console.log('📨 Raw response from invoke:', response);
       result = response.data;
       functionError = response.error;
       
-      console.log('📨 record-payment-approval response:', { result, functionError });
+      console.log('📨 Parsed response:', { result, functionError });
     } catch (invokeError: any) {
-      console.error('❌ CRITICAL: Failed to invoke record-payment-approval:', invokeError);
+      console.error('❌❌❌ EXCEPTION en invoke:', invokeError);
+      console.error('❌ Error type:', typeof invokeError);
+      console.error('❌ Error message:', invokeError?.message);
+      console.error('❌ Error stack:', invokeError?.stack);
       throw new Error(`Error de conexión con el servidor: ${invokeError.message || 'Unknown error'}`);
     }
 
     if (functionError) {
-      console.error('❌ Error calling record-payment-approval:', functionError);
+      console.error('❌❌❌ functionError presente:', functionError);
       throw new Error(`Error registrando aprobación: ${functionError.message || JSON.stringify(functionError)}`);
     }
 
     if (!result) {
-      console.error('❌ record-payment-approval returned null/undefined');
+      console.error('❌❌❌ result es null/undefined');
       throw new Error('El servidor no respondió correctamente. Intente nuevamente.');
     }
 
+    console.log('📋 Result completo:', JSON.stringify(result, null, 2));
+
     if (!result.success) {
-      console.error('❌ record-payment-approval failed:', result.error);
+      console.error('❌❌❌ result.success es false:', result.error);
       throw new Error(result.error || 'Error al registrar la aprobación');
     }
 
-    console.log('✅ Approval recorded successfully via edge function:', {
+    console.log('✅✅✅ Approval recorded successfully via edge function:', {
       approvalCount: result.approvalCount,
       requiredApprovals: result.requiredApprovals,
       isFullyApproved: result.isFullyApproved
@@ -269,34 +278,65 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
   };
 
   const handleApprove = async () => {
-    console.log('🚀 handleApprove called');
-    console.log('🔍 Current state:', { loading, hasProjectData: !!payment?.projectData, payment });
+    console.log('🚀🚀🚀 handleApprove INICIANDO 🚀🚀🚀');
+    console.log('📋 Estado inicial:', { 
+      loading, 
+      hasPayment: !!payment,
+      hasProjectData: !!payment?.projectData, 
+      paymentId,
+      userEmail: getCurrentUserEmail()
+    });
     
     if (loading) {
       console.log('⚠️ Already loading, returning early');
       return;
     }
     
-    if (!payment?.projectData) {
-      console.error('❌ No projectData available on payment');
+    if (!payment) {
+      console.error('❌❌❌ CRÍTICO: payment es null/undefined');
       toast({
         title: "Error",
-        description: "No se pueden cargar los datos del estado de pago. Por favor, recarga la página.",
+        description: "No se encontró el estado de pago. Recarga la página.",
         variant: "destructive"
       });
       return;
     }
     
+    if (!payment.projectData) {
+      console.error('❌❌❌ CRÍTICO: payment.projectData es null/undefined');
+      console.error('❌ Payment object:', JSON.stringify(payment, null, 2));
+      toast({
+        title: "Error",
+        description: "No se encontraron los datos del proyecto. Recarga la página.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const userEmail = getCurrentUserEmail();
+    if (!userEmail) {
+      console.error('❌❌❌ CRÍTICO: No se encontró email del usuario en sesión');
+      toast({
+        title: "Error",
+        description: "No se pudo identificar tu email. Vuelve a acceder desde el enlace de email.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    console.log('✅ Validaciones pasadas, iniciando proceso de aprobación');
     setLoading(true);
     
     try {
-      const approvalNotes = `Aprobado el ${new Date().toLocaleString('es-CL')} por ${getCurrentUserEmail()}`;
+      const approvalNotes = `Aprobado el ${new Date().toLocaleString('es-CL')} por ${userEmail}`;
+      console.log('📝 Calling updatePaymentStatus with notes:', approvalNotes);
+      
       const { currentApprovals, requiredApprovals } = await updatePaymentStatus('Aprobado', approvalNotes);
 
-      console.log('📊 Final approval result:', { currentApprovals, requiredApprovals });
+      console.log('📊 updatePaymentStatus completado:', { currentApprovals, requiredApprovals });
 
       if (currentApprovals >= requiredApprovals) {
-        // Fully approved - send notification to contractor
+        console.log('📤 Todas las aprobaciones recibidas, enviando notificación al contratista...');
         await sendContractorNotification(payment, 'Aprobado');
         toast({
           title: "Estado de pago aprobado",
@@ -309,9 +349,14 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
         });
       }
 
+      console.log('🔄 Llamando onStatusChange...');
       onStatusChange?.();
+      console.log('✅✅✅ handleApprove COMPLETADO ✅✅✅');
 
     } catch (error: any) {
+      console.error('❌❌❌ ERROR en handleApprove:', error);
+      console.error('❌ Error message:', error?.message);
+      console.error('❌ Error stack:', error?.stack);
       toast({
         title: "Error en el proceso",
         description: error.message || "Hubo un problema en el proceso de aprobación.",

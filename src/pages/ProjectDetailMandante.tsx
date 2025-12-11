@@ -36,6 +36,10 @@ import { useAdicionales } from "@/hooks/useAdicionales";
 import { AdicionalesCards } from "@/components/AdicionalesCards";
 import { AdicionalesDetailModal } from "@/components/AdicionalesDetailModal";
 import { AdicionalesForm } from "@/components/AdicionalesForm";
+import { useRFI } from "@/hooks/useRFI";
+import { RFICards } from "@/components/RFICards";
+import { RFIDetailModal } from "@/components/RFIDetailModal";
+import { RFIForm } from "@/components/RFIForm";
 import { useDocumentos } from "@/hooks/useDocumentos";
 import { useFotos } from "@/hooks/useFotos";
 import { usePresupuesto } from "@/hooks/usePresupuesto";
@@ -63,7 +67,11 @@ const ProjectDetailMandante = () => {
   const [showAdicionalesForm, setShowAdicionalesForm] = useState(false);
   const [showDocumentUpload, setShowDocumentUpload] = useState(false);
   const [showPhotoUpload, setShowPhotoUpload] = useState(false);
+  const [selectedRFI, setSelectedRFI] = useState<any>(null);
+  const [showRFIDetailModal, setShowRFIDetailModal] = useState(false);
+  const [showRFIForm, setShowRFIForm] = useState(false);
   const { adicionales, loading: adicionalesLoading, refetch: refetchAdicionales } = useAdicionales(id || "");
+  const { rfis, loading: rfisLoading, refetch: refetchRFIs } = useRFI(id || "");
   const { documentos, loading: documentosLoading, refetch: refetchDocumentos } = useDocumentos(id || "");
   const { fotos, loading: fotosLoading, refetch: refetchFotos } = useFotos(id || "");
   const {
@@ -83,10 +91,16 @@ const ProjectDetailMandante = () => {
   const [fotosSearch, setFotosSearch] = useState("");
   const [presupuestoSearch, setPresupuestoSearch] = useState("");
   const [reunionesSearch, setReunionesSearch] = useState("");
+  const [rfiSearch, setRfiSearch] = useState("");
 
   const handleCardClick = (adicional: any) => {
     setSelectedAdicional(adicional);
     setShowDetailModal(true);
+  };
+
+  const handleRFICardClick = (rfi: any) => {
+    setSelectedRFI(rfi);
+    setShowRFIDetailModal(true);
   };
 
   const { project, loading, refetch, mandante } = useProjectDetailMandante(id || "");
@@ -98,9 +112,10 @@ const ProjectDetailMandante = () => {
   const fotosEnabled = mandante?.Fotos === true;
   const presupuestoEnabled = mandante?.Presupuesto === true;
   const reunionesEnabled = mandante?.Reuniones === true;
+  const rfiEnabled = mandante?.RFI === true;
 
   // Count how many tabs should be shown
-  const hasAnyTab = adicionalesEnabled || documentosEnabled || fotosEnabled || presupuestoEnabled || reunionesEnabled;
+  const hasAnyTab = adicionalesEnabled || documentosEnabled || fotosEnabled || presupuestoEnabled || reunionesEnabled || rfiEnabled;
 
   const getPaymentStatus = (payment: any) => {
     return payment.Status || "Sin Estado";
@@ -653,6 +668,14 @@ const ProjectDetailMandante = () => {
                   className="font-rubik font-medium transition-all duration-200 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm data-[state=active]:font-semibold"
                 >
                   Reuniones
+                </TabsTrigger>
+              )}
+              {rfiEnabled && (
+                <TabsTrigger
+                  value="rfi"
+                  className="font-rubik font-medium transition-all duration-200 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm data-[state=active]:font-semibold"
+                >
+                  RFI
                 </TabsTrigger>
               )}
             </TabsList>
@@ -1284,6 +1307,25 @@ const ProjectDetailMandante = () => {
                 <ReunionesCards reuniones={reuniones} loading={reunionesLoading} />
               </TabsContent>
             )}
+
+            {rfiEnabled && (
+              <TabsContent value="rfi" className="space-y-6">
+                <Card className="mb-6">
+                  <CardHeader>
+                    <CardTitle className="text-xl font-rubik">RFI (Request for Information)</CardTitle>
+                    <CardDescription className="font-rubik">Gestiona las solicitudes de información del proyecto</CardDescription>
+                  </CardHeader>
+                </Card>
+                {renderControls(rfiSearch, setRfiSearch, "Nuevo RFI", () =>
+                  setShowRFIForm(true),
+                )}
+                <RFICards
+                  rfis={rfis}
+                  loading={rfisLoading}
+                  onCardClick={handleRFICardClick}
+                />
+              </TabsContent>
+            )}
           </Tabs>
         </div>
 
@@ -1335,6 +1377,24 @@ const ProjectDetailMandante = () => {
         onSuccess={() => {
           refetchAdicionales();
           setShowAdicionalesForm(false);
+        }}
+      />
+
+      {/* Modal de Detalle RFI */}
+      <RFIDetailModal
+        open={showRFIDetailModal}
+        onOpenChange={setShowRFIDetailModal}
+        rfi={selectedRFI}
+      />
+
+      {/* Modal de Nuevo RFI */}
+      <RFIForm
+        open={showRFIForm}
+        onOpenChange={setShowRFIForm}
+        projectId={id || "0"}
+        onSuccess={() => {
+          refetchRFIs();
+          setShowRFIForm(false);
         }}
       />
 

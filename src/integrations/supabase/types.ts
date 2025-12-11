@@ -1001,6 +1001,50 @@ export type Database = {
         }
         Relationships: []
       }
+      RFI: {
+        Row: {
+          created_at: string
+          Descripcion: string | null
+          Fecha_Respuesta: string | null
+          id: number
+          Proyecto: number | null
+          Respuesta: string | null
+          Status: string | null
+          Titulo: string | null
+          URL: string | null
+        }
+        Insert: {
+          created_at?: string
+          Descripcion?: string | null
+          Fecha_Respuesta?: string | null
+          id?: number
+          Proyecto?: number | null
+          Respuesta?: string | null
+          Status?: string | null
+          Titulo?: string | null
+          URL?: string | null
+        }
+        Update: {
+          created_at?: string
+          Descripcion?: string | null
+          Fecha_Respuesta?: string | null
+          id?: number
+          Proyecto?: number | null
+          Respuesta?: string | null
+          Status?: string | null
+          Titulo?: string | null
+          URL?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "RFI_Proyecto_fkey"
+            columns: ["Proyecto"]
+            isOneToOne: false
+            referencedRelation: "Proyectos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           auth_user_id: string

@@ -58,6 +58,11 @@ export interface ExecutiveSummaryData {
   }>;
   // Reuniones metrics
   totalReuniones: number;
+  // RFI metrics
+  totalRFI: number;
+  rfiPendientes: number;
+  rfiRespondidos: number;
+  rfiCerrados: number;
   projects: { id: number; name: string }[];
   // Mandante features configuration
   features: {
@@ -67,6 +72,7 @@ export interface ExecutiveSummaryData {
     Presupuesto: boolean;
     Reuniones: boolean;
     Licitaciones: boolean;
+    RFI: boolean;
   };
 }
 
@@ -93,7 +99,7 @@ export const useExecutiveSummaryMandante = (selectedProjectIds?: number[]) => {
       // Fetch mandante features configuration - get all mandantes
       const { data: mandanteConfigs } = await supabase
         .from('Mandantes')
-        .select('Adicionales, Documentos, Fotos, Presupuesto, Reuniones, Licitaciones')
+        .select('Adicionales, Documentos, Fotos, Presupuesto, Reuniones, Licitaciones, RFI')
         .in('id', mandanteIds.split(',').map(Number));
 
       // OR logic: if ANY mandante has a feature enabled, show it
@@ -104,6 +110,7 @@ export const useExecutiveSummaryMandante = (selectedProjectIds?: number[]) => {
         Presupuesto: mandanteConfigs?.some(m => m.Presupuesto) || false,
         Reuniones: mandanteConfigs?.some(m => m.Reuniones) || false,
         Licitaciones: mandanteConfigs?.some(m => m.Licitaciones) || false,
+        RFI: mandanteConfigs?.some(m => m.RFI) || false,
       };
 
       if (!mandanteIds || mandanteIds === '0') {
@@ -133,6 +140,10 @@ export const useExecutiveSummaryMandante = (selectedProjectIds?: number[]) => {
           montoTotalPresupuesto: 0,
           presupuestoHistorico: [],
           totalReuniones: 0,
+          totalRFI: 0,
+          rfiPendientes: 0,
+          rfiRespondidos: 0,
+          rfiCerrados: 0,
           projects: [],
           features
         });
@@ -188,6 +199,10 @@ export const useExecutiveSummaryMandante = (selectedProjectIds?: number[]) => {
           montoTotalPresupuesto: 0,
           presupuestoHistorico: [],
           totalReuniones: 0,
+          totalRFI: 0,
+          rfiPendientes: 0,
+          rfiRespondidos: 0,
+          rfiCerrados: 0,
           projects: [],
           features
         });
@@ -260,6 +275,12 @@ export const useExecutiveSummaryMandante = (selectedProjectIds?: number[]) => {
       const { data: reuniones } = await supabase
         .from('Reuniones')
         .select('id');
+
+      // Fetch RFI data
+      const { data: rfis } = await supabase
+        .from('RFI' as any)
+        .select('id, Status, Proyecto')
+        .in('Proyecto', projectIds);
 
       if (paymentsError) {
         throw paymentsError;
@@ -349,6 +370,12 @@ export const useExecutiveSummaryMandante = (selectedProjectIds?: number[]) => {
       // Calculate reuniones metrics
       const totalReuniones = reuniones?.length || 0;
 
+      // Calculate RFI metrics
+      const totalRFI = (rfis as any[])?.length || 0;
+      const rfiPendientes = (rfis as any[])?.filter((r: any) => r.Status === 'Pendiente').length || 0;
+      const rfiRespondidos = (rfis as any[])?.filter((r: any) => r.Status === 'Respondido').length || 0;
+      const rfiCerrados = (rfis as any[])?.filter((r: any) => r.Status === 'Cerrado').length || 0;
+
       setSummaryData({
         totalProjects,
         totalValue,
@@ -375,6 +402,10 @@ export const useExecutiveSummaryMandante = (selectedProjectIds?: number[]) => {
         montoTotalPresupuesto,
         presupuestoHistorico,
         totalReuniones,
+        totalRFI,
+        rfiPendientes,
+        rfiRespondidos,
+        rfiCerrados,
         projects: projects.map(p => ({ id: p.id, name: p.Name || 'Sin nombre' })),
         features
       });

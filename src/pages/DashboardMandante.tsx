@@ -32,6 +32,8 @@ import {
   Edit2,
   Trash2,
   ChevronDown as ChevronDownIcon,
+  HelpCircle,
+  PlusCircle,
 } from "lucide-react";
 import { useProjectsWithDetailsMandante } from "@/hooks/useProjectsWithDetailsMandante";
 import { useMandanteFolders } from "@/hooks/useMandanteFolders";
@@ -46,8 +48,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import PageHeader from "@/components/PageHeader";
-
-// Force rebuild to clear cached TooltipProvider reference
+import PendingActionsSection from "@/components/PendingActionsSection";
 
 interface ProjectFolder {
   id: string;
@@ -346,6 +347,21 @@ const DashboardMandante: React.FC = () => {
   // Función para verificar si un proyecto tiene estados "Recibido" (Enviado)
   const hasReceivedPayments = (project: any) => {
     return project.EstadosPago?.some((payment) => payment.Status === "Enviado") || false;
+  };
+
+  // Función para verificar si un proyecto tiene adicionales pendientes
+  const hasPendingAdicionales = (project: any) => {
+    return project.Adicionales?.some((adicional) => adicional.Status === "Pendiente") || false;
+  };
+
+  // Función para verificar si un proyecto tiene RFI pendientes
+  const hasPendingRFI = (project: any) => {
+    return project.RFI?.some((rfi) => rfi.Status === "Pendiente") || false;
+  };
+
+  // Función para verificar si un proyecto tiene acciones pendientes
+  const hasPendingActions = (project: any) => {
+    return hasReceivedPayments(project) || hasPendingAdicionales(project) || hasPendingRFI(project);
   };
 
   // Función para filtrar y ordenar proyectos
@@ -808,9 +824,9 @@ const DashboardMandante: React.FC = () => {
                                 <div>
                                   <CardTitle className="text-xl mb-2 text-slate-800 font-rubik">
                                     {project.Name}
-                                    {hasReceivedPayments(project) && (
-                                      <Badge className="ml-2 bg-blue-100 text-blue-800 font-rubik">
-                                        Estados Recibidos
+                                    {hasPendingActions(project) && (
+                                      <Badge className="ml-2 bg-amber-100 text-amber-800 font-rubik">
+                                        Acciones pendientes
                                       </Badge>
                                     )}
                                   </CardTitle>
@@ -886,49 +902,15 @@ const DashboardMandante: React.FC = () => {
                                 </div>
                               </div>
 
-                              {/* Estados recibidos para aprobación rápida */}
-                              {project.EstadosPago && project.EstadosPago.length > 0 && (
-                                <div className="space-y-2">
-                                  <h4 className="text-sm font-medium text-slate-800 font-rubik">
-                                    Estados Recibidos para Aprobación
-                                  </h4>
-                                  <div className="grid gap-2 max-h-32 overflow-y-auto">
-                                    {project.EstadosPago.filter((payment) => payment.Status === "Enviado").map(
-                                      (payment) => (
-                                        <div
-                                          key={payment.id}
-                                          className="flex items-center justify-between p-2 rounded border text-sm cursor-pointer hover:bg-blue-50 border-blue-200"
-                                          onClick={() => handlePaymentClick(payment.id)}
-                                        >
-                                          <div className="flex items-center gap-2">
-                                            {getStatusIcon(payment.Status)}
-                                            <span className="font-medium text-slate-800 font-rubik">
-                                              {payment.Name}
-                                            </span>
-                                            <Badge className={`text-xs ${getStatusColor(payment.Status)} font-rubik`}>
-                                              {getDisplayStatus(payment.Status)}
-                                            </Badge>
-                                          </div>
-                                          <div className="text-right">
-                                            <div className="font-medium text-slate-800 font-rubik">
-                                              {formatCurrency(payment.Total, project.Currency)}
-                                            </div>
-                                            <div className="text-xs text-gloster-gray font-rubik">
-                                              {payment.ExpiryDate}
-                                            </div>
-                                          </div>
-                                        </div>
-                                      ),
-                                    )}
-                                    {project.EstadosPago.filter((payment) => payment.Status === "Enviado").length ===
-                                      0 && (
-                                      <div className="text-sm text-gloster-gray text-center py-2 font-rubik">
-                                        No hay estados recibidos para aprobación
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              )}
+                              {/* Acciones pendientes */}
+                              <PendingActionsSection
+                                payments={project.EstadosPago || []}
+                                adicionales={project.Adicionales || []}
+                                rfi={project.RFI || []}
+                                currency={project.Currency}
+                                onPaymentClick={handlePaymentClick}
+                                onProjectDetailsClick={() => handleProjectDetails(project.id)}
+                              />
 
                               {/* Botones de acción */}
                               <div className="pt-4 border-t border-gloster-gray/20">
@@ -974,8 +956,8 @@ const DashboardMandante: React.FC = () => {
                           <div>
                             <CardTitle className="text-xl mb-2 text-slate-800 font-rubik">
                               {project.Name}
-                              {hasReceivedPayments(project) && (
-                                <Badge className="ml-2 bg-blue-100 text-blue-800 font-rubik">Estados Recibidos</Badge>
+                              {hasPendingActions(project) && (
+                                <Badge className="ml-2 bg-amber-100 text-amber-800 font-rubik">Acciones pendientes</Badge>
                               )}
                             </CardTitle>
                             <CardDescription className="text-sm text-gloster-gray font-rubik">
@@ -1046,42 +1028,15 @@ const DashboardMandante: React.FC = () => {
                           </div>
                         </div>
 
-                        {/* Estados recibidos para aprobación rápida */}
-                        {project.EstadosPago && project.EstadosPago.length > 0 && (
-                          <div className="space-y-2">
-                            <h4 className="text-sm font-medium text-slate-800 font-rubik">
-                              Estados Recibidos para Aprobación
-                            </h4>
-                            <div className="grid gap-2 max-h-32 overflow-y-auto">
-                              {project.EstadosPago.filter((payment) => payment.Status === "Enviado").map((payment) => (
-                                <div
-                                  key={payment.id}
-                                  className="flex items-center justify-between p-2 rounded border text-sm cursor-pointer hover:bg-blue-50 border-blue-200"
-                                  onClick={() => handlePaymentClick(payment.id)}
-                                >
-                                  <div className="flex items-center gap-2">
-                                    {getStatusIcon(payment.Status)}
-                                    <span className="font-medium text-slate-800 font-rubik">{payment.Name}</span>
-                                    <Badge className={`text-xs ${getStatusColor(payment.Status)} font-rubik`}>
-                                      {getDisplayStatus(payment.Status)}
-                                    </Badge>
-                                  </div>
-                                  <div className="text-right">
-                                    <div className="font-medium text-slate-800 font-rubik">
-                                      {formatCurrency(payment.Total, project.Currency)}
-                                    </div>
-                                    <div className="text-xs text-gloster-gray font-rubik">{payment.ExpiryDate}</div>
-                                  </div>
-                                </div>
-                              ))}
-                              {project.EstadosPago.filter((payment) => payment.Status === "Enviado").length === 0 && (
-                                <div className="text-sm text-gloster-gray text-center py-2 font-rubik">
-                                  No hay estados recibidos para aprobación
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
+                        {/* Acciones pendientes */}
+                        <PendingActionsSection
+                          payments={project.EstadosPago || []}
+                          adicionales={project.Adicionales || []}
+                          rfi={project.RFI || []}
+                          currency={project.Currency}
+                          onPaymentClick={handlePaymentClick}
+                          onProjectDetailsClick={() => handleProjectDetails(project.id)}
+                        />
 
                         {/* Botón de acción */}
                         <div className="pt-4 border-t border-gloster-gray/20">

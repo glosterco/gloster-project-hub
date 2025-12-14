@@ -35,6 +35,19 @@ export interface ProjectWithDetailsMandante {
     URL: string;
     URLMandante: string;
   }>;
+  Adicionales: Array<{
+    id: number;
+    Status: string;
+    Titulo: string;
+    Monto_presentado: number;
+    created_at: string;
+  }>;
+  RFI: Array<{
+    id: number;
+    Status: string;
+    Titulo: string;
+    created_at: string;
+  }>;
 }
 
 export const useProjectsWithDetailsMandante = (mandanteId?: number) => {
@@ -106,10 +119,11 @@ export const useProjectsWithDetailsMandante = (mandanteId?: number) => {
         return;
       }
 
-      // Obtener estados de pago para cada proyecto
-      const projectsWithPaymentStates = await Promise.all(
+      // Obtener estados de pago, adicionales y RFI para cada proyecto
+      const projectsWithDetails = await Promise.all(
         projectsData.map(async (project) => {
           try {
+            // Fetch payment states
             const { data: paymentStatesData, error: paymentStatesError } = await supabase
               .from('Estados de pago')
               .select('*')
@@ -119,10 +133,26 @@ export const useProjectsWithDetailsMandante = (mandanteId?: number) => {
 
             if (paymentStatesError) {
               console.error('Error fetching payment states for project:', project.id, paymentStatesError);
-              return {
-                ...project,
-                EstadosPago: []
-              };
+            }
+
+            // Fetch adicionales
+            const { data: adicionalesData, error: adicionalesError } = await supabase
+              .from('Adicionales')
+              .select('id, Status, Titulo, Monto_presentado, created_at')
+              .eq('Proyecto', project.id);
+
+            if (adicionalesError) {
+              console.error('Error fetching adicionales for project:', project.id, adicionalesError);
+            }
+
+            // Fetch RFI
+            const { data: rfiData, error: rfiError } = await supabase
+              .from('RFI')
+              .select('id, Status, Titulo, created_at')
+              .eq('Proyecto', project.id);
+
+            if (rfiError) {
+              console.error('Error fetching RFI for project:', project.id, rfiError);
             }
 
             // Asegurar que al menos un estado sea "Pendiente" SOLO si hay pagos que vencen en 14 días o menos
@@ -130,7 +160,6 @@ export const useProjectsWithDetailsMandante = (mandanteId?: number) => {
             
             if (!hasAtLeastOnePendiente && paymentStatesData && paymentStatesData.length > 0) {
               const today = new Date();
-              // CORRECCIÓN: Encontrar pagos programados que vencen en 14 días o menos
               const eligibleProgramados = paymentStatesData.filter(state => {
                 if (state.Status !== 'Programado') return false;
                 const expiry = new Date(state.ExpiryDate);
@@ -139,7 +168,6 @@ export const useProjectsWithDetailsMandante = (mandanteId?: number) => {
               });
 
               if (eligibleProgramados.length > 0) {
-                // Ordenar por fecha de vencimiento (más próximo primero)
                 eligibleProgramados.sort((a, b) =>
                   new Date(a.ExpiryDate).getTime() - new Date(b.ExpiryDate).getTime()
                 );
@@ -158,19 +186,23 @@ export const useProjectsWithDetailsMandante = (mandanteId?: number) => {
 
             return {
               ...project,
-              EstadosPago: paymentStatesData || []
+              EstadosPago: paymentStatesData || [],
+              Adicionales: adicionalesData || [],
+              RFI: rfiData || []
             };
           } catch (error) {
             console.error('Error processing project:', project.id, error);
             return {
               ...project,
-              EstadosPago: []
+              EstadosPago: [],
+              Adicionales: [],
+              RFI: []
             };
           }
         })
       );
 
-      setProjects(projectsWithPaymentStates);
+      setProjects(projectsWithDetails);
     } catch (error) {
       console.error('Unexpected error fetching projects:', error);
       toast({

@@ -134,13 +134,13 @@ export const usePaymentApprovalStatus = (paymentId: number | null, currentUserEm
       
       const canUserApprove = !!(isApprover && hasNotApprovedYet && isUsersTurn);
 
-      // Find pending approvers
-      const approvedEmails = typedApprovals
-        .filter(a => a.approval_status === 'Aprobado')
+      // Find pending approvers - exclude those who have already acted (approved OR rejected)
+      const actedEmails = typedApprovals
+        .filter(a => a.approval_status === 'Aprobado' || a.approval_status === 'Rechazado')
         .map(a => a.approver_email.toLowerCase());
       
       const pendingApprovers = (approvers || [])
-        .filter(a => !approvedEmails.includes(a.approver_email.toLowerCase()))
+        .filter(a => !actedEmails.includes(a.approver_email.toLowerCase()))
         .map(a => ({ email: a.approver_email, name: a.approver_name, order: a.approval_order }));
 
       setStatus({

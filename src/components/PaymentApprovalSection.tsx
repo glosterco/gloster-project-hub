@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePaymentApproval } from '@/hooks/usePaymentApproval';
 import { usePaymentApprovalStatus } from '@/hooks/usePaymentApprovalStatus';
 import { useGoogleDriveIntegration } from '@/hooks/useGoogleDriveIntegration';
@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Upload, X, FileText, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface PaymentApprovalSectionProps {
   paymentId: string;
@@ -38,13 +39,40 @@ const PaymentApprovalSection: React.FC<PaymentApprovalSectionProps> = ({
   const [uploadedFileNames, setUploadedFileNames] = useState<string[]>([]);
   const [justApproved, setJustApproved] = useState(false);
   const [justRejected, setJustRejected] = useState(false);
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | undefined>(undefined);
   
   const { toast } = useToast();
   const { uploadDocumentsToDrive } = useGoogleDriveIntegration();
   
-  // Get current user email from session
-  const mandanteAccess = sessionStorage.getItem('mandanteAccess');
-  const currentUserEmail = mandanteAccess ? JSON.parse(mandanteAccess).email : undefined;
+  // Get current user email from session OR authenticated user
+  useEffect(() => {
+    const getEmail = async () => {
+      // First check session storage (email-based access)
+      const mandanteAccess = sessionStorage.getItem('mandanteAccess');
+      if (mandanteAccess) {
+        const data = JSON.parse(mandanteAccess);
+        if (data.email) {
+          setCurrentUserEmail(data.email);
+          return;
+        }
+      }
+      
+      // Then check authenticated user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.email) {
+        setCurrentUserEmail(user.email);
+        // Also store in session for the approval hooks
+        sessionStorage.setItem('mandanteAccess', JSON.stringify({
+          email: user.email,
+          name: user.user_metadata?.full_name || user.email,
+          userType: 'mandante',
+          hasFullAccess: true,
+          isLimitedAccess: false
+        }));
+      }
+    };
+    getEmail();
+  }, []);
   
   // Fetch approval status
   const { status: approvalStatus, refetch: refetchApprovalStatus } = usePaymentApprovalStatus(

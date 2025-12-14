@@ -58,6 +58,11 @@ export interface ExecutiveSummaryData {
   }>;
   // Reuniones metrics
   totalReuniones: number;
+  // RFI metrics
+  totalRFI: number;
+  rfiPendientes: number;
+  rfiRespondidos: number;
+  rfiCerrados: number;
   projects: { id: number; name: string }[];
   // Contratista features configuration
   features: {
@@ -67,6 +72,7 @@ export interface ExecutiveSummaryData {
     Presupuesto: boolean;
     Reuniones: boolean;
     Licitaciones: boolean;
+    RFI: boolean;
   };
 }
 
@@ -94,7 +100,7 @@ export const useExecutiveSummary = (selectedProjectIds?: number[]) => {
       // Fetch features configuration from both Mandantes and Contratistas and OR them
       const { data: mandanteConfigs } = await supabase
         .from('Mandantes')
-        .select('Adicionales, Documentos, Fotos, Presupuesto, Reuniones, Licitaciones')
+        .select('Adicionales, Documentos, Fotos, Presupuesto, Reuniones, Licitaciones, RFI')
         .in('id', mandanteIds.split(',').map(Number));
 
       const { data: contratistaConfigs } = await supabase
@@ -102,7 +108,7 @@ export const useExecutiveSummary = (selectedProjectIds?: number[]) => {
         .select('Adicionales, Documentos, Fotos, Presupuesto, Reuniones, Licitaciones')
         .in('id', contratistaIds.split(',').map(Number));
 
-      // OR logic across both sources
+      // OR logic across both sources (RFI only exists in Mandantes)
       const features = {
         Adicionales: (mandanteConfigs?.some(m => m.Adicionales) || contratistaConfigs?.some(c => c.Adicionales)) || false,
         Documentos: (mandanteConfigs?.some(m => m.Documentos) || contratistaConfigs?.some(c => c.Documentos)) || false,
@@ -110,6 +116,7 @@ export const useExecutiveSummary = (selectedProjectIds?: number[]) => {
         Presupuesto: (mandanteConfigs?.some(m => m.Presupuesto) || contratistaConfigs?.some(c => c.Presupuesto)) || false,
         Reuniones: (mandanteConfigs?.some(m => m.Reuniones) || contratistaConfigs?.some(c => c.Reuniones)) || false,
         Licitaciones: (mandanteConfigs?.some(m => m.Licitaciones) || contratistaConfigs?.some(c => c.Licitaciones)) || false,
+        RFI: mandanteConfigs?.some(m => m.RFI) || false,
       };
 
       // Fetch projects with related data - using proper filter syntax
@@ -167,6 +174,10 @@ export const useExecutiveSummary = (selectedProjectIds?: number[]) => {
           montoTotalPresupuesto: 0,
           presupuestoHistorico: [],
           totalReuniones: 0,
+          totalRFI: 0,
+          rfiPendientes: 0,
+          rfiRespondidos: 0,
+          rfiCerrados: 0,
           projects: [],
           features
         });
@@ -239,6 +250,12 @@ export const useExecutiveSummary = (selectedProjectIds?: number[]) => {
       const { data: reuniones } = await supabase
         .from('Reuniones')
         .select('id');
+
+      // Fetch RFI data
+      const { data: rfiData } = await supabase
+        .from('RFI')
+        .select('id, Status, Proyecto')
+        .in('Proyecto', projectIds);
 
       if (paymentsError) {
         throw paymentsError;
@@ -328,6 +345,12 @@ export const useExecutiveSummary = (selectedProjectIds?: number[]) => {
       // Calculate reuniones metrics
       const totalReuniones = reuniones?.length || 0;
 
+      // Calculate RFI metrics
+      const totalRFI = rfiData?.length || 0;
+      const rfiPendientes = rfiData?.filter(r => r.Status === 'Pendiente').length || 0;
+      const rfiRespondidos = rfiData?.filter(r => r.Status === 'Respondido').length || 0;
+      const rfiCerrados = rfiData?.filter(r => r.Status === 'Cerrado').length || 0;
+
       setSummaryData({
         totalProjects,
         totalValue,
@@ -354,6 +377,10 @@ export const useExecutiveSummary = (selectedProjectIds?: number[]) => {
         montoTotalPresupuesto,
         presupuestoHistorico,
         totalReuniones,
+        totalRFI,
+        rfiPendientes,
+        rfiRespondidos,
+        rfiCerrados,
         projects: projects.map(p => ({ id: p.id, name: p.Name || 'Sin nombre' })),
         features
       });

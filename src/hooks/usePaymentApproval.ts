@@ -12,12 +12,30 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  const getCurrentUserEmail = (): string | null => {
+  const getCurrentUserEmail = async (): Promise<string | null> => {
+    // First check session storage (email-based access)
     const mandanteAccess = sessionStorage.getItem('mandanteAccess');
     if (mandanteAccess) {
       const data = JSON.parse(mandanteAccess);
-      return data.email || null;
+      if (data.email) {
+        return data.email;
+      }
     }
+    
+    // Then check authenticated user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user?.email) {
+      // Store in session for consistency
+      sessionStorage.setItem('mandanteAccess', JSON.stringify({
+        email: user.email,
+        name: user.user_metadata?.full_name || user.email,
+        userType: 'mandante',
+        hasFullAccess: true,
+        isLimitedAccess: false
+      }));
+      return user.email;
+    }
+    
     return null;
   };
 
@@ -70,8 +88,8 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
     console.log('🔵 recordIndividualApproval INICIANDO');
     console.log('══════════════════════════════════════════════════════');
     
-    // Get user email - CRITICAL
-    const userEmail = getCurrentUserEmail();
+    // Get user email - CRITICAL (now async)
+    const userEmail = await getCurrentUserEmail();
     console.log('📧 Email del usuario:', userEmail);
     
     if (!userEmail) {
@@ -354,12 +372,12 @@ export const usePaymentApproval = ({ paymentId, payment, onStatusChange }: Payme
       return;
     }
     
-    const userEmail = getCurrentUserEmail();
+    const userEmail = await getCurrentUserEmail();
     if (!userEmail) {
       console.error('❌ FATAL: No user email in session');
       toast({
         title: "Error",
-        description: "No se pudo identificar tu email. Vuelve a acceder desde el enlace de email.",
+        description: "No se pudo identificar tu email. Inicia sesión o accede desde el enlace de email.",
         variant: "destructive"
       });
       return;

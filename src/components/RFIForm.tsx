@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -21,7 +21,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Calendar } from 'lucide-react';
+import { Loader2, Calendar, Paperclip, X, FileText } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -36,7 +36,6 @@ import { format, addDays } from 'date-fns';
 const rfiSchema = z.object({
   titulo: z.string().min(1, 'El título es requerido'),
   descripcion: z.string().min(1, 'La descripción/pregunta es requerida'),
-  url: z.string().url('URL inválida').optional().or(z.literal('')),
   urgencia: z.enum(['no_urgente', 'urgente', 'muy_urgente']),
   fecha_vencimiento: z.string().min(1, 'La fecha de vencimiento es requerida'),
 });
@@ -58,6 +57,8 @@ export const RFIForm: React.FC<RFIFormProps> = ({
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedContactIds, setSelectedContactIds] = useState<number[]>([]);
+  const [attachedFile, setAttachedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { contactos, loading: contactosLoading, addContacto } = useContactos(projectId);
 
@@ -69,7 +70,6 @@ export const RFIForm: React.FC<RFIFormProps> = ({
     defaultValues: {
       titulo: '',
       descripcion: '',
-      url: '',
       urgencia: 'no_urgente',
       fecha_vencimiento: defaultDate,
     },
@@ -81,13 +81,38 @@ export const RFIForm: React.FC<RFIFormProps> = ({
       form.reset({
         titulo: '',
         descripcion: '',
-        url: '',
         urgencia: 'no_urgente',
         fecha_vencimiento: format(addDays(new Date(), 7), 'yyyy-MM-dd'),
       });
       setSelectedContactIds([]);
+      setAttachedFile(null);
     }
   }, [open]);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file size (max 12MB)
+      if (file.size > 12 * 1024 * 1024) {
+        toast({
+          title: "Archivo muy grande",
+          description: "El archivo no puede superar los 12MB",
+          variant: "destructive",
+        });
+        return;
+      }
+      setAttachedFile(file);
+    }
+  };
+
+  const convertFileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
 
   const onSubmit = async (data: RFIFormData) => {
     setIsSubmitting(true);
@@ -95,6 +120,37 @@ export const RFIForm: React.FC<RFIFormProps> = ({
       const pid = parseInt(projectId);
       if (Number.isNaN(pid)) {
         throw new Error('ID de proyecto inválido');
+      }
+
+      let documentUrl: string | null = null;
+
+      // Upload file to Drive if attached
+      if (attachedFile) {
+        const fileContent = await convertFileToBase64(attachedFile);
+        const base64Data = fileContent.includes(',') ? fileContent.split(',')[1] : fileContent;
+
+        const { data: uploadData, error: uploadError } = await supabase.functions.invoke('upload-project-documents', {
+          body: {
+            projectId: pid,
+            documents: [{
+              fileName: `RFI_${data.titulo.replace(/[^a-zA-Z0-9]/g, '_')}_${attachedFile.name}`,
+              fileContent: base64Data,
+              tipo: 'RFI',
+              mimeType: attachedFile.type
+            }]
+          }
+        });
+
+        if (uploadError) {
+          console.error('Error uploading file:', uploadError);
+          toast({
+            title: "Advertencia",
+            description: "No se pudo adjuntar el documento, pero el RFI se creará",
+            variant: "destructive",
+          });
+        } else if (uploadData?.uploadedFiles?.[0]) {
+          documentUrl = uploadData.uploadedFiles[0].webViewLink;
+        }
       }
 
       // Create RFI
@@ -105,7 +161,7 @@ export const RFIForm: React.FC<RFIFormProps> = ({
           Titulo: data.titulo,
           Descripcion: data.descripcion,
           Status: 'Pendiente',
-          URL: data.url || null,
+          URL: documentUrl,
           Urgencia: data.urgencia,
           Fecha_Vencimiento: data.fecha_vencimiento,
         } as any)
@@ -128,11 +184,12 @@ export const RFIForm: React.FC<RFIFormProps> = ({
 
       toast({
         title: "RFI creado",
-        description: "El RFI ha sido registrado correctamente",
+        description: attachedFile ? "El RFI y documento han sido registrados" : "El RFI ha sido registrado correctamente",
       });
 
       form.reset();
       setSelectedContactIds([]);
+      setAttachedFile(null);
       onOpenChange(false);
       onSuccess?.();
     } catch (error) {
@@ -243,23 +300,44 @@ export const RFIForm: React.FC<RFIFormProps> = ({
               />
             </div>
 
-            <FormField
-              control={form.control}
-              name="url"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>URL de documento adjunto (opcional)</FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="https://..."
-                      type="url"
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+            {/* File attachment section */}
+            <div className="space-y-2">
+              <FormLabel>Documento adjunto (opcional)</FormLabel>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileSelect}
+                className="hidden"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.dwg"
+              />
+              {attachedFile ? (
+                <div className="flex items-center gap-2 p-3 bg-muted rounded-md">
+                  <FileText className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm flex-1 truncate">{attachedFile.name}</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setAttachedFile(null)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full"
+                >
+                  <Paperclip className="h-4 w-4 mr-2" />
+                  Adjuntar documento
+                </Button>
               )}
-            />
+              <p className="text-xs text-muted-foreground">
+                Formatos: PDF, Word, Excel, Imágenes, DWG (máx. 12MB)
+              </p>
+            </div>
 
             <div className="border-t pt-4">
               <ContactoSelector

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -8,27 +8,36 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { ExternalLink, HelpCircle, Calendar, MessageSquare } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { 
+  ExternalLink, 
+  HelpCircle, 
+  Calendar, 
+  MessageSquare, 
+  Send, 
+  Forward, 
+  Loader2,
+  Clock,
+  AlertTriangle,
+  AlertCircle,
+  Users
+} from 'lucide-react';
 import { RFI } from '@/hooks/useRFI';
+import { useContactos } from '@/hooks/useContactos';
+import { useRFIDestinatarios } from '@/hooks/useRFIDestinatarios';
+import { ContactoSelector } from './ContactoSelector';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface RFIDetailModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   rfi: RFI | null;
+  isMandante?: boolean;
+  projectId?: string;
+  onSuccess?: () => void;
 }
-
-const getStatusVariant = (status: string | null) => {
-  switch (status?.toLowerCase()) {
-    case 'pendiente':
-      return 'secondary';
-    case 'respondido':
-      return 'default';
-    case 'cerrado':
-      return 'outline';
-    default:
-      return 'secondary';
-  }
-};
 
 const getStatusColor = (status: string | null) => {
   switch (status?.toLowerCase()) {
@@ -43,12 +52,130 @@ const getStatusColor = (status: string | null) => {
   }
 };
 
+const getUrgenciaColor = (urgencia: string | null) => {
+  switch (urgencia?.toLowerCase()) {
+    case 'muy_urgente':
+      return 'bg-red-100 text-red-700 border-red-200';
+    case 'urgente':
+      return 'bg-orange-100 text-orange-700 border-orange-200';
+    default:
+      return 'bg-blue-100 text-blue-700 border-blue-200';
+  }
+};
+
+const getUrgenciaLabel = (urgencia: string | null) => {
+  switch (urgencia?.toLowerCase()) {
+    case 'muy_urgente': return 'Muy urgente';
+    case 'urgente': return 'Urgente';
+    default: return 'No urgente';
+  }
+};
+
+const getUrgenciaIcon = (urgencia: string | null) => {
+  switch (urgencia?.toLowerCase()) {
+    case 'muy_urgente':
+      return <AlertCircle className="h-4 w-4" />;
+    case 'urgente':
+      return <AlertTriangle className="h-4 w-4" />;
+    default:
+      return <Clock className="h-4 w-4" />;
+  }
+};
+
 export const RFIDetailModal: React.FC<RFIDetailModalProps> = ({
   open,
   onOpenChange,
-  rfi
+  rfi,
+  isMandante = false,
+  projectId,
+  onSuccess
 }) => {
+  const [respuesta, setRespuesta] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showForwardSection, setShowForwardSection] = useState(false);
+  const [selectedContactIds, setSelectedContactIds] = useState<number[]>([]);
+  const { toast } = useToast();
+  
+  const { contactos, loading: contactosLoading, addContacto } = useContactos(projectId || '');
+  const { destinatarios, loading: destinatariosLoading, addDestinatarios } = useRFIDestinatarios(rfi?.id || null);
+
+  // Reset state when modal opens/closes
+  useEffect(() => {
+    if (!open) {
+      setRespuesta('');
+      setShowForwardSection(false);
+      setSelectedContactIds([]);
+    }
+  }, [open]);
+
   if (!rfi) return null;
+
+  const isPending = rfi.Status?.toLowerCase() === 'pendiente';
+  const canRespond = isMandante && isPending;
+
+  const handleSubmitResponse = async () => {
+    if (!respuesta.trim()) {
+      toast({
+        title: "Error",
+        description: "Debe ingresar una respuesta",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from('RFI' as any)
+        .update({
+          Respuesta: respuesta,
+          Status: 'Respondido',
+          Fecha_Respuesta: new Date().toISOString(),
+        } as any)
+        .eq('id', rfi.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Respuesta enviada",
+        description: "El RFI ha sido respondido correctamente",
+      });
+
+      onOpenChange(false);
+      onSuccess?.();
+    } catch (error) {
+      console.error('Error submitting response:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo enviar la respuesta",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleForward = async () => {
+    if (selectedContactIds.length === 0) {
+      toast({
+        title: "Error",
+        description: "Debe seleccionar al menos un especialista",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await addDestinatarios(rfi.id, selectedContactIds);
+      setShowForwardSection(false);
+      setSelectedContactIds([]);
+    } catch (error) {
+      // Error handled by hook
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -61,14 +188,30 @@ export const RFIDetailModal: React.FC<RFIDetailModalProps> = ({
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Status and Date */}
-          <div className="flex items-center justify-between">
-            <Badge className={getStatusColor(rfi.Status)}>
-              {rfi.Status || 'Pendiente'}
-            </Badge>
-            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-              <Calendar className="h-4 w-4" />
-              <span>Creado: {new Date(rfi.created_at).toLocaleDateString('es-CL')}</span>
+          {/* Status, Urgency and Dates */}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap gap-2">
+              <Badge className={getStatusColor(rfi.Status)}>
+                {rfi.Status || 'Pendiente'}
+              </Badge>
+              {(rfi as any).Urgencia && (
+                <Badge className={`${getUrgenciaColor((rfi as any).Urgencia)} flex items-center gap-1`}>
+                  {getUrgenciaIcon((rfi as any).Urgencia)}
+                  {getUrgenciaLabel((rfi as any).Urgencia)}
+                </Badge>
+              )}
+            </div>
+            <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+              <div className="flex items-center gap-1">
+                <Calendar className="h-4 w-4" />
+                <span>Creado: {new Date(rfi.created_at).toLocaleDateString('es-CL')}</span>
+              </div>
+              {(rfi as any).Fecha_Vencimiento && (
+                <div className="flex items-center gap-1 text-amber-600">
+                  <Clock className="h-4 w-4" />
+                  <span>Vence: {new Date((rfi as any).Fecha_Vencimiento).toLocaleDateString('es-CL')}</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -90,6 +233,35 @@ export const RFIDetailModal: React.FC<RFIDetailModalProps> = ({
             </div>
           )}
 
+          {/* Destinatarios (especialistas reenviados) */}
+          {destinatarios.length > 0 && (
+            <>
+              <Separator />
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Users className="h-4 w-4 text-blue-500" />
+                  <h3 className="text-sm font-medium text-muted-foreground">Reenviado a especialistas</h3>
+                </div>
+                <div className="space-y-2">
+                  {destinatarios.map((dest) => (
+                    <div 
+                      key={dest.id} 
+                      className="flex items-center justify-between p-2 bg-muted/30 rounded-md text-sm"
+                    >
+                      <div>
+                        <span className="font-medium">{dest.contacto?.nombre}</span>
+                        <span className="text-muted-foreground ml-2">({dest.contacto?.rol})</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        Enviado: {new Date(dest.enviado_at).toLocaleDateString('es-CL')}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
           <Separator />
 
           {/* Response */}
@@ -105,6 +277,60 @@ export const RFIDetailModal: React.FC<RFIDetailModalProps> = ({
                   <p className="text-xs text-muted-foreground mt-2">
                     Respondido el: {new Date(rfi.Fecha_Respuesta).toLocaleDateString('es-CL')}
                   </p>
+                )}
+              </div>
+            ) : canRespond ? (
+              <div className="space-y-4">
+                <Textarea
+                  value={respuesta}
+                  onChange={(e) => setRespuesta(e.target.value)}
+                  placeholder="Escriba su respuesta aquí..."
+                  className="min-h-[100px]"
+                />
+                <div className="flex flex-col gap-2">
+                  <Button 
+                    onClick={handleSubmitResponse}
+                    disabled={isSubmitting || !respuesta.trim()}
+                    className="w-full"
+                  >
+                    {isSubmitting ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4 mr-2" />
+                    )}
+                    Enviar respuesta
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowForwardSection(!showForwardSection)}
+                    className="w-full"
+                  >
+                    <Forward className="h-4 w-4 mr-2" />
+                    Reenviar a especialista
+                  </Button>
+                </div>
+
+                {showForwardSection && projectId && (
+                  <div className="border rounded-md p-4 space-y-4">
+                    <ContactoSelector
+                      contactos={contactos}
+                      selectedIds={selectedContactIds}
+                      onSelectionChange={setSelectedContactIds}
+                      loading={contactosLoading}
+                      onAddContacto={addContacto}
+                      projectId={projectId}
+                    />
+                    <Button
+                      onClick={handleForward}
+                      disabled={isSubmitting || selectedContactIds.length === 0}
+                      variant="secondary"
+                      className="w-full"
+                    >
+                      {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                      Reenviar RFI ({selectedContactIds.length} seleccionado(s))
+                    </Button>
+                  </div>
                 )}
               </div>
             ) : (

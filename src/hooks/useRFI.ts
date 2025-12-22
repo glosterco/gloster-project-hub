@@ -11,6 +11,8 @@ export interface RFI {
   Respuesta: string | null;
   Fecha_Respuesta: string | null;
   URL: string | null;
+  Urgencia: string | null;
+  Fecha_Vencimiento: string | null;
   created_at: string;
 }
 

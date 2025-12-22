@@ -126,123 +126,117 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
     setEditingValues(prev => ({ ...prev, [id]: numValue }));
   };
 
-  const handleUpdatePresupuesto = async (item: Presupuesto) => {
-    const avanceParcialMonto = editingValues[item.id] || 0;
-    if (avanceParcialMonto === 0) {
+  const handleUpdateAllPresupuestos = async () => {
+    // Filtrar items que tienen avance parcial diferente a 0
+    const itemsToUpdate = presupuesto.filter(item => editingValues[item.id] && editingValues[item.id] !== 0);
+    
+    if (itemsToUpdate.length === 0) {
       toast({
-        title: "Error",
-        description: "Ingrese una cantidad válida para actualizar",
+        title: "Sin cambios",
+        description: "No hay partidas con avances para actualizar",
         variant: "destructive",
       });
       return;
     }
-    
-    // Calcular el nuevo avance acumulado como monto
-    const avanceAcumuladoMonto = item.Total ? (item.Total * ((item['Avance Acumulado'] || 0) / 100)) : 0;
-    const newAvanceAcumuladoMonto = avanceAcumuladoMonto + avanceParcialMonto;
-    
-    // Convertir a porcentaje
-    const newAvanceAcumulado = item.Total ? (newAvanceAcumuladoMonto / item.Total) * 100 : 0;
-    
-    console.log('📊 Actualizando presupuesto:', {
-      itemId: item.id,
-      itemName: item.Item,
-      totalItem: item.Total,
-      avanceAcumuladoAnterior: item['Avance Acumulado'],
-      avanceAcumuladoMontoAnterior: avanceAcumuladoMonto,
-      avanceParcialMonto: avanceParcialMonto,
-      newAvanceAcumuladoMonto: newAvanceAcumuladoMonto,
-      newAvanceAcumuladoPorcentaje: newAvanceAcumulado
-    });
 
     try {
-      const { error } = await supabase
-        .from('Presupuesto' as any)
-        .update({
-          'Avance Parcial': 0, // Resetear a 0 después de actualizar
-          'Avance Acumulado': newAvanceAcumulado,
-          'Ult. Actualizacion': new Date().toISOString()
-        })
-        .eq('id', item.id);
+      // Actualizar cada item con avance parcial
+      for (const item of itemsToUpdate) {
+        const avanceParcialMonto = editingValues[item.id] || 0;
+        
+        // Calcular el nuevo avance acumulado como monto
+        const avanceAcumuladoMonto = item.Total ? (item.Total * ((item['Avance Acumulado'] || 0) / 100)) : 0;
+        const newAvanceAcumuladoMonto = avanceAcumuladoMonto + avanceParcialMonto;
+        
+        // Convertir a porcentaje
+        const newAvanceAcumulado = item.Total ? (newAvanceAcumuladoMonto / item.Total) * 100 : 0;
+        
+        console.log('📊 Actualizando presupuesto:', {
+          itemId: item.id,
+          itemName: item.Item,
+          avanceParcialMonto,
+          newAvanceAcumulado
+        });
 
-      if (error) {
-        console.error('❌ Error al actualizar:', error);
-        throw error;
+        const { error } = await supabase
+          .from('Presupuesto' as any)
+          .update({
+            'Avance Parcial': 0,
+            'Avance Acumulado': newAvanceAcumulado,
+            'Ult. Actualizacion': new Date().toISOString()
+          })
+          .eq('id', item.id);
+
+        if (error) {
+          console.error('❌ Error al actualizar:', error);
+          throw error;
+        }
+
+        // Guardar en histórico detalle
+        if (projectId) {
+          const montoParcialItem = avanceParcialMonto;
+          const porcentajeParcial = item.Total ? (montoParcialItem / item.Total) * 100 : 0;
+          
+          await supabase
+            .from('PresupuestoHistoricoDetalle' as any)
+            .insert({
+              Project_ID: Number(projectId),
+              Item_ID: item.id,
+              Item_Nombre: item.Item,
+              Monto_Parcial: montoParcialItem,
+              Monto_Total: item.Total,
+              Porcentaje_Parcial: porcentajeParcial,
+              Porcentaje_Acumulado: newAvanceAcumulado
+            });
+        }
       }
-      
-      console.log('✅ Presupuesto actualizado correctamente');
 
-      // Guardar en histórico después de actualizar
+      // Calcular y guardar el histórico general después de actualizar todos los items
       if (projectId) {
-        // Calcular el total acumulado de todo el proyecto
+        // Calcular el total acumulado actualizado
         const totalAcumulado = presupuesto.reduce((sum, p) => {
-          const avanceAcum = p.id === item.id ? newAvanceAcumulado : (p['Avance Acumulado'] || 0);
+          const itemEdited = itemsToUpdate.find(i => i.id === p.id);
+          let avanceAcum = p['Avance Acumulado'] || 0;
+          
+          if (itemEdited) {
+            const avanceParcialMonto = editingValues[p.id] || 0;
+            const avanceAcumuladoMonto = p.Total ? (p.Total * ((p['Avance Acumulado'] || 0) / 100)) : 0;
+            const newAvanceAcumuladoMonto = avanceAcumuladoMonto + avanceParcialMonto;
+            avanceAcum = p.Total ? (newAvanceAcumuladoMonto / p.Total) * 100 : 0;
+          }
+          
           const totalItem = p.Total || 0;
           return sum + (totalItem * avanceAcum / 100);
         }, 0);
-        
-        // El monto parcial de este ítem específico
-        const montoParcialItem = avanceParcialMonto;
-        const porcentajeParcial = item.Total ? (montoParcialItem / item.Total) * 100 : 0;
-        
-        // 1. Guardar el detalle de esta actualización individual
-        await supabase
-          .from('PresupuestoHistoricoDetalle' as any)
-          .insert({
-            Project_ID: Number(projectId),
-            Item_ID: item.id,
-            Item_Nombre: item.Item,
-            Monto_Parcial: montoParcialItem,
-            Monto_Total: item.Total,
-            Porcentaje_Parcial: porcentajeParcial,
-            Porcentaje_Acumulado: newAvanceAcumulado
-          });
-        
-        console.log('✅ Detalle guardado para ítem:', item.Item, 'Monto:', montoParcialItem);
-        
-        // 2. Calcular el TotalParcial del día sumando TODOS los montos parciales del día
+
         const today = new Date();
         const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
         const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
-        
-        // Obtener TODOS los detalles del día para sumarlos
-        const { data: detallesHoy, error: detallesError } = await supabase
+
+        // Obtener todos los detalles del día
+        const { data: detallesHoy } = await supabase
           .from('PresupuestoHistoricoDetalle' as any)
           .select('Monto_Parcial')
           .eq('Project_ID', Number(projectId))
           .gte('created_at', startOfDay.toISOString())
           .lt('created_at', endOfDay.toISOString());
-        
-        if (detallesError) {
-          console.error('❌ Error al obtener detalles:', detallesError);
-        }
-        
-        // Sumar TODOS los montos parciales del día (no solo las últimas actualizaciones)
+
         const totalParcialDelDia = (detallesHoy || []).reduce(
           (sum: number, detalle: any) => sum + (detalle.Monto_Parcial || 0),
           0
         );
-        
-        console.log('📊 Total parcial calculado del día:', totalParcialDelDia, 'Total actualizaciones:', detallesHoy?.length || 0);
-        
-        // 3. Actualizar o crear UN SOLO registro en PresupuestoHistorico para el día
-        const { data: existingRecords, error: fetchError } = await supabase
+
+        // Actualizar o crear registro en PresupuestoHistorico
+        const { data: existingRecords } = await supabase
           .from('PresupuestoHistorico' as any)
           .select('*')
           .eq('Project_ID', Number(projectId))
           .gte('created_at', startOfDay.toISOString())
           .lt('created_at', endOfDay.toISOString())
           .order('created_at', { ascending: false });
-        
-        if (fetchError) {
-          console.error('❌ Error al buscar registros históricos:', fetchError);
-        }
-        
+
         if (existingRecords && existingRecords.length > 0) {
-          // Si hay múltiples registros del día, actualizar el primero y eliminar los demás
           const firstRecord = existingRecords[0];
-          
-          // Actualizar el primer registro
           await supabase
             .from('PresupuestoHistorico' as any)
             .update({
@@ -250,20 +244,15 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
               TotalParcial: totalParcialDelDia
             })
             .eq('id', (firstRecord as any).id);
-          
-          // Eliminar registros duplicados si existen
+
           if (existingRecords.length > 1) {
             const duplicateIds = existingRecords.slice(1).map((r: any) => r.id);
-            console.log('🧹 Eliminando', duplicateIds.length, 'registros duplicados del día');
             await supabase
               .from('PresupuestoHistorico' as any)
               .delete()
               .in('id', duplicateIds);
           }
-          
-          console.log('✅ Histórico actualizado - Total parcial:', totalParcialDelDia, 'Total acumulado:', totalAcumulado);
         } else {
-          // Crear un nuevo registro solo si no existe ninguno para el día
           await supabase
             .from('PresupuestoHistorico' as any)
             .insert({
@@ -271,26 +260,24 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
               TotalAcumulado: totalAcumulado,
               TotalParcial: totalParcialDelDia
             });
-          
-          console.log('✅ Histórico creado - Total parcial:', totalParcialDelDia, 'Total acumulado:', totalAcumulado);
         }
       }
 
-      // Guardar controles también
+      // Guardar controles
       await saveControls();
 
       toast({
         title: "Actualizado",
-        description: "El avance del presupuesto ha sido actualizado correctamente",
+        description: `Se actualizaron ${itemsToUpdate.length} partida(s) correctamente`,
       });
 
-      // NO limpiar el valor editado - mantener hasta cerrar pestaña
-      // Los valores parciales se mantienen visibles para el usuario
+      // Limpiar valores editados
+      setEditingValues({});
 
       // Refrescar datos
       if (onUpdate) onUpdate();
     } catch (error) {
-      console.error('Error updating presupuesto:', error);
+      console.error('Error updating presupuestos:', error);
       toast({
         title: "Error",
         description: "No se pudo actualizar el presupuesto",
@@ -298,6 +285,9 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
       });
     }
   };
+
+  // Verificar si hay items con avances para habilitar el botón
+  const hasItemsToUpdate = presupuesto.some(item => editingValues[item.id] && editingValues[item.id] !== 0);
 
   const saveControls = async () => {
     try {
@@ -472,13 +462,12 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
               <TableHead className="font-rubik text-right py-2">Avance Acum.</TableHead>
               <TableHead className="font-rubik text-right py-2">Avance Parcial</TableHead>
               <TableHead className="font-rubik py-2">Última Actualización</TableHead>
-              <TableHead className="font-rubik py-2">Acción</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody className="[&_tr]:h-10">
             {presupuesto.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-8">
+                <TableCell colSpan={8} className="text-center py-8">
                   <div className="flex flex-col items-center justify-center text-center">
                     <ClipboardList className="h-10 w-10 text-muted-foreground mb-2" />
                     <p className="text-muted-foreground font-rubik text-sm">No hay partidas registradas</p>
@@ -533,15 +522,6 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
                         })
                       : '-'}
                   </TableCell>
-                  <TableCell className="font-rubik py-2">
-                    <button
-                      onClick={() => handleUpdatePresupuesto(item)}
-                      disabled={!editingValues[item.id] || editingValues[item.id] === 0}
-                      className="px-3 py-1 text-xs bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Actualizar
-                    </button>
-                  </TableCell>
                 </TableRow>
               ))
             )}
@@ -570,7 +550,7 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
                   </span>
                 </div>
               </TableCell>
-              <TableCell colSpan={2}></TableCell>
+              <TableCell></TableCell>
             </TableRow>
             
             {/* Gastos Generales */}
@@ -603,7 +583,7 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
                   <span className="font-semibold">{formatCurrency(montoGastosGeneralesParcial)}</span>
                 </div>
               </TableCell>
-              <TableCell colSpan={2}></TableCell>
+              <TableCell></TableCell>
             </TableRow>
             
             {/* Utilidad */}
@@ -636,7 +616,7 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
                   <span className="font-semibold">{formatCurrency(montoUtilidadParcial)}</span>
                 </div>
               </TableCell>
-              <TableCell colSpan={2}></TableCell>
+              <TableCell></TableCell>
             </TableRow>
             
             {/* Subtotal Neto */}
@@ -663,7 +643,7 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
                   </span>
                 </div>
               </TableCell>
-              <TableCell colSpan={2}></TableCell>
+              <TableCell></TableCell>
             </TableRow>
             
             {/* IVA */}
@@ -686,7 +666,7 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
                   <span className="font-semibold">{formatCurrency(ivaParcial)}</span>
                 </div>
               </TableCell>
-              <TableCell colSpan={2}></TableCell>
+              <TableCell></TableCell>
             </TableRow>
             
             {/* Total Final */}
@@ -713,7 +693,15 @@ export const PresupuestoTable: React.FC<PresupuestoTableProps> = ({
                   </span>
                 </div>
               </TableCell>
-              <TableCell colSpan={2}></TableCell>
+              <TableCell className="font-rubik py-2">
+                <button
+                  onClick={handleUpdateAllPresupuestos}
+                  disabled={!hasItemsToUpdate}
+                  className="px-4 py-1.5 text-xs bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+                >
+                  Actualizar
+                </button>
+              </TableCell>
             </TableRow>
           </TableBody>
         </Table>

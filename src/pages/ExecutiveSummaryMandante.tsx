@@ -535,29 +535,30 @@ const ExecutiveSummaryMandante = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <FolderOpen className="h-5 w-5" />
-                    Análisis por Categoría
+                    Montos por Categoría
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   {summaryData?.adicionalesPorCategoria && summaryData.adicionalesPorCategoria.length > 0 ? (
                     <div className="space-y-4">
-                      {summaryData.adicionalesPorCategoria.map((cat, index) => (
+                      {summaryData.adicionalesPorCategoria.map((cat) => (
                         <div key={cat.categoria} className="space-y-2">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <Badge variant="outline">{cat.categoria}</Badge>
                               <span className="text-xs text-muted-foreground">({cat.count})</span>
                             </div>
-                            <span className="text-sm font-semibold">
-                              {formatCurrency(cat.monto)}
-                            </span>
+                            <div className="text-right">
+                              <div className="text-sm font-semibold">{formatCurrency(cat.montoPresentado)}</div>
+                              <div className="text-xs text-green-600">Aprobado: {formatCurrency(cat.montoAprobado)}</div>
+                            </div>
                           </div>
                           <div className="h-2 bg-muted rounded-full overflow-hidden">
                             <div 
                               className="h-full bg-primary rounded-full transition-all"
                               style={{ 
                                 width: `${summaryData.montoPresentadoAdicionales > 0 
-                                  ? (cat.monto / summaryData.montoPresentadoAdicionales) * 100 
+                                  ? (cat.montoPresentado / summaryData.montoPresentadoAdicionales) * 100 
                                   : 0}%` 
                               }}
                             />
@@ -578,29 +579,30 @@ const ExecutiveSummaryMandante = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <BarChart3 className="h-5 w-5" />
-                    Análisis por Especialidad
+                    Montos por Especialidad
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   {summaryData?.adicionalesPorEspecialidad && summaryData.adicionalesPorEspecialidad.length > 0 ? (
                     <div className="space-y-4">
-                      {summaryData.adicionalesPorEspecialidad.map((esp, index) => (
+                      {summaryData.adicionalesPorEspecialidad.map((esp) => (
                         <div key={esp.especialidad} className="space-y-2">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <Badge variant="secondary">{esp.especialidad}</Badge>
                               <span className="text-xs text-muted-foreground">({esp.count})</span>
                             </div>
-                            <span className="text-sm font-semibold">
-                              {formatCurrency(esp.monto)}
-                            </span>
+                            <div className="text-right">
+                              <div className="text-sm font-semibold">{formatCurrency(esp.montoPresentado)}</div>
+                              <div className="text-xs text-green-600">Aprobado: {formatCurrency(esp.montoAprobado)}</div>
+                            </div>
                           </div>
                           <div className="h-2 bg-muted rounded-full overflow-hidden">
                             <div 
                               className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all"
                               style={{ 
                                 width: `${summaryData.montoPresentadoAdicionales > 0 
-                                  ? (esp.monto / summaryData.montoPresentadoAdicionales) * 100 
+                                  ? (esp.montoPresentado / summaryData.montoPresentadoAdicionales) * 100 
                                   : 0}%` 
                               }}
                             />
@@ -616,6 +618,52 @@ const ExecutiveSummaryMandante = () => {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Combined Category + Specialty */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <DollarSign className="h-5 w-5" />
+                  Montos por Categoría y Especialidad (Combinado)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {summaryData?.adicionalesCombinados && summaryData.adicionalesCombinados.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left py-2 px-2">Categoría</th>
+                          <th className="text-left py-2 px-2">Especialidad</th>
+                          <th className="text-center py-2 px-2">Cantidad</th>
+                          <th className="text-right py-2 px-2">Presentado</th>
+                          <th className="text-right py-2 px-2">Aprobado</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {summaryData.adicionalesCombinados.map((item, idx) => (
+                          <tr key={idx} className="border-b border-muted">
+                            <td className="py-2 px-2">
+                              <Badge variant="outline" className="text-xs">{item.categoria}</Badge>
+                            </td>
+                            <td className="py-2 px-2">
+                              <Badge variant="secondary" className="text-xs">{item.especialidad}</Badge>
+                            </td>
+                            <td className="text-center py-2 px-2">{item.count}</td>
+                            <td className="text-right py-2 px-2 font-medium">{formatCurrency(item.montoPresentado)}</td>
+                            <td className="text-right py-2 px-2 text-green-600">{formatCurrency(item.montoAprobado)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No hay adicionales registrados
+                  </p>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Documentos Tab */}
@@ -896,6 +944,140 @@ const ExecutiveSummaryMandante = () => {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Urgency Distribution */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <AlertCircle className="h-5 w-5" />
+                    Distribución de Urgencia
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {summaryData?.rfiDistribucionUrgencia && summaryData.rfiDistribucionUrgencia.some(u => u.count > 0) ? (
+                    <ResponsiveContainer width="100%" height={200}>
+                      <PieChart>
+                        <Pie
+                          data={summaryData.rfiDistribucionUrgencia.filter(u => u.count > 0)}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                          outerRadius={60}
+                          dataKey="count"
+                          nameKey="urgencia"
+                        >
+                          {summaryData.rfiDistribucionUrgencia.map((entry, index) => (
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={
+                                entry.urgencia === 'Muy Urgente' ? '#ef4444' : 
+                                entry.urgencia === 'Urgente' ? '#f59e0b' : '#22c55e'
+                              } 
+                            />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-8">
+                      No hay RFI registrados
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5" />
+                    Resumen de Urgencia
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {summaryData?.rfiDistribucionUrgencia?.map((item) => (
+                      <div key={item.urgencia} className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Badge 
+                            variant={item.urgencia === 'Muy Urgente' ? 'destructive' : item.urgencia === 'Urgente' ? 'secondary' : 'outline'}
+                          >
+                            {item.urgencia}
+                          </Badge>
+                          <span className="font-semibold">{item.count}</span>
+                        </div>
+                        <div className="h-2 bg-muted rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full rounded-full transition-all ${
+                              item.urgencia === 'Muy Urgente' ? 'bg-red-500' : 
+                              item.urgencia === 'Urgente' ? 'bg-amber-500' : 'bg-green-500'
+                            }`}
+                            style={{ 
+                              width: `${summaryData.totalRFI > 0 
+                                ? (item.count / summaryData.totalRFI) * 100 
+                                : 0}%` 
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* RFI by Specialty */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <HelpCircle className="h-5 w-5" />
+                  RFI por Especialidad (ordenado descendente)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {summaryData?.rfiPorEspecialidad && summaryData.rfiPorEspecialidad.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left py-2 px-2">Especialidad</th>
+                          <th className="text-center py-2 px-2">Total</th>
+                          <th className="text-center py-2 px-2">Pendientes</th>
+                          <th className="text-center py-2 px-2">Respondidos</th>
+                          <th className="text-center py-2 px-2">Cerrados</th>
+                          <th className="text-center py-2 px-2">No Urgente</th>
+                          <th className="text-center py-2 px-2">Urgente</th>
+                          <th className="text-center py-2 px-2">Muy Urgente</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {summaryData.rfiPorEspecialidad.map((esp) => (
+                          <tr key={esp.especialidad} className="border-b border-muted">
+                            <td className="py-2 px-2">
+                              <Badge variant="secondary" className="text-xs">{esp.especialidad}</Badge>
+                            </td>
+                            <td className="text-center py-2 px-2 font-bold">{esp.total}</td>
+                            <td className="text-center py-2 px-2 text-amber-600">{esp.pendientes}</td>
+                            <td className="text-center py-2 px-2 text-green-600">{esp.respondidos}</td>
+                            <td className="text-center py-2 px-2 text-gray-600">{esp.cerrados}</td>
+                            <td className="text-center py-2 px-2">{esp.noUrgente}</td>
+                            <td className="text-center py-2 px-2 text-amber-600">{esp.urgente}</td>
+                            <td className="text-center py-2 px-2 text-red-600">{esp.muyUrgente}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No hay RFI registrados
+                  </p>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

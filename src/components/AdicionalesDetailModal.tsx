@@ -1,18 +1,24 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { Calendar, DollarSign, Clock, FileText, TrendingUp, ExternalLink } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Calendar, DollarSign, Clock, FileText, TrendingUp, ExternalLink, Check, X, Loader2 } from 'lucide-react';
 import { formatCurrency } from '@/utils/currencyUtils';
 import { Adicional } from '@/hooks/useAdicionales';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface AdicionalesDetailModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   adicional: Adicional | null;
   currency?: string;
+  isMandante?: boolean;
+  onSuccess?: () => void;
 }
 
 const getStatusVariant = (status: string) => {
@@ -49,9 +55,104 @@ export const AdicionalesDetailModal: React.FC<AdicionalesDetailModalProps> = ({
   open,
   onOpenChange,
   adicional,
-  currency = 'CLP'
+  currency = 'CLP',
+  isMandante = false,
+  onSuccess
 }) => {
+  const [loading, setLoading] = useState(false);
+  const [montoAprobado, setMontoAprobado] = useState('');
+  const [rejectionNotes, setRejectionNotes] = useState('');
+  const [showRejectForm, setShowRejectForm] = useState(false);
+  const { toast } = useToast();
+
   if (!adicional) return null;
+
+  const canApprove = isMandante && (adicional.Status === 'Pendiente' || adicional.Status === 'Enviado');
+
+  const handleApprove = async () => {
+    setLoading(true);
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const userEmail = userData?.user?.email || 'mandante@email.com';
+      
+      const { error } = await supabase
+        .from('Adicionales')
+        .update({
+          Status: 'Aprobado',
+          Monto_aprobado: montoAprobado ? parseFloat(montoAprobado) : adicional.Monto_presentado,
+          approved_by_email: userEmail,
+          approved_at: new Date().toISOString()
+        })
+        .eq('id', adicional.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Adicional aprobado",
+        description: "El adicional ha sido aprobado exitosamente",
+      });
+
+      onSuccess?.();
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Error approving adicional:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo aprobar el adicional",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!rejectionNotes.trim()) {
+      toast({
+        title: "Error",
+        description: "Debe ingresar un motivo de rechazo",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const userEmail = userData?.user?.email || 'mandante@email.com';
+      
+      const { error } = await supabase
+        .from('Adicionales')
+        .update({
+          Status: 'Rechazado',
+          rejection_notes: rejectionNotes,
+          approved_by_email: userEmail,
+          approved_at: new Date().toISOString()
+        })
+        .eq('id', adicional.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Adicional rechazado",
+        description: "El adicional ha sido rechazado",
+      });
+
+      onSuccess?.();
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Error rejecting adicional:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo rechazar el adicional",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+      setShowRejectForm(false);
+      setRejectionNotes('');
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -86,6 +187,10 @@ export const AdicionalesDetailModal: React.FC<AdicionalesDetailModalProps> = ({
                   <p className="font-semibold font-rubik">{adicional.Categoria || 'No especificada'}</p>
                 </div>
                 <div>
+                  <p className="text-sm font-medium text-muted-foreground font-rubik">Especialidad</p>
+                  <p className="font-semibold font-rubik">{adicional.Especialidad || 'No especificada'}</p>
+                </div>
+                <div className="md:col-span-2">
                   <p className="text-sm font-medium text-muted-foreground font-rubik">Título</p>
                   <p className="font-semibold font-rubik">{adicional.Titulo || 'Sin título'}</p>
                 </div>
@@ -178,13 +283,135 @@ export const AdicionalesDetailModal: React.FC<AdicionalesDetailModalProps> = ({
             </Card>
           )}
 
+          {/* Información de aprobación/rechazo */}
+          {adicional.approved_at && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2 font-rubik">
+                  {adicional.Status === 'Aprobado' ? (
+                    <Check className="h-5 w-5 text-green-600" />
+                  ) : (
+                    <X className="h-5 w-5 text-red-600" />
+                  )}
+                  <span>Historial de Revisión</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <p className="text-sm font-rubik">
+                  <span className="text-muted-foreground">Revisado por:</span>{' '}
+                  <span className="font-medium">{adicional.approved_by_email}</span>
+                </p>
+                <p className="text-sm font-rubik">
+                  <span className="text-muted-foreground">Fecha:</span>{' '}
+                  <span className="font-medium">{new Date(adicional.approved_at).toLocaleDateString('es-CL')}</span>
+                </p>
+                {adicional.rejection_notes && (
+                  <div className="mt-2 p-3 bg-red-50 rounded-lg border border-red-200">
+                    <p className="text-sm font-medium text-red-700 font-rubik">Motivo de rechazo:</p>
+                    <p className="text-sm text-red-600 font-rubik mt-1">{adicional.rejection_notes}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Acciones de Mandante */}
+          {canApprove && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="font-rubik">Acciones de Aprobación</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {!showRejectForm ? (
+                  <>
+                    <div className="space-y-2">
+                      <Label className="font-rubik">Monto a Aprobar ({currency})</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder={adicional.Monto_presentado?.toString() || '0'}
+                        value={montoAprobado}
+                        onChange={(e) => setMontoAprobado(e.target.value)}
+                        className="font-rubik"
+                      />
+                      <p className="text-xs text-muted-foreground font-rubik">
+                        Deje vacío para aprobar el monto presentado
+                      </p>
+                    </div>
+                    <div className="flex gap-3">
+                      <Button 
+                        onClick={handleApprove} 
+                        disabled={loading}
+                        className="flex-1 bg-green-600 hover:bg-green-700 font-rubik"
+                      >
+                        {loading ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Check className="h-4 w-4 mr-2" />
+                        )}
+                        Aprobar
+                      </Button>
+                      <Button 
+                        variant="destructive"
+                        onClick={() => setShowRejectForm(true)}
+                        disabled={loading}
+                        className="flex-1 font-rubik"
+                      >
+                        <X className="h-4 w-4 mr-2" />
+                        Rechazar
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label className="font-rubik">Motivo del Rechazo *</Label>
+                      <Textarea
+                        placeholder="Ingrese el motivo del rechazo..."
+                        value={rejectionNotes}
+                        onChange={(e) => setRejectionNotes(e.target.value)}
+                        className="min-h-[100px] font-rubik"
+                      />
+                    </div>
+                    <div className="flex gap-3">
+                      <Button 
+                        variant="outline"
+                        onClick={() => {
+                          setShowRejectForm(false);
+                          setRejectionNotes('');
+                        }}
+                        disabled={loading}
+                        className="flex-1 font-rubik"
+                      >
+                        Cancelar
+                      </Button>
+                      <Button 
+                        variant="destructive"
+                        onClick={handleReject}
+                        disabled={loading}
+                        className="flex-1 font-rubik"
+                      >
+                        {loading ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <X className="h-4 w-4 mr-2" />
+                        )}
+                        Confirmar Rechazo
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {/* Acciones */}
           {adicional.URL && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2 font-rubik">
                   <ExternalLink className="h-5 w-5" />
-                  <span>Acciones</span>
+                  <span>Documentos</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>

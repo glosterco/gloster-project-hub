@@ -131,6 +131,20 @@ export const AdicionalesCards: React.FC<AdicionalesCardsProps> = ({
               </CardHeader>
               
               <CardContent className="space-y-4">
+                {/* Categoría y Especialidad */}
+                <div className="flex flex-wrap gap-2">
+                  {adicional.Categoria && (
+                    <Badge variant="outline" className="text-xs font-rubik">
+                      {adicional.Categoria}
+                    </Badge>
+                  )}
+                  {adicional.Especialidad && (
+                    <Badge variant="secondary" className="text-xs font-rubik">
+                      {adicional.Especialidad}
+                    </Badge>
+                  )}
+                </div>
+
                 {/* Monto */}
                 <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                   <div className="flex items-center space-x-2">
@@ -164,7 +178,10 @@ export const AdicionalesCards: React.FC<AdicionalesCardsProps> = ({
                   <Button 
                     variant="outline" 
                     className="w-full group-hover:border-primary group-hover:text-primary transition-colors font-rubik"
-                    onClick={() => window.open(adicional.URL!, '_blank')}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.open(adicional.URL!, '_blank');
+                    }}
                   >
                     <ExternalLink className="h-4 w-4 mr-2" />
                     Ver detalles

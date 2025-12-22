@@ -7,6 +7,7 @@ export interface Adicional {
   Status: string;
   Proyecto: number;
   Categoria: string | null;
+  Especialidad: string | null;
   Titulo: string | null;
   Descripcion: string | null;
   Monto_presentado: number | null;
@@ -15,6 +16,10 @@ export interface Adicional {
   GG: number | null;
   URL: string | null;
   created_at: string;
+  approved_by_email: string | null;
+  approved_by_name: string | null;
+  approved_at: string | null;
+  rejection_notes: string | null;
 }
 
 export const useAdicionales = (projectId: string) => {

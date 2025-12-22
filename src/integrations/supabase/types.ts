@@ -16,42 +16,57 @@ export type Database = {
     Tables: {
       Adicionales: {
         Row: {
+          approved_at: string | null
+          approved_by_email: string | null
+          approved_by_name: string | null
           Categoria: string | null
           created_at: string
           Descripcion: string | null
+          Especialidad: string | null
           GG: number | null
           id: number
           Monto_aprobado: number | null
           Monto_presentado: number | null
           Proyecto: number | null
+          rejection_notes: string | null
           Status: string | null
           Titulo: string | null
           URL: string | null
           Vencimiento: string | null
         }
         Insert: {
+          approved_at?: string | null
+          approved_by_email?: string | null
+          approved_by_name?: string | null
           Categoria?: string | null
           created_at?: string
           Descripcion?: string | null
+          Especialidad?: string | null
           GG?: number | null
           id?: number
           Monto_aprobado?: number | null
           Monto_presentado?: number | null
           Proyecto?: number | null
+          rejection_notes?: string | null
           Status?: string | null
           Titulo?: string | null
           URL?: string | null
           Vencimiento?: string | null
         }
         Update: {
+          approved_at?: string | null
+          approved_by_email?: string | null
+          approved_by_name?: string | null
           Categoria?: string | null
           created_at?: string
           Descripcion?: string | null
+          Especialidad?: string | null
           GG?: number | null
           id?: number
           Monto_aprobado?: number | null
           Monto_presentado?: number | null
           Proyecto?: number | null
+          rejection_notes?: string | null
           Status?: string | null
           Titulo?: string | null
           URL?: string | null

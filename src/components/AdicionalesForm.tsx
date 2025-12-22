@@ -18,6 +18,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 const adicionalesSchema = z.object({
   categoria: z.string().min(1, 'La categoría es requerida'),
+  especialidad: z.string().min(1, 'La especialidad es requerida'),
   titulo: z.string().min(1, 'El título es requerido'),
   descripcion: z.string().optional(),
   monto_presentado: z.string().optional(),
@@ -41,6 +42,16 @@ const categorias = [
   'Cambio de Materiales',
   'Extensión de Plazo',
   'Otros'
+];
+
+const especialidades = [
+  'Arquitectura',
+  'Estructura',
+  'Electricidad',
+  'Sanitario',
+  'Climatización',
+  'Paisajismo',
+  'Otro'
 ];
 
 export const AdicionalesForm: React.FC<AdicionalesFormProps> = ({
@@ -86,6 +97,7 @@ export const AdicionalesForm: React.FC<AdicionalesFormProps> = ({
         .from('Adicionales')
         .insert({
           Categoria: data.categoria,
+          Especialidad: data.especialidad,
           Titulo: data.titulo,
           Descripcion: data.descripcion || null,
           Monto_presentado: data.monto_presentado ? parseFloat(data.monto_presentado) : null,
@@ -141,24 +153,45 @@ export const AdicionalesForm: React.FC<AdicionalesFormProps> = ({
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          {/* Categoría */}
-          <div className="space-y-2">
-            <Label htmlFor="categoria" className="font-rubik">Categoría *</Label>
-            <Select onValueChange={(value) => setValue('categoria', value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccione una categoría" />
-              </SelectTrigger>
-              <SelectContent>
-                {categorias.map((categoria) => (
-                  <SelectItem key={categoria} value={categoria}>
-                    {categoria}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.categoria && (
-              <p className="text-sm text-destructive font-rubik">{errors.categoria.message}</p>
-            )}
+          {/* Categoría y Especialidad */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="categoria" className="font-rubik">Categoría *</Label>
+              <Select onValueChange={(value) => setValue('categoria', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccione categoría" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categorias.map((categoria) => (
+                    <SelectItem key={categoria} value={categoria}>
+                      {categoria}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.categoria && (
+                <p className="text-sm text-destructive font-rubik">{errors.categoria.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="especialidad" className="font-rubik">Especialidad *</Label>
+              <Select onValueChange={(value) => setValue('especialidad', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccione especialidad" />
+                </SelectTrigger>
+                <SelectContent>
+                  {especialidades.map((esp) => (
+                    <SelectItem key={esp} value={esp}>
+                      {esp}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.especialidad && (
+                <p className="text-sm text-destructive font-rubik">{errors.especialidad.message}</p>
+              )}
+            </div>
           </div>
 
           {/* Título */}

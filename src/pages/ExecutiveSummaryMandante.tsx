@@ -527,6 +527,95 @@ const ExecutiveSummaryMandante = () => {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Category and Specialty Analysis */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              {/* By Category */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FolderOpen className="h-5 w-5" />
+                    Análisis por Categoría
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {summaryData?.adicionalesPorCategoria && summaryData.adicionalesPorCategoria.length > 0 ? (
+                    <div className="space-y-4">
+                      {summaryData.adicionalesPorCategoria.map((cat, index) => (
+                        <div key={cat.categoria} className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline">{cat.categoria}</Badge>
+                              <span className="text-xs text-muted-foreground">({cat.count})</span>
+                            </div>
+                            <span className="text-sm font-semibold">
+                              {formatCurrency(cat.monto)}
+                            </span>
+                          </div>
+                          <div className="h-2 bg-muted rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-primary rounded-full transition-all"
+                              style={{ 
+                                width: `${summaryData.montoPresentadoAdicionales > 0 
+                                  ? (cat.monto / summaryData.montoPresentadoAdicionales) * 100 
+                                  : 0}%` 
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      No hay adicionales registrados
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* By Specialty */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5" />
+                    Análisis por Especialidad
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {summaryData?.adicionalesPorEspecialidad && summaryData.adicionalesPorEspecialidad.length > 0 ? (
+                    <div className="space-y-4">
+                      {summaryData.adicionalesPorEspecialidad.map((esp, index) => (
+                        <div key={esp.especialidad} className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="secondary">{esp.especialidad}</Badge>
+                              <span className="text-xs text-muted-foreground">({esp.count})</span>
+                            </div>
+                            <span className="text-sm font-semibold">
+                              {formatCurrency(esp.monto)}
+                            </span>
+                          </div>
+                          <div className="h-2 bg-muted rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all"
+                              style={{ 
+                                width: `${summaryData.montoPresentadoAdicionales > 0 
+                                  ? (esp.monto / summaryData.montoPresentadoAdicionales) * 100 
+                                  : 0}%` 
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      No hay adicionales registrados
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           {/* Documentos Tab */}

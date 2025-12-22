@@ -36,7 +36,6 @@ import { useAdicionales } from "@/hooks/useAdicionales";
 import { AdicionalesCards } from "@/components/AdicionalesCards";
 import { AdicionalesDetailModal } from "@/components/AdicionalesDetailModal";
 import { AdicionalesForm } from "@/components/AdicionalesForm";
-import { AdicionalesMetrics } from "@/components/AdicionalesMetrics";
 import { useRFI } from "@/hooks/useRFI";
 import { RFICards } from "@/components/RFICards";
 import { RFIDetailModal } from "@/components/RFIDetailModal";
@@ -715,13 +714,6 @@ const ProjectDetailMandante = () => {
                 {renderControls(adicionalesSearch, setAdicionalesSearch, "Nuevo Adicional", () =>
                   setShowAdicionalesForm(true),
                 )}
-                
-                {/* Metrics Section */}
-                <AdicionalesMetrics
-                  adicionales={adicionales}
-                  currency={project?.Currency}
-                />
-                
                 <AdicionalesCards
                   adicionales={adicionales}
                   loading={adicionalesLoading}

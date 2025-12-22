@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
         .from('Estados de pago')
         .select('Project')
         .eq('id', paymentId)
-        .single();
+        .maybeSingle();
 
       if (paymentError) {
         console.error('Error fetching payment:', paymentError)
@@ -119,6 +119,9 @@ Deno.serve(async (req) => {
         adicionalesPendientes: 0,
         adicionalesAprobados: 0,
         adicionalesRechazados: 0,
+        adicionalesPorCategoria: [],
+        adicionalesPorEspecialidad: [],
+        adicionalesCombinados: [],
         totalDocumentos: 0,
         totalSizeDocumentos: 0,
         documentosPorTipo: [],
@@ -170,7 +173,7 @@ Deno.serve(async (req) => {
     // Fetch adicionales data
     const { data: adicionales } = await supabase
       .from('Adicionales')
-      .select('id, Monto_presentado, Monto_aprobado, Status, Proyecto')
+      .select('id, Monto_presentado, Monto_aprobado, Status, Proyecto, Categoria, Especialidad')
       .in('Proyecto', projectIds);
 
     // Fetch documentos data
@@ -216,6 +219,47 @@ Deno.serve(async (req) => {
     const adicionalesPendientes = adicionales?.filter(a => a.Status === 'Pendiente').length || 0;
     const adicionalesAprobados = adicionales?.filter(a => a.Status === 'Aprobado').length || 0;
     const adicionalesRechazados = adicionales?.filter(a => a.Status === 'Rechazado').length || 0;
+
+    const adicionalesPorCategoria = Object.entries(
+      (adicionales || []).reduce((acc: any, a: any) => {
+        const cat = a.Categoria || 'Sin categoría';
+        if (!acc[cat]) acc[cat] = { count: 0, montoPresentado: 0, montoAprobado: 0 };
+        acc[cat].count += 1;
+        acc[cat].montoPresentado += a.Monto_presentado || 0;
+        acc[cat].montoAprobado += a.Monto_aprobado || 0;
+        return acc;
+      }, {})
+    )
+      .map(([categoria, data]: any) => ({ categoria, ...data }))
+      .sort((a: any, b: any) => b.montoPresentado - a.montoPresentado);
+
+    const adicionalesPorEspecialidad = Object.entries(
+      (adicionales || []).reduce((acc: any, a: any) => {
+        const esp = a.Especialidad || 'Sin especialidad';
+        if (!acc[esp]) acc[esp] = { count: 0, montoPresentado: 0, montoAprobado: 0 };
+        acc[esp].count += 1;
+        acc[esp].montoPresentado += a.Monto_presentado || 0;
+        acc[esp].montoAprobado += a.Monto_aprobado || 0;
+        return acc;
+      }, {})
+    )
+      .map(([especialidad, data]: any) => ({ especialidad, ...data }))
+      .sort((a: any, b: any) => b.montoPresentado - a.montoPresentado);
+
+    const adicionalesCombinados = Object.entries(
+      (adicionales || []).reduce((acc: any, a: any) => {
+        const cat = a.Categoria || 'Sin categoría';
+        const esp = a.Especialidad || 'Sin especialidad';
+        const key = `${cat}|||${esp}`;
+        if (!acc[key]) acc[key] = { categoria: cat, especialidad: esp, count: 0, montoPresentado: 0, montoAprobado: 0 };
+        acc[key].count += 1;
+        acc[key].montoPresentado += a.Monto_presentado || 0;
+        acc[key].montoAprobado += a.Monto_aprobado || 0;
+        return acc;
+      }, {})
+    )
+      .map(([_, data]: any) => data)
+      .sort((a: any, b: any) => b.montoPresentado - a.montoPresentado);
 
     // Calculate documentos metrics
     const totalDocumentos = documentos?.length || 0;
@@ -290,6 +334,9 @@ Deno.serve(async (req) => {
       adicionalesPendientes,
       adicionalesAprobados,
       adicionalesRechazados,
+      adicionalesPorCategoria,
+      adicionalesPorEspecialidad,
+      adicionalesCombinados,
       totalDocumentos,
       totalSizeDocumentos,
       documentosPorTipo,

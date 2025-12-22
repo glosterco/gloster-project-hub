@@ -39,6 +39,8 @@ export interface ExecutiveSummaryData {
   adicionalesPendientes: number;
   adicionalesAprobados: number;
   adicionalesRechazados: number;
+  adicionalesPorCategoria: { categoria: string; count: number; monto: number }[];
+  adicionalesPorEspecialidad: { especialidad: string; count: number; monto: number }[];
   // Documentos metrics
   totalDocumentos: number;
   totalSizeDocumentos: number;
@@ -130,6 +132,8 @@ export const useExecutiveSummaryMandante = (selectedProjectIds?: number[]) => {
           adicionalesPendientes: 0,
           adicionalesAprobados: 0,
           adicionalesRechazados: 0,
+          adicionalesPorCategoria: [],
+          adicionalesPorEspecialidad: [],
           totalDocumentos: 0,
           totalSizeDocumentos: 0,
           documentosPorTipo: [],
@@ -189,6 +193,8 @@ export const useExecutiveSummaryMandante = (selectedProjectIds?: number[]) => {
           adicionalesPendientes: 0,
           adicionalesAprobados: 0,
           adicionalesRechazados: 0,
+          adicionalesPorCategoria: [],
+          adicionalesPorEspecialidad: [],
           totalDocumentos: 0,
           totalSizeDocumentos: 0,
           documentosPorTipo: [],
@@ -243,7 +249,7 @@ export const useExecutiveSummaryMandante = (selectedProjectIds?: number[]) => {
       // Fetch adicionales data
       const { data: adicionales } = await supabase
         .from('Adicionales')
-        .select('id, Monto_presentado, Monto_aprobado, Status, Proyecto')
+        .select('id, Monto_presentado, Monto_aprobado, Status, Proyecto, Categoria, Especialidad')
         .in('Proyecto', projectIds);
 
       // Fetch documentos data
@@ -334,6 +340,28 @@ export const useExecutiveSummaryMandante = (selectedProjectIds?: number[]) => {
       const adicionalesAprobados = adicionales?.filter(a => a.Status === 'Aprobado').length || 0;
       const adicionalesRechazados = adicionales?.filter(a => a.Status === 'Rechazado').length || 0;
 
+      // Group adicionales by category
+      const adicionalesPorCategoria = Object.entries(
+        adicionales?.reduce((acc, a) => {
+          const cat = a.Categoria || 'Sin categoría';
+          if (!acc[cat]) acc[cat] = { count: 0, monto: 0 };
+          acc[cat].count += 1;
+          acc[cat].monto += a.Monto_presentado || 0;
+          return acc;
+        }, {} as Record<string, { count: number; monto: number }>) || {}
+      ).map(([categoria, data]) => ({ categoria, ...data }));
+
+      // Group adicionales by specialty
+      const adicionalesPorEspecialidad = Object.entries(
+        adicionales?.reduce((acc, a) => {
+          const esp = a.Especialidad || 'Sin especialidad';
+          if (!acc[esp]) acc[esp] = { count: 0, monto: 0 };
+          acc[esp].count += 1;
+          acc[esp].monto += a.Monto_presentado || 0;
+          return acc;
+        }, {} as Record<string, { count: number; monto: number }>) || {}
+      ).map(([especialidad, data]) => ({ especialidad, ...data }));
+
       // Calculate documentos metrics
       const totalDocumentos = documentos?.length || 0;
       const totalSizeDocumentos = documentos?.reduce((sum, d) => sum + (d.Size || 0), 0) || 0;
@@ -392,6 +420,8 @@ export const useExecutiveSummaryMandante = (selectedProjectIds?: number[]) => {
         adicionalesPendientes,
         adicionalesAprobados,
         adicionalesRechazados,
+        adicionalesPorCategoria,
+        adicionalesPorEspecialidad,
         totalDocumentos,
         totalSizeDocumentos,
         documentosPorTipo,

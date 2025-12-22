@@ -1385,6 +1385,12 @@ const ProjectDetailMandante = () => {
         open={showRFIDetailModal}
         onOpenChange={setShowRFIDetailModal}
         rfi={selectedRFI}
+        isMandante={true}
+        projectId={id}
+        onSuccess={() => {
+          refetchRFIs();
+          setShowRFIDetailModal(false);
+        }}
       />
 
       {/* Modal de Nuevo RFI */}

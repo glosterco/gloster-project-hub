@@ -22,6 +22,25 @@ export interface ProjectSummary {
   recentPayments: PaymentSummary[];
 }
 
+export interface RFIPorEspecialidad {
+  especialidad: string;
+  total: number;
+  pendientes: number;
+  respondidos: number;
+  cerrados: number;
+  noUrgente: number;
+  urgente: number;
+  muyUrgente: number;
+}
+
+export interface AdicionalesCombinado {
+  categoria: string;
+  especialidad: string;
+  count: number;
+  montoPresentado: number;
+  montoAprobado: number;
+}
+
 export interface ExecutiveSummaryData {
   totalProjects: number;
   totalValue: number;
@@ -39,6 +58,9 @@ export interface ExecutiveSummaryData {
   adicionalesPendientes: number;
   adicionalesAprobados: number;
   adicionalesRechazados: number;
+  adicionalesPorCategoria: { categoria: string; count: number; montoPresentado: number; montoAprobado: number }[];
+  adicionalesPorEspecialidad: { especialidad: string; count: number; montoPresentado: number; montoAprobado: number }[];
+  adicionalesCombinados: AdicionalesCombinado[];
   // Documentos metrics
   totalDocumentos: number;
   totalSizeDocumentos: number;
@@ -63,6 +85,8 @@ export interface ExecutiveSummaryData {
   rfiPendientes: number;
   rfiRespondidos: number;
   rfiCerrados: number;
+  rfiPorEspecialidad: RFIPorEspecialidad[];
+  rfiDistribucionUrgencia: { urgencia: string; count: number }[];
   projects: { id: number; name: string }[];
   // Contratista features configuration
   features: {
@@ -164,6 +188,9 @@ export const useExecutiveSummary = (selectedProjectIds?: number[]) => {
           adicionalesPendientes: 0,
           adicionalesAprobados: 0,
           adicionalesRechazados: 0,
+          adicionalesPorCategoria: [],
+          adicionalesPorEspecialidad: [],
+          adicionalesCombinados: [],
           totalDocumentos: 0,
           totalSizeDocumentos: 0,
           documentosPorTipo: [],
@@ -178,6 +205,8 @@ export const useExecutiveSummary = (selectedProjectIds?: number[]) => {
           rfiPendientes: 0,
           rfiRespondidos: 0,
           rfiCerrados: 0,
+          rfiPorEspecialidad: [],
+          rfiDistribucionUrgencia: [],
           projects: [],
           features
         });
@@ -218,7 +247,7 @@ export const useExecutiveSummary = (selectedProjectIds?: number[]) => {
       // Fetch adicionales data
       const { data: adicionales } = await supabase
         .from('Adicionales')
-        .select('id, Monto_presentado, Monto_aprobado, Status, Proyecto')
+        .select('id, Monto_presentado, Monto_aprobado, Status, Proyecto, Categoria, Especialidad')
         .in('Proyecto', projectIds);
 
       // Fetch documentos data
@@ -251,11 +280,20 @@ export const useExecutiveSummary = (selectedProjectIds?: number[]) => {
         .from('Reuniones')
         .select('id');
 
-      // Fetch RFI data
+      // Fetch RFI data with urgency
       const { data: rfiData } = await supabase
         .from('RFI')
-        .select('id, Status, Proyecto')
+        .select('id, Status, Proyecto, Urgencia')
         .in('Proyecto', projectIds);
+
+      // Fetch RFI destinatarios with contactos to get especialidad
+      const rfiIds = (rfiData || [])?.map((r: any) => r.id) || [];
+      const { data: rfiDestinatarios } = rfiIds.length
+        ? await supabase
+            .from('rfi_destinatarios')
+            .select('rfi_id, contacto_id, contactos:contacto_id(especialidad)')
+            .in('rfi_id', rfiIds)
+        : { data: [] as any[] };
 
       if (paymentsError) {
         throw paymentsError;
@@ -309,6 +347,55 @@ export const useExecutiveSummary = (selectedProjectIds?: number[]) => {
       const adicionalesAprobados = adicionales?.filter(a => a.Status === 'Aprobado').length || 0;
       const adicionalesRechazados = adicionales?.filter(a => a.Status === 'Rechazado').length || 0;
 
+      const adicionalesPorCategoria = Object.entries(
+        adicionales?.reduce((acc, a) => {
+          const cat = (a as any).Categoria || 'Sin categoría';
+          if (!acc[cat]) acc[cat] = { count: 0, montoPresentado: 0, montoAprobado: 0 };
+          acc[cat].count += 1;
+          acc[cat].montoPresentado += (a as any).Monto_presentado || 0;
+          acc[cat].montoAprobado += (a as any).Monto_aprobado || 0;
+          return acc;
+        }, {} as Record<string, { count: number; montoPresentado: number; montoAprobado: number }>) || {}
+      )
+        .map(([categoria, data]) => ({ categoria, ...data }))
+        .sort((a, b) => b.montoPresentado - a.montoPresentado);
+
+      const adicionalesPorEspecialidad = Object.entries(
+        adicionales?.reduce((acc, a) => {
+          const esp = (a as any).Especialidad || 'Sin especialidad';
+          if (!acc[esp]) acc[esp] = { count: 0, montoPresentado: 0, montoAprobado: 0 };
+          acc[esp].count += 1;
+          acc[esp].montoPresentado += (a as any).Monto_presentado || 0;
+          acc[esp].montoAprobado += (a as any).Monto_aprobado || 0;
+          return acc;
+        }, {} as Record<string, { count: number; montoPresentado: number; montoAprobado: number }>) || {}
+      )
+        .map(([especialidad, data]) => ({ especialidad, ...data }))
+        .sort((a, b) => b.montoPresentado - a.montoPresentado);
+
+      const adicionalesCombinados = Object.entries(
+        adicionales?.reduce((acc, a) => {
+          const cat = (a as any).Categoria || 'Sin categoría';
+          const esp = (a as any).Especialidad || 'Sin especialidad';
+          const key = `${cat}|||${esp}`;
+          if (!acc[key]) {
+            acc[key] = {
+              categoria: cat,
+              especialidad: esp,
+              count: 0,
+              montoPresentado: 0,
+              montoAprobado: 0
+            };
+          }
+          acc[key].count += 1;
+          acc[key].montoPresentado += (a as any).Monto_presentado || 0;
+          acc[key].montoAprobado += (a as any).Monto_aprobado || 0;
+          return acc;
+        }, {} as Record<string, AdicionalesCombinado>) || {}
+      )
+        .map(([_, data]) => data)
+        .sort((a, b) => b.montoPresentado - a.montoPresentado);
+
       // Calculate documentos metrics
       const totalDocumentos = documentos?.length || 0;
       const totalSizeDocumentos = documentos?.reduce((sum, d) => sum + (d.Size || 0), 0) || 0;
@@ -347,9 +434,46 @@ export const useExecutiveSummary = (selectedProjectIds?: number[]) => {
 
       // Calculate RFI metrics
       const totalRFI = rfiData?.length || 0;
-      const rfiPendientes = rfiData?.filter(r => r.Status === 'Pendiente').length || 0;
-      const rfiRespondidos = rfiData?.filter(r => r.Status === 'Respondido').length || 0;
-      const rfiCerrados = rfiData?.filter(r => r.Status === 'Cerrado').length || 0;
+      const rfiPendientes = rfiData?.filter((r: any) => r.Status === 'Pendiente').length || 0;
+      const rfiRespondidos = rfiData?.filter((r: any) => r.Status === 'Respondido').length || 0;
+      const rfiCerrados = rfiData?.filter((r: any) => r.Status === 'Cerrado').length || 0;
+
+      const rfiEspecialidadMap: Record<number, string> = {};
+      (rfiDestinatarios as any[])?.forEach((rd: any) => {
+        const esp = rd.contactos?.especialidad || 'Sin especialidad';
+        if (!rfiEspecialidadMap[rd.rfi_id]) rfiEspecialidadMap[rd.rfi_id] = esp;
+      });
+
+      const rfiPorEspecialidadMap: Record<string, RFIPorEspecialidad> = {};
+      (rfiData || [])?.forEach((rfi: any) => {
+        const esp = rfiEspecialidadMap[rfi.id] || 'Sin especialidad';
+        if (!rfiPorEspecialidadMap[esp]) {
+          rfiPorEspecialidadMap[esp] = {
+            especialidad: esp,
+            total: 0,
+            pendientes: 0,
+            respondidos: 0,
+            cerrados: 0,
+            noUrgente: 0,
+            urgente: 0,
+            muyUrgente: 0,
+          };
+        }
+        rfiPorEspecialidadMap[esp].total += 1;
+        if (rfi.Status === 'Pendiente') rfiPorEspecialidadMap[esp].pendientes += 1;
+        if (rfi.Status === 'Respondido') rfiPorEspecialidadMap[esp].respondidos += 1;
+        if (rfi.Status === 'Cerrado') rfiPorEspecialidadMap[esp].cerrados += 1;
+        if (rfi.Urgencia === 'no_urgente') rfiPorEspecialidadMap[esp].noUrgente += 1;
+        if (rfi.Urgencia === 'urgente') rfiPorEspecialidadMap[esp].urgente += 1;
+        if (rfi.Urgencia === 'muy_urgente') rfiPorEspecialidadMap[esp].muyUrgente += 1;
+      });
+
+      const rfiPorEspecialidad = Object.values(rfiPorEspecialidadMap).sort((a, b) => b.total - a.total);
+      const rfiDistribucionUrgencia = [
+        { urgencia: 'No Urgente', count: (rfiData || [])?.filter((r: any) => r.Urgencia === 'no_urgente').length || 0 },
+        { urgencia: 'Urgente', count: (rfiData || [])?.filter((r: any) => r.Urgencia === 'urgente').length || 0 },
+        { urgencia: 'Muy Urgente', count: (rfiData || [])?.filter((r: any) => r.Urgencia === 'muy_urgente').length || 0 },
+      ].sort((a, b) => b.count - a.count);
 
       setSummaryData({
         totalProjects,
@@ -367,6 +491,9 @@ export const useExecutiveSummary = (selectedProjectIds?: number[]) => {
         adicionalesPendientes,
         adicionalesAprobados,
         adicionalesRechazados,
+        adicionalesPorCategoria,
+        adicionalesPorEspecialidad,
+        adicionalesCombinados,
         totalDocumentos,
         totalSizeDocumentos,
         documentosPorTipo,
@@ -381,6 +508,8 @@ export const useExecutiveSummary = (selectedProjectIds?: number[]) => {
         rfiPendientes,
         rfiRespondidos,
         rfiCerrados,
+        rfiPorEspecialidad,
+        rfiDistribucionUrgencia,
         projects: projects.map(p => ({ id: p.id, name: p.Name || 'Sin nombre' })),
         features
       });

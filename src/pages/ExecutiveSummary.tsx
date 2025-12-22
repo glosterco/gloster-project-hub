@@ -376,10 +376,10 @@ const ExecutiveSummary = () => {
                   <CardTitle className="text-sm font-medium text-muted-foreground">
                     Monto Presentado
                   </CardTitle>
-                  <DollarSign className="h-4 w-4 text-blue-500" />
+                  <DollarSign className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-blue-600">
+                  <div className="text-2xl font-bold">
                     {formatCurrency(summaryData?.montoPresentadoAdicionales || 0)}
                   </div>
                   <p className="text-xs text-muted-foreground">
@@ -393,10 +393,10 @@ const ExecutiveSummary = () => {
                   <CardTitle className="text-sm font-medium text-muted-foreground">
                     Monto Aprobado
                   </CardTitle>
-                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <CheckCircle className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-green-600">
+                  <div className="text-2xl font-bold">
                     {formatCurrency(summaryData?.montoAprobadoAdicionales || 0)}
                   </div>
                   <p className="text-xs text-muted-foreground">
@@ -410,7 +410,7 @@ const ExecutiveSummary = () => {
                   <CardTitle className="text-sm font-medium text-muted-foreground">
                     Por Estado
                   </CardTitle>
-                  <BarChart3 className="h-4 w-4 text-purple-500" />
+                  <BarChart3 className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-1">
@@ -420,16 +420,149 @@ const ExecutiveSummary = () => {
                     </div>
                     <div className="flex justify-between text-xs">
                       <span className="text-muted-foreground">Aprobados:</span>
-                      <span className="font-medium text-green-600">{summaryData?.adicionalesAprobados || 0}</span>
+                      <span className="font-medium">{summaryData?.adicionalesAprobados || 0}</span>
                     </div>
                     <div className="flex justify-between text-xs">
                       <span className="text-muted-foreground">Rechazados:</span>
-                      <span className="font-medium text-red-600">{summaryData?.adicionalesRechazados || 0}</span>
+                      <span className="font-medium">{summaryData?.adicionalesRechazados || 0}</span>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FolderOpen className="h-5 w-5" />
+                    Montos por Categoría
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {summaryData?.adicionalesPorCategoria && summaryData.adicionalesPorCategoria.length > 0 ? (
+                    <div className="space-y-4">
+                      {summaryData.adicionalesPorCategoria.map((cat) => (
+                        <div key={cat.categoria} className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline">{cat.categoria}</Badge>
+                              <span className="text-xs text-muted-foreground">({cat.count})</span>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-sm font-semibold">{formatCurrency(cat.montoPresentado)}</div>
+                              <div className="text-xs text-muted-foreground">Aprobado: {formatCurrency(cat.montoAprobado)}</div>
+                            </div>
+                          </div>
+                          <div className="h-2 bg-muted rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-primary rounded-full transition-all"
+                              style={{
+                                width: `${summaryData.montoPresentadoAdicionales > 0
+                                  ? (cat.montoPresentado / summaryData.montoPresentadoAdicionales) * 100
+                                  : 0}%`
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      No hay adicionales registrados
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5" />
+                    Montos por Especialidad
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {summaryData?.adicionalesPorEspecialidad && summaryData.adicionalesPorEspecialidad.length > 0 ? (
+                    <div className="space-y-4">
+                      {summaryData.adicionalesPorEspecialidad.map((esp) => (
+                        <div key={esp.especialidad} className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="secondary">{esp.especialidad}</Badge>
+                              <span className="text-xs text-muted-foreground">({esp.count})</span>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-sm font-semibold">{formatCurrency(esp.montoPresentado)}</div>
+                              <div className="text-xs text-muted-foreground">Aprobado: {formatCurrency(esp.montoAprobado)}</div>
+                            </div>
+                          </div>
+                          <div className="h-2 bg-muted rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-primary rounded-full transition-all"
+                              style={{
+                                width: `${summaryData.montoPresentadoAdicionales > 0
+                                  ? (esp.montoPresentado / summaryData.montoPresentadoAdicionales) * 100
+                                  : 0}%`
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      No hay adicionales registrados
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <DollarSign className="h-5 w-5" />
+                  Montos por Categoría y Especialidad (Combinado)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {summaryData?.adicionalesCombinados && summaryData.adicionalesCombinados.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left py-2 px-2">Categoría</th>
+                          <th className="text-left py-2 px-2">Especialidad</th>
+                          <th className="text-center py-2 px-2">Cantidad</th>
+                          <th className="text-right py-2 px-2">Presentado</th>
+                          <th className="text-right py-2 px-2">Aprobado</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {summaryData.adicionalesCombinados.map((item, idx) => (
+                          <tr key={idx} className="border-b border-muted">
+                            <td className="py-2 px-2">
+                              <Badge variant="outline" className="text-xs">{item.categoria}</Badge>
+                            </td>
+                            <td className="py-2 px-2">
+                              <Badge variant="secondary" className="text-xs">{item.especialidad}</Badge>
+                            </td>
+                            <td className="text-center py-2 px-2">{item.count}</td>
+                            <td className="text-right py-2 px-2 font-medium">{formatCurrency(item.montoPresentado)}</td>
+                            <td className="text-right py-2 px-2">{formatCurrency(item.montoAprobado)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No hay adicionales registrados
+                  </p>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Documentos Tab */}
@@ -664,12 +797,10 @@ const ExecutiveSummary = () => {
                   <CardTitle className="text-sm font-medium text-muted-foreground">
                     Pendientes
                   </CardTitle>
-                  <Clock className="h-4 w-4 text-amber-500" />
+                  <Clock className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-amber-600">
-                    {summaryData?.rfiPendientes || 0}
-                  </div>
+                  <div className="text-2xl font-bold">{summaryData?.rfiPendientes || 0}</div>
                   <p className="text-xs text-muted-foreground">
                     RFI pendientes de respuesta
                   </p>
@@ -681,12 +812,10 @@ const ExecutiveSummary = () => {
                   <CardTitle className="text-sm font-medium text-muted-foreground">
                     Respondidos
                   </CardTitle>
-                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <CheckCircle className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-green-600">
-                    {summaryData?.rfiRespondidos || 0}
-                  </div>
+                  <div className="text-2xl font-bold">{summaryData?.rfiRespondidos || 0}</div>
                   <p className="text-xs text-muted-foreground">
                     RFI con respuesta
                   </p>
@@ -698,18 +827,144 @@ const ExecutiveSummary = () => {
                   <CardTitle className="text-sm font-medium text-muted-foreground">
                     Cerrados
                   </CardTitle>
-                  <XCircle className="h-4 w-4 text-gray-500" />
+                  <XCircle className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-gray-600">
-                    {summaryData?.rfiCerrados || 0}
-                  </div>
+                  <div className="text-2xl font-bold">{summaryData?.rfiCerrados || 0}</div>
                   <p className="text-xs text-muted-foreground">
                     RFI cerrados
                   </p>
                 </CardContent>
               </Card>
             </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <AlertCircle className="h-5 w-5" />
+                    Distribución de Urgencia
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {summaryData?.rfiDistribucionUrgencia && summaryData.rfiDistribucionUrgencia.some(u => u.count > 0) ? (
+                    <ResponsiveContainer width="100%" height={220}>
+                      <PieChart>
+                        <Pie
+                          data={summaryData.rfiDistribucionUrgencia.filter(u => u.count > 0)}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
+                          outerRadius={70}
+                          dataKey="count"
+                          nameKey="urgencia"
+                        >
+                          {summaryData.rfiDistribucionUrgencia.map((entry, index) => (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={
+                                entry.urgencia === 'Muy Urgente'
+                                  ? 'hsl(var(--destructive))'
+                                  : entry.urgencia === 'Urgente'
+                                    ? 'hsl(var(--primary))'
+                                    : 'hsl(var(--muted-foreground))'
+                              }
+                            />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-8">
+                      No hay RFI registrados
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5" />
+                    Resumen de Urgencia
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {summaryData?.rfiDistribucionUrgencia?.map((item) => (
+                      <div key={item.urgencia} className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Badge variant={item.urgencia === 'Muy Urgente' ? 'destructive' : item.urgencia === 'Urgente' ? 'secondary' : 'outline'}>
+                            {item.urgencia}
+                          </Badge>
+                          <span className="font-semibold">{item.count}</span>
+                        </div>
+                        <div className="h-2 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-primary rounded-full transition-all"
+                            style={{
+                              width: `${summaryData.totalRFI > 0 ? (item.count / summaryData.totalRFI) * 100 : 0}%`
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <HelpCircle className="h-5 w-5" />
+                  RFI por Especialidad (descendente)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {summaryData?.rfiPorEspecialidad && summaryData.rfiPorEspecialidad.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left py-2 px-2">Especialidad</th>
+                          <th className="text-center py-2 px-2">Total</th>
+                          <th className="text-center py-2 px-2">Pendientes</th>
+                          <th className="text-center py-2 px-2">Respondidos</th>
+                          <th className="text-center py-2 px-2">Cerrados</th>
+                          <th className="text-center py-2 px-2">No Urgente</th>
+                          <th className="text-center py-2 px-2">Urgente</th>
+                          <th className="text-center py-2 px-2">Muy Urgente</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {summaryData.rfiPorEspecialidad.map((esp) => (
+                          <tr key={esp.especialidad} className="border-b border-muted">
+                            <td className="py-2 px-2">
+                              <Badge variant="secondary" className="text-xs">{esp.especialidad}</Badge>
+                            </td>
+                            <td className="text-center py-2 px-2 font-bold">{esp.total}</td>
+                            <td className="text-center py-2 px-2">{esp.pendientes}</td>
+                            <td className="text-center py-2 px-2">{esp.respondidos}</td>
+                            <td className="text-center py-2 px-2">{esp.cerrados}</td>
+                            <td className="text-center py-2 px-2">{esp.noUrgente}</td>
+                            <td className="text-center py-2 px-2">{esp.urgente}</td>
+                            <td className="text-center py-2 px-2">{esp.muyUrgente}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No hay RFI registrados
+                  </p>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

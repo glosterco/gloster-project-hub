@@ -67,6 +67,47 @@ export type Database = {
           },
         ]
       }
+      contactos: {
+        Row: {
+          created_at: string
+          email: string
+          especialidad: string | null
+          id: number
+          nombre: string
+          proyecto_id: number
+          rol: string
+          telefono: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          especialidad?: string | null
+          id?: number
+          nombre: string
+          proyecto_id: number
+          rol: string
+          telefono?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          especialidad?: string | null
+          id?: number
+          nombre?: string
+          proyecto_id?: number
+          rol?: string
+          telefono?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contactos_proyecto_id_fkey"
+            columns: ["proyecto_id"]
+            isOneToOne: false
+            referencedRelation: "Proyectos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contratista_users: {
         Row: {
           auth_user_id: string
@@ -1006,33 +1047,39 @@ export type Database = {
           created_at: string
           Descripcion: string | null
           Fecha_Respuesta: string | null
+          Fecha_Vencimiento: string | null
           id: number
           Proyecto: number | null
           Respuesta: string | null
           Status: string | null
           Titulo: string | null
+          Urgencia: string | null
           URL: string | null
         }
         Insert: {
           created_at?: string
           Descripcion?: string | null
           Fecha_Respuesta?: string | null
+          Fecha_Vencimiento?: string | null
           id?: number
           Proyecto?: number | null
           Respuesta?: string | null
           Status?: string | null
           Titulo?: string | null
+          Urgencia?: string | null
           URL?: string | null
         }
         Update: {
           created_at?: string
           Descripcion?: string | null
           Fecha_Respuesta?: string | null
+          Fecha_Vencimiento?: string | null
           id?: number
           Proyecto?: number | null
           Respuesta?: string | null
           Status?: string | null
           Titulo?: string | null
+          Urgencia?: string | null
           URL?: string | null
         }
         Relationships: [
@@ -1041,6 +1088,45 @@ export type Database = {
             columns: ["Proyecto"]
             isOneToOne: false
             referencedRelation: "Proyectos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rfi_destinatarios: {
+        Row: {
+          contacto_id: number
+          enviado_at: string
+          id: number
+          respondido: boolean | null
+          rfi_id: number
+        }
+        Insert: {
+          contacto_id: number
+          enviado_at?: string
+          id?: number
+          respondido?: boolean | null
+          rfi_id: number
+        }
+        Update: {
+          contacto_id?: number
+          enviado_at?: string
+          id?: number
+          respondido?: boolean | null
+          rfi_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rfi_destinatarios_contacto_id_fkey"
+            columns: ["contacto_id"]
+            isOneToOne: false
+            referencedRelation: "contactos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rfi_destinatarios_rfi_id_fkey"
+            columns: ["rfi_id"]
+            isOneToOne: false
+            referencedRelation: "RFI"
             referencedColumns: ["id"]
           },
         ]
@@ -1133,7 +1219,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      rfi_urgencia: "no_urgente" | "urgente" | "muy_urgente"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1260,6 +1346,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      rfi_urgencia: ["no_urgente", "urgente", "muy_urgente"],
+    },
   },
 } as const

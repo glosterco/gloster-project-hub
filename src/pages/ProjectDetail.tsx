@@ -31,12 +31,16 @@ import { useDocumentos } from '@/hooks/useDocumentos';
 import { useFotos } from '@/hooks/useFotos';
 import { usePresupuesto } from '@/hooks/usePresupuesto';
 import { useReuniones } from '@/hooks/useReuniones';
+import { useRFI, RFI } from '@/hooks/useRFI';
 import { DocumentosTableWithSidebar } from '@/components/DocumentosTableWithSidebar';
 import { FotosGrid } from '@/components/FotosGrid';
 import { PresupuestoTable } from '@/components/PresupuestoTable';
 import { ReunionesTable } from '@/components/ReunionesTable';
 import { ProjectPhotoUpload } from '@/components/ProjectPhotoUpload';
 import { ProjectDocumentUpload } from '@/components/ProjectDocumentUpload';
+import { RFICards } from '@/components/RFICards';
+import { RFIForm } from '@/components/RFIForm';
+import { RFIDetailModal } from '@/components/RFIDetailModal';
 
 const ProjectDetail = () => {
   console.log('🎨 ProjectDetail component rendering with SECURE MODE...');
@@ -66,6 +70,7 @@ const ProjectDetail = () => {
     refetch: refetchPresupuesto 
   } = usePresupuesto(id || '');
   const { reuniones, loading: reunionesLoading, refetch: refetchReuniones } = useReuniones(id || '');
+  const { rfis, loading: rfisLoading, refetch: refetchRfis } = useRFI(id || '');
   
   // Estado para búsqueda, filtrado y orden de cada pestaña
   const [adicionalesSearch, setAdicionalesSearch] = useState('');
@@ -73,6 +78,12 @@ const ProjectDetail = () => {
   const [fotosSearch, setFotosSearch] = useState('');
   const [presupuestoSearch, setPresupuestoSearch] = useState('');
   const [reunionesSearch, setReunionesSearch] = useState('');
+  const [rfiSearch, setRfiSearch] = useState('');
+  
+  // RFI modals
+  const [showRFIForm, setShowRFIForm] = useState(false);
+  const [selectedRFI, setSelectedRFI] = useState<RFI | null>(null);
+  const [showRFIDetailModal, setShowRFIDetailModal] = useState(false);
   const handleAdicionalesSuccess = () => {
     refetchAdicionales();
   };
@@ -80,6 +91,11 @@ const ProjectDetail = () => {
   const handleCardClick = (adicional: any) => {
     setSelectedAdicional(adicional);
     setShowDetailModal(true);
+  };
+  
+  const handleRFICardClick = (rfi: RFI) => {
+    setSelectedRFI(rfi);
+    setShowRFIDetailModal(true);
   };
   
   useEffect(() => {
@@ -772,6 +788,12 @@ const ProjectDetail = () => {
                       Reuniones
                     </TabsTrigger>
                   )}
+                  <TabsTrigger 
+                    value="rfi" 
+                    className="font-rubik font-medium transition-all duration-200 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm data-[state=active]:font-semibold"
+                  >
+                    RFI
+                  </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="estados-pago" className="space-y-6">
@@ -1404,6 +1426,28 @@ const ProjectDetail = () => {
                     </Card>
                   </TabsContent>
                 )}
+
+                <TabsContent value="rfi" className="space-y-6">
+                  <Card className="mb-6">
+                    <CardHeader>
+                      <CardTitle className="text-xl font-rubik">RFI - Solicitudes de Información</CardTitle>
+                      <CardDescription className="font-rubik">
+                        Gestiona las solicitudes de información del proyecto
+                      </CardDescription>
+                    </CardHeader>
+                  </Card>
+                  {renderControls(
+                    rfiSearch, 
+                    setRfiSearch, 
+                    'Nuevo RFI', 
+                    () => setShowRFIForm(true)
+                  )}
+                  <RFICards 
+                    rfis={rfis}
+                    loading={rfisLoading}
+                    onCardClick={handleRFICardClick}
+                  />
+                </TabsContent>
               </Tabs>
             );
           })()}
@@ -1464,6 +1508,22 @@ const ProjectDetail = () => {
           refetchFotos();
           setShowPhotoUpload(false);
         }}
+      />
+
+      <RFIForm
+        open={showRFIForm}
+        onOpenChange={setShowRFIForm}
+        projectId={id || ''}
+        onSuccess={refetchRfis}
+      />
+
+      <RFIDetailModal
+        open={showRFIDetailModal}
+        onOpenChange={setShowRFIDetailModal}
+        rfi={selectedRFI}
+        isMandante={false}
+        projectId={id}
+        onSuccess={refetchRfis}
       />
     </div>
   );

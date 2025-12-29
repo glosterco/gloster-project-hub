@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -57,6 +57,9 @@ import * as XLSX from "xlsx";
 const ProjectDetailMandante = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const urlAdicionalId = searchParams.get('adicionalId');
+  const urlRfiId = searchParams.get('rfiId');
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("month");
@@ -104,6 +107,37 @@ const ProjectDetailMandante = () => {
   };
 
   const { project, loading, refetch, mandante } = useProjectDetailMandante(id || "");
+
+  // Deep link handling - open modal from URL params
+  useEffect(() => {
+    if (urlAdicionalId && adicionales.length > 0 && !adicionalesLoading) {
+      const adicional = adicionales.find((a: any) => a.id === parseInt(urlAdicionalId));
+      if (adicional) {
+        setSelectedAdicional(adicional);
+        setShowDetailModal(true);
+        setActiveTab('adicionales');
+        // Clear URL params after opening modal
+        const newSearchParams = new URLSearchParams(searchParams);
+        newSearchParams.delete('adicionalId');
+        navigate(`/project-mandante/${id}${newSearchParams.toString() ? '?' + newSearchParams.toString() : ''}`, { replace: true });
+      }
+    }
+  }, [urlAdicionalId, adicionales, adicionalesLoading]);
+
+  useEffect(() => {
+    if (urlRfiId && rfis.length > 0 && !rfisLoading) {
+      const rfi = rfis.find((r: any) => r.id === parseInt(urlRfiId));
+      if (rfi) {
+        setSelectedRFI(rfi);
+        setShowRFIDetailModal(true);
+        setActiveTab('rfi');
+        // Clear URL params after opening modal
+        const newSearchParams = new URLSearchParams(searchParams);
+        newSearchParams.delete('rfiId');
+        navigate(`/project-mandante/${id}${newSearchParams.toString() ? '?' + newSearchParams.toString() : ''}`, { replace: true });
+      }
+    }
+  }, [urlRfiId, rfis, rfisLoading]);
   const { sendContractorPaymentNotification, loading: notificationLoading } = useContractorNotification();
 
   // Check which features are enabled for this mandante

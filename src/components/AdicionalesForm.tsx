@@ -121,6 +121,24 @@ export const AdicionalesForm: React.FC<AdicionalesFormProps> = ({
 
       console.log('✅ Adicional created:', adicionalData);
       
+      // Send notification to mandante
+      try {
+        const { error: notifError } = await supabase.functions.invoke('send-adicional-notification', {
+          body: { 
+            adicionalId: adicionalData.id,
+            projectId: parseInt(projectId)
+          }
+        });
+        
+        if (notifError) {
+          console.error('⚠️ Error sending notification:', notifError);
+        } else {
+          console.log('✅ Notification sent to mandante');
+        }
+      } catch (notifError) {
+        console.error('⚠️ Error sending notification:', notifError);
+      }
+      
       toast({
         title: "Éxito",
         description: "Adicional presentado correctamente",

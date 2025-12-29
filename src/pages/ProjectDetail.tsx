@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -47,6 +47,9 @@ const ProjectDetail = () => {
   
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const urlAdicionalId = searchParams.get('adicionalId');
+  const urlRfiId = searchParams.get('rfiId');
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('month');
@@ -98,6 +101,37 @@ const ProjectDetail = () => {
     setShowRFIDetailModal(true);
   };
   
+  // Deep link handling - open modal from URL params
+  useEffect(() => {
+    if (urlAdicionalId && adicionales.length > 0 && !adicionalesLoading) {
+      const adicional = adicionales.find(a => a.id === parseInt(urlAdicionalId));
+      if (adicional) {
+        setSelectedAdicional(adicional);
+        setShowDetailModal(true);
+        setActiveTab('adicionales');
+        // Clear URL params after opening modal
+        const newSearchParams = new URLSearchParams(searchParams);
+        newSearchParams.delete('adicionalId');
+        navigate(`/project/${id}${newSearchParams.toString() ? '?' + newSearchParams.toString() : ''}`, { replace: true });
+      }
+    }
+  }, [urlAdicionalId, adicionales, adicionalesLoading]);
+
+  useEffect(() => {
+    if (urlRfiId && rfis.length > 0 && !rfisLoading) {
+      const rfi = rfis.find(r => r.id === parseInt(urlRfiId));
+      if (rfi) {
+        setSelectedRFI(rfi);
+        setShowRFIDetailModal(true);
+        setActiveTab('rfi');
+        // Clear URL params after opening modal
+        const newSearchParams = new URLSearchParams(searchParams);
+        newSearchParams.delete('rfiId');
+        navigate(`/project/${id}${newSearchParams.toString() ? '?' + newSearchParams.toString() : ''}`, { replace: true });
+      }
+    }
+  }, [urlRfiId, rfis, rfisLoading]);
+
   useEffect(() => {
     if (activeTab === 'estados-pago' && adicionales.length > 0) {
       setActiveTab('adicionales');

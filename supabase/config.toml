@@ -72,3 +72,15 @@ verify_jwt = false
 
 [functions.record-payment-approval]
 verify_jwt = false
+
+[functions.send-adicional-notification]
+verify_jwt = false
+
+[functions.send-adicional-response]
+verify_jwt = false
+
+[functions.send-rfi-notification]
+verify_jwt = false
+
+[functions.send-rfi-response]
+verify_jwt = false

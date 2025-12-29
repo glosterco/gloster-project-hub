@@ -238,9 +238,15 @@ const handler = async (req: Request): Promise<Response> => {
     const baseUrl = 'https://gloster-project-hub.lovable.app';
     const sentEmails: string[] = [];
 
+    // Get project URL token for verification
+    const projectToken = project.URL;
+    if (!projectToken) {
+      throw new Error('Project URL token not found');
+    }
+
     // Send to mandante
     if (mandante.ContactEmail && isValidEmail(mandante.ContactEmail)) {
-      const accessUrl = `${baseUrl}/email-access?projectId=${data.projectId}&rfiId=${data.rfiId}&type=mandante`;
+      const accessUrl = `${baseUrl}/email-access?projectId=${data.projectId}&token=${projectToken}&rfiId=${data.rfiId}&type=mandante`;
       
       const emailHtml = createEmailHtml({
         rfi,
@@ -294,7 +300,7 @@ ${emailHtml}`
       if (!contactosError && contactos) {
         for (const contacto of contactos) {
           if (contacto.email && isValidEmail(contacto.email)) {
-            const accessUrl = `${baseUrl}/email-access?projectId=${data.projectId}&rfiId=${data.rfiId}&type=specialist`;
+            const accessUrl = `${baseUrl}/email-access?projectId=${data.projectId}&token=${projectToken}&rfiId=${data.rfiId}&type=specialist`;
             
             const emailHtml = createEmailHtml({
               rfi,

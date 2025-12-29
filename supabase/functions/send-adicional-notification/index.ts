@@ -260,9 +260,20 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error('No valid recipients found');
     }
 
-    // Build access URL with adicionalId parameter
+    // Get project URL token for mandante access
+    const { data: projectUrls, error: urlError } = await supabase
+      .from('Proyectos')
+      .select('URL')
+      .eq('id', data.projectId)
+      .single();
+
+    if (urlError || !projectUrls?.URL) {
+      throw new Error(`Project URL token not found: ${urlError?.message}`);
+    }
+
+    // Build access URL with token and adicionalId parameter
     const baseUrl = 'https://gloster-project-hub.lovable.app';
-    const accessUrl = `${baseUrl}/email-access?projectId=${data.projectId}&adicionalId=${data.adicionalId}&type=mandante`;
+    const accessUrl = `${baseUrl}/email-access?projectId=${data.projectId}&token=${projectUrls.URL}&adicionalId=${data.adicionalId}&type=mandante`;
 
     const accessToken = await getAccessToken();
     const fromEmail = Deno.env.get("GMAIL_FROM_EMAIL");

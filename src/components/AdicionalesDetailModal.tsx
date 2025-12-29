@@ -87,6 +87,25 @@ export const AdicionalesDetailModal: React.FC<AdicionalesDetailModalProps> = ({
 
       if (error) throw error;
 
+      // Send response notification to contractor
+      try {
+        const { error: notifError } = await supabase.functions.invoke('send-adicional-response', {
+          body: { 
+            adicionalId: adicional.id,
+            action: 'approved',
+            montoAprobado: montoAprobado ? parseFloat(montoAprobado) : adicional.Monto_presentado
+          }
+        });
+        
+        if (notifError) {
+          console.error('⚠️ Error sending response notification:', notifError);
+        } else {
+          console.log('✅ Response notification sent to contractor');
+        }
+      } catch (notifError) {
+        console.error('⚠️ Error sending response notification:', notifError);
+      }
+
       toast({
         title: "Adicional aprobado",
         description: "El adicional ha sido aprobado exitosamente",
@@ -132,6 +151,25 @@ export const AdicionalesDetailModal: React.FC<AdicionalesDetailModalProps> = ({
         .eq('id', adicional.id);
 
       if (error) throw error;
+
+      // Send rejection notification to contractor
+      try {
+        const { error: notifError } = await supabase.functions.invoke('send-adicional-response', {
+          body: { 
+            adicionalId: adicional.id,
+            action: 'rejected',
+            rejectionNotes: rejectionNotes
+          }
+        });
+        
+        if (notifError) {
+          console.error('⚠️ Error sending rejection notification:', notifError);
+        } else {
+          console.log('✅ Rejection notification sent to contractor');
+        }
+      } catch (notifError) {
+        console.error('⚠️ Error sending rejection notification:', notifError);
+      }
 
       toast({
         title: "Adicional rechazado",

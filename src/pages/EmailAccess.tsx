@@ -13,7 +13,12 @@ const EmailAccess = () => {
   const [searchParams] = useSearchParams();
   const paymentId = searchParams.get('paymentId');
   const contractorId = searchParams.get('contractorId');
+  const mandanteId = searchParams.get('mandanteId');
+  const projectId = searchParams.get('projectId');
+  const adicionalId = searchParams.get('adicionalId');
+  const rfiId = searchParams.get('rfiId');
   const token = searchParams.get('token');
+  const urlType = searchParams.get('type');
   const { toast } = useToast();
   
   const [email, setEmail] = useState('');
@@ -24,16 +29,16 @@ const EmailAccess = () => {
   const [userType, setUserType] = useState<'contratista' | 'mandante' | 'cc' | null>(null);
 
   useEffect(() => {
-    if (!paymentId && !contractorId) {
+    if (!paymentId && !contractorId && !mandanteId && !projectId) {
       navigate('/');
       return;
     }
-  }, [paymentId, contractorId, navigate]);
+  }, [paymentId, contractorId, mandanteId, projectId, navigate]);
 
   // Detectar tipo de acceso desde URL params de forma segura
   useEffect(() => {
     const detectAccessType = async () => {
-      if ((!paymentId && !contractorId) || !token) return;
+      if ((!paymentId && !contractorId && !mandanteId && !projectId) || !token) return;
 
       try {
         // Use secure edge function to verify token and determine user type
@@ -41,6 +46,8 @@ const EmailAccess = () => {
           body: { 
             paymentId: paymentId || undefined, 
             contractorId: contractorId || undefined,
+            mandanteId: mandanteId || undefined,
+            projectId: projectId || undefined,
             token 
           }
         });
@@ -60,7 +67,7 @@ const EmailAccess = () => {
     };
 
     detectAccessType();
-  }, [paymentId, contractorId, token]);
+  }, [paymentId, contractorId, mandanteId, projectId, token]);
 
   const checkUserAccount = async (email: string, userType: 'contratista' | 'mandante') => {
     try {
@@ -101,7 +108,9 @@ const EmailAccess = () => {
         const { data: tokenVerification, error: tokenError } = await supabase.functions.invoke('verify-email-access', {
           body: { 
             paymentId: paymentId || undefined, 
-            contractorId: contractorId || undefined, 
+            contractorId: contractorId || undefined,
+            mandanteId: mandanteId || undefined,
+            projectId: projectId || undefined,
             token, 
             email 
           }
@@ -114,23 +123,46 @@ const EmailAccess = () => {
           let finalUserType = tokenVerification.userType;
           let redirectPath = '';
           
+          // Build URL params for deep linking to specific items
+          const buildRedirectParams = () => {
+            const params = new URLSearchParams();
+            if (adicionalId) params.set('adicionalId', adicionalId);
+            if (rfiId) params.set('rfiId', rfiId);
+            return params.toString() ? `?${params.toString()}` : '';
+          };
+          
           // Determinar redirección basada en el tipo de acceso
           if (tokenVerification.accessType === 'cc') {
             // ESCENARIO 2: CC → Executive Summary
             finalUserType = 'cc';
             redirectPath = `/executive-summary`;
-          } else if (tokenVerification.accessType === 'mandante') {
-            // ESCENARIO 1: Mandante → Submission View
+          } else if (tokenVerification.accessType === 'mandante' || urlType === 'mandante') {
+            // ESCENARIO 1: Mandante → Project Detail or Submission View
             finalUserType = 'mandante';
-            redirectPath = `/submission/${paymentId}`;
+            if (projectId && (adicionalId || rfiId)) {
+              // Deep link to project detail with modal params
+              redirectPath = `/project-mandante/${projectId}${buildRedirectParams()}`;
+            } else if (paymentId) {
+              redirectPath = `/submission/${paymentId}`;
+            } else {
+              redirectPath = `/dashboard-mandante`;
+            }
           } else if (tokenVerification.accessType === 'contratista') {
-            // ESCENARIO 3: Contratista → Payment View
+            // ESCENARIO 3: Contratista → Payment View or Project Detail
             finalUserType = 'contratista';
-            redirectPath = `/payment/${paymentId}`;
+            if (projectId && (adicionalId || rfiId)) {
+              // Deep link to project detail with modal params
+              redirectPath = `/project/${projectId}${buildRedirectParams()}`;
+            } else if (paymentId) {
+              redirectPath = `/payment/${paymentId}`;
+            } else {
+              redirectPath = `/dashboard`;
+            }
           }
 
           const accessData = {
-            paymentId: paymentId || contractorId, // Para CC usamos contractorId
+            paymentId: paymentId || contractorId || projectId, // Para CC usamos contractorId
+            projectId: projectId || null,
             email: email, // CRÍTICO: Agregar email para RLS
             userType: finalUserType,
             isRegistered: false,
@@ -139,6 +171,8 @@ const EmailAccess = () => {
             token: finalUserType === 'mandante' ? 'mandante_authenticated' : 
                    finalUserType === 'cc' ? 'cc_authenticated' : 'contratista_authenticated',
             accessToken: token,
+            adicionalId: adicionalId || null,
+            rfiId: rfiId || null,
             timestamp: Date.now()
           };
 

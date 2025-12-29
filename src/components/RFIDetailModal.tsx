@@ -136,6 +136,24 @@ export const RFIDetailModal: React.FC<RFIDetailModalProps> = ({
 
       if (error) throw error;
 
+      // Send response notification to contractor
+      try {
+        const { error: notifError } = await supabase.functions.invoke('send-rfi-response', {
+          body: { 
+            rfiId: rfi.id,
+            respuesta: respuesta
+          }
+        });
+        
+        if (notifError) {
+          console.error('⚠️ Error sending RFI response notification:', notifError);
+        } else {
+          console.log('✅ RFI response notification sent to contractor');
+        }
+      } catch (notifError) {
+        console.error('⚠️ Error sending RFI response notification:', notifError);
+      }
+
       toast({
         title: "Respuesta enviada",
         description: "El RFI ha sido respondido correctamente",

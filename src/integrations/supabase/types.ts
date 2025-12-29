@@ -181,6 +181,7 @@ export type Database = {
           Licitaciones: boolean | null
           Presupuesto: boolean | null
           Reuniones: boolean | null
+          RFI: boolean | null
           RUT: string | null
           Specialization: string | null
           Status: boolean | null
@@ -201,6 +202,7 @@ export type Database = {
           Licitaciones?: boolean | null
           Presupuesto?: boolean | null
           Reuniones?: boolean | null
+          RFI?: boolean | null
           RUT?: string | null
           Specialization?: string | null
           Status?: boolean | null
@@ -221,6 +223,7 @@ export type Database = {
           Licitaciones?: boolean | null
           Presupuesto?: boolean | null
           Reuniones?: boolean | null
+          RFI?: boolean | null
           RUT?: string | null
           Specialization?: string | null
           Status?: boolean | null

@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,17 +10,23 @@ import { supabase } from '@/integrations/supabase/client';
 
 const EmailAccess = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const paymentId = searchParams.get('paymentId');
-  const contractorId = searchParams.get('contractorId');
-  const mandanteId = searchParams.get('mandanteId');
-  const projectId = searchParams.get('projectId');
-  const adicionalId = searchParams.get('adicionalId');
-  const rfiId = searchParams.get('rfiId');
-  const token = searchParams.get('token');
-  const urlType = searchParams.get('type');
+  const location = useLocation();
+
+  // NOTE: en deep links desde email algunos navegadores/clientes pueden causar
+  // lecturas tempranas inconsistentes; parseamos desde window.location.search.
+  const params = useMemo(() => new URLSearchParams(window.location.search || location.search), [location.search]);
+
+  const paymentId = params.get('paymentId');
+  const contractorId = params.get('contractorId');
+  const mandanteId = params.get('mandanteId');
+  const projectId = params.get('projectId');
+  const adicionalId = params.get('adicionalId');
+  const rfiId = params.get('rfiId');
+  const token = params.get('token');
+  const urlType = params.get('type');
+
   const { toast } = useToast();
-  
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -28,12 +34,19 @@ const EmailAccess = () => {
   const [needsPassword, setNeedsPassword] = useState(false);
   const [userType, setUserType] = useState<'contratista' | 'mandante' | 'cc' | null>(null);
 
+  // CRÍTICO: nunca redirigir automáticamente al Home en carga.
+  // Si falta info del link, mostramos error y dejamos al usuario en pantalla.
   useEffect(() => {
-    if (!paymentId && !contractorId && !mandanteId && !projectId) {
-      navigate('/');
+    const hasAnyId = !!(paymentId || contractorId || mandanteId || projectId);
+    if (!hasAnyId) {
+      setPopupError('Enlace inválido o incompleto.');
       return;
     }
-  }, [paymentId, contractorId, mandanteId, projectId, navigate]);
+    if (!token) {
+      setPopupError('Enlace inválido: falta token de acceso.');
+      return;
+    }
+  }, [paymentId, contractorId, mandanteId, projectId, token]);
 
   // Detectar tipo de acceso desde URL params de forma segura
   useEffect(() => {

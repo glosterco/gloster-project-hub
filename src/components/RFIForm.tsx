@@ -199,7 +199,7 @@ export const RFIForm: React.FC<RFIFormProps> = ({
         body: { 
           rfiId: (rfiData as any).id,
           projectId: pid,
-          selectedContactIds: selectedContactIds
+          destinatarioIds: selectedContactIds
         }
       }).then(({ error: notifError }) => {
         if (notifError) {

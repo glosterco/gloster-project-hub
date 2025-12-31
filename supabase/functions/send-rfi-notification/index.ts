@@ -259,17 +259,17 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error('Project URL token not found');
     }
 
-    // Send to mandante
+    // Send to mandante (contacto principal)
     if (mandante.ContactEmail && isValidEmail(mandante.ContactEmail)) {
       const accessUrl = `${baseUrl}/email-access?projectId=${data.projectId}&token=${projectToken}&rfiId=${data.rfiId}&type=mandante`;
-      
+
       const emailHtml = createEmailHtml({
         rfi,
         project,
         contratista,
         accessUrl,
         recipientName: mandante.ContactName,
-        isForSpecialist: false
+        isForSpecialist: false,
       });
 
       const subject = sanitizeSubject(`Nuevo RFI: ${rfi.Titulo || 'Sin titulo'} | ${project.Name}`);
@@ -302,7 +302,128 @@ ${emailHtml}`
       if (response.ok) {
         sentEmailSet.add(mandante.ContactEmail);
         console.log("✅ Sent RFI notification to mandante:", mandante.ContactEmail);
+      } else {
+        console.error("❌ Failed sending RFI notification to mandante:", mandante.ContactEmail, response.status);
       }
+    }
+
+    // Send to contractor main contact (contacto principal del contratista)
+    if (contratista.ContactEmail && isValidEmail(contratista.ContactEmail) && !sentEmailSet.has(contratista.ContactEmail)) {
+      const accessUrl = `${baseUrl}/email-access?projectId=${data.projectId}&token=${projectToken}&rfiId=${data.rfiId}&type=contratista`;
+
+      const emailHtml = createEmailHtml({
+        rfi,
+        project,
+        contratista,
+        accessUrl,
+        recipientName: contratista.ContactName,
+        isForSpecialist: false,
+      });
+
+      const subject = sanitizeSubject(`Nuevo RFI: ${rfi.Titulo || 'Sin titulo'} | ${project.Name}`);
+
+      const emailPayload = {
+        raw: encodeBase64UTF8(
+          `From: Gloster Gestión de Proyectos <${fromEmail}>
+To: ${contratista.ContactEmail}
+Subject: ${subject}
+Reply-To: soporte.gloster@gmail.com
+Content-Type: text/html; charset=utf-8
+MIME-Version: 1.0
+
+${emailHtml}`
+        ),
+      };
+
+      const response = await fetch(
+        "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+        {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(emailPayload),
+        }
+      );
+
+      if (response.ok) {
+        sentEmailSet.add(contratista.ContactEmail);
+        console.log("✅ Sent RFI notification to contractor:", contratista.ContactEmail);
+      } else {
+        console.error("❌ Failed sending RFI notification to contractor:", contratista.ContactEmail, response.status);
+      }
+    }
+
+    // Send to project approvers (encargados configurados)
+    try {
+      const { data: approverConfig, error: approverConfigError } = await supabase
+        .from('project_approval_config')
+        .select('id')
+        .eq('project_id', data.projectId)
+        .maybeSingle();
+
+      if (!approverConfigError && approverConfig?.id) {
+        const { data: approvers, error: approversError } = await supabase
+          .from('project_approvers')
+          .select('approver_email, approver_name')
+          .eq('config_id', approverConfig.id);
+
+        if (!approversError && approvers && approvers.length > 0) {
+          for (const approver of approvers) {
+            const approverEmail = (approver as any).approver_email;
+            const approverName = (approver as any).approver_name;
+
+            if (!approverEmail || !isValidEmail(approverEmail) || sentEmailSet.has(approverEmail)) continue;
+
+            const accessUrl = `${baseUrl}/email-access?projectId=${data.projectId}&token=${projectToken}&rfiId=${data.rfiId}&type=mandante`;
+            const emailHtml = createEmailHtml({
+              rfi,
+              project,
+              contratista,
+              accessUrl,
+              recipientName: approverName || approverEmail,
+              isForSpecialist: false,
+            });
+
+            const subject = sanitizeSubject(`Nuevo RFI: ${rfi.Titulo || 'Sin titulo'} | ${project.Name}`);
+
+            const emailPayload = {
+              raw: encodeBase64UTF8(
+                `From: Gloster Gestión de Proyectos <${fromEmail}>
+To: ${approverEmail}
+Subject: ${subject}
+Reply-To: soporte.gloster@gmail.com
+Content-Type: text/html; charset=utf-8
+MIME-Version: 1.0
+
+${emailHtml}`
+              ),
+            };
+
+            const response = await fetch(
+              "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+              {
+                method: "POST",
+                headers: {
+                  "Authorization": `Bearer ${accessToken}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify(emailPayload),
+              }
+            );
+
+            if (response.ok) {
+              sentEmailSet.add(approverEmail);
+              console.log("✅ Sent RFI notification to approver:", approverEmail);
+            } else {
+              console.error("❌ Failed sending RFI notification to approver:", approverEmail, response.status);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error("⚠️ Approvers email notification failed:", e);
     }
 
     // Send to specialists (contactos) if specified

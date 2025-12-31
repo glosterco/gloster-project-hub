@@ -153,8 +153,8 @@ const EmailAccess = () => {
             // ESCENARIO 1: Mandante → Project Detail or Submission View
             finalUserType = 'mandante';
             if (projectId && (adicionalId || rfiId)) {
-              // Deep link to project detail with modal params
-              redirectPath = `/project-mandante/${projectId}${buildRedirectParams()}`;
+              // Deep link (token-based) → usar vista segura limitada para evitar redirecciones por falta de sesión
+              redirectPath = `/project-access/${projectId}${buildRedirectParams()}`;
             } else if (paymentId) {
               redirectPath = `/submission/${paymentId}`;
             } else {
@@ -164,8 +164,8 @@ const EmailAccess = () => {
             // ESCENARIO 3: Contratista → Payment View or Project Detail
             finalUserType = 'contratista';
             if (projectId && (adicionalId || rfiId)) {
-              // Deep link to project detail with modal params
-              redirectPath = `/project/${projectId}${buildRedirectParams()}`;
+              // Deep link (token-based) → usar vista segura limitada para evitar redirecciones por falta de sesión
+              redirectPath = `/project-access/${projectId}${buildRedirectParams()}`;
             } else if (paymentId) {
               redirectPath = `/payment/${paymentId}`;
             } else {

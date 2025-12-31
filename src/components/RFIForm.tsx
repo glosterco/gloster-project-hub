@@ -182,25 +182,7 @@ export const RFIForm: React.FC<RFIFormProps> = ({
           .insert(inserts as any);
       }
 
-      // Send notification to mandante and specialists
-      try {
-        const { error: notifError } = await supabase.functions.invoke('send-rfi-notification', {
-          body: { 
-            rfiId: (rfiData as any).id,
-            projectId: pid,
-            selectedContactIds: selectedContactIds
-          }
-        });
-        
-        if (notifError) {
-          console.error('⚠️ Error sending RFI notification:', notifError);
-        } else {
-          console.log('✅ RFI notification sent to mandante and specialists');
-        }
-      } catch (notifError) {
-        console.error('⚠️ Error sending RFI notification:', notifError);
-      }
-
+      // El RFI se creó correctamente - mostrar éxito inmediatamente
       toast({
         title: "RFI creado",
         description: attachedFile ? "El RFI y documento han sido registrados" : "El RFI ha sido registrado correctamente",
@@ -211,6 +193,23 @@ export const RFIForm: React.FC<RFIFormProps> = ({
       setAttachedFile(null);
       onOpenChange(false);
       onSuccess?.();
+      
+      // Send notification to mandante and specialists (fire and forget)
+      supabase.functions.invoke('send-rfi-notification', {
+        body: { 
+          rfiId: (rfiData as any).id,
+          projectId: pid,
+          selectedContactIds: selectedContactIds
+        }
+      }).then(({ error: notifError }) => {
+        if (notifError) {
+          console.error('⚠️ Error sending RFI notification:', notifError);
+        } else {
+          console.log('✅ RFI notification sent to mandante and specialists');
+        }
+      }).catch(notifError => {
+        console.error('⚠️ Error sending RFI notification:', notifError);
+      });
     } catch (error) {
       console.error('Error creating RFI:', error);
       toast({

@@ -7,11 +7,7 @@ import { Calendar, DollarSign, Clock, ExternalLink } from 'lucide-react';
 import { formatCurrency } from '@/utils/currencyUtils';
 import { Adicional } from '@/hooks/useAdicionales';
 
-interface AdicionalesCardsProps {
-  adicionales: Adicional[];
-  loading: boolean;
-  currency?: string;
-}
+// Props interface is defined below with all properties
 
 const getStatusVariant = (status: string) => {
   switch (status?.toLowerCase()) {

@@ -75,10 +75,16 @@ export const ContactoSelector: React.FC<ContactoSelectorProps> = ({
   const handleAddContacto = async () => {
     if (!onAddContacto || !newContacto.nombre || !newContacto.email || !newContacto.rol) return;
     
+    const pid = parseInt(projectId);
+    if (Number.isNaN(pid)) {
+      console.error('❌ ContactoSelector: projectId inválido:', projectId);
+      return;
+    }
+    
     setIsAdding(true);
     try {
       await onAddContacto({
-        proyecto_id: parseInt(projectId),
+        proyecto_id: pid,
         nombre: newContacto.nombre,
         email: newContacto.email,
         telefono: newContacto.telefono || null,
@@ -88,7 +94,7 @@ export const ContactoSelector: React.FC<ContactoSelectorProps> = ({
       setNewContacto({ nombre: '', email: '', telefono: '', rol: '', especialidad: '' });
       setShowAddDialog(false);
     } catch (error) {
-      // Error handled by hook
+      console.error('❌ Error adding contacto:', error);
     } finally {
       setIsAdding(false);
     }

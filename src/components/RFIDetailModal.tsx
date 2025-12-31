@@ -184,33 +184,40 @@ export const RFIDetailModal: React.FC<RFIDetailModalProps> = ({
       return;
     }
 
+    const pid = projectId ? parseInt(projectId) : NaN;
+    if (Number.isNaN(pid)) {
+      toast({
+        title: "Error",
+        description: "No se puede reenviar el RFI: proyecto no identificado",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const idsToNotify = [...selectedContactIds];
       await addDestinatarios(rfi.id, idsToNotify);
 
       // Enviar notificación por email a los especialistas seleccionados (fire & forget)
-      const pid = projectId ? parseInt(projectId) : NaN;
-      if (!Number.isNaN(pid)) {
-        supabase.functions
-          .invoke('send-rfi-notification', {
-            body: {
-              rfiId: rfi.id,
-              projectId: pid,
-              destinatarioIds: idsToNotify,
-            },
-          })
-          .then(({ error: notifError }) => {
-            if (notifError) {
-              console.error('⚠️ Error sending RFI forward notification:', notifError);
-            } else {
-              console.log('✅ RFI forward notification sent to specialists');
-            }
-          })
-          .catch((notifError) => {
+      supabase.functions
+        .invoke('send-rfi-notification', {
+          body: {
+            rfiId: rfi.id,
+            projectId: pid,
+            destinatarioIds: idsToNotify,
+          },
+        })
+        .then(({ error: notifError }) => {
+          if (notifError) {
             console.error('⚠️ Error sending RFI forward notification:', notifError);
-          });
-      }
+          } else {
+            console.log('✅ RFI forward notification sent to specialists');
+          }
+        })
+        .catch((notifError) => {
+          console.error('⚠️ Error sending RFI forward notification:', notifError);
+        });
 
       toast({
         title: "RFI reenviado",
@@ -220,7 +227,12 @@ export const RFIDetailModal: React.FC<RFIDetailModalProps> = ({
       setShowForwardSection(false);
       setSelectedContactIds([]);
     } catch (error) {
-      // Error handled by hook
+      console.error('❌ Error forwarding RFI:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo reenviar el RFI",
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
     }

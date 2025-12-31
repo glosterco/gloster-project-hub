@@ -14,7 +14,9 @@ const supabase = createClient(
 interface RFINotificationRequest {
   rfiId: number;
   projectId: number;
+  // Compat: algunos clientes envían selectedContactIds
   destinatarioIds?: number[]; // IDs de contactos a notificar
+  selectedContactIds?: number[]; // alias
 }
 
 const encodeBase64UTF8 = (str: string): string => {
@@ -198,6 +200,10 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error('rfiId and projectId are required');
     }
 
+    const destinatarioIds = (Array.isArray(data.destinatarioIds) && data.destinatarioIds.length > 0)
+      ? data.destinatarioIds
+      : (Array.isArray(data.selectedContactIds) ? data.selectedContactIds : []);
+
     // Fetch RFI
     const { data: rfi, error: rfiError } = await supabase
       .from('RFI')
@@ -245,7 +251,7 @@ const handler = async (req: Request): Promise<Response> => {
     const accessToken = await getAccessToken();
     const fromEmail = Deno.env.get("GMAIL_FROM_EMAIL");
     const baseUrl = 'https://gloster-project-hub.lovable.app';
-    const sentEmails: string[] = [];
+    const sentEmailSet = new Set<string>();
 
     // Get project URL token for verification
     const projectToken = project.URL;
@@ -294,23 +300,23 @@ ${emailHtml}`
       );
 
       if (response.ok) {
-        sentEmails.push(mandante.ContactEmail);
+        sentEmailSet.add(mandante.ContactEmail);
         console.log("✅ Sent RFI notification to mandante:", mandante.ContactEmail);
       }
     }
 
     // Send to specialists (contactos) if specified
-    if (data.destinatarioIds && data.destinatarioIds.length > 0) {
+    if (destinatarioIds.length > 0) {
       const { data: contactos, error: contactosError } = await supabase
         .from('contactos')
         .select('*')
-        .in('id', data.destinatarioIds);
+        .in('id', destinatarioIds);
 
       if (!contactosError && contactos) {
         for (const contacto of contactos) {
           if (contacto.email && isValidEmail(contacto.email)) {
             const accessUrl = `${baseUrl}/email-access?projectId=${data.projectId}&token=${projectToken}&rfiId=${data.rfiId}&type=specialist`;
-            
+
             const emailHtml = createEmailHtml({
               rfi,
               project,
@@ -348,7 +354,7 @@ ${emailHtml}`
             );
 
             if (response.ok) {
-              sentEmails.push(contacto.email);
+              sentEmailSet.add(contacto.email);
               console.log("✅ Sent RFI notification to specialist:", contacto.email);
             }
           }
@@ -356,10 +362,11 @@ ${emailHtml}`
       }
     }
 
-    console.log("✅ RFI notifications sent to:", sentEmails);
+    const sentTo = Array.from(sentEmailSet);
+    console.log("✅ RFI notifications sent to:", sentTo);
 
     return new Response(
-      JSON.stringify({ success: true, sentTo: sentEmails }),
+      JSON.stringify({ success: true, sentTo }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
   } catch (error) {

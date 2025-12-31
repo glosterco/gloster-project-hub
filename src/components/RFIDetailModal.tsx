@@ -185,7 +185,32 @@ export const RFIDetailModal: React.FC<RFIDetailModalProps> = ({
 
     setIsSubmitting(true);
     try {
-      await addDestinatarios(rfi.id, selectedContactIds);
+      const idsToNotify = [...selectedContactIds];
+      await addDestinatarios(rfi.id, idsToNotify);
+
+      // Enviar notificación por email a los especialistas seleccionados (fire & forget)
+      const pid = projectId ? parseInt(projectId) : NaN;
+      if (!Number.isNaN(pid)) {
+        supabase.functions
+          .invoke('send-rfi-notification', {
+            body: {
+              rfiId: rfi.id,
+              projectId: pid,
+              destinatarioIds: idsToNotify,
+            },
+          })
+          .then(({ error: notifError }) => {
+            if (notifError) {
+              console.error('⚠️ Error sending RFI forward notification:', notifError);
+            } else {
+              console.log('✅ RFI forward notification sent to specialists');
+            }
+          })
+          .catch((notifError) => {
+            console.error('⚠️ Error sending RFI forward notification:', notifError);
+          });
+      }
+
       setShowForwardSection(false);
       setSelectedContactIds([]);
     } catch (error) {

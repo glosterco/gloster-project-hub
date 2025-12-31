@@ -121,24 +121,7 @@ export const AdicionalesForm: React.FC<AdicionalesFormProps> = ({
 
       console.log('✅ Adicional created:', adicionalData);
       
-      // Send notification to mandante
-      try {
-        const { error: notifError } = await supabase.functions.invoke('send-adicional-notification', {
-          body: { 
-            adicionalId: adicionalData.id,
-            projectId: parseInt(projectId)
-          }
-        });
-        
-        if (notifError) {
-          console.error('⚠️ Error sending notification:', notifError);
-        } else {
-          console.log('✅ Notification sent to mandante');
-        }
-      } catch (notifError) {
-        console.error('⚠️ Error sending notification:', notifError);
-      }
-      
+      // El adicional se creó correctamente - mostrar éxito inmediatamente
       toast({
         title: "Éxito",
         description: "Adicional presentado correctamente",
@@ -148,6 +131,23 @@ export const AdicionalesForm: React.FC<AdicionalesFormProps> = ({
       setFiles([]);
       onOpenChange(false);
       onSuccess();
+      
+      // Send notification to mandante (fire and forget - no bloquea UI)
+      supabase.functions.invoke('send-adicional-notification', {
+        body: { 
+          adicionalId: adicionalData.id,
+          projectId: parseInt(projectId)
+        }
+      }).then(({ error: notifError }) => {
+        if (notifError) {
+          console.error('⚠️ Error sending notification:', notifError);
+        } else {
+          console.log('✅ Notification sent to mandante');
+        }
+      }).catch(notifError => {
+        console.error('⚠️ Error sending notification:', notifError);
+      });
+      
     } catch (error) {
       console.error('❌ CRITICAL ERROR creating adicional:', error);
       toast({

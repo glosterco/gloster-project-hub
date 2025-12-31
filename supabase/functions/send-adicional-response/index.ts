@@ -163,6 +163,15 @@ const createEmailHtml = (data: {
   `;
 };
 
+// Sanitize email subject - remove accents and special chars
+const sanitizeSubject = (str: string): string => {
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Remove accents
+    .replace(/[^\x20-\x7E]/g, '')    // Remove non-ASCII
+    .trim();
+};
+
 const isValidEmail = (email: string): boolean => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
   return emailRegex.test(email);
@@ -246,7 +255,8 @@ const handler = async (req: Request): Promise<Response> => {
       accessUrl
     });
 
-    const subject = `Adicional ${data.status} - ${adicional.Titulo || 'Sin título'} | ${project.Name}`;
+    const rawSubject = `Adicional ${data.status} - ${adicional.Titulo || 'Sin titulo'} | ${project.Name}`;
+    const subject = sanitizeSubject(rawSubject);
 
     const emailPayload = {
       raw: encodeBase64UTF8(

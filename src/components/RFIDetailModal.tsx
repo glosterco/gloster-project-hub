@@ -201,7 +201,7 @@ export const RFIDetailModal: React.FC<RFIDetailModalProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <HelpCircle className="h-5 w-5 text-blue-500" />
-            RFI #{rfi.id}
+            RFI #{rfi.Correlativo || rfi.id}
           </DialogTitle>
         </DialogHeader>
 

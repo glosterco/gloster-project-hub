@@ -20,6 +20,7 @@ export interface Adicional {
   approved_by_name: string | null;
   approved_at: string | null;
   rejection_notes: string | null;
+  Correlativo: number | null;
 }
 
 export const useAdicionales = (projectId: string) => {

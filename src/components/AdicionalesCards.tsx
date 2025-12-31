@@ -114,7 +114,7 @@ export const AdicionalesCards: React.FC<AdicionalesCardsProps> = ({
                     </div>
                     <div>
                       <CardTitle className="text-lg font-rubik text-slate-800">
-                        Adicional #{adicional.id}
+                        Adicional #{adicional.Correlativo || adicional.id}
                       </CardTitle>
                       <p className="text-sm text-muted-foreground font-rubik">
                         Creado el {new Date(adicional.created_at).toLocaleDateString('es-CL')}

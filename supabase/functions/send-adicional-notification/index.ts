@@ -299,10 +299,12 @@ const handler = async (req: Request): Promise<Response> => {
     const rawSubject = `Nuevo Adicional - ${adicional.Titulo || 'Sin titulo'} | ${project.Name}`;
     const subject = sanitizeSubject(rawSubject);
 
+    const recipientsList = Array.from(allRecipients).join(', ');
+    
     const emailPayload = {
       raw: encodeBase64UTF8(
         `From: Gloster Gestión de Proyectos <${fromEmail}>
-To: ${recipients}
+To: ${recipientsList}
 Subject: ${subject}
 Reply-To: soporte.gloster@gmail.com
 Content-Type: text/html; charset=utf-8

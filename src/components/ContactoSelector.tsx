@@ -216,6 +216,7 @@ export const ContactoSelector: React.FC<ContactoSelectorProps> = ({
               >
                 <Checkbox
                   checked={selectedIds.includes(contacto.id)}
+                  onClick={(e) => e.stopPropagation()}
                   onCheckedChange={() => handleToggle(contacto.id)}
                 />
                 <div className="flex-1 min-w-0">

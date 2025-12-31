@@ -9,7 +9,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import { 
   ExternalLink, 
   HelpCircle, 
@@ -97,7 +96,7 @@ export const RFIDetailModal: React.FC<RFIDetailModalProps> = ({
   const { toast } = useToast();
   
   const { contactos, loading: contactosLoading, addContacto } = useContactos(projectId || '');
-  const { destinatarios, loading: destinatariosLoading, addDestinatarios } = useRFIDestinatarios(rfi?.id || null);
+  const { destinatarios, addDestinatarios } = useRFIDestinatarios(rfi?.id || null);
 
   // Reset state when modal opens/closes
   useEffect(() => {
@@ -112,6 +111,7 @@ export const RFIDetailModal: React.FC<RFIDetailModalProps> = ({
 
   const isPending = rfi.Status?.toLowerCase() === 'pendiente';
   const canRespond = isMandante && isPending;
+  // Mandante y contratista pueden reenviar si hay projectId y el RFI está pendiente
   const canForward = isPending && !!projectId;
 
   const handleSubmitResponse = async () => {
@@ -211,6 +211,11 @@ export const RFIDetailModal: React.FC<RFIDetailModalProps> = ({
             console.error('⚠️ Error sending RFI forward notification:', notifError);
           });
       }
+
+      toast({
+        title: "RFI reenviado",
+        description: `Se reenvió a ${idsToNotify.length} especialista(s)`,
+      });
 
       setShowForwardSection(false);
       setSelectedContactIds([]);
@@ -314,6 +319,7 @@ export const RFIDetailModal: React.FC<RFIDetailModalProps> = ({
               <MessageSquare className="h-4 w-4 text-green-500" />
               <h3 className="text-sm font-medium text-muted-foreground">Respuesta</h3>
             </div>
+
             {rfi.Respuesta ? (
               <div className="bg-green-50 border border-green-200 p-3 rounded-md">
                 <p className="text-sm whitespace-pre-wrap">{rfi.Respuesta}</p>
@@ -323,64 +329,76 @@ export const RFIDetailModal: React.FC<RFIDetailModalProps> = ({
                   </p>
                 )}
               </div>
-            ) : canRespond ? (
+            ) : (
               <div className="space-y-4">
-                <Textarea
-                  value={respuesta}
-                  onChange={(e) => setRespuesta(e.target.value)}
-                  placeholder="Escriba su respuesta aquí..."
-                  className="min-h-[100px]"
-                />
-                <div className="flex flex-col gap-2">
-                  <Button 
-                    onClick={handleSubmitResponse}
-                    disabled={isSubmitting || !respuesta.trim()}
-                    className="w-full"
-                  >
-                    {isSubmitting ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <Send className="h-4 w-4 mr-2" />
-                    )}
-                    Enviar respuesta
-                  </Button>
-                  
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowForwardSection(!showForwardSection)}
-                    className="w-full"
-                  >
-                    <Forward className="h-4 w-4 mr-2" />
-                    Reenviar a especialista
-                  </Button>
-                </div>
-
-                {showForwardSection && projectId && (
-                  <div className="border rounded-md p-4 space-y-4">
-                    <ContactoSelector
-                      contactos={contactos}
-                      selectedIds={selectedContactIds}
-                      onSelectionChange={setSelectedContactIds}
-                      loading={contactosLoading}
-                      onAddContacto={addContacto}
-                      projectId={projectId}
+                {/* Solo mandante puede responder */}
+                {canRespond && (
+                  <>
+                    <Textarea
+                      value={respuesta}
+                      onChange={(e) => setRespuesta(e.target.value)}
+                      placeholder="Escriba su respuesta aquí..."
+                      className="min-h-[100px]"
                     />
-                    <Button
-                      onClick={handleForward}
-                      disabled={isSubmitting || selectedContactIds.length === 0}
-                      variant="secondary"
+                    <Button 
+                      onClick={handleSubmitResponse}
+                      disabled={isSubmitting || !respuesta.trim()}
                       className="w-full"
                     >
-                      {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                      Reenviar RFI ({selectedContactIds.length} seleccionado(s))
+                      {isSubmitting ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Send className="h-4 w-4 mr-2" />
+                      )}
+                      Enviar respuesta
                     </Button>
-                  </div>
+                  </>
+                )}
+
+                {/* Mandante y contratista pueden reenviar */}
+                {canForward && (
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowForwardSection(!showForwardSection)}
+                      disabled={isSubmitting}
+                      className="w-full"
+                    >
+                      <Forward className="h-4 w-4 mr-2" />
+                      Reenviar a especialista
+                    </Button>
+
+                    {showForwardSection && (
+                      <div className="border rounded-md p-4 space-y-4">
+                        <ContactoSelector
+                          contactos={contactos}
+                          selectedIds={selectedContactIds}
+                          onSelectionChange={setSelectedContactIds}
+                          loading={contactosLoading}
+                          onAddContacto={addContacto}
+                          projectId={projectId!}
+                        />
+                        <Button
+                          onClick={handleForward}
+                          disabled={isSubmitting || selectedContactIds.length === 0}
+                          variant="secondary"
+                          className="w-full"
+                        >
+                          {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                          Reenviar RFI ({selectedContactIds.length} seleccionado(s))
+                        </Button>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Mensaje cuando no hay respuesta y no puede hacer nada */}
+                {!canRespond && !canForward && (
+                  <p className="text-sm text-muted-foreground italic">
+                    Aún no hay respuesta para este RFI
+                  </p>
                 )}
               </div>
-            ) : (
-              <p className="text-sm text-muted-foreground italic">
-                Aún no hay respuesta para este RFI
-              </p>
             )}
           </div>
 

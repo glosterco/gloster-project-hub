@@ -102,7 +102,7 @@ export const RFICards: React.FC<RFICardsProps> = ({
             <div className="flex items-start justify-between mb-3 gap-2">
               <div className="flex items-center gap-2">
                 <HelpCircle className="h-5 w-5 text-blue-500 shrink-0" />
-                <span className="font-medium text-sm">RFI #{rfi.id}</span>
+                <span className="font-medium text-sm">RFI #{rfi.Correlativo || rfi.id}</span>
               </div>
               <div className="flex flex-wrap gap-1 justify-end">
                 <Badge className={getStatusColor(rfi.Status)}>

@@ -14,6 +14,7 @@ export interface RFI {
   Urgencia: string | null;
   Fecha_Vencimiento: string | null;
   created_at: string;
+  Correlativo: number | null;
 }
 
 export const useRFI = (projectId: string) => {

@@ -20,6 +20,7 @@ export type Database = {
           approved_by_email: string | null
           approved_by_name: string | null
           Categoria: string | null
+          Correlativo: number | null
           created_at: string
           Descripcion: string | null
           Especialidad: string | null
@@ -39,6 +40,7 @@ export type Database = {
           approved_by_email?: string | null
           approved_by_name?: string | null
           Categoria?: string | null
+          Correlativo?: number | null
           created_at?: string
           Descripcion?: string | null
           Especialidad?: string | null
@@ -58,6 +60,7 @@ export type Database = {
           approved_by_email?: string | null
           approved_by_name?: string | null
           Categoria?: string | null
+          Correlativo?: number | null
           created_at?: string
           Descripcion?: string | null
           Especialidad?: string | null
@@ -1062,6 +1065,7 @@ export type Database = {
       }
       RFI: {
         Row: {
+          Correlativo: number | null
           created_at: string
           Descripcion: string | null
           Fecha_Respuesta: string | null
@@ -1075,6 +1079,7 @@ export type Database = {
           URL: string | null
         }
         Insert: {
+          Correlativo?: number | null
           created_at?: string
           Descripcion?: string | null
           Fecha_Respuesta?: string | null
@@ -1088,6 +1093,7 @@ export type Database = {
           URL?: string | null
         }
         Update: {
+          Correlativo?: number | null
           created_at?: string
           Descripcion?: string | null
           Fecha_Respuesta?: string | null

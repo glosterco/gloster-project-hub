@@ -198,7 +198,7 @@ export const AdicionalesDetailModal: React.FC<AdicionalesDetailModalProps> = ({
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle className="font-rubik text-xl">
-              Adicional #{adicional.id}
+              Adicional #{adicional.Correlativo || adicional.id}
             </DialogTitle>
             <Badge 
               variant={getStatusVariant(adicional.Status)}

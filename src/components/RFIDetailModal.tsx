@@ -112,6 +112,7 @@ export const RFIDetailModal: React.FC<RFIDetailModalProps> = ({
 
   const isPending = rfi.Status?.toLowerCase() === 'pendiente';
   const canRespond = isMandante && isPending;
+  const canForward = isPending && !!projectId;
 
   const handleSubmitResponse = async () => {
     if (!respuesta.trim()) {

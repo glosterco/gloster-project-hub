@@ -12,6 +12,7 @@ import DashboardMandante from "./pages/DashboardMandante";
 import RoleSelection from "./pages/RoleSelection";
 import ProjectDetail from "./pages/ProjectDetail";
 import ProjectDetailMandante from "./pages/ProjectDetailMandante";
+import ProjectAccess from "./pages/ProjectAccess";
 import PaymentDetail from "./pages/PaymentDetail";
 import SubmissionView from "./pages/SubmissionView";
 import SubmissionPreview from "./pages/SubmissionPreview";
@@ -45,7 +46,7 @@ const App = () => (
               <Route path="/dashboard-mandante" element={<DashboardMandante />} />
               <Route path="/project/:id" element={<ProjectDetail />} />
               <Route path="/project-mandante/:id" element={<ProjectDetailMandante />} />
-              <Route path="/payment/:id" element={<PaymentDetail />} />
+              <Route path="/project-access/:id" element={<ProjectAccess />} />
               <Route path="/submission/:id" element={<SubmissionView />} />
               <Route path="/submission/:id/preview" element={<SubmissionPreview />} />
               <Route path="/submission-view" element={<SubmissionView />} />

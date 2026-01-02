@@ -5,9 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ExternalLink, HelpCircle, FileText } from "lucide-react";
+import { ExternalLink, HelpCircle, FileText, DollarSign, Clock, CheckCircle } from "lucide-react";
 import { RFIDetailModal } from "@/components/RFIDetailModal";
 import { AdicionalesDetailModal } from "@/components/AdicionalesDetailModal";
+import { formatCurrency } from "@/utils/currencyUtils";
 import type { RFI } from "@/hooks/useRFI";
 
 type AccessData = {
@@ -57,6 +58,34 @@ type Adicional = {
   rejection_notes: string | null;
 };
 
+type EstadoPago = {
+  id: number;
+  Name: string;
+  Status: string | null;
+  Total: number | null;
+  ExpiryDate: string | null;
+  Mes: string | null;
+  Año: number | null;
+  approval_progress: number | null;
+  total_approvals_required: number | null;
+  URLMandante: string | null;
+};
+
+const getPaymentStatusColor = (status: string | null) => {
+  switch (status?.toLowerCase()) {
+    case 'enviado':
+      return 'bg-blue-100 text-blue-700 border-blue-200';
+    case 'en revisión':
+      return 'bg-amber-100 text-amber-700 border-amber-200';
+    case 'aprobado':
+      return 'bg-green-100 text-green-700 border-green-200';
+    case 'rechazado':
+      return 'bg-red-100 text-red-700 border-red-200';
+    default:
+      return 'bg-gray-100 text-gray-700 border-gray-200';
+  }
+};
+
 const ProjectAccess = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -64,10 +93,12 @@ const ProjectAccess = () => {
 
   const urlRfiId = searchParams.get("rfiId");
   const urlAdicionalId = searchParams.get("adicionalId");
+  const urlPaymentId = searchParams.get("paymentId");
 
   const [project, setProject] = useState<ProjectLite | null>(null);
   const [rfis, setRfis] = useState<RFI[]>([]);
   const [adicionales, setAdicionales] = useState<Adicional[]>([]);
+  const [estadosPago, setEstadosPago] = useState<EstadoPago[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [selectedRFI, setSelectedRFI] = useState<RFI | null>(null);
@@ -149,6 +180,19 @@ const ProjectAccess = () => {
           console.error("❌ ProjectAccess: error fetching Adicionales", adicionalesError);
         }
         setAdicionales((adicionalesData as any) || []);
+
+        // Fetch Estados de Pago (pending approval)
+        const { data: pagosData, error: pagosError } = await supabase
+          .from("Estados de pago" as any)
+          .select("*")
+          .eq("Project", pid)
+          .in("Status", ["Enviado", "En Revisión"])
+          .order("ExpiryDate", { ascending: true });
+
+        if (pagosError) {
+          console.error("❌ ProjectAccess: error fetching Estados de pago", pagosError);
+        }
+        setEstadosPago((pagosData as any) || []);
       } finally {
         setLoading(false);
       }
@@ -186,6 +230,11 @@ const ProjectAccess = () => {
   }, [access, id]);
 
   const isMandante = access?.userType === 'mandante';
+
+  const handlePaymentClick = (payment: EstadoPago) => {
+    // Navigate to payment detail page with userType param
+    navigate(`/contractor-access/${payment.id}?userType=${access?.userType || 'contractor'}`);
+  };
 
   if (!hasTokenAccess) {
     return (
@@ -249,6 +298,72 @@ const ProjectAccess = () => {
       </header>
 
       <section className="container mx-auto px-6 py-8 space-y-6">
+        {/* Estados de Pago Pendientes Section */}
+        {estadosPago.length > 0 && (
+          <Card className="border-amber-200 bg-amber-50/30">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-slate-800 font-rubik">
+                <DollarSign className="h-5 w-5 text-amber-600" />
+                Estados de Pago Pendientes de Aprobación
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {estadosPago.map((pago) => (
+                  <button
+                    key={pago.id}
+                    type="button"
+                    onClick={() => handlePaymentClick(pago)}
+                    className="w-full text-left"
+                  >
+                    <div className="rounded-lg border border-amber-200 bg-white p-4 hover:bg-amber-50/50 transition">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-slate-800 font-rubik truncate">
+                            {pago.Name}
+                          </p>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {pago.Mes} {pago.Año}
+                          </p>
+                          {pago.Total && (
+                            <p className="text-lg font-bold text-primary mt-1">
+                              {formatCurrency(pago.Total, project?.Currency || 'CLP')}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex flex-col items-end gap-2">
+                          <Badge className={getPaymentStatusColor(pago.Status)}>
+                            {pago.Status || "Pendiente"}
+                          </Badge>
+                          {pago.total_approvals_required && pago.total_approvals_required > 1 && (
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <CheckCircle className="h-3.5 w-3.5" />
+                              {pago.approval_progress || 0}/{pago.total_approvals_required} aprobaciones
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <Separator className="my-3" />
+                      <div className="flex items-center justify-between gap-3">
+                        {pago.ExpiryDate && (
+                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Clock className="h-3.5 w-3.5" />
+                            Vence: {new Date(pago.ExpiryDate).toLocaleDateString("es-CL")}
+                          </span>
+                        )}
+                        <span className="text-xs text-amber-600 font-medium inline-flex items-center gap-1">
+                          <ExternalLink className="h-3.5 w-3.5" />
+                          {isMandante ? 'Revisar y aprobar' : 'Ver detalle'}
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* RFIs Section */}
         <Card>
           <CardHeader>

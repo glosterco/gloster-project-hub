@@ -34,38 +34,39 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <BrowserRouter>
-        <RouteProtection>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/role-selection" element={<RoleSelection />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/dashboard-mandante" element={<DashboardMandante />} />
-              <Route path="/project/:id" element={<ProjectDetail />} />
-              <Route path="/project-mandante/:id" element={<ProjectDetailMandante />} />
-              <Route path="/project-access/:id" element={<ProjectAccess />} />
-              <Route path="/payment/:id" element={<PaymentDetail />} />
-              <Route path="/submission/:id" element={<SubmissionView />} />
-              <Route path="/submission/:id/preview" element={<SubmissionPreview />} />
-              <Route path="/submission-view" element={<SubmissionView />} />
-              <Route path="/submission-preview" element={<SubmissionPreview />} />
-              <Route path="/email-access" element={<EmailAccess />} />
-              <Route path="/email/:id" element={<EmailPreview />} />
-              <Route path="/data-viewer" element={<DataViewer />} />
-              <Route path="/contractor-access/:paymentId" element={<ContractorAccess />} />
-              <Route path="/pricing" element={<Pricing />} />
-              <Route path="/executive-summary" element={<ExecutiveSummary />} />
-              <Route path="/executive-summary-mandante" element={<ExecutiveSummaryMandante />} />
-              <Route path="/licitaciones" element={<Licitaciones />} />
-              <Route path="/home" element={<MKT />} />
-              <Route path="/rrss" element={<RRSS />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </TooltipProvider>
-        </RouteProtection>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <Routes>
+            {/* RUTAS PÚBLICAS - fuera de RouteProtection */}
+            <Route path="/email-access" element={<EmailAccess />} />
+            <Route path="/project-access/:id" element={<ProjectAccess />} />
+            <Route path="/submission/:id/preview" element={<SubmissionPreview />} />
+            <Route path="/contractor-access/:paymentId" element={<ContractorAccess />} />
+            <Route path="/home" element={<MKT />} />
+            <Route path="/rrss" element={<RRSS />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/" element={<Index />} />
+            <Route path="/register" element={<Register />} />
+            
+            {/* RUTAS PROTEGIDAS - dentro de RouteProtection */}
+            <Route path="/role-selection" element={<RouteProtection><RoleSelection /></RouteProtection>} />
+            <Route path="/dashboard" element={<RouteProtection><Dashboard /></RouteProtection>} />
+            <Route path="/dashboard-mandante" element={<RouteProtection><DashboardMandante /></RouteProtection>} />
+            <Route path="/project/:id" element={<RouteProtection><ProjectDetail /></RouteProtection>} />
+            <Route path="/project-mandante/:id" element={<RouteProtection><ProjectDetailMandante /></RouteProtection>} />
+            <Route path="/payment/:id" element={<RouteProtection><PaymentDetail /></RouteProtection>} />
+            <Route path="/submission/:id" element={<RouteProtection><SubmissionView /></RouteProtection>} />
+            <Route path="/submission-view" element={<RouteProtection><SubmissionView /></RouteProtection>} />
+            <Route path="/submission-preview" element={<RouteProtection><SubmissionPreview /></RouteProtection>} />
+            <Route path="/email/:id" element={<RouteProtection><EmailPreview /></RouteProtection>} />
+            <Route path="/data-viewer" element={<RouteProtection><DataViewer /></RouteProtection>} />
+            <Route path="/executive-summary" element={<RouteProtection><ExecutiveSummary /></RouteProtection>} />
+            <Route path="/executive-summary-mandante" element={<RouteProtection><ExecutiveSummaryMandante /></RouteProtection>} />
+            <Route path="/licitaciones" element={<RouteProtection><Licitaciones /></RouteProtection>} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </TooltipProvider>
       </BrowserRouter>
     </AuthProvider>
   </QueryClientProvider>

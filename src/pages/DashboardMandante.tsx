@@ -58,7 +58,7 @@ interface ProjectFolder {
 
 const DashboardMandante: React.FC = () => {
   const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const { signOut, user, loading: authLoading } = useAuth();
   const [mandanteId, setMandanteId] = useState<number | undefined>(undefined);
   const [mandanteInfo, setMandanteInfo] = useState<{
     ContactName: string;
@@ -87,20 +87,24 @@ const DashboardMandante: React.FC = () => {
   const [selectedProjectsForEdit, setSelectedProjectsForEdit] = useState<number[]>([]);
 
   useEffect(() => {
+    // Wait for auth to finish loading before verifying access
+    if (authLoading) {
+      console.log("⏳ Waiting for auth to load...");
+      return;
+    }
+
     const fetchMandanteInfo = async () => {
       setVerifyingAccess(true);
+      
       const timeout = setTimeout(() => {
-        console.warn('Access verification timeout');
+        console.warn('Access verification timeout - allowing render');
         setVerifyingAccess(false);
       }, 8000);
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
 
-        // CRÍTICO: Solo usuarios autenticados pueden acceder al dashboard de mandante
+      try {
+        // Use user from useAuth instead of separate API call
         if (!user) {
-          console.log("❌ No authenticated user, redirecting to home");
+          console.log("❌ No authenticated user after auth loaded, redirecting to home");
           clearTimeout(timeout);
           setVerifyingAccess(false);
           navigate("/");
@@ -118,16 +122,19 @@ const DashboardMandante: React.FC = () => {
           return;
         }
 
-        // Si no hay activeRole establecido, establecerlo temporalmente para verificación
-        const needsRoleSet = !activeRole;
-        // Limpiar accesos limitados previos para evitar bloqueos de RouteProtection
-        sessionStorage.removeItem("mandanteAccess");
-
         // Verificar si el usuario tiene rol de mandante en user_roles
-        const { data: userRoles } = await supabase
+        const { data: userRoles, error: rolesError } = await supabase
           .from("user_roles")
           .select("role_type, entity_id")
           .eq("auth_user_id", user.id);
+
+        if (rolesError) {
+          console.error("Error fetching user roles:", rolesError);
+          clearTimeout(timeout);
+          setVerifyingAccess(false);
+          navigate("/");
+          return;
+        }
 
         const mandanteRole = userRoles?.find((role) => role.role_type === "mandante");
 
@@ -159,23 +166,30 @@ const DashboardMandante: React.FC = () => {
         if (mandanteData) {
           setMandanteInfo(mandanteData);
         } else {
-          console.log("❌ Could not find mandante data");
+          console.log("⚠️ Could not find mandante data, but role exists");
           setMandanteInfo(null);
         }
-        setMandanteId(mandanteRole.entity_id); // Ensure mandanteId is set
         
-        // Set active role if not already set
-        if (needsRoleSet) {
+        setMandanteId(mandanteRole.entity_id);
+        
+        // Set active role if not already set - AFTER successful verification
+        if (!activeRole) {
           sessionStorage.setItem("activeRole", "mandante");
           console.log("✅ Set activeRole to mandante");
         }
+        
+        // Clean up limited access AFTER successful role verification
+        sessionStorage.removeItem("mandanteAccess");
         
         console.log("✅ Verified mandante access via user_roles");
 
         // Check if user has multiple roles
         setHasMultipleRoles((userRoles?.length || 0) > 1);
+        
+        clearTimeout(timeout);
       } catch (error) {
         console.error("Error fetching mandante info:", error);
+        clearTimeout(timeout);
         navigate("/");
       } finally {
         setVerifyingAccess(false);
@@ -183,7 +197,7 @@ const DashboardMandante: React.FC = () => {
     };
 
     fetchMandanteInfo();
-  }, [navigate]);
+  }, [authLoading, user, navigate]);
 
   const handleSignOut = async () => {
     const { error } = await signOut();

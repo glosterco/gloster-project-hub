@@ -16,18 +16,25 @@ import { useProjectsWithDetails } from '@/hooks/useProjectsWithDetails';
 import TotalContractsValue from '@/components/TotalContractsValue';
 import TotalApprovedValue from '@/components/TotalApprovedValue';
 
+import { useAuth } from '@/hooks/useAuth';
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, loading: authLoading } = useAuth();
   const [isCreateProjectDialogOpen, setIsCreateProjectDialogOpen] = useState(false);
   const { projects, contractor, loading } = useProjectsWithDetails();
 
   // CRITICAL: STRICT verification for contractor dashboard - ONLY authenticated contractors
   useEffect(() => {
+    // Wait for auth to finish loading before verifying access
+    if (authLoading) {
+      console.log('⏳ Dashboard: Waiting for auth to load...');
+      return;
+    }
+
     const verifyStrictContractorAccess = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        
         if (!user?.id) {
           console.log('❌ No authenticated user for contractor dashboard');
           navigate('/');
@@ -83,7 +90,7 @@ const Dashboard = () => {
     };
 
     verifyStrictContractorAccess();
-  }, [navigate]);
+  }, [authLoading, user, navigate]);
 
   const handleCreateProject = () => {
     setIsCreateProjectDialogOpen(true);

@@ -111,17 +111,6 @@ const DashboardMandante: React.FC = () => {
           return;
         }
 
-        // CRITICAL: Check active role first for users with multiple roles
-        const activeRole = sessionStorage.getItem('activeRole');
-        
-        if (activeRole === 'contratista') {
-          console.log('🔄 User has contratista as active role, redirecting to contractor dashboard');
-          clearTimeout(timeout);
-          setVerifyingAccess(false);
-          navigate('/dashboard');
-          return;
-        }
-
         // Verificar si el usuario tiene rol de mandante en user_roles
         const { data: userRoles, error: rolesError } = await supabase
           .from("user_roles")
@@ -169,17 +158,21 @@ const DashboardMandante: React.FC = () => {
           console.log("⚠️ Could not find mandante data, but role exists");
           setMandanteInfo(null);
         }
-        
+
         setMandanteId(mandanteRole.entity_id);
-        
-        // Set active role if not already set - AFTER successful verification
-        if (!activeRole) {
-          sessionStorage.setItem("activeRole", "mandante");
-          console.log("✅ Set activeRole to mandante");
-        }
-        
+
+        // El route explícito define el rol activo (evita bloqueos por sessionStorage previo)
+        sessionStorage.setItem("activeRole", "mandante");
+
         // Clean up limited access AFTER successful role verification
         sessionStorage.removeItem("mandanteAccess");
+
+        console.log("✅ Verified mandante access via user_roles");
+
+        // Check if user has multiple roles
+        setHasMultipleRoles((userRoles?.length || 0) > 1);
+
+        clearTimeout(timeout);
         
         console.log("✅ Verified mandante access via user_roles");
 

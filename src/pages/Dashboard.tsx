@@ -41,15 +41,6 @@ const Dashboard = () => {
           return;
         }
 
-        // CRITICAL: Check active role first for users with multiple roles
-        const activeRole = sessionStorage.getItem('activeRole');
-        
-        if (activeRole === 'mandante') {
-          console.log('🔄 User has mandante as active role, redirecting to mandante dashboard');
-          navigate('/dashboard-mandante');
-          return;
-        }
-
         // STRICT: Verify user is authenticated contractor with user_auth_id
         const { data: contratistaData } = await supabase
           .from('Contratistas')
@@ -69,6 +60,7 @@ const Dashboard = () => {
             
           if (mandanteData && mandanteData.auth_user_id === user.id) {
             console.log('🔄 User is mandante, not contractor - redirecting to mandante dashboard');
+            sessionStorage.setItem('activeRole', 'mandante');
             navigate('/dashboard-mandante');
           } else {
             console.log('❌ User has no valid role, redirecting to home');
@@ -77,10 +69,8 @@ const Dashboard = () => {
           return;
         }
 
-        // User has contractor access - set active role if not set
-        if (!activeRole) {
-          sessionStorage.setItem('activeRole', 'contratista');
-        }
+        // El route explícito define el rol activo (evita bloqueos por sessionStorage previo)
+        sessionStorage.setItem('activeRole', 'contratista');
 
         console.log('✅ Verified authenticated contractor access');
       } catch (error) {

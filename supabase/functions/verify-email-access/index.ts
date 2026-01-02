@@ -118,7 +118,7 @@ const handler = async (req: Request): Promise<Response> => {
 
       console.log('✅ Token de proyecto verificado exitosamente');
 
-      // Si hay email, verificar que pertenezca al mandante o contratista
+      // Si hay email, verificar que pertenezca al mandante, contratista, aprobador o especialista
       if (email) {
         // Verificar email del mandante
         const { data: mandante } = await supabaseAdmin
@@ -159,6 +159,16 @@ const handler = async (req: Request): Promise<Response> => {
           isApprover = !!approver;
         }
 
+        // Verificar si es un contacto/especialista del proyecto
+        const { data: contacto } = await supabaseAdmin
+          .from('contactos')
+          .select('id, email')
+          .eq('proyecto_id', projectId)
+          .ilike('email', email)
+          .maybeSingle();
+
+        const isSpecialist = !!contacto;
+
         if (mandanteEmailMatch || isApprover) {
           console.log('✅ Email verificado como MANDANTE/APROBADOR');
           return new Response(
@@ -169,6 +179,13 @@ const handler = async (req: Request): Promise<Response> => {
           console.log('✅ Email verificado como CONTRATISTA');
           return new Response(
             JSON.stringify({ userType: 'contratista', accessType: 'contratista' }),
+            { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+          );
+        } else if (isSpecialist) {
+          // Especialistas tienen acceso de lectura para responder RFIs
+          console.log('✅ Email verificado como ESPECIALISTA');
+          return new Response(
+            JSON.stringify({ userType: 'mandante', accessType: 'specialist' }),
             { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
           );
         } else {

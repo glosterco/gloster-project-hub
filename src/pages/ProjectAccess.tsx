@@ -5,12 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ExternalLink, HelpCircle } from "lucide-react";
+import { ExternalLink, HelpCircle, FileText } from "lucide-react";
 import { RFIDetailModal } from "@/components/RFIDetailModal";
+import { AdicionalesDetailModal } from "@/components/AdicionalesDetailModal";
 import type { RFI } from "@/hooks/useRFI";
 
 type AccessData = {
-  projectId?: string | null;
+  projectId?: string | number | null;
   accessToken?: string | null;
   email?: string | null;
   userType?: string | null;
@@ -22,6 +23,7 @@ type ProjectLite = {
   id: number;
   Name: string | null;
   URL: string | null;
+  Currency?: string | null;
   Contratistas?: {
     CompanyName: string;
     ContactEmail: string | null;
@@ -34,19 +36,45 @@ type ProjectLite = {
   } | null;
 };
 
+type Adicional = {
+  id: number;
+  Titulo: string | null;
+  Descripcion: string | null;
+  Categoria: string | null;
+  Especialidad: string | null;
+  Monto_presentado: number | null;
+  Monto_aprobado: number | null;
+  Status: string | null;
+  Vencimiento: string | null;
+  created_at: string;
+  Proyecto: number | null;
+  Correlativo: number | null;
+  GG: number | null;
+  URL: string | null;
+  approved_by_email: string | null;
+  approved_by_name: string | null;
+  approved_at: string | null;
+  rejection_notes: string | null;
+};
+
 const ProjectAccess = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   const urlRfiId = searchParams.get("rfiId");
+  const urlAdicionalId = searchParams.get("adicionalId");
 
   const [project, setProject] = useState<ProjectLite | null>(null);
   const [rfis, setRfis] = useState<RFI[]>([]);
+  const [adicionales, setAdicionales] = useState<Adicional[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [selectedRFI, setSelectedRFI] = useState<RFI | null>(null);
   const [showRFIDetailModal, setShowRFIDetailModal] = useState(false);
+
+  const [selectedAdicional, setSelectedAdicional] = useState<Adicional | null>(null);
+  const [showAdicionalModal, setShowAdicionalModal] = useState(false);
 
   const access = useMemo<AccessData | null>(() => {
     const raw = sessionStorage.getItem("contractorAccess") || sessionStorage.getItem("mandanteAccess");
@@ -65,12 +93,10 @@ const ProjectAccess = () => {
       return;
     }
 
-    // SEO (mínimo viable sin react-helmet)
-    document.title = `Acceso a RFI | Proyecto ${id}`;
+    document.title = `Acceso al Proyecto ${id}`;
 
     const load = async () => {
       try {
-        // Vista "limitada" sin sesión Supabase: solo lectura.
         const { data: projectData, error: projectError } = await supabase
           .from("Proyectos" as any)
           .select(
@@ -78,6 +104,7 @@ const ProjectAccess = () => {
             id,
             Name,
             URL,
+            Currency,
             Contratistas:Contratistas!Proyectos_Contratista_fkey (
               CompanyName,
               ContactEmail,
@@ -99,6 +126,7 @@ const ProjectAccess = () => {
 
         setProject((projectData as any) || null);
 
+        // Fetch RFIs
         const { data: rfiData, error: rfiError } = await supabase
           .from("RFI" as any)
           .select("*")
@@ -108,8 +136,19 @@ const ProjectAccess = () => {
         if (rfiError) {
           console.error("❌ ProjectAccess: error fetching RFI", rfiError);
         }
-
         setRfis((rfiData as any) || []);
+
+        // Fetch Adicionales
+        const { data: adicionalesData, error: adicionalesError } = await supabase
+          .from("Adicionales" as any)
+          .select("*")
+          .eq("Proyecto", pid)
+          .order("created_at", { ascending: false });
+
+        if (adicionalesError) {
+          console.error("❌ ProjectAccess: error fetching Adicionales", adicionalesError);
+        }
+        setAdicionales((adicionalesData as any) || []);
       } finally {
         setLoading(false);
       }
@@ -118,7 +157,7 @@ const ProjectAccess = () => {
     load();
   }, [id]);
 
-  // Deep link: abrir modal automáticamente
+  // Deep link: abrir modal automáticamente para RFI
   useEffect(() => {
     if (!urlRfiId || rfis.length === 0) return;
     const target = rfis.find((r) => r.id === Number(urlRfiId));
@@ -128,7 +167,25 @@ const ProjectAccess = () => {
     }
   }, [urlRfiId, rfis]);
 
-  const hasTokenAccess = !!access?.accessToken && (access?.projectId === id || access?.projectId === String(id));
+  // Deep link: abrir modal automáticamente para Adicional
+  useEffect(() => {
+    if (!urlAdicionalId || adicionales.length === 0) return;
+    const target = adicionales.find((a) => a.id === Number(urlAdicionalId));
+    if (target) {
+      setSelectedAdicional(target);
+      setShowAdicionalModal(true);
+    }
+  }, [urlAdicionalId, adicionales]);
+
+  // Validar acceso: comparar projectId como string o número
+  const hasTokenAccess = useMemo(() => {
+    if (!access?.accessToken) return false;
+    const accessProjectId = String(access.projectId);
+    const urlProjectId = String(id);
+    return accessProjectId === urlProjectId;
+  }, [access, id]);
+
+  const isMandante = access?.userType === 'mandante';
 
   if (!hasTokenAccess) {
     return (
@@ -152,7 +209,7 @@ const ProjectAccess = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Para ver el RFI, primero debes verificar tu email desde la pantalla de acceso.
+                Para acceder al contenido, primero debes verificar tu email desde la pantalla de acceso.
               </p>
               <Button onClick={() => navigate("/email-access")} className="w-full">
                 Ir a verificación
@@ -179,19 +236,20 @@ const ProjectAccess = () => {
               <h1 className="text-xl font-bold text-slate-800 font-rubik truncate">
                 {project?.Name || `Proyecto ${id}`}
               </h1>
-              <p className="text-xs text-muted-foreground truncate">Acceso por enlace (solo lectura)</p>
+              <p className="text-xs text-muted-foreground truncate">
+                Acceso por enlace {isMandante ? '(Mandante)' : '(Contratista)'}
+              </p>
             </div>
           </div>
 
-          <Button variant="outline" onClick={() => navigate("/")}
-            className="shrink-0"
-          >
+          <Button variant="outline" onClick={() => navigate("/")} className="shrink-0">
             Volver
           </Button>
         </div>
       </header>
 
       <section className="container mx-auto px-6 py-8 space-y-6">
+        {/* RFIs Section */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-slate-800 font-rubik">
@@ -243,16 +301,106 @@ const ProjectAccess = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Adicionales Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-slate-800 font-rubik">
+              <FileText className="h-5 w-5" />
+              Adicionales del proyecto
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="text-sm text-muted-foreground">Cargando...</div>
+            ) : adicionales.length === 0 ? (
+              <div className="text-sm text-muted-foreground">No hay adicionales para este proyecto.</div>
+            ) : (
+              <div className="space-y-3">
+                {adicionales.map((adicional) => (
+                  <button
+                    key={adicional.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedAdicional(adicional);
+                      setShowAdicionalModal(true);
+                    }}
+                    className="w-full text-left"
+                  >
+                    <div className="rounded-lg border border-border bg-background p-4 hover:bg-muted/30 transition">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-slate-800 font-rubik truncate">
+                            {adicional.Titulo || `Adicional #${adicional.id}`}
+                          </p>
+                          {adicional.Descripcion && (
+                            <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{adicional.Descripcion}</p>
+                          )}
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {adicional.Categoria} {adicional.Especialidad && `• ${adicional.Especialidad}`}
+                          </p>
+                        </div>
+                        <Badge variant={adicional.Status === 'Aprobado' ? 'default' : adicional.Status === 'Rechazado' ? 'destructive' : 'secondary'}>
+                          {adicional.Status || "Pendiente"}
+                        </Badge>
+                      </div>
+                      <Separator className="my-3" />
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(adicional.created_at).toLocaleDateString("es-CL")}
+                        </span>
+                        <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
+                          <ExternalLink className="h-3.5 w-3.5" />
+                          Ver detalle
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </section>
 
       <RFIDetailModal
         open={showRFIDetailModal}
         onOpenChange={setShowRFIDetailModal}
         rfi={selectedRFI}
-        // Importante: en acceso por token es solo lectura (sin responder ni reenviar)
-        isMandante={false}
+        isMandante={isMandante}
+        projectId={id}
         onSuccess={() => {
-          // No-op
+          // Refetch RFIs after action
+          const pid = Number(id);
+          if (!Number.isNaN(pid)) {
+            supabase
+              .from("RFI" as any)
+              .select("*")
+              .eq("Proyecto", pid)
+              .order("created_at", { ascending: false })
+              .then(({ data }) => setRfis((data as any) || []));
+          }
+        }}
+      />
+
+      <AdicionalesDetailModal
+        open={showAdicionalModal}
+        onOpenChange={setShowAdicionalModal}
+        adicional={selectedAdicional}
+        isMandante={isMandante}
+        currency={project?.Currency || 'CLP'}
+        onSuccess={() => {
+          // Refetch Adicionales after action
+          const pid = Number(id);
+          if (!Number.isNaN(pid)) {
+            supabase
+              .from("Adicionales" as any)
+              .select("*")
+              .eq("Proyecto", pid)
+              .order("created_at", { ascending: false })
+              .then(({ data }) => setAdicionales((data as any) || []));
+          }
+          setShowAdicionalModal(false);
         }}
       />
     </main>

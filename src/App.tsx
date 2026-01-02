@@ -27,6 +27,8 @@ import Licitaciones from "./pages/Licitaciones";
 import MKT from "./pages/MKT";
 import RRSS from "./pages/RRSS";
 import NotFound from "./pages/NotFound";
+import RFIDetail from "./pages/RFIDetail";
+import AdicionalDetail from "./pages/AdicionalDetail";
 
 const queryClient = new QueryClient();
 
@@ -43,6 +45,8 @@ const App = () => (
             <Route path="/project-access/:id" element={<ProjectAccess />} />
             <Route path="/submission/:id/preview" element={<SubmissionPreview />} />
             <Route path="/contractor-access/:paymentId" element={<ContractorAccess />} />
+            <Route path="/rfi/:id" element={<RFIDetail />} />
+            <Route path="/adicional/:id" element={<AdicionalDetail />} />
             <Route path="/home" element={<MKT />} />
             <Route path="/rrss" element={<RRSS />} />
             <Route path="/pricing" element={<Pricing />} />

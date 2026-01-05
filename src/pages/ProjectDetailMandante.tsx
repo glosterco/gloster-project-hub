@@ -1425,7 +1425,10 @@ const ProjectDetailMandante = () => {
         onOpenChange={setShowRFIDetailModal}
         rfi={selectedRFI}
         isMandante={true}
+        isContratista={false}
         projectId={id}
+        userEmail={mandante?.ContactEmail || ''}
+        userName={mandante?.ContactName || mandante?.CompanyName || ''}
         onSuccess={() => {
           refetchRFIs();
           setShowRFIDetailModal(false);

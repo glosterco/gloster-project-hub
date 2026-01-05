@@ -1161,6 +1161,57 @@ export type Database = {
           },
         ]
       }
+      rfi_messages: {
+        Row: {
+          attachments_url: string | null
+          author_email: string
+          author_name: string | null
+          author_role: string
+          created_at: string
+          id: string
+          message_text: string
+          project_id: number
+          rfi_id: number
+        }
+        Insert: {
+          attachments_url?: string | null
+          author_email: string
+          author_name?: string | null
+          author_role: string
+          created_at?: string
+          id?: string
+          message_text: string
+          project_id: number
+          rfi_id: number
+        }
+        Update: {
+          attachments_url?: string | null
+          author_email?: string
+          author_name?: string | null
+          author_role?: string
+          created_at?: string
+          id?: string
+          message_text?: string
+          project_id?: number
+          rfi_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rfi_messages_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "Proyectos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rfi_messages_rfi_id_fkey"
+            columns: ["rfi_id"]
+            isOneToOne: false
+            referencedRelation: "RFI"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           auth_user_id: string

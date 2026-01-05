@@ -1556,7 +1556,10 @@ const ProjectDetail = () => {
         onOpenChange={setShowRFIDetailModal}
         rfi={selectedRFI}
         isMandante={false}
+        isContratista={userType === 'contratista'}
         projectId={id}
+        userEmail={userEntity?.ContactEmail || user?.email || ''}
+        userName={userEntity?.ContactName || user?.user_metadata?.full_name || ''}
         onSuccess={refetchRfis}
       />
     </div>

@@ -19,7 +19,6 @@ type AccessData = {
   // Arrays de IDs autorizados (del backend)
   authorizedRfiIds?: number[];
   authorizedAdicionalIds?: number[];
-  authorizedPaymentIds?: number[];
   // IDs del deep link (para auto-abrir modal)
   deepLinkRfiId?: string | null;
   deepLinkAdicionalId?: string | null;
@@ -128,14 +127,13 @@ const ProjectAccess = () => {
   // Arrays de IDs autorizados (del backend)
   const authorizedRfiIds = access?.authorizedRfiIds || [];
   const authorizedAdicionalIds = access?.authorizedAdicionalIds || [];
-  const authorizedPaymentIds = access?.authorizedPaymentIds || [];
   
   // IDs del deep link para auto-abrir modal
   const deepLinkRfiId = urlRfiId || access?.deepLinkRfiId;
   const deepLinkAdicionalId = urlAdicionalId || access?.deepLinkAdicionalId;
   
   // Determinar si tiene acceso limitado (solo ciertos items)
-  const hasLimitedAccess = authorizedRfiIds.length > 0 || authorizedAdicionalIds.length > 0 || authorizedPaymentIds.length > 0;
+  const hasLimitedAccess = authorizedRfiIds.length > 0 || authorizedAdicionalIds.length > 0;
 
   useEffect(() => {
     const pid = Number(id);
@@ -227,24 +225,8 @@ const ProjectAccess = () => {
           setAdicionales([]);
         }
 
-        // ========================================
-        // FILTRADO DE ESTADOS DE PAGO BASADO EN PERMISOS
-        // ========================================
-        if (authorizedPaymentIds.length > 0) {
-          // Cargar solo los estados de pago autorizados
-          const { data: pagosData, error: pagosError } = await supabase
-            .from("Estados de pago" as any)
-            .select("*")
-            .in("id", authorizedPaymentIds)
-            .eq("Project", pid)
-            .order("ExpiryDate", { ascending: true });
-
-          if (pagosError) {
-            console.error("❌ ProjectAccess: error fetching Estados de pago", pagosError);
-          }
-          setEstadosPago((pagosData as any) || []);
-        } else if (isMandante && !hasLimitedAccess) {
-          // Mandante con acceso general puede ver todos los pagos pendientes
+        // Estados de Pago (solo para mandante con acceso general)
+        if (isMandante && !hasLimitedAccess) {
           const { data: pagosData, error: pagosError } = await supabase
             .from("Estados de pago" as any)
             .select("*")
@@ -256,9 +238,6 @@ const ProjectAccess = () => {
             console.error("❌ ProjectAccess: error fetching Estados de pago", pagosError);
           }
           setEstadosPago((pagosData as any) || []);
-        } else {
-          // Sin autorización específica
-          setEstadosPago([]);
         }
       } finally {
         setLoading(false);
@@ -266,7 +245,7 @@ const ProjectAccess = () => {
     };
 
     load();
-  }, [id, authorizedRfiIds, authorizedAdicionalIds, authorizedPaymentIds, isMandante, hasLimitedAccess]);
+  }, [id, authorizedRfiIds, authorizedAdicionalIds, isMandante, hasLimitedAccess]);
 
   // Deep link: abrir modal automáticamente para RFI del deep link
   useEffect(() => {
@@ -297,8 +276,7 @@ const ProjectAccess = () => {
   }, [access, id]);
 
   const handlePaymentClick = (payment: EstadoPago) => {
-    // Redirigir a SubmissionView para aprobar/rechazar
-    navigate(`/submission-view/${payment.id}`);
+    navigate(`/contractor-access/${payment.id}?userType=${access?.userType || 'contractor'}`);
   };
 
   if (!hasTokenAccess) {
@@ -371,7 +349,7 @@ const ProjectAccess = () => {
               <div className="flex items-center gap-3">
                 <AlertTriangle className="h-5 w-5 text-blue-600 shrink-0" />
                 <p className="text-sm text-blue-800">
-                  <strong>Elementos pendientes:</strong> A continuación se muestran los RFIs, adicionales y estados de pago que requieren su respuesta o aprobación.
+                  <strong>Elementos pendientes:</strong> A continuación se muestran los RFIs y adicionales que requieren su respuesta o aprobación.
                 </p>
               </div>
             </CardContent>
@@ -384,7 +362,7 @@ const ProjectAccess = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-slate-800 font-rubik">
                 <DollarSign className="h-5 w-5 text-amber-600" />
-                {hasLimitedAccess ? 'Estados de Pago Pendientes de su Aprobación' : 'Estados de Pago Pendientes de Aprobación'}
+                Estados de Pago Pendientes de Aprobación
               </CardTitle>
             </CardHeader>
             <CardContent>

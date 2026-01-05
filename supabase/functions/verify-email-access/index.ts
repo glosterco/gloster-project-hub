@@ -169,11 +169,10 @@ const handler = async (req: Request): Promise<Response> => {
         const isSpecialist = !!contacto;
 
         // ===========================================
-        // OBTENER TODOS LOS ITEMS PENDIENTES DONDE EL USUARIO ESTÁ INVOLUCRADO
+        // OBTENER TODOS LOS RFIs PENDIENTES DONDE EL USUARIO ESTÁ INVOLUCRADO
         // ===========================================
         const authorizedRfiIds: number[] = [];
         const authorizedAdicionalIds: number[] = [];
-        const authorizedPaymentIds: number[] = [];
 
         // El contratista NO puede acceder vía email link a RFIs/Adicionales
         if (emailLower !== contratistaEmail) {
@@ -218,36 +217,6 @@ const handler = async (req: Request): Promise<Response> => {
 
             if (allAdicionales) {
               authorizedAdicionalIds.push(...allAdicionales.map(a => a.id));
-            }
-          }
-
-          // ===========================================
-          // OBTENER ESTADOS DE PAGO PENDIENTES DE APROBACIÓN
-          // ===========================================
-          if (emailLower === mandanteEmail || isApprover) {
-            // Obtener estados de pago pendientes (Enviado o En Revisión)
-            const { data: pendingPayments } = await supabaseAdmin
-              .from('Estados de pago')
-              .select('id')
-              .eq('Project', projectId)
-              .in('Status', ['Enviado', 'En Revisión']);
-
-            if (pendingPayments && pendingPayments.length > 0) {
-              // Verificar para cada pago si el usuario puede aprobar
-              for (const payment of pendingPayments) {
-                // Verificar si ya aprobó este pago
-                const { data: existingApproval } = await supabaseAdmin
-                  .from('payment_approvals')
-                  .select('id')
-                  .eq('payment_id', payment.id)
-                  .ilike('approver_email', emailLower)
-                  .maybeSingle();
-
-                // Solo incluir si no ha aprobado aún
-                if (!existingApproval) {
-                  authorizedPaymentIds.push(payment.id);
-                }
-              }
             }
           }
         }
@@ -295,7 +264,6 @@ const handler = async (req: Request): Promise<Response> => {
               accessType: isSpecialist ? 'specialist' : 'mandante',
               authorizedRfiIds: authorizedRfiIds,
               authorizedAdicionalIds: authorizedAdicionalIds,
-              authorizedPaymentIds: authorizedPaymentIds,
               deepLinkRfiId: rfiId,
               canRespond: true
             }),
@@ -346,7 +314,6 @@ const handler = async (req: Request): Promise<Response> => {
               accessType: 'mandante',
               authorizedRfiIds: authorizedRfiIds,
               authorizedAdicionalIds: authorizedAdicionalIds,
-              authorizedPaymentIds: authorizedPaymentIds,
               deepLinkAdicionalId: adicionalId,
               canApprove: true
             }),
@@ -358,14 +325,13 @@ const handler = async (req: Request): Promise<Response> => {
         // ACCESO GENERAL AL PROYECTO (sin item específico del deep link)
         // ===========================================
         if (emailLower === mandanteEmail || isApprover) {
-          console.log('✅ Email verificado como MANDANTE/APROBADOR. RFIs:', authorizedRfiIds.length, 'Adicionales:', authorizedAdicionalIds.length, 'Pagos:', authorizedPaymentIds.length);
+          console.log('✅ Email verificado como MANDANTE/APROBADOR. RFIs autorizados:', authorizedRfiIds.length, 'Adicionales autorizados:', authorizedAdicionalIds.length);
           return new Response(
             JSON.stringify({ 
               userType: 'mandante', 
               accessType: 'mandante',
               authorizedRfiIds: authorizedRfiIds,
-              authorizedAdicionalIds: authorizedAdicionalIds,
-              authorizedPaymentIds: authorizedPaymentIds
+              authorizedAdicionalIds: authorizedAdicionalIds
             }),
             { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
           );
@@ -383,8 +349,7 @@ const handler = async (req: Request): Promise<Response> => {
               userType: 'mandante', 
               accessType: 'specialist',
               authorizedRfiIds: authorizedRfiIds,
-              authorizedAdicionalIds: [], // Especialistas no aprueban adicionales
-              authorizedPaymentIds: []    // Especialistas no aprueban pagos
+              authorizedAdicionalIds: [] // Especialistas no aprueban adicionales
             }),
             { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
           );

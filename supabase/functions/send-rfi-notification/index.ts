@@ -14,9 +14,9 @@ const supabase = createClient(
 interface RFINotificationRequest {
   rfiId: number;
   projectId: number;
-  // Compat: algunos clientes envían selectedContactIds
-  destinatarioIds?: number[]; // IDs de contactos a notificar
-  selectedContactIds?: number[]; // alias
+  destinatarioIds?: number[];
+  selectedContactIds?: number[];
+  senderEmail?: string; // Email del usuario que envía el RFI (para excluirlo y enviarle confirmación)
 }
 
 const encodeBase64UTF8 = (str: string): string => {
@@ -67,7 +67,8 @@ const getUrgenciaColor = (urgencia: string | null): string => {
   }
 };
 
-const createEmailHtml = (data: {
+// Email con enlace de acceso para destinatarios
+const createRecipientEmailHtml = (data: {
   rfi: any;
   project: any;
   contratista: any;
@@ -173,12 +174,98 @@ const createEmailHtml = (data: {
   `;
 };
 
-// Sanitize email subject - remove accents and special chars
+// Email de confirmación para el EMISOR (sin enlace de acceso)
+const createSenderConfirmationHtml = (data: {
+  rfi: any;
+  project: any;
+  recipientName: string;
+  sentToList: string[];
+}): string => {
+  const urgenciaColor = getUrgenciaColor(data.rfi.Urgencia);
+  
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <style>
+        body { font-family: 'Segoe UI', sans-serif; line-height: 1.6; margin: 0; padding: 0; background-color: #f5f5f5; }
+        .container { max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header { background: #22c55e; padding: 25px 20px; text-align: center; }
+        .title { color: #ffffff; font-size: 22px; font-weight: bold; margin: 0; }
+        .content { padding: 30px 25px; }
+        .info-box { background: #f8fafc; border-left: 4px solid #22c55e; padding: 20px; margin: 20px 0; border-radius: 4px; }
+        .info-table { width: 100%; border-collapse: collapse; }
+        .info-table td { padding: 8px 12px; border-bottom: 1px solid #e2e8f0; }
+        .info-label { font-weight: 600; color: #64748b; width: 30%; }
+        .info-value { color: #1e293b; }
+        .recipients-box { background: #f0fdf4; border: 1px solid #86efac; padding: 15px; border-radius: 6px; margin: 20px 0; }
+        .footer { background: #f8fafc; padding: 20px; text-align: center; color: #64748b; font-size: 13px; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1 class="title">✅ RFI Enviado Exitosamente</h1>
+        </div>
+        
+        <div class="content">
+          <p>Estimado/a <strong>${data.recipientName}</strong>,</p>
+          
+          <p>Su solicitud de información (RFI) ha sido enviada correctamente. A continuación el resumen:</p>
+          
+          <div class="info-box">
+            <h3 style="margin-top: 0; color: #1e293b;">📋 Resumen del RFI</h3>
+            <table class="info-table">
+              <tr>
+                <td class="info-label">Proyecto:</td>
+                <td class="info-value">${data.project.Name}</td>
+              </tr>
+              <tr>
+                <td class="info-label">Título:</td>
+                <td class="info-value">${data.rfi.Titulo || 'Sin título'}</td>
+              </tr>
+              <tr>
+                <td class="info-label">Urgencia:</td>
+                <td class="info-value" style="color: ${urgenciaColor}; font-weight: bold;">${getUrgenciaLabel(data.rfi.Urgencia)}</td>
+              </tr>
+              ${data.rfi.Fecha_Vencimiento ? `
+              <tr>
+                <td class="info-label">Fecha Límite:</td>
+                <td class="info-value">${new Date(data.rfi.Fecha_Vencimiento).toLocaleDateString('es-CL')}</td>
+              </tr>
+              ` : ''}
+            </table>
+          </div>
+          
+          <div class="recipients-box">
+            <h4 style="margin-top: 0; color: #166534;">📧 Notificación enviada a:</h4>
+            <ul style="margin-bottom: 0; padding-left: 20px;">
+              ${data.sentToList.map(email => `<li>${email}</li>`).join('')}
+            </ul>
+          </div>
+          
+          <p style="color: #64748b; font-size: 14px;">
+            Recibirá una notificación cuando el RFI sea respondido.
+          </p>
+        </div>
+        
+        <div class="footer">
+          <p><strong>Gloster - Gestión de Proyectos</strong></p>
+          <p>Consultas: soporte.gloster@gmail.com</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+};
+
 const sanitizeSubject = (str: string): string => {
   return str
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '') // Remove accents
-    .replace(/[^\x20-\x7E]/g, '')    // Remove non-ASCII
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\x20-\x7E]/g, '')
     .trim();
 };
 
@@ -253,17 +340,24 @@ const handler = async (req: Request): Promise<Response> => {
     const baseUrl = 'https://gloster-project-hub.lovable.app';
     const sentEmailSet = new Set<string>();
 
-    // Get project URL token for verification
     const projectToken = project.URL;
     if (!projectToken) {
       throw new Error('Project URL token not found');
     }
 
-    // Send to mandante (contacto principal)
-    if (mandante.ContactEmail && isValidEmail(mandante.ContactEmail)) {
+    // Identificar email del emisor (contratista) para excluirlo de links de acceso
+    const senderEmail = data.senderEmail?.toLowerCase().trim() || contratista.ContactEmail?.toLowerCase().trim();
+
+    // ========================================
+    // ENVIAR A DESTINATARIOS (con link de acceso)
+    // ========================================
+
+    // 1. Mandante (si no es el emisor)
+    if (mandante.ContactEmail && isValidEmail(mandante.ContactEmail) && 
+        mandante.ContactEmail.toLowerCase().trim() !== senderEmail) {
       const accessUrl = `${baseUrl}/email-access?projectId=${data.projectId}&token=${projectToken}&rfiId=${data.rfiId}&type=mandante`;
 
-      const emailHtml = createEmailHtml({
+      const emailHtml = createRecipientEmailHtml({
         rfi,
         project,
         contratista,
@@ -276,7 +370,7 @@ const handler = async (req: Request): Promise<Response> => {
 
       const emailPayload = {
         raw: encodeBase64UTF8(
-          `From: Gloster Gestión de Proyectos <${fromEmail}>
+          `From: Gloster Gestion de Proyectos <${fromEmail}>
 To: ${mandante.ContactEmail}
 Subject: ${subject}
 Reply-To: soporte.gloster@gmail.com
@@ -301,83 +395,36 @@ ${emailHtml}`
 
       if (response.ok) {
         sentEmailSet.add(mandante.ContactEmail);
-        console.log("✅ Sent RFI notification to mandante:", mandante.ContactEmail);
+        console.log("✅ Sent RFI to mandante:", mandante.ContactEmail);
       } else {
-        console.error("❌ Failed sending RFI notification to mandante:", mandante.ContactEmail, response.status);
+        console.error("❌ Failed to mandante:", mandante.ContactEmail, response.status);
       }
     }
 
-    // Send to contractor main contact (contacto principal del contratista)
-    if (contratista.ContactEmail && isValidEmail(contratista.ContactEmail) && !sentEmailSet.has(contratista.ContactEmail)) {
-      const accessUrl = `${baseUrl}/email-access?projectId=${data.projectId}&token=${projectToken}&rfiId=${data.rfiId}&type=contratista`;
-
-      const emailHtml = createEmailHtml({
-        rfi,
-        project,
-        contratista,
-        accessUrl,
-        recipientName: contratista.ContactName,
-        isForSpecialist: false,
-      });
-
-      const subject = sanitizeSubject(`Nuevo RFI: ${rfi.Titulo || 'Sin titulo'} | ${project.Name}`);
-
-      const emailPayload = {
-        raw: encodeBase64UTF8(
-          `From: Gloster Gestión de Proyectos <${fromEmail}>
-To: ${contratista.ContactEmail}
-Subject: ${subject}
-Reply-To: soporte.gloster@gmail.com
-Content-Type: text/html; charset=utf-8
-MIME-Version: 1.0
-
-${emailHtml}`
-        ),
-      };
-
-      const response = await fetch(
-        "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
-        {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(emailPayload),
-        }
-      );
-
-      if (response.ok) {
-        sentEmailSet.add(contratista.ContactEmail);
-        console.log("✅ Sent RFI notification to contractor:", contratista.ContactEmail);
-      } else {
-        console.error("❌ Failed sending RFI notification to contractor:", contratista.ContactEmail, response.status);
-      }
-    }
-
-    // Send to project approvers (encargados configurados)
+    // 2. Aprobadores del proyecto (si no son el emisor)
     try {
-      const { data: approverConfig, error: approverConfigError } = await supabase
+      const { data: approverConfig } = await supabase
         .from('project_approval_config')
         .select('id')
         .eq('project_id', data.projectId)
         .maybeSingle();
 
-      if (!approverConfigError && approverConfig?.id) {
-        const { data: approvers, error: approversError } = await supabase
+      if (approverConfig?.id) {
+        const { data: approvers } = await supabase
           .from('project_approvers')
           .select('approver_email, approver_name')
           .eq('config_id', approverConfig.id);
 
-        if (!approversError && approvers && approvers.length > 0) {
+        if (approvers) {
           for (const approver of approvers) {
-            const approverEmail = (approver as any).approver_email;
+            const approverEmail = (approver as any).approver_email?.toLowerCase().trim();
             const approverName = (approver as any).approver_name;
 
-            if (!approverEmail || !isValidEmail(approverEmail) || sentEmailSet.has(approverEmail)) continue;
+            if (!approverEmail || !isValidEmail(approverEmail) || 
+                sentEmailSet.has(approverEmail) || approverEmail === senderEmail) continue;
 
             const accessUrl = `${baseUrl}/email-access?projectId=${data.projectId}&token=${projectToken}&rfiId=${data.rfiId}&type=mandante`;
-            const emailHtml = createEmailHtml({
+            const emailHtml = createRecipientEmailHtml({
               rfi,
               project,
               contratista,
@@ -390,7 +437,7 @@ ${emailHtml}`
 
             const emailPayload = {
               raw: encodeBase64UTF8(
-                `From: Gloster Gestión de Proyectos <${fromEmail}>
+                `From: Gloster Gestion de Proyectos <${fromEmail}>
 To: ${approverEmail}
 Subject: ${subject}
 Reply-To: soporte.gloster@gmail.com
@@ -415,71 +462,114 @@ ${emailHtml}`
 
             if (response.ok) {
               sentEmailSet.add(approverEmail);
-              console.log("✅ Sent RFI notification to approver:", approverEmail);
-            } else {
-              console.error("❌ Failed sending RFI notification to approver:", approverEmail, response.status);
+              console.log("✅ Sent RFI to approver:", approverEmail);
             }
           }
         }
       }
     } catch (e) {
-      console.error("⚠️ Approvers email notification failed:", e);
+      console.error("⚠️ Approvers notification failed:", e);
     }
 
-    // Send to specialists (contactos) if specified
+    // 3. Especialistas seleccionados (si no son el emisor)
     if (destinatarioIds.length > 0) {
-      const { data: contactos, error: contactosError } = await supabase
+      const { data: contactos } = await supabase
         .from('contactos')
         .select('*')
         .in('id', destinatarioIds);
 
-      if (!contactosError && contactos) {
+      if (contactos) {
         for (const contacto of contactos) {
-          if (contacto.email && isValidEmail(contacto.email)) {
-            const accessUrl = `${baseUrl}/email-access?projectId=${data.projectId}&token=${projectToken}&rfiId=${data.rfiId}&type=specialist`;
+          const contactoEmail = contacto.email?.toLowerCase().trim();
+          if (!contactoEmail || !isValidEmail(contactoEmail) || 
+              sentEmailSet.has(contactoEmail) || contactoEmail === senderEmail) continue;
 
-            const emailHtml = createEmailHtml({
-              rfi,
-              project,
-              contratista,
-              accessUrl,
-              recipientName: contacto.nombre,
-              isForSpecialist: true
-            });
+          const accessUrl = `${baseUrl}/email-access?projectId=${data.projectId}&token=${projectToken}&rfiId=${data.rfiId}&type=specialist`;
 
-            const subject = sanitizeSubject(`RFI Reenviado: ${rfi.Titulo || 'Sin titulo'} | ${project.Name}`);
+          const emailHtml = createRecipientEmailHtml({
+            rfi,
+            project,
+            contratista,
+            accessUrl,
+            recipientName: contacto.nombre,
+            isForSpecialist: true
+          });
 
-            const emailPayload = {
-              raw: encodeBase64UTF8(
-                `From: Gloster Gestión de Proyectos <${fromEmail}>
-To: ${contacto.email}
+          const subject = sanitizeSubject(`RFI Reenviado: ${rfi.Titulo || 'Sin titulo'} | ${project.Name}`);
+
+          const emailPayload = {
+            raw: encodeBase64UTF8(
+              `From: Gloster Gestion de Proyectos <${fromEmail}>
+To: ${contactoEmail}
 Subject: ${subject}
 Reply-To: soporte.gloster@gmail.com
 Content-Type: text/html; charset=utf-8
 MIME-Version: 1.0
 
 ${emailHtml}`
-              ),
-            };
+            ),
+          };
 
-            const response = await fetch(
-              "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
-              {
-                method: "POST",
-                headers: {
-                  "Authorization": `Bearer ${accessToken}`,
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify(emailPayload),
-              }
-            );
-
-            if (response.ok) {
-              sentEmailSet.add(contacto.email);
-              console.log("✅ Sent RFI notification to specialist:", contacto.email);
+          const response = await fetch(
+            "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+            {
+              method: "POST",
+              headers: {
+                "Authorization": `Bearer ${accessToken}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(emailPayload),
             }
+          );
+
+          if (response.ok) {
+            sentEmailSet.add(contactoEmail);
+            console.log("✅ Sent RFI to specialist:", contactoEmail);
           }
         }
+      }
+    }
+
+    // ========================================
+    // ENVIAR CONFIRMACIÓN AL EMISOR (sin link de acceso)
+    // ========================================
+    if (senderEmail && isValidEmail(senderEmail)) {
+      const confirmationHtml = createSenderConfirmationHtml({
+        rfi,
+        project,
+        recipientName: contratista.ContactName || 'Usuario',
+        sentToList: Array.from(sentEmailSet),
+      });
+
+      const confirmSubject = sanitizeSubject(`Confirmacion: RFI enviado - ${rfi.Titulo || 'Sin titulo'} | ${project.Name}`);
+
+      const confirmPayload = {
+        raw: encodeBase64UTF8(
+          `From: Gloster Gestion de Proyectos <${fromEmail}>
+To: ${senderEmail}
+Subject: ${confirmSubject}
+Reply-To: soporte.gloster@gmail.com
+Content-Type: text/html; charset=utf-8
+MIME-Version: 1.0
+
+${confirmationHtml}`
+        ),
+      };
+
+      const confirmResponse = await fetch(
+        "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+        {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(confirmPayload),
+        }
+      );
+
+      if (confirmResponse.ok) {
+        console.log("✅ Sent confirmation to sender:", senderEmail);
       }
     }
 

@@ -14,6 +14,7 @@ const supabase = createClient(
 interface AdicionalNotificationRequest {
   adicionalId: number;
   projectId: number;
+  senderEmail?: string; // Email del contratista que envía (para excluirlo y enviarle confirmación)
 }
 
 const encodeBase64UTF8 = (str: string): string => {
@@ -30,7 +31,7 @@ const encodeBase64UTF8 = (str: string): string => {
 };
 
 const getAccessToken = async (): Promise<string> => {
-  console.log('📧 Getting Gmail access token via token manager...');
+  console.log('📧 Getting Gmail access token...');
   
   const tokenManagerResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/gmail-token-manager`, {
     method: 'POST',
@@ -44,11 +45,9 @@ const getAccessToken = async (): Promise<string> => {
   const tokenResult = await tokenManagerResponse.json();
 
   if (!tokenResult.valid) {
-    console.error('❌ Gmail token validation failed:', tokenResult.error);
     throw new Error(`Gmail authentication failed: ${tokenResult.error}`);
   }
 
-  console.log('✅ Gmail access token obtained successfully');
   return tokenResult.access_token;
 };
 
@@ -74,7 +73,8 @@ const formatCurrency = (amount: number, currency?: string): string => {
   }
 };
 
-const createEmailHtml = (data: {
+// Email con enlace de acceso para MANDANTE (quien aprueba)
+const createRecipientEmailHtml = (data: {
   adicional: any;
   project: any;
   contratista: any;
@@ -112,7 +112,7 @@ const createEmailHtml = (data: {
       <div class="container">
         <div class="header">
           <h1 class="title">📋 Nuevo Adicional Presentado</h1>
-          <p style="margin: 5px 0 0 0; color: #64748b; font-size: 14px;">Gloster - Sistema de Gestión de Proyectos</p>
+          <p style="margin: 5px 0 0 0; color: #64748b; font-size: 14px;">Gloster - Sistema de Gestion de Proyectos</p>
         </div>
         
         <div class="content">
@@ -120,10 +120,10 @@ const createEmailHtml = (data: {
             ${data.recipientName ? `Estimado/a <strong>${data.recipientName}</strong>,` : `Estimado equipo de <strong>${data.mandante.CompanyName}</strong>,`}
           </div>
           
-          <p>Se ha presentado un nuevo adicional que requiere su revisión. A continuación se detallan los datos:</p>
+          <p>Se ha presentado un nuevo adicional que requiere su revision y aprobacion. A continuacion los detalles:</p>
           
           <div class="highlight-box">
-            <h3 class="section-title">Información del Adicional</h3>
+            <h3 class="section-title">Informacion del Adicional</h3>
             <table class="info-table">
               <tr>
                 <td class="info-label">Proyecto:</td>
@@ -134,11 +134,11 @@ const createEmailHtml = (data: {
                 <td class="info-value">${data.contratista.CompanyName}</td>
               </tr>
               <tr>
-                <td class="info-label">Título:</td>
-                <td class="info-value">${data.adicional.Titulo || 'Sin título'}</td>
+                <td class="info-label">Titulo:</td>
+                <td class="info-value">${data.adicional.Titulo || 'Sin titulo'}</td>
               </tr>
               <tr>
-                <td class="info-label">Categoría:</td>
+                <td class="info-label">Categoria:</td>
                 <td class="info-value">${data.adicional.Categoria || 'No especificada'}</td>
               </tr>
               <tr>
@@ -160,24 +160,24 @@ const createEmailHtml = (data: {
           
           ${data.adicional.Descripcion ? `
           <div style="margin: 20px 0;">
-            <h4 style="color: #64748b; margin-bottom: 8px;">Descripción:</h4>
+            <h4 style="color: #64748b; margin-bottom: 8px;">Descripcion:</h4>
             <p style="background: #f8fafc; padding: 15px; border-radius: 4px; margin: 0;">${data.adicional.Descripcion}</p>
           </div>
           ` : ''}
           
           <div class="cta-section">
             <p style="margin: 0 0 10px 0; font-weight: 500;">Para revisar y aprobar/rechazar el adicional:</p>
-            <a href="${data.accessUrl}" class="cta-button">Ver Adicional</a>
+            <a href="${data.accessUrl}" class="cta-button">Ver y Aprobar Adicional</a>
           </div>
           
           <p style="color: #64748b; font-size: 14px; margin-top: 25px;">
-            Este es un mensaje automático del sistema Gloster. Si tiene alguna consulta, contacte a soporte.gloster@gmail.com
+            Este es un mensaje automatico del sistema Gloster.
           </p>
         </div>
         
         <div class="footer">
-          <div style="font-weight: 600; color: #1e293b; margin-bottom: 5px;">Gloster - Sistema de Gestión de Proyectos</div>
-          <p style="margin: 5px 0;">Consultas técnicas: soporte.gloster@gmail.com</p>
+          <div style="font-weight: 600; color: #1e293b; margin-bottom: 5px;">Gloster - Sistema de Gestion de Proyectos</div>
+          <p style="margin: 5px 0;">Consultas tecnicas: soporte.gloster@gmail.com</p>
         </div>
       </div>
     </body>
@@ -185,12 +185,94 @@ const createEmailHtml = (data: {
   `;
 };
 
-// Sanitize email subject - remove accents and special chars
+// Email de confirmación para el EMISOR (contratista) - SIN enlace de acceso
+const createSenderConfirmationHtml = (data: {
+  adicional: any;
+  project: any;
+  recipientName: string;
+  sentToList: string[];
+}): string => {
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <style>
+        body { font-family: 'Segoe UI', sans-serif; line-height: 1.6; margin: 0; padding: 0; background-color: #f5f5f5; }
+        .container { max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header { background: #22c55e; padding: 25px 20px; text-align: center; }
+        .title { color: #ffffff; font-size: 22px; font-weight: bold; margin: 0; }
+        .content { padding: 30px 25px; }
+        .info-box { background: #f8fafc; border-left: 4px solid #22c55e; padding: 20px; margin: 20px 0; border-radius: 4px; }
+        .info-table { width: 100%; border-collapse: collapse; }
+        .info-table td { padding: 8px 12px; border-bottom: 1px solid #e2e8f0; }
+        .info-label { font-weight: 600; color: #64748b; width: 30%; }
+        .info-value { color: #1e293b; }
+        .recipients-box { background: #f0fdf4; border: 1px solid #86efac; padding: 15px; border-radius: 6px; margin: 20px 0; }
+        .footer { background: #f8fafc; padding: 20px; text-align: center; color: #64748b; font-size: 13px; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1 class="title">✅ Adicional Enviado Exitosamente</h1>
+        </div>
+        
+        <div class="content">
+          <p>Estimado/a <strong>${data.recipientName}</strong>,</p>
+          
+          <p>Su solicitud de adicional ha sido enviada correctamente para revision. A continuacion el resumen:</p>
+          
+          <div class="info-box">
+            <h3 style="margin-top: 0; color: #1e293b;">📋 Resumen del Adicional</h3>
+            <table class="info-table">
+              <tr>
+                <td class="info-label">Proyecto:</td>
+                <td class="info-value">${data.project.Name}</td>
+              </tr>
+              <tr>
+                <td class="info-label">Titulo:</td>
+                <td class="info-value">${data.adicional.Titulo || 'Sin titulo'}</td>
+              </tr>
+              <tr>
+                <td class="info-label">Categoria:</td>
+                <td class="info-value">${data.adicional.Categoria || 'No especificada'}</td>
+              </tr>
+              <tr>
+                <td class="info-label">Monto:</td>
+                <td class="info-value" style="color: #059669; font-weight: bold;">${formatCurrency(data.adicional.Monto_presentado, data.project.Currency)}</td>
+              </tr>
+            </table>
+          </div>
+          
+          <div class="recipients-box">
+            <h4 style="margin-top: 0; color: #166534;">📧 Notificacion enviada a:</h4>
+            <ul style="margin-bottom: 0; padding-left: 20px;">
+              ${data.sentToList.map(email => `<li>${email}</li>`).join('')}
+            </ul>
+          </div>
+          
+          <p style="color: #64748b; font-size: 14px;">
+            Recibira una notificacion cuando el adicional sea aprobado o rechazado.
+          </p>
+        </div>
+        
+        <div class="footer">
+          <p><strong>Gloster - Gestion de Proyectos</strong></p>
+          <p>Consultas: soporte.gloster@gmail.com</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+};
+
 const sanitizeSubject = (str: string): string => {
   return str
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '') // Remove accents
-    .replace(/[^\x20-\x7E]/g, '')    // Remove non-ASCII
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\x20-\x7E]/g, '')
     .trim();
 };
 
@@ -212,7 +294,7 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error('adicionalId and projectId are required');
     }
 
-    // Fetch adicional data
+    // Fetch adicional
     const { data: adicional, error: adicionalError } = await supabase
       .from('Adicionales')
       .select('*')
@@ -223,7 +305,7 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error(`Adicional not found: ${adicionalError?.message}`);
     }
 
-    // Fetch project data
+    // Fetch project
     const { data: project, error: projectError } = await supabase
       .from('Proyectos')
       .select('*, Contratista, Owner')
@@ -234,7 +316,7 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error(`Project not found: ${projectError?.message}`);
     }
 
-    // Fetch contratista data
+    // Fetch contratista
     const { data: contratista, error: contratistaError } = await supabase
       .from('Contratistas')
       .select('*')
@@ -245,7 +327,7 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error(`Contratista not found: ${contratistaError?.message}`);
     }
 
-    // Fetch mandante data
+    // Fetch mandante
     const { data: mandante, error: mandanteError } = await supabase
       .from('Mandantes')
       .select('*')
@@ -256,55 +338,42 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error(`Mandante not found: ${mandanteError?.message}`);
     }
 
-    // Build recipients list - mandante email
-    const allRecipients = new Set<string>();
-    
-    if (mandante.ContactEmail && isValidEmail(mandante.ContactEmail)) {
-      allRecipients.add(mandante.ContactEmail.toLowerCase());
+    // Email del emisor (contratista)
+    const senderEmail = data.senderEmail?.toLowerCase().trim() || contratista.ContactEmail?.toLowerCase().trim();
+
+    const projectToken = project.URL;
+    if (!projectToken) {
+      throw new Error('Project URL token not found');
     }
-
-    console.log('📧 Recipients:', Array.from(allRecipients));
-
-    if (allRecipients.size === 0) {
-      throw new Error('No valid recipients found');
-    }
-
-    // Get project URL token for mandante access
-    const { data: projectUrls, error: urlError } = await supabase
-      .from('Proyectos')
-      .select('URL')
-      .eq('id', data.projectId)
-      .single();
-
-    if (urlError || !projectUrls?.URL) {
-      throw new Error(`Project URL token not found: ${urlError?.message}`);
-    }
-
-    // Build access URL with token and adicionalId parameter
-    const baseUrl = 'https://gloster-project-hub.lovable.app';
-    const accessUrl = `${baseUrl}/email-access?projectId=${data.projectId}&token=${projectUrls.URL}&adicionalId=${data.adicionalId}&type=mandante`;
 
     const accessToken = await getAccessToken();
     const fromEmail = Deno.env.get("GMAIL_FROM_EMAIL");
+    const baseUrl = 'https://gloster-project-hub.lovable.app';
+    const sentEmailSet = new Set<string>();
 
-    const emailHtml = createEmailHtml({
-      adicional,
-      project,
-      contratista,
-      mandante,
-      accessUrl,
-      recipientName: mandante.ContactName
-    });
+    // ========================================
+    // ENVIAR A MANDANTE (con link de acceso para aprobar)
+    // ========================================
+    if (mandante.ContactEmail && isValidEmail(mandante.ContactEmail) &&
+        mandante.ContactEmail.toLowerCase().trim() !== senderEmail) {
+      
+      const accessUrl = `${baseUrl}/email-access?projectId=${data.projectId}&token=${projectToken}&adicionalId=${data.adicionalId}&type=mandante`;
 
-    const rawSubject = `Nuevo Adicional - ${adicional.Titulo || 'Sin titulo'} | ${project.Name}`;
-    const subject = sanitizeSubject(rawSubject);
+      const emailHtml = createRecipientEmailHtml({
+        adicional,
+        project,
+        contratista,
+        mandante,
+        accessUrl,
+        recipientName: mandante.ContactName
+      });
 
-    const recipientsList = Array.from(allRecipients).join(', ');
-    
-    const emailPayload = {
-      raw: encodeBase64UTF8(
-        `From: Gloster Gestión de Proyectos <${fromEmail}>
-To: ${recipientsList}
+      const subject = sanitizeSubject(`Nuevo Adicional - ${adicional.Titulo || 'Sin titulo'} | ${project.Name}`);
+
+      const emailPayload = {
+        raw: encodeBase64UTF8(
+          `From: Gloster Gestion de Proyectos <${fromEmail}>
+To: ${mandante.ContactEmail}
 Subject: ${subject}
 Reply-To: soporte.gloster@gmail.com
 Content-Type: text/html; charset=utf-8
@@ -313,33 +382,149 @@ X-Mailer: Gloster Project Management System
 Message-ID: <adicional-${data.adicionalId}-${Date.now()}@gloster.com>
 
 ${emailHtml}`
-      ),
-    };
+        ),
+      };
 
-    console.log("📧 Sending email to Gmail API...");
-    const response = await fetch(
-      "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
-      {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(emailPayload),
+      const response = await fetch(
+        "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+        {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(emailPayload),
+        }
+      );
+
+      if (response.ok) {
+        sentEmailSet.add(mandante.ContactEmail);
+        console.log("✅ Sent adicional to mandante:", mandante.ContactEmail);
+      } else {
+        console.error("❌ Failed to mandante:", mandante.ContactEmail, response.status);
       }
-    );
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error("❌ Gmail API error:", errorData);
-      throw new Error(`Gmail API error: ${response.status}`);
     }
 
-    const result = await response.json();
-    console.log("✅ Adicional notification sent successfully:", result.id);
+    // ========================================
+    // ENVIAR A APROBADORES (con link de acceso)
+    // ========================================
+    try {
+      const { data: approverConfig } = await supabase
+        .from('project_approval_config')
+        .select('id')
+        .eq('project_id', data.projectId)
+        .maybeSingle();
+
+      if (approverConfig?.id) {
+        const { data: approvers } = await supabase
+          .from('project_approvers')
+          .select('approver_email, approver_name')
+          .eq('config_id', approverConfig.id);
+
+        if (approvers) {
+          for (const approver of approvers) {
+            const approverEmail = (approver as any).approver_email?.toLowerCase().trim();
+            const approverName = (approver as any).approver_name;
+
+            if (!approverEmail || !isValidEmail(approverEmail) || 
+                sentEmailSet.has(approverEmail) || approverEmail === senderEmail) continue;
+
+            const accessUrl = `${baseUrl}/email-access?projectId=${data.projectId}&token=${projectToken}&adicionalId=${data.adicionalId}&type=mandante`;
+
+            const emailHtml = createRecipientEmailHtml({
+              adicional,
+              project,
+              contratista,
+              mandante,
+              accessUrl,
+              recipientName: approverName
+            });
+
+            const subject = sanitizeSubject(`Nuevo Adicional - ${adicional.Titulo || 'Sin titulo'} | ${project.Name}`);
+
+            const emailPayload = {
+              raw: encodeBase64UTF8(
+                `From: Gloster Gestion de Proyectos <${fromEmail}>
+To: ${approverEmail}
+Subject: ${subject}
+Reply-To: soporte.gloster@gmail.com
+Content-Type: text/html; charset=utf-8
+MIME-Version: 1.0
+
+${emailHtml}`
+              ),
+            };
+
+            const response = await fetch(
+              "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+              {
+                method: "POST",
+                headers: {
+                  "Authorization": `Bearer ${accessToken}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify(emailPayload),
+              }
+            );
+
+            if (response.ok) {
+              sentEmailSet.add(approverEmail);
+              console.log("✅ Sent adicional to approver:", approverEmail);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error("⚠️ Approvers notification failed:", e);
+    }
+
+    // ========================================
+    // ENVIAR CONFIRMACIÓN AL EMISOR (sin link de acceso)
+    // ========================================
+    if (senderEmail && isValidEmail(senderEmail)) {
+      const confirmationHtml = createSenderConfirmationHtml({
+        adicional,
+        project,
+        recipientName: contratista.ContactName || 'Usuario',
+        sentToList: Array.from(sentEmailSet),
+      });
+
+      const confirmSubject = sanitizeSubject(`Confirmacion: Adicional enviado - ${adicional.Titulo || 'Sin titulo'} | ${project.Name}`);
+
+      const confirmPayload = {
+        raw: encodeBase64UTF8(
+          `From: Gloster Gestion de Proyectos <${fromEmail}>
+To: ${senderEmail}
+Subject: ${confirmSubject}
+Reply-To: soporte.gloster@gmail.com
+Content-Type: text/html; charset=utf-8
+MIME-Version: 1.0
+
+${confirmationHtml}`
+        ),
+      };
+
+      const confirmResponse = await fetch(
+        "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+        {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(confirmPayload),
+        }
+      );
+
+      if (confirmResponse.ok) {
+        console.log("✅ Sent confirmation to sender:", senderEmail);
+      }
+    }
+
+    console.log("✅ Adicional notifications sent to:", Array.from(sentEmailSet));
 
     return new Response(
-      JSON.stringify({ success: true, messageId: result.id }),
+      JSON.stringify({ success: true, sentTo: Array.from(sentEmailSet) }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,

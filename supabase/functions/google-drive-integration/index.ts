@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -8,9 +7,9 @@ const corsHeaders = {
 }
 
 interface CreateFolderRequest {
-  type: 'project' | 'payment_state' | 'project_docs';
+  type: 'project' | 'payment_state' | 'project_docs' | 'project-photos';
   projectId: number;
-  projectName: string;
+  projectName?: string;
   paymentStateName?: string;
   month?: string;
   year?: number;
@@ -50,7 +49,7 @@ async function createGoogleDriveFolder(
   accessToken: string,
   folderName: string,
   parentFolderId?: string
-): Promise<string> {
+): Promise<{ id: string; url: string }> {
   console.log('📁 Creating folder:', folderName, parentFolderId ? `in parent: ${parentFolderId}` : 'in root');
   
   const metadata = {
@@ -75,7 +74,9 @@ async function createGoogleDriveFolder(
   }
 
   console.log('✅ Folder created successfully:', data.id);
-  return data.id;
+  
+  const url = `https://drive.google.com/drive/u/2/folders/${data.id}`;
+  return { id: data.id, url };
 }
 
 serve(async (req) => {
@@ -102,40 +103,115 @@ serve(async (req) => {
     let fullUrl: string;
 
     if (body.type === 'project') {
-      console.log('📁 Creating project folder...');
-      // Create project folder: "ID proyecto - nombre proyecto"
-      folderName = `${body.projectId} - ${body.projectName}`;
-      folderId = await createGoogleDriveFolder(accessToken, folderName);
-      fullUrl = `https://drive.google.com/drive/u/2/folders/${folderId}`;
+      console.log('📁 Creating project folder with subfolders...');
       
-      console.log(`📁 Project folder created: ${folderName} with ID: ${folderId}`);
+      // Get project name if not provided
+      let projectName = body.projectName;
+      if (!projectName) {
+        const { data: project } = await supabase
+          .from('Proyectos')
+          .select('Name')
+          .eq('id', body.projectId)
+          .single();
+        projectName = project?.Name || `Proyecto_${body.projectId}`;
+      }
+      
+      // Create main project folder: "ID proyecto - nombre proyecto"
+      folderName = `${body.projectId} - ${projectName}`;
+      const mainFolder = await createGoogleDriveFolder(accessToken, folderName);
+      folderId = mainFolder.id;
+      fullUrl = mainFolder.url;
+      
+      console.log(`📁 Main project folder created: ${folderName} with ID: ${folderId}`);
       console.log(`🔗 Full URL: ${fullUrl}`);
 
-      // Update project with Google Drive URL using service role client
-      console.log('💾 Updating project with URL...');
+      // Create 4 subfolders in parallel: Documentos, Fotos, RFI, Adicionales
+      console.log('📁 Creating 4 subfolders...');
+      const subfolderPromises = [
+        createGoogleDriveFolder(accessToken, 'Documentos', folderId),
+        createGoogleDriveFolder(accessToken, 'Fotos', folderId),
+        createGoogleDriveFolder(accessToken, 'RFI', folderId),
+        createGoogleDriveFolder(accessToken, 'Adicionales', folderId),
+      ];
+      
+      const [docsFolder, fotosFolder, rfiFolder, adicionalesFolder] = await Promise.all(subfolderPromises);
+      
+      console.log('✅ All subfolders created:', {
+        documentos: docsFolder.url,
+        fotos: fotosFolder.url,
+        rfi: rfiFolder.url,
+        adicionales: adicionalesFolder.url,
+      });
+
+      // Update project with all folder URLs
+      console.log('💾 Updating project with all URLs...');
       const { error: updateProjectError } = await supabase
         .from('Proyectos')
-        .update({ URL: fullUrl })
+        .update({ 
+          URL: fullUrl,
+          URL_docs: docsFolder.url,
+          URL_Fotos: fotosFolder.url,
+          URL_RFI: rfiFolder.url,
+          URL_Ad: adicionalesFolder.url,
+        })
         .eq('id', body.projectId);
 
       if (updateProjectError) {
-        console.error('❌ Error updating project URL:', updateProjectError);
-        // Don't throw error here, just log it as the folder was created successfully
+        console.error('❌ Error updating project URLs:', updateProjectError);
       } else {
-        console.log('✅ Project updated with URL');
+        console.log('✅ Project updated with all URLs');
       }
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          folderId,
+          folderName,
+          fullUrl,
+          subfolders: {
+            documentos: docsFolder.url,
+            fotos: fotosFolder.url,
+            rfi: rfiFolder.url,
+            adicionales: adicionalesFolder.url,
+          }
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        }
+      );
 
     } else if (body.type === 'project_docs') {
       console.log('📁 Creating project documents folder...');
-      // Create project documents folder: "Documentos - ID proyecto - nombre proyecto"
-      folderName = `Documentos - ${body.projectId} - ${body.projectName}`;
-      folderId = await createGoogleDriveFolder(accessToken, folderName);
-      fullUrl = `https://drive.google.com/drive/u/2/folders/${folderId}`;
+      
+      // Get project info
+      const { data: project } = await supabase
+        .from('Proyectos')
+        .select('Name, URL')
+        .eq('id', body.projectId)
+        .single();
+      
+      const projectName = body.projectName || project?.Name || `Proyecto_${body.projectId}`;
+      
+      // Check if project has main folder, use it as parent
+      let parentFolderId: string | undefined;
+      if (project?.URL) {
+        const match = project.URL.match(/folders\/([a-zA-Z0-9_-]+)/);
+        if (match) {
+          parentFolderId = match[1];
+        }
+      }
+      
+      // Create folder name based on whether it's inside main folder or standalone
+      folderName = parentFolderId ? 'Documentos' : `Documentos - ${body.projectId} - ${projectName}`;
+      const folder = await createGoogleDriveFolder(accessToken, folderName, parentFolderId);
+      folderId = folder.id;
+      fullUrl = folder.url;
       
       console.log(`📁 Project documents folder created: ${folderName} with ID: ${folderId}`);
       console.log(`🔗 Full URL: ${fullUrl}`);
 
-      // Update project with Google Drive documents URL using service role client
+      // Update project with documents URL
       console.log('💾 Updating project with documents URL...');
       const { error: updateProjectError } = await supabase
         .from('Proyectos')
@@ -144,22 +220,79 @@ serve(async (req) => {
 
       if (updateProjectError) {
         console.error('❌ Error updating project documents URL:', updateProjectError);
-        // Don't throw error here, just log it as the folder was created successfully
       } else {
         console.log('✅ Project updated with documents URL');
       }
+
+    } else if (body.type === 'project-photos') {
+      console.log('📁 Creating project photos folder...');
+      
+      // Get project info
+      const { data: project } = await supabase
+        .from('Proyectos')
+        .select('Name, URL')
+        .eq('id', body.projectId)
+        .single();
+      
+      const projectName = body.projectName || project?.Name || `Proyecto_${body.projectId}`;
+      
+      // Check if project has main folder, use it as parent
+      let parentFolderId: string | undefined;
+      if (project?.URL) {
+        const match = project.URL.match(/folders\/([a-zA-Z0-9_-]+)/);
+        if (match) {
+          parentFolderId = match[1];
+        }
+      }
+      
+      // Create folder name based on whether it's inside main folder or standalone
+      folderName = parentFolderId ? 'Fotos' : `Fotos - ${body.projectId} - ${projectName}`;
+      const folder = await createGoogleDriveFolder(accessToken, folderName, parentFolderId);
+      folderId = folder.id;
+      fullUrl = folder.url;
+      
+      console.log(`📁 Project photos folder created: ${folderName} with ID: ${folderId}`);
+      console.log(`🔗 Full URL: ${fullUrl}`);
+
+      // Update project with photos URL
+      console.log('💾 Updating project with photos URL...');
+      const { error: updateProjectError } = await supabase
+        .from('Proyectos')
+        .update({ URL_Fotos: fullUrl })
+        .eq('id', body.projectId);
+
+      if (updateProjectError) {
+        console.error('❌ Error updating project photos URL:', updateProjectError);
+      } else {
+        console.log('✅ Project updated with photos URL');
+      }
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          folderId,
+          folderName,
+          folderUrl: fullUrl,
+          fullUrl
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        }
+      );
 
     } else if (body.type === 'payment_state') {
       console.log('📁 Creating payment state folder...');
       // Create payment state folder: "EP# - Mes Año"
       folderName = `${body.paymentStateName} - ${body.month} ${body.year}`;
-      folderId = await createGoogleDriveFolder(accessToken, folderName, body.parentFolderId);
-      fullUrl = `https://drive.google.com/drive/u/2/folders/${folderId}`;
+      const folder = await createGoogleDriveFolder(accessToken, folderName, body.parentFolderId);
+      folderId = folder.id;
+      fullUrl = folder.url;
       
       console.log(`📁 Payment state folder created: ${folderName} with ID: ${folderId}`);
       console.log(`🔗 Full URL: ${fullUrl}`);
 
-      // Update the payment state record with the complete URL using service role client
+      // Update the payment state record with the complete URL
       console.log('💾 Updating payment state with URL...');
       const { error: updateError } = await supabase
         .from('Estados de pago')
@@ -170,20 +303,13 @@ serve(async (req) => {
 
       if (updateError) {
         console.error('❌ Error updating payment state URL:', updateError);
-        // Don't throw error here, just log it as the folder was created successfully
       } else {
         console.log('✅ Payment state updated with URL');
       }
       
-    } else {
-      throw new Error('Invalid folder type');
-    }
-
-    // Fix existing URLs in database that only have folder IDs (using service role client)
-    if (body.type === 'payment_state') {
+      // Fix existing URLs in database that only have folder IDs
       console.log('🔧 Fixing existing incomplete URLs in database...');
       
-      // Get all payment states with URLs that don't start with https://
       const { data: paymentStates, error: fetchError } = await supabase
         .from('Estados de pago')
         .select('id, URL')
@@ -195,7 +321,6 @@ serve(async (req) => {
       } else if (paymentStates && paymentStates.length > 0) {
         console.log(`🔧 Found ${paymentStates.length} payment states with incomplete URLs`);
         
-        // Update each one
         for (const state of paymentStates) {
           if (state.URL && !state.URL.startsWith('https://')) {
             const completeUrl = `https://drive.google.com/drive/u/2/folders/${state.URL}`;
@@ -212,6 +337,9 @@ serve(async (req) => {
           }
         }
       }
+      
+    } else {
+      throw new Error('Invalid folder type');
     }
 
     console.log('🎉 Integration completed successfully');

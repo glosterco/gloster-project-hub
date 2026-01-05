@@ -185,6 +185,7 @@ const EmailAccess = () => {
           // Arrays de IDs autorizados
           authorizedRfiIds: tokenVerification.authorizedRfiIds || [],
           authorizedAdicionalIds: tokenVerification.authorizedAdicionalIds || [],
+          authorizedPaymentIds: tokenVerification.authorizedPaymentIds || [],
           // IDs del deep link específico (para scroll/highlight)
           deepLinkRfiId: tokenVerification.deepLinkRfiId || rfiId || null,
           deepLinkAdicionalId: tokenVerification.deepLinkAdicionalId || adicionalId || null,

@@ -84,3 +84,15 @@ verify_jwt = false
 
 [functions.send-rfi-response]
 verify_jwt = false
+
+[functions.rfi-message]
+verify_jwt = false
+
+[functions.send-rfi-message-notification]
+verify_jwt = false
+
+[functions.send-rfi-close-notification]
+verify_jwt = false
+
+[functions.get-drive-folder-files]
+verify_jwt = false

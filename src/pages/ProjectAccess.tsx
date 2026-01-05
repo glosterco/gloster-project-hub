@@ -561,7 +561,10 @@ const ProjectAccess = () => {
         onOpenChange={setShowRFIDetailModal}
         rfi={selectedRFI}
         isMandante={isMandante}
+        isContratista={!isMandante && access?.userType !== 'especialista'}
         projectId={id}
+        userEmail={userEmail}
+        userName={access?.email || undefined}
         onSuccess={() => {
           const pid = Number(id);
           if (!Number.isNaN(pid) && authorizedRfiIds.length > 0) {

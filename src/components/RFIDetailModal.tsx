@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -8,24 +8,26 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Textarea } from '@/components/ui/textarea';
 import { 
   ExternalLink, 
   HelpCircle, 
   Calendar, 
-  MessageSquare, 
-  Send, 
   Forward, 
   Loader2,
   Clock,
   AlertTriangle,
   AlertCircle,
-  Users
+  Users,
+  CheckCircle,
+  Lock
 } from 'lucide-react';
 import { RFI } from '@/hooks/useRFI';
 import { useContactos } from '@/hooks/useContactos';
 import { useRFIDestinatarios } from '@/hooks/useRFIDestinatarios';
+import { useRFIMessages } from '@/hooks/useRFIMessages';
 import { ContactoSelector } from './ContactoSelector';
+import { RFIConversationHistory } from './RFIConversationHistory';
+import { RFIResponseForm } from './RFIResponseForm';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -34,7 +36,10 @@ interface RFIDetailModalProps {
   onOpenChange: (open: boolean) => void;
   rfi: RFI | null;
   isMandante?: boolean;
+  isContratista?: boolean;
   projectId?: string;
+  userEmail?: string;
+  userName?: string;
   onSuccess?: () => void;
 }
 
@@ -43,7 +48,7 @@ const getStatusColor = (status: string | null) => {
     case 'pendiente':
       return 'bg-amber-100 text-amber-700 border-amber-200';
     case 'respondido':
-      return 'bg-green-100 text-green-700 border-green-200';
+      return 'bg-blue-100 text-blue-700 border-blue-200';
     case 'cerrado':
       return 'bg-gray-100 text-gray-700 border-gray-200';
     default:
@@ -86,93 +91,65 @@ export const RFIDetailModal: React.FC<RFIDetailModalProps> = ({
   onOpenChange,
   rfi,
   isMandante = false,
+  isContratista = false,
   projectId,
+  userEmail,
+  userName,
   onSuccess
 }) => {
-  const [respuesta, setRespuesta] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForwardSection, setShowForwardSection] = useState(false);
   const [selectedContactIds, setSelectedContactIds] = useState<number[]>([]);
+  const [isForwarding, setIsForwarding] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   const { toast } = useToast();
   
   const { contactos, loading: contactosLoading, addContacto } = useContactos(projectId || '');
   const { destinatarios, addDestinatarios } = useRFIDestinatarios(rfi?.id || null);
+  const { 
+    messages, 
+    loading: messagesLoading, 
+    sending, 
+    sendMessage, 
+    closeRFI: closeRFIAction,
+    fetchMessages 
+  } = useRFIMessages(rfi?.id || null);
+
+  // Determine user role for responses
+  const userRole = useMemo(() => {
+    if (isContratista) return 'contratista';
+    if (isMandante) return 'mandante';
+    return 'especialista';
+  }, [isMandante, isContratista]);
+
+  // Check if RFI has at least one response (for close button)
+  const hasResponses = useMemo(() => {
+    return messages.length > 0 || !!rfi?.Respuesta;
+  }, [messages, rfi?.Respuesta]);
 
   // Reset state when modal opens/closes
   useEffect(() => {
     if (!open) {
-      setRespuesta('');
       setShowForwardSection(false);
       setSelectedContactIds([]);
+    } else if (rfi?.id) {
+      fetchMessages();
     }
-  }, [open]);
+  }, [open, rfi?.id, fetchMessages]);
 
   if (!rfi) return null;
 
   const isPending = rfi.Status?.toLowerCase() === 'pendiente';
-  const canRespond = isMandante && isPending;
-  // Mandante y contratista pueden reenviar si hay projectId y el RFI está pendiente
+  const isRespondido = rfi.Status?.toLowerCase() === 'respondido';
+  const isCerrado = rfi.Status?.toLowerCase() === 'cerrado';
+  
+  // Everyone can respond to pending or responded RFIs (not closed)
+  const canRespond = !isCerrado && !!userEmail;
+  
+  // Everyone can forward pending RFIs
   const canForward = isPending && !!projectId;
-
-  const handleSubmitResponse = async () => {
-    if (!respuesta.trim()) {
-      toast({
-        title: "Error",
-        description: "Debe ingresar una respuesta",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const { error } = await supabase
-        .from('RFI' as any)
-        .update({
-          Respuesta: respuesta,
-          Status: 'Respondido',
-          Fecha_Respuesta: new Date().toISOString(),
-        } as any)
-        .eq('id', rfi.id);
-
-      if (error) throw error;
-
-      // Send response notification to contractor
-      try {
-        const { error: notifError } = await supabase.functions.invoke('send-rfi-response', {
-          body: { 
-            rfiId: rfi.id,
-            respuesta: respuesta
-          }
-        });
-        
-        if (notifError) {
-          console.error('⚠️ Error sending RFI response notification:', notifError);
-        } else {
-          console.log('✅ RFI response notification sent to contractor');
-        }
-      } catch (notifError) {
-        console.error('⚠️ Error sending RFI response notification:', notifError);
-      }
-
-      toast({
-        title: "Respuesta enviada",
-        description: "El RFI ha sido respondido correctamente",
-      });
-
-      onOpenChange(false);
-      onSuccess?.();
-    } catch (error) {
-      console.error('Error submitting response:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo enviar la respuesta",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  
+  // Only the contratista who created the RFI can close it
+  const canClose = isContratista && (isPending || isRespondido) && hasResponses;
 
   const handleForward = async () => {
     if (selectedContactIds.length === 0) {
@@ -194,12 +171,12 @@ export const RFIDetailModal: React.FC<RFIDetailModalProps> = ({
       return;
     }
 
-    setIsSubmitting(true);
+    setIsForwarding(true);
     try {
       const idsToNotify = [...selectedContactIds];
       await addDestinatarios(rfi.id, idsToNotify);
 
-      // Enviar notificación por email a los especialistas seleccionados (fire & forget)
+      // Send notification (fire & forget)
       supabase.functions
         .invoke('send-rfi-notification', {
           body: {
@@ -211,12 +188,7 @@ export const RFIDetailModal: React.FC<RFIDetailModalProps> = ({
         .then(({ error: notifError }) => {
           if (notifError) {
             console.error('⚠️ Error sending RFI forward notification:', notifError);
-          } else {
-            console.log('✅ RFI forward notification sent to specialists');
           }
-        })
-        .catch((notifError) => {
-          console.error('⚠️ Error sending RFI forward notification:', notifError);
         });
 
       toast({
@@ -234,13 +206,47 @@ export const RFIDetailModal: React.FC<RFIDetailModalProps> = ({
         variant: "destructive",
       });
     } finally {
-      setIsSubmitting(false);
+      setIsForwarding(false);
     }
+  };
+
+  const handleCloseRFI = async () => {
+    if (!userEmail) {
+      toast({
+        title: "Error",
+        description: "No se pudo identificar el usuario",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsClosing(true);
+    try {
+      const success = await closeRFIAction({
+        authorEmail: userEmail,
+        authorName: userName,
+      });
+
+      if (success) {
+        onOpenChange(false);
+        onSuccess?.();
+      }
+    } finally {
+      setIsClosing(false);
+    }
+  };
+
+  const handleSendMessage = async (params: Parameters<typeof sendMessage>[0]) => {
+    const success = await sendMessage(params);
+    if (success) {
+      onSuccess?.(); // Refresh parent data
+    }
+    return success;
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <HelpCircle className="h-5 w-5 text-blue-500" />
@@ -259,6 +265,12 @@ export const RFIDetailModal: React.FC<RFIDetailModalProps> = ({
                 <Badge className={`${getUrgenciaColor((rfi as any).Urgencia)} flex items-center gap-1`}>
                   {getUrgenciaIcon((rfi as any).Urgencia)}
                   {getUrgenciaLabel((rfi as any).Urgencia)}
+                </Badge>
+              )}
+              {isCerrado && (
+                <Badge className="bg-gray-100 text-gray-600 border-gray-200 flex items-center gap-1">
+                  <Lock className="h-3 w-3" />
+                  Cerrado
                 </Badge>
               )}
             </div>
@@ -294,7 +306,22 @@ export const RFIDetailModal: React.FC<RFIDetailModalProps> = ({
             </div>
           )}
 
-          {/* Destinatarios (especialistas reenviados) */}
+          {/* Original attachment */}
+          {rfi.URL && (
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground mb-2">Documento original</h3>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(rfi.URL!, '_blank')}
+              >
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Ver documento
+              </Button>
+            </div>
+          )}
+
+          {/* Destinatarios (forwarded specialists) */}
           {destinatarios.length > 0 && (
             <>
               <Separator />
@@ -325,111 +352,113 @@ export const RFIDetailModal: React.FC<RFIDetailModalProps> = ({
 
           <Separator />
 
-          {/* Response */}
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <MessageSquare className="h-4 w-4 text-green-500" />
-              <h3 className="text-sm font-medium text-muted-foreground">Respuesta</h3>
+          {/* Conversation History */}
+          {rfi.id && projectId && (
+            <RFIConversationHistory 
+              rfiId={rfi.id} 
+              projectId={parseInt(projectId)} 
+            />
+          )}
+
+          {/* Legacy response (backwards compatibility) */}
+          {rfi.Respuesta && messages.length === 0 && (
+            <div className="bg-green-50 border border-green-200 p-4 rounded-md">
+              <h4 className="text-sm font-medium text-green-700 mb-2">Respuesta anterior</h4>
+              <p className="text-sm whitespace-pre-wrap">{rfi.Respuesta}</p>
+              {rfi.Fecha_Respuesta && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Respondido el: {new Date(rfi.Fecha_Respuesta).toLocaleDateString('es-CL')}
+                </p>
+              )}
             </div>
+          )}
 
-            {rfi.Respuesta ? (
-              <div className="bg-green-50 border border-green-200 p-3 rounded-md">
-                <p className="text-sm whitespace-pre-wrap">{rfi.Respuesta}</p>
-                {rfi.Fecha_Respuesta && (
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Respondido el: {new Date(rfi.Fecha_Respuesta).toLocaleDateString('es-CL')}
-                  </p>
+          <Separator />
+
+          {/* Response Form (if not closed) */}
+          {canRespond && userEmail && projectId && (
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground mb-3">Agregar respuesta</h3>
+              <RFIResponseForm
+                rfiId={rfi.id}
+                projectId={parseInt(projectId)}
+                authorEmail={userEmail}
+                authorName={userName}
+                authorRole={userRole}
+                onSubmit={handleSendMessage}
+                sending={sending}
+                disabled={isCerrado}
+              />
+            </div>
+          )}
+
+          {/* Closed message */}
+          {isCerrado && (
+            <div className="bg-gray-50 border border-gray-200 p-4 rounded-md text-center">
+              <Lock className="h-6 w-6 mx-auto mb-2 text-gray-400" />
+              <p className="text-sm text-gray-600">
+                Este RFI ha sido cerrado y no permite más respuestas.
+              </p>
+            </div>
+          )}
+
+          {/* Forward section */}
+          {canForward && (
+            <div className="space-y-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowForwardSection(!showForwardSection)}
+                disabled={isForwarding}
+                className="w-full"
+              >
+                <Forward className="h-4 w-4 mr-2" />
+                Reenviar a especialista
+              </Button>
+
+              {showForwardSection && (
+                <div className="border rounded-md p-4 space-y-4">
+                  <ContactoSelector
+                    contactos={contactos}
+                    selectedIds={selectedContactIds}
+                    onSelectionChange={setSelectedContactIds}
+                    loading={contactosLoading}
+                    onAddContacto={addContacto}
+                    projectId={projectId!}
+                  />
+                  <Button
+                    onClick={handleForward}
+                    disabled={isForwarding || selectedContactIds.length === 0}
+                    variant="secondary"
+                    className="w-full"
+                  >
+                    {isForwarding && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    Reenviar RFI ({selectedContactIds.length} seleccionado(s))
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Close RFI button (only for contratista) */}
+          {canClose && (
+            <div className="pt-2">
+              <Button
+                variant="default"
+                onClick={handleCloseRFI}
+                disabled={isClosing}
+                className="w-full bg-green-600 hover:bg-green-700"
+              >
+                {isClosing ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <CheckCircle className="h-4 w-4 mr-2" />
                 )}
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {/* Solo mandante puede responder */}
-                {canRespond && (
-                  <>
-                    <Textarea
-                      value={respuesta}
-                      onChange={(e) => setRespuesta(e.target.value)}
-                      placeholder="Escriba su respuesta aquí..."
-                      className="min-h-[100px]"
-                    />
-                    <Button 
-                      onClick={handleSubmitResponse}
-                      disabled={isSubmitting || !respuesta.trim()}
-                      className="w-full"
-                    >
-                      {isSubmitting ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <Send className="h-4 w-4 mr-2" />
-                      )}
-                      Enviar respuesta
-                    </Button>
-                  </>
-                )}
-
-                {/* Mandante y contratista pueden reenviar */}
-                {canForward && (
-                  <>
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowForwardSection(!showForwardSection)}
-                      disabled={isSubmitting}
-                      className="w-full"
-                    >
-                      <Forward className="h-4 w-4 mr-2" />
-                      Reenviar a especialista
-                    </Button>
-
-                    {showForwardSection && (
-                      <div className="border rounded-md p-4 space-y-4">
-                        <ContactoSelector
-                          contactos={contactos}
-                          selectedIds={selectedContactIds}
-                          onSelectionChange={setSelectedContactIds}
-                          loading={contactosLoading}
-                          onAddContacto={addContacto}
-                          projectId={projectId!}
-                        />
-                        <Button
-                          onClick={handleForward}
-                          disabled={isSubmitting || selectedContactIds.length === 0}
-                          variant="secondary"
-                          className="w-full"
-                        >
-                          {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                          Reenviar RFI ({selectedContactIds.length} seleccionado(s))
-                        </Button>
-                      </div>
-                    )}
-                  </>
-                )}
-
-                {/* Mensaje cuando no hay respuesta y no puede hacer nada */}
-                {!canRespond && !canForward && (
-                  <p className="text-sm text-muted-foreground italic">
-                    Aún no hay respuesta para este RFI
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Attachment */}
-          {rfi.URL && (
-            <>
-              <Separator />
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-2">Documento adjunto</h3>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => window.open(rfi.URL!, '_blank')}
-                >
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  Ver documento
-                </Button>
-              </div>
-            </>
+                Cerrar RFI
+              </Button>
+              <p className="text-xs text-muted-foreground text-center mt-2">
+                Al cerrar el RFI, se notificará a todos los involucrados.
+              </p>
+            </div>
           )}
         </div>
       </DialogContent>

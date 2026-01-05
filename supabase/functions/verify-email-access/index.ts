@@ -169,54 +169,62 @@ const handler = async (req: Request): Promise<Response> => {
         const isSpecialist = !!contacto;
 
         // ===========================================
-        // OBTENER TODOS LOS RFIs PENDIENTES DONDE EL USUARIO ESTÁ INVOLUCRADO
+        // DETERMINAR TIPO DE ACCESO (RFI o Adicional)
         // ===========================================
+        const accessType = rfiId ? 'rfi' : adicionalId ? 'adicional' : 'general';
+        console.log('📋 Tipo de acceso detectado:', accessType);
+
         const authorizedRfiIds: number[] = [];
         const authorizedAdicionalIds: number[] = [];
 
         // El contratista NO puede acceder vía email link a RFIs/Adicionales
         if (emailLower !== contratistaEmail) {
-          // Obtener RFIs pendientes del proyecto
-          const { data: allRfis } = await supabaseAdmin
-            .from('RFI')
-            .select('id')
-            .eq('Proyecto', projectId)
-            .eq('Status', 'Pendiente');
-
-          if (allRfis && allRfis.length > 0) {
-            for (const rfi of allRfis) {
-              // Obtener destinatarios del RFI
-              const { data: destinatarios } = await supabaseAdmin
-                .from('rfi_destinatarios')
-                .select('contacto_id, contactos!inner(email)')
-                .eq('rfi_id', rfi.id);
-
-              const destinatarioEmails = destinatarios?.map((d: any) => 
-                d.contactos?.email?.toLowerCase().trim()
-              ).filter(Boolean) || [];
-
-              // Verificar si el usuario puede acceder a este RFI
-              const canAccessRFI = 
-                emailLower === mandanteEmail || 
-                isApprover || 
-                destinatarioEmails.includes(emailLower);
-
-              if (canAccessRFI) {
-                authorizedRfiIds.push(rfi.id);
-              }
-            }
-          }
-
-          // Obtener Adicionales pendientes del proyecto (solo mandante y aprobadores)
-          if (emailLower === mandanteEmail || isApprover) {
-            const { data: allAdicionales } = await supabaseAdmin
-              .from('Adicionales')
+          
+          // Solo cargar RFIs si el acceso es por RFI o general (mandante)
+          if (accessType === 'rfi' || (accessType === 'general' && (emailLower === mandanteEmail || isApprover))) {
+            const { data: allRfis } = await supabaseAdmin
+              .from('RFI')
               .select('id')
               .eq('Proyecto', projectId)
               .eq('Status', 'Pendiente');
 
-            if (allAdicionales) {
-              authorizedAdicionalIds.push(...allAdicionales.map(a => a.id));
+            if (allRfis && allRfis.length > 0) {
+              for (const rfi of allRfis) {
+                // Obtener destinatarios del RFI
+                const { data: destinatarios } = await supabaseAdmin
+                  .from('rfi_destinatarios')
+                  .select('contacto_id, contactos!inner(email)')
+                  .eq('rfi_id', rfi.id);
+
+                const destinatarioEmails = destinatarios?.map((d: any) => 
+                  d.contactos?.email?.toLowerCase().trim()
+                ).filter(Boolean) || [];
+
+                // Verificar si el usuario puede acceder a este RFI
+                const canAccessRFI = 
+                  emailLower === mandanteEmail || 
+                  isApprover || 
+                  destinatarioEmails.includes(emailLower);
+
+                if (canAccessRFI) {
+                  authorizedRfiIds.push(rfi.id);
+                }
+              }
+            }
+          }
+
+          // Solo cargar Adicionales si el acceso es por Adicional o general (mandante/aprobador)
+          if (accessType === 'adicional' || (accessType === 'general' && (emailLower === mandanteEmail || isApprover))) {
+            if (emailLower === mandanteEmail || isApprover) {
+              const { data: allAdicionales } = await supabaseAdmin
+                .from('Adicionales')
+                .select('id')
+                .eq('Proyecto', projectId)
+                .eq('Status', 'Pendiente');
+
+              if (allAdicionales) {
+                authorizedAdicionalIds.push(...allAdicionales.map(a => a.id));
+              }
             }
           }
         }
@@ -262,8 +270,9 @@ const handler = async (req: Request): Promise<Response> => {
             JSON.stringify({ 
               userType: 'mandante', 
               accessType: isSpecialist ? 'specialist' : 'mandante',
+              viewMode: 'rfi', // Solo mostrar sección de RFIs
               authorizedRfiIds: authorizedRfiIds,
-              authorizedAdicionalIds: authorizedAdicionalIds,
+              authorizedAdicionalIds: [], // No mostrar adicionales cuando accede por RFI
               deepLinkRfiId: rfiId,
               canRespond: true
             }),
@@ -312,7 +321,8 @@ const handler = async (req: Request): Promise<Response> => {
             JSON.stringify({ 
               userType: 'mandante', 
               accessType: 'mandante',
-              authorizedRfiIds: authorizedRfiIds,
+              viewMode: 'adicional', // Solo mostrar sección de Adicionales
+              authorizedRfiIds: [], // No mostrar RFIs cuando accede por Adicional
               authorizedAdicionalIds: authorizedAdicionalIds,
               deepLinkAdicionalId: adicionalId,
               canApprove: true
@@ -330,6 +340,7 @@ const handler = async (req: Request): Promise<Response> => {
             JSON.stringify({ 
               userType: 'mandante', 
               accessType: 'mandante',
+              viewMode: 'general', // Mostrar ambas secciones
               authorizedRfiIds: authorizedRfiIds,
               authorizedAdicionalIds: authorizedAdicionalIds
             }),
@@ -348,6 +359,7 @@ const handler = async (req: Request): Promise<Response> => {
             JSON.stringify({ 
               userType: 'mandante', 
               accessType: 'specialist',
+              viewMode: 'rfi', // Especialistas solo ven RFIs
               authorizedRfiIds: authorizedRfiIds,
               authorizedAdicionalIds: [] // Especialistas no aprueban adicionales
             }),

@@ -182,6 +182,8 @@ const EmailAccess = () => {
           token: finalUserType === 'mandante' ? 'mandante_authenticated' : 
                  finalUserType === 'cc' ? 'cc_authenticated' : 'contratista_authenticated',
           accessToken: token,
+          // Modo de vista: 'rfi', 'adicional', o 'general'
+          viewMode: tokenVerification.viewMode || 'general',
           // Arrays de IDs autorizados
           authorizedRfiIds: tokenVerification.authorizedRfiIds || [],
           authorizedAdicionalIds: tokenVerification.authorizedAdicionalIds || [],

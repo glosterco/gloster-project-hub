@@ -16,10 +16,12 @@ type AccessData = {
   accessToken?: string | null;
   email?: string | null;
   userType?: string | null;
-  rfiId?: string | null;
-  adicionalId?: string | null;
-  authorizedRfiId?: string | null;
-  authorizedAdicionalId?: string | null;
+  // Arrays de IDs autorizados (del backend)
+  authorizedRfiIds?: number[];
+  authorizedAdicionalIds?: number[];
+  // IDs del deep link (para auto-abrir modal)
+  deepLinkRfiId?: string | null;
+  deepLinkAdicionalId?: string | null;
 };
 
 type ProjectLite = {
@@ -122,10 +124,16 @@ const ProjectAccess = () => {
   const isMandante = access?.userType === 'mandante';
   const userEmail = access?.email?.toLowerCase().trim();
   
-  // Determinar si el acceso es a un item específico
-  const authorizedRfiId = access?.authorizedRfiId || urlRfiId;
-  const authorizedAdicionalId = access?.authorizedAdicionalId || urlAdicionalId;
-  const isSpecificItemAccess = !!(authorizedRfiId || authorizedAdicionalId);
+  // Arrays de IDs autorizados (del backend)
+  const authorizedRfiIds = access?.authorizedRfiIds || [];
+  const authorizedAdicionalIds = access?.authorizedAdicionalIds || [];
+  
+  // IDs del deep link para auto-abrir modal
+  const deepLinkRfiId = urlRfiId || access?.deepLinkRfiId;
+  const deepLinkAdicionalId = urlAdicionalId || access?.deepLinkAdicionalId;
+  
+  // Determinar si tiene acceso limitado (solo ciertos items)
+  const hasLimitedAccess = authorizedRfiIds.length > 0 || authorizedAdicionalIds.length > 0;
 
   useEffect(() => {
     const pid = Number(id);
@@ -170,16 +178,17 @@ const ProjectAccess = () => {
         // ========================================
         // FILTRADO DE RFIs BASADO EN PERMISOS
         // ========================================
-        if (authorizedRfiId) {
-          // Acceso a un RFI específico
+        if (authorizedRfiIds.length > 0) {
+          // Cargar solo los RFIs autorizados (pendientes donde el usuario está involucrado)
           const { data: rfiData } = await supabase
             .from("RFI" as any)
             .select("*")
-            .eq("id", authorizedRfiId)
-            .eq("Proyecto", pid);
+            .in("id", authorizedRfiIds)
+            .eq("Proyecto", pid)
+            .order("created_at", { ascending: false });
           setRfis((rfiData as any) || []);
-        } else if (isMandante) {
-          // Mandante puede ver todos los RFIs del proyecto
+        } else if (isMandante && !hasLimitedAccess) {
+          // Mandante con acceso general puede ver todos los RFIs del proyecto
           const { data: rfiData } = await supabase
             .from("RFI" as any)
             .select("*")
@@ -187,23 +196,24 @@ const ProjectAccess = () => {
             .order("created_at", { ascending: false });
           setRfis((rfiData as any) || []);
         } else {
-          // Otros usuarios: no muestran RFIs si no tienen autorización específica
+          // Sin autorización específica
           setRfis([]);
         }
 
         // ========================================
         // FILTRADO DE ADICIONALES BASADO EN PERMISOS
         // ========================================
-        if (authorizedAdicionalId) {
-          // Acceso a un adicional específico
+        if (authorizedAdicionalIds.length > 0) {
+          // Cargar solo los adicionales autorizados (pendientes donde el usuario puede aprobar)
           const { data: adicionalesData } = await supabase
             .from("Adicionales" as any)
             .select("*")
-            .eq("id", authorizedAdicionalId)
-            .eq("Proyecto", pid);
+            .in("id", authorizedAdicionalIds)
+            .eq("Proyecto", pid)
+            .order("created_at", { ascending: false });
           setAdicionales((adicionalesData as any) || []);
-        } else if (isMandante) {
-          // Mandante puede ver todos los adicionales del proyecto
+        } else if (isMandante && !hasLimitedAccess) {
+          // Mandante con acceso general puede ver todos los adicionales del proyecto
           const { data: adicionalesData } = await supabase
             .from("Adicionales" as any)
             .select("*")
@@ -211,12 +221,12 @@ const ProjectAccess = () => {
             .order("created_at", { ascending: false });
           setAdicionales((adicionalesData as any) || []);
         } else {
-          // Otros usuarios: no muestran adicionales si no tienen autorización específica
+          // Sin autorización específica
           setAdicionales([]);
         }
 
-        // Estados de Pago (solo para mandante, lectura solamente)
-        if (isMandante) {
+        // Estados de Pago (solo para mandante con acceso general)
+        if (isMandante && !hasLimitedAccess) {
           const { data: pagosData, error: pagosError } = await supabase
             .from("Estados de pago" as any)
             .select("*")
@@ -235,27 +245,27 @@ const ProjectAccess = () => {
     };
 
     load();
-  }, [id, authorizedRfiId, authorizedAdicionalId, isMandante]);
+  }, [id, authorizedRfiIds, authorizedAdicionalIds, isMandante, hasLimitedAccess]);
 
-  // Deep link: abrir modal automáticamente para RFI
+  // Deep link: abrir modal automáticamente para RFI del deep link
   useEffect(() => {
-    if (!authorizedRfiId || rfis.length === 0) return;
-    const target = rfis.find((r) => r.id === Number(authorizedRfiId));
+    if (!deepLinkRfiId || rfis.length === 0) return;
+    const target = rfis.find((r) => r.id === Number(deepLinkRfiId));
     if (target) {
       setSelectedRFI(target);
       setShowRFIDetailModal(true);
     }
-  }, [authorizedRfiId, rfis]);
+  }, [deepLinkRfiId, rfis]);
 
-  // Deep link: abrir modal automáticamente para Adicional
+  // Deep link: abrir modal automáticamente para Adicional del deep link
   useEffect(() => {
-    if (!authorizedAdicionalId || adicionales.length === 0) return;
-    const target = adicionales.find((a) => a.id === Number(authorizedAdicionalId));
+    if (!deepLinkAdicionalId || adicionales.length === 0) return;
+    const target = adicionales.find((a) => a.id === Number(deepLinkAdicionalId));
     if (target) {
       setSelectedAdicional(target);
       setShowAdicionalModal(true);
     }
-  }, [authorizedAdicionalId, adicionales]);
+  }, [deepLinkAdicionalId, adicionales]);
 
   // Validar acceso
   const hasTokenAccess = useMemo(() => {
@@ -320,7 +330,7 @@ const ProjectAccess = () => {
               </h1>
               <p className="text-xs text-muted-foreground truncate">
                 Acceso por enlace {isMandante ? '(Mandante)' : '(Contratista)'}
-                {isSpecificItemAccess && ' • Acceso limitado'}
+                {hasLimitedAccess && ' • Elementos pendientes'}
               </p>
             </div>
           </div>
@@ -332,14 +342,14 @@ const ProjectAccess = () => {
       </header>
 
       <section className="container mx-auto px-6 py-8 space-y-6">
-        {/* Aviso de acceso limitado */}
-        {isSpecificItemAccess && (
-          <Card className="border-amber-200 bg-amber-50/50">
+        {/* Aviso de acceso limitado con pendientes */}
+        {hasLimitedAccess && (
+          <Card className="border-blue-200 bg-blue-50/50">
             <CardContent className="py-4">
               <div className="flex items-center gap-3">
-                <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
-                <p className="text-sm text-amber-800">
-                  <strong>Acceso limitado:</strong> Solo puede ver y responder el elemento específico al que fue invitado.
+                <AlertTriangle className="h-5 w-5 text-blue-600 shrink-0" />
+                <p className="text-sm text-blue-800">
+                  <strong>Elementos pendientes:</strong> A continuación se muestran los RFIs y adicionales que requieren su respuesta o aprobación.
                 </p>
               </div>
             </CardContent>
@@ -347,7 +357,7 @@ const ProjectAccess = () => {
         )}
 
         {/* Estados de Pago Pendientes Section - Solo para mandante con acceso general */}
-        {estadosPago.length > 0 && !isSpecificItemAccess && (
+        {estadosPago.length > 0 && (
           <Card className="border-amber-200 bg-amber-50/30">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-slate-800 font-rubik">
@@ -413,12 +423,12 @@ const ProjectAccess = () => {
         )}
 
         {/* RFIs Section */}
-        {(rfis.length > 0 || (!isSpecificItemAccess && isMandante)) && (
+        {rfis.length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-slate-800 font-rubik">
                 <HelpCircle className="h-5 w-5" />
-                {isSpecificItemAccess ? 'RFI asignado' : 'RFIs del proyecto'}
+                {hasLimitedAccess ? 'RFIs pendientes de respuesta' : 'RFIs del proyecto'}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -426,7 +436,7 @@ const ProjectAccess = () => {
                 <div className="text-sm text-muted-foreground">Cargando...</div>
               ) : rfis.length === 0 ? (
                 <div className="text-sm text-muted-foreground">
-                  {isSpecificItemAccess ? 'No tiene acceso a RFIs.' : 'No hay RFIs para este proyecto.'}
+                  No hay RFIs pendientes.
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -470,12 +480,12 @@ const ProjectAccess = () => {
         )}
 
         {/* Adicionales Section */}
-        {(adicionales.length > 0 || (!isSpecificItemAccess && isMandante)) && (
+        {adicionales.length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-slate-800 font-rubik">
                 <FileText className="h-5 w-5" />
-                {isSpecificItemAccess ? 'Adicional asignado' : 'Adicionales del proyecto'}
+                {hasLimitedAccess ? 'Adicionales pendientes de aprobación' : 'Adicionales del proyecto'}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -483,7 +493,7 @@ const ProjectAccess = () => {
                 <div className="text-sm text-muted-foreground">Cargando...</div>
               ) : adicionales.length === 0 ? (
                 <div className="text-sm text-muted-foreground">
-                  {isSpecificItemAccess ? 'No tiene acceso a adicionales.' : 'No hay adicionales para este proyecto.'}
+                  No hay adicionales pendientes.
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -542,12 +552,13 @@ const ProjectAccess = () => {
         projectId={id}
         onSuccess={() => {
           const pid = Number(id);
-          if (!Number.isNaN(pid) && authorizedRfiId) {
+          if (!Number.isNaN(pid) && authorizedRfiIds.length > 0) {
             supabase
               .from("RFI" as any)
               .select("*")
-              .eq("id", authorizedRfiId)
+              .in("id", authorizedRfiIds)
               .eq("Proyecto", pid)
+              .order("created_at", { ascending: false })
               .then(({ data }) => setRfis((data as any) || []));
           } else if (!Number.isNaN(pid) && isMandante) {
             supabase
@@ -568,12 +579,13 @@ const ProjectAccess = () => {
         currency={project?.Currency || 'CLP'}
         onSuccess={() => {
           const pid = Number(id);
-          if (!Number.isNaN(pid) && authorizedAdicionalId) {
+          if (!Number.isNaN(pid) && authorizedAdicionalIds.length > 0) {
             supabase
               .from("Adicionales" as any)
               .select("*")
-              .eq("id", authorizedAdicionalId)
+              .in("id", authorizedAdicionalIds)
               .eq("Proyecto", pid)
+              .order("created_at", { ascending: false })
               .then(({ data }) => setAdicionales((data as any) || []));
           } else if (!Number.isNaN(pid) && isMandante) {
             supabase

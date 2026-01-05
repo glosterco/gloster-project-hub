@@ -169,10 +169,72 @@ const handler = async (req: Request): Promise<Response> => {
         const isSpecialist = !!contacto;
 
         // ===========================================
-        // VALIDACIÓN DE ACCESO A RFI ESPECÍFICO
+        // OBTENER TODOS LOS RFIs PENDIENTES DONDE EL USUARIO ESTÁ INVOLUCRADO
+        // ===========================================
+        const authorizedRfiIds: number[] = [];
+        const authorizedAdicionalIds: number[] = [];
+
+        // El contratista NO puede acceder vía email link a RFIs/Adicionales
+        if (emailLower !== contratistaEmail) {
+          // Obtener RFIs pendientes del proyecto
+          const { data: allRfis } = await supabaseAdmin
+            .from('RFI')
+            .select('id')
+            .eq('Proyecto', projectId)
+            .eq('Status', 'Pendiente');
+
+          if (allRfis && allRfis.length > 0) {
+            for (const rfi of allRfis) {
+              // Obtener destinatarios del RFI
+              const { data: destinatarios } = await supabaseAdmin
+                .from('rfi_destinatarios')
+                .select('contacto_id, contactos!inner(email)')
+                .eq('rfi_id', rfi.id);
+
+              const destinatarioEmails = destinatarios?.map((d: any) => 
+                d.contactos?.email?.toLowerCase().trim()
+              ).filter(Boolean) || [];
+
+              // Verificar si el usuario puede acceder a este RFI
+              const canAccessRFI = 
+                emailLower === mandanteEmail || 
+                isApprover || 
+                destinatarioEmails.includes(emailLower);
+
+              if (canAccessRFI) {
+                authorizedRfiIds.push(rfi.id);
+              }
+            }
+          }
+
+          // Obtener Adicionales pendientes del proyecto (solo mandante y aprobadores)
+          if (emailLower === mandanteEmail || isApprover) {
+            const { data: allAdicionales } = await supabaseAdmin
+              .from('Adicionales')
+              .select('id')
+              .eq('Proyecto', projectId)
+              .eq('Status', 'Pendiente');
+
+            if (allAdicionales) {
+              authorizedAdicionalIds.push(...allAdicionales.map(a => a.id));
+            }
+          }
+        }
+
+        // ===========================================
+        // VALIDACIÓN DE ACCESO A RFI ESPECÍFICO (del deep link)
         // ===========================================
         if (rfiId) {
-          // Obtener el RFI para verificar quién puede accederlo
+          // El contratista NO puede acceder a RFIs via deep link
+          if (emailLower === contratistaEmail) {
+            console.log('❌ Contratista (emisor) intentando acceder a RFI - DENEGADO');
+            return new Response(
+              JSON.stringify({ error: ACCESS_DENIED_MESSAGE }),
+              { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+            );
+          }
+
+          // Verificar que el RFI del deep link exista y pertenezca al proyecto
           const { data: rfi } = await supabaseAdmin
             .from('RFI')
             .select('id, Proyecto')
@@ -186,33 +248,8 @@ const handler = async (req: Request): Promise<Response> => {
             );
           }
 
-          // Verificar si el usuario es destinatario del RFI
-          const { data: destinatarios } = await supabaseAdmin
-            .from('rfi_destinatarios')
-            .select('contacto_id, contactos!inner(email)')
-            .eq('rfi_id', rfiId);
-
-          const destinatarioEmails = destinatarios?.map((d: any) => 
-            d.contactos?.email?.toLowerCase().trim()
-          ).filter(Boolean) || [];
-
-          // ===== REGLA CRÍTICA: EL CONTRATISTA (EMISOR) NO PUEDE ACCEDER =====
-          // El contratista envía el RFI, por lo tanto NO debe poder acceder vía token
-          if (emailLower === contratistaEmail) {
-            console.log('❌ Contratista (emisor) intentando acceder a RFI - DENEGADO');
-            return new Response(
-              JSON.stringify({ error: ACCESS_DENIED_MESSAGE }),
-              { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
-            );
-          }
-
-          // Usuarios autorizados para RFI: mandante, aprobadores, especialistas destinatarios
-          const canAccessRFI = 
-            emailLower === mandanteEmail || 
-            isApprover || 
-            destinatarioEmails.includes(emailLower);
-
-          if (!canAccessRFI) {
+          // Si el RFI del deep link no está en la lista autorizada, verificar acceso
+          if (!authorizedRfiIds.includes(parseInt(rfiId))) {
             console.log('❌ Email no autorizado para este RFI');
             return new Response(
               JSON.stringify({ error: ACCESS_DENIED_MESSAGE }),
@@ -220,12 +257,14 @@ const handler = async (req: Request): Promise<Response> => {
             );
           }
 
-          console.log('✅ Acceso a RFI verificado para:', emailLower);
+          console.log('✅ Acceso a RFI verificado para:', emailLower, 'Total RFIs autorizados:', authorizedRfiIds.length);
           return new Response(
             JSON.stringify({ 
               userType: 'mandante', 
               accessType: isSpecialist ? 'specialist' : 'mandante',
-              authorizedRfiId: rfiId,
+              authorizedRfiIds: authorizedRfiIds,
+              authorizedAdicionalIds: authorizedAdicionalIds,
+              deepLinkRfiId: rfiId,
               canRespond: true
             }),
             { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
@@ -233,9 +272,19 @@ const handler = async (req: Request): Promise<Response> => {
         }
 
         // ===========================================
-        // VALIDACIÓN DE ACCESO A ADICIONAL ESPECÍFICO
+        // VALIDACIÓN DE ACCESO A ADICIONAL ESPECÍFICO (del deep link)
         // ===========================================
         if (adicionalId) {
+          // El contratista NO puede acceder a adicionales via deep link
+          if (emailLower === contratistaEmail) {
+            console.log('❌ Contratista (emisor) intentando acceder a adicional - DENEGADO');
+            return new Response(
+              JSON.stringify({ error: ACCESS_DENIED_MESSAGE }),
+              { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+            );
+          }
+
+          // Verificar que el adicional del deep link exista
           const { data: adicional } = await supabaseAdmin
             .from('Adicionales')
             .select('id, Proyecto')
@@ -249,19 +298,8 @@ const handler = async (req: Request): Promise<Response> => {
             );
           }
 
-          // ===== REGLA CRÍTICA: EL CONTRATISTA (EMISOR) NO PUEDE APROBAR SU PROPIO ADICIONAL =====
-          if (emailLower === contratistaEmail) {
-            console.log('❌ Contratista (emisor) intentando acceder a adicional - DENEGADO');
-            return new Response(
-              JSON.stringify({ error: ACCESS_DENIED_MESSAGE }),
-              { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
-            );
-          }
-
-          // Solo mandante y aprobadores pueden acceder a adicionales
-          const canAccessAdicional = emailLower === mandanteEmail || isApprover;
-
-          if (!canAccessAdicional) {
+          // Verificar que el usuario puede acceder a adicionales
+          if (!authorizedAdicionalIds.includes(parseInt(adicionalId))) {
             console.log('❌ Email no autorizado para este adicional');
             return new Response(
               JSON.stringify({ error: ACCESS_DENIED_MESSAGE }),
@@ -269,12 +307,14 @@ const handler = async (req: Request): Promise<Response> => {
             );
           }
 
-          console.log('✅ Acceso a adicional verificado para:', emailLower);
+          console.log('✅ Acceso a adicional verificado para:', emailLower, 'Total adicionales autorizados:', authorizedAdicionalIds.length);
           return new Response(
             JSON.stringify({ 
               userType: 'mandante', 
               accessType: 'mandante',
-              authorizedAdicionalId: adicionalId,
+              authorizedRfiIds: authorizedRfiIds,
+              authorizedAdicionalIds: authorizedAdicionalIds,
+              deepLinkAdicionalId: adicionalId,
               canApprove: true
             }),
             { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
@@ -282,12 +322,17 @@ const handler = async (req: Request): Promise<Response> => {
         }
 
         // ===========================================
-        // ACCESO GENERAL AL PROYECTO (sin item específico)
+        // ACCESO GENERAL AL PROYECTO (sin item específico del deep link)
         // ===========================================
         if (emailLower === mandanteEmail || isApprover) {
-          console.log('✅ Email verificado como MANDANTE/APROBADOR');
+          console.log('✅ Email verificado como MANDANTE/APROBADOR. RFIs autorizados:', authorizedRfiIds.length, 'Adicionales autorizados:', authorizedAdicionalIds.length);
           return new Response(
-            JSON.stringify({ userType: 'mandante', accessType: 'mandante' }),
+            JSON.stringify({ 
+              userType: 'mandante', 
+              accessType: 'mandante',
+              authorizedRfiIds: authorizedRfiIds,
+              authorizedAdicionalIds: authorizedAdicionalIds
+            }),
             { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
           );
         } else if (emailLower === contratistaEmail) {
@@ -298,9 +343,14 @@ const handler = async (req: Request): Promise<Response> => {
             { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
           );
         } else if (isSpecialist) {
-          console.log('✅ Email verificado como ESPECIALISTA');
+          console.log('✅ Email verificado como ESPECIALISTA. RFIs autorizados:', authorizedRfiIds.length);
           return new Response(
-            JSON.stringify({ userType: 'mandante', accessType: 'specialist' }),
+            JSON.stringify({ 
+              userType: 'mandante', 
+              accessType: 'specialist',
+              authorizedRfiIds: authorizedRfiIds,
+              authorizedAdicionalIds: [] // Especialistas no aprueban adicionales
+            }),
             { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
           );
         } else {

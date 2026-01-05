@@ -177,13 +177,17 @@ const EmailAccess = () => {
           email: email,
           userType: finalUserType,
           isRegistered: false,
-          isLimitedAccess: !!(rfiId || adicionalId),
-          hasFullAccess: !(rfiId || adicionalId),
+          isLimitedAccess: tokenVerification.accessType === 'specialist',
+          hasFullAccess: tokenVerification.accessType === 'mandante',
           token: finalUserType === 'mandante' ? 'mandante_authenticated' : 
                  finalUserType === 'cc' ? 'cc_authenticated' : 'contratista_authenticated',
           accessToken: token,
-          authorizedRfiId: tokenVerification.authorizedRfiId || rfiId || null,
-          authorizedAdicionalId: tokenVerification.authorizedAdicionalId || adicionalId || null,
+          // Arrays de IDs autorizados
+          authorizedRfiIds: tokenVerification.authorizedRfiIds || [],
+          authorizedAdicionalIds: tokenVerification.authorizedAdicionalIds || [],
+          // IDs del deep link específico (para scroll/highlight)
+          deepLinkRfiId: tokenVerification.deepLinkRfiId || rfiId || null,
+          deepLinkAdicionalId: tokenVerification.deepLinkAdicionalId || adicionalId || null,
           timestamp: Date.now()
         };
 

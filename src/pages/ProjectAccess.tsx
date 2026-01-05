@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ExternalLink, HelpCircle, FileText, DollarSign, Clock, CheckCircle } from "lucide-react";
+import { ExternalLink, HelpCircle, FileText, DollarSign, Clock, CheckCircle, AlertTriangle } from "lucide-react";
 import { RFIDetailModal } from "@/components/RFIDetailModal";
 import { AdicionalesDetailModal } from "@/components/AdicionalesDetailModal";
 import { formatCurrency } from "@/utils/currencyUtils";
@@ -18,6 +18,8 @@ type AccessData = {
   userType?: string | null;
   rfiId?: string | null;
   adicionalId?: string | null;
+  authorizedRfiId?: string | null;
+  authorizedAdicionalId?: string | null;
 };
 
 type ProjectLite = {
@@ -93,7 +95,6 @@ const ProjectAccess = () => {
 
   const urlRfiId = searchParams.get("rfiId");
   const urlAdicionalId = searchParams.get("adicionalId");
-  const urlPaymentId = searchParams.get("paymentId");
 
   const [project, setProject] = useState<ProjectLite | null>(null);
   const [rfis, setRfis] = useState<RFI[]>([]);
@@ -107,6 +108,7 @@ const ProjectAccess = () => {
   const [selectedAdicional, setSelectedAdicional] = useState<Adicional | null>(null);
   const [showAdicionalModal, setShowAdicionalModal] = useState(false);
 
+  // Access data from session storage
   const access = useMemo<AccessData | null>(() => {
     const raw = sessionStorage.getItem("contractorAccess") || sessionStorage.getItem("mandanteAccess");
     if (!raw) return null;
@@ -116,6 +118,14 @@ const ProjectAccess = () => {
       return null;
     }
   }, []);
+
+  const isMandante = access?.userType === 'mandante';
+  const userEmail = access?.email?.toLowerCase().trim();
+  
+  // Determinar si el acceso es a un item específico
+  const authorizedRfiId = access?.authorizedRfiId || urlRfiId;
+  const authorizedAdicionalId = access?.authorizedAdicionalId || urlAdicionalId;
+  const isSpecificItemAccess = !!(authorizedRfiId || authorizedAdicionalId);
 
   useEffect(() => {
     const pid = Number(id);
@@ -157,71 +167,97 @@ const ProjectAccess = () => {
 
         setProject((projectData as any) || null);
 
-        // Fetch RFIs
-        const { data: rfiData, error: rfiError } = await supabase
-          .from("RFI" as any)
-          .select("*")
-          .eq("Proyecto", pid)
-          .order("created_at", { ascending: false });
-
-        if (rfiError) {
-          console.error("❌ ProjectAccess: error fetching RFI", rfiError);
+        // ========================================
+        // FILTRADO DE RFIs BASADO EN PERMISOS
+        // ========================================
+        if (authorizedRfiId) {
+          // Acceso a un RFI específico
+          const { data: rfiData } = await supabase
+            .from("RFI" as any)
+            .select("*")
+            .eq("id", authorizedRfiId)
+            .eq("Proyecto", pid);
+          setRfis((rfiData as any) || []);
+        } else if (isMandante) {
+          // Mandante puede ver todos los RFIs del proyecto
+          const { data: rfiData } = await supabase
+            .from("RFI" as any)
+            .select("*")
+            .eq("Proyecto", pid)
+            .order("created_at", { ascending: false });
+          setRfis((rfiData as any) || []);
+        } else {
+          // Otros usuarios: no muestran RFIs si no tienen autorización específica
+          setRfis([]);
         }
-        setRfis((rfiData as any) || []);
 
-        // Fetch Adicionales
-        const { data: adicionalesData, error: adicionalesError } = await supabase
-          .from("Adicionales" as any)
-          .select("*")
-          .eq("Proyecto", pid)
-          .order("created_at", { ascending: false });
-
-        if (adicionalesError) {
-          console.error("❌ ProjectAccess: error fetching Adicionales", adicionalesError);
+        // ========================================
+        // FILTRADO DE ADICIONALES BASADO EN PERMISOS
+        // ========================================
+        if (authorizedAdicionalId) {
+          // Acceso a un adicional específico
+          const { data: adicionalesData } = await supabase
+            .from("Adicionales" as any)
+            .select("*")
+            .eq("id", authorizedAdicionalId)
+            .eq("Proyecto", pid);
+          setAdicionales((adicionalesData as any) || []);
+        } else if (isMandante) {
+          // Mandante puede ver todos los adicionales del proyecto
+          const { data: adicionalesData } = await supabase
+            .from("Adicionales" as any)
+            .select("*")
+            .eq("Proyecto", pid)
+            .order("created_at", { ascending: false });
+          setAdicionales((adicionalesData as any) || []);
+        } else {
+          // Otros usuarios: no muestran adicionales si no tienen autorización específica
+          setAdicionales([]);
         }
-        setAdicionales((adicionalesData as any) || []);
 
-        // Fetch Estados de Pago (pending approval)
-        const { data: pagosData, error: pagosError } = await supabase
-          .from("Estados de pago" as any)
-          .select("*")
-          .eq("Project", pid)
-          .in("Status", ["Enviado", "En Revisión"])
-          .order("ExpiryDate", { ascending: true });
+        // Estados de Pago (solo para mandante, lectura solamente)
+        if (isMandante) {
+          const { data: pagosData, error: pagosError } = await supabase
+            .from("Estados de pago" as any)
+            .select("*")
+            .eq("Project", pid)
+            .in("Status", ["Enviado", "En Revisión"])
+            .order("ExpiryDate", { ascending: true });
 
-        if (pagosError) {
-          console.error("❌ ProjectAccess: error fetching Estados de pago", pagosError);
+          if (pagosError) {
+            console.error("❌ ProjectAccess: error fetching Estados de pago", pagosError);
+          }
+          setEstadosPago((pagosData as any) || []);
         }
-        setEstadosPago((pagosData as any) || []);
       } finally {
         setLoading(false);
       }
     };
 
     load();
-  }, [id]);
+  }, [id, authorizedRfiId, authorizedAdicionalId, isMandante]);
 
   // Deep link: abrir modal automáticamente para RFI
   useEffect(() => {
-    if (!urlRfiId || rfis.length === 0) return;
-    const target = rfis.find((r) => r.id === Number(urlRfiId));
+    if (!authorizedRfiId || rfis.length === 0) return;
+    const target = rfis.find((r) => r.id === Number(authorizedRfiId));
     if (target) {
       setSelectedRFI(target);
       setShowRFIDetailModal(true);
     }
-  }, [urlRfiId, rfis]);
+  }, [authorizedRfiId, rfis]);
 
   // Deep link: abrir modal automáticamente para Adicional
   useEffect(() => {
-    if (!urlAdicionalId || adicionales.length === 0) return;
-    const target = adicionales.find((a) => a.id === Number(urlAdicionalId));
+    if (!authorizedAdicionalId || adicionales.length === 0) return;
+    const target = adicionales.find((a) => a.id === Number(authorizedAdicionalId));
     if (target) {
       setSelectedAdicional(target);
       setShowAdicionalModal(true);
     }
-  }, [urlAdicionalId, adicionales]);
+  }, [authorizedAdicionalId, adicionales]);
 
-  // Validar acceso: comparar projectId como string o número
+  // Validar acceso
   const hasTokenAccess = useMemo(() => {
     if (!access?.accessToken) return false;
     const accessProjectId = String(access.projectId);
@@ -229,10 +265,7 @@ const ProjectAccess = () => {
     return accessProjectId === urlProjectId;
   }, [access, id]);
 
-  const isMandante = access?.userType === 'mandante';
-
   const handlePaymentClick = (payment: EstadoPago) => {
-    // Navigate to payment detail page with userType param
     navigate(`/contractor-access/${payment.id}?userType=${access?.userType || 'contractor'}`);
   };
 
@@ -287,6 +320,7 @@ const ProjectAccess = () => {
               </h1>
               <p className="text-xs text-muted-foreground truncate">
                 Acceso por enlace {isMandante ? '(Mandante)' : '(Contratista)'}
+                {isSpecificItemAccess && ' • Acceso limitado'}
               </p>
             </div>
           </div>
@@ -298,8 +332,22 @@ const ProjectAccess = () => {
       </header>
 
       <section className="container mx-auto px-6 py-8 space-y-6">
-        {/* Estados de Pago Pendientes Section */}
-        {estadosPago.length > 0 && (
+        {/* Aviso de acceso limitado */}
+        {isSpecificItemAccess && (
+          <Card className="border-amber-200 bg-amber-50/50">
+            <CardContent className="py-4">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
+                <p className="text-sm text-amber-800">
+                  <strong>Acceso limitado:</strong> Solo puede ver y responder el elemento específico al que fue invitado.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Estados de Pago Pendientes Section - Solo para mandante con acceso general */}
+        {estadosPago.length > 0 && !isSpecificItemAccess && (
           <Card className="border-amber-200 bg-amber-50/30">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-slate-800 font-rubik">
@@ -353,7 +401,7 @@ const ProjectAccess = () => {
                         )}
                         <span className="text-xs text-amber-600 font-medium inline-flex items-center gap-1">
                           <ExternalLink className="h-3.5 w-3.5" />
-                          {isMandante ? 'Revisar y aprobar' : 'Ver detalle'}
+                          Revisar y aprobar
                         </span>
                       </div>
                     </div>
@@ -365,117 +413,125 @@ const ProjectAccess = () => {
         )}
 
         {/* RFIs Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-slate-800 font-rubik">
-              <HelpCircle className="h-5 w-5" />
-              RFIs del proyecto
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="text-sm text-muted-foreground">Cargando...</div>
-            ) : rfis.length === 0 ? (
-              <div className="text-sm text-muted-foreground">No hay RFIs para este proyecto.</div>
-            ) : (
-              <div className="space-y-3">
-                {rfis.map((rfi) => (
-                  <button
-                    key={rfi.id}
-                    type="button"
-                    onClick={() => {
-                      setSelectedRFI(rfi);
-                      setShowRFIDetailModal(true);
-                    }}
-                    className="w-full text-left"
-                  >
-                    <div className="rounded-lg border border-border bg-background p-4 hover:bg-muted/30 transition">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="font-semibold text-slate-800 font-rubik truncate">{rfi.Titulo || `RFI #${rfi.id}`}</p>
-                          {rfi.Descripcion && (
-                            <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{rfi.Descripcion}</p>
-                          )}
+        {(rfis.length > 0 || (!isSpecificItemAccess && isMandante)) && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-slate-800 font-rubik">
+                <HelpCircle className="h-5 w-5" />
+                {isSpecificItemAccess ? 'RFI asignado' : 'RFIs del proyecto'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="text-sm text-muted-foreground">Cargando...</div>
+              ) : rfis.length === 0 ? (
+                <div className="text-sm text-muted-foreground">
+                  {isSpecificItemAccess ? 'No tiene acceso a RFIs.' : 'No hay RFIs para este proyecto.'}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {rfis.map((rfi) => (
+                    <button
+                      key={rfi.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedRFI(rfi);
+                        setShowRFIDetailModal(true);
+                      }}
+                      className="w-full text-left"
+                    >
+                      <div className="rounded-lg border border-border bg-background p-4 hover:bg-muted/30 transition">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="font-semibold text-slate-800 font-rubik truncate">{rfi.Titulo || `RFI #${rfi.id}`}</p>
+                            {rfi.Descripcion && (
+                              <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{rfi.Descripcion}</p>
+                            )}
+                          </div>
+                          <Badge variant="secondary">{rfi.Status || "Pendiente"}</Badge>
                         </div>
-                        <Badge variant="secondary">{rfi.Status || "Pendiente"}</Badge>
+                        <Separator className="my-3" />
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(rfi.created_at).toLocaleDateString("es-CL")}
+                          </span>
+                          <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
+                            <ExternalLink className="h-3.5 w-3.5" />
+                            {isMandante ? 'Ver y responder' : 'Ver detalle'}
+                          </span>
+                        </div>
                       </div>
-                      <Separator className="my-3" />
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(rfi.created_at).toLocaleDateString("es-CL")}
-                        </span>
-                        <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
-                          <ExternalLink className="h-3.5 w-3.5" />
-                          Ver detalle
-                        </span>
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Adicionales Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-slate-800 font-rubik">
-              <FileText className="h-5 w-5" />
-              Adicionales del proyecto
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="text-sm text-muted-foreground">Cargando...</div>
-            ) : adicionales.length === 0 ? (
-              <div className="text-sm text-muted-foreground">No hay adicionales para este proyecto.</div>
-            ) : (
-              <div className="space-y-3">
-                {adicionales.map((adicional) => (
-                  <button
-                    key={adicional.id}
-                    type="button"
-                    onClick={() => {
-                      setSelectedAdicional(adicional);
-                      setShowAdicionalModal(true);
-                    }}
-                    className="w-full text-left"
-                  >
-                    <div className="rounded-lg border border-border bg-background p-4 hover:bg-muted/30 transition">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="font-semibold text-slate-800 font-rubik truncate">
-                            {adicional.Titulo || `Adicional #${adicional.id}`}
-                          </p>
-                          {adicional.Descripcion && (
-                            <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{adicional.Descripcion}</p>
-                          )}
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {adicional.Categoria} {adicional.Especialidad && `• ${adicional.Especialidad}`}
-                          </p>
+        {(adicionales.length > 0 || (!isSpecificItemAccess && isMandante)) && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-slate-800 font-rubik">
+                <FileText className="h-5 w-5" />
+                {isSpecificItemAccess ? 'Adicional asignado' : 'Adicionales del proyecto'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="text-sm text-muted-foreground">Cargando...</div>
+              ) : adicionales.length === 0 ? (
+                <div className="text-sm text-muted-foreground">
+                  {isSpecificItemAccess ? 'No tiene acceso a adicionales.' : 'No hay adicionales para este proyecto.'}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {adicionales.map((adicional) => (
+                    <button
+                      key={adicional.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedAdicional(adicional);
+                        setShowAdicionalModal(true);
+                      }}
+                      className="w-full text-left"
+                    >
+                      <div className="rounded-lg border border-border bg-background p-4 hover:bg-muted/30 transition">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="font-semibold text-slate-800 font-rubik truncate">
+                              {adicional.Titulo || `Adicional #${adicional.id}`}
+                            </p>
+                            {adicional.Descripcion && (
+                              <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{adicional.Descripcion}</p>
+                            )}
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {adicional.Categoria} {adicional.Especialidad && `• ${adicional.Especialidad}`}
+                            </p>
+                          </div>
+                          <Badge variant={adicional.Status === 'Aprobado' ? 'default' : adicional.Status === 'Rechazado' ? 'destructive' : 'secondary'}>
+                            {adicional.Status || "Pendiente"}
+                          </Badge>
                         </div>
-                        <Badge variant={adicional.Status === 'Aprobado' ? 'default' : adicional.Status === 'Rechazado' ? 'destructive' : 'secondary'}>
-                          {adicional.Status || "Pendiente"}
-                        </Badge>
+                        <Separator className="my-3" />
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(adicional.created_at).toLocaleDateString("es-CL")}
+                          </span>
+                          <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
+                            <ExternalLink className="h-3.5 w-3.5" />
+                            {isMandante ? 'Ver y aprobar' : 'Ver detalle'}
+                          </span>
+                        </div>
                       </div>
-                      <Separator className="my-3" />
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(adicional.created_at).toLocaleDateString("es-CL")}
-                        </span>
-                        <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
-                          <ExternalLink className="h-3.5 w-3.5" />
-                          Ver detalle
-                        </span>
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </section>
 
       <RFIDetailModal
@@ -485,9 +541,15 @@ const ProjectAccess = () => {
         isMandante={isMandante}
         projectId={id}
         onSuccess={() => {
-          // Refetch RFIs after action
           const pid = Number(id);
-          if (!Number.isNaN(pid)) {
+          if (!Number.isNaN(pid) && authorizedRfiId) {
+            supabase
+              .from("RFI" as any)
+              .select("*")
+              .eq("id", authorizedRfiId)
+              .eq("Proyecto", pid)
+              .then(({ data }) => setRfis((data as any) || []));
+          } else if (!Number.isNaN(pid) && isMandante) {
             supabase
               .from("RFI" as any)
               .select("*")
@@ -505,9 +567,15 @@ const ProjectAccess = () => {
         isMandante={isMandante}
         currency={project?.Currency || 'CLP'}
         onSuccess={() => {
-          // Refetch Adicionales after action
           const pid = Number(id);
-          if (!Number.isNaN(pid)) {
+          if (!Number.isNaN(pid) && authorizedAdicionalId) {
+            supabase
+              .from("Adicionales" as any)
+              .select("*")
+              .eq("id", authorizedAdicionalId)
+              .eq("Proyecto", pid)
+              .then(({ data }) => setAdicionales((data as any) || []));
+          } else if (!Number.isNaN(pid) && isMandante) {
             supabase
               .from("Adicionales" as any)
               .select("*")

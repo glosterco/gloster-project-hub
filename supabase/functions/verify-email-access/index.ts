@@ -7,13 +7,18 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Mensaje de error unificado para seguridad
+const ACCESS_DENIED_MESSAGE = 'Acceso no autorizado. Verifique que su email corresponda al destinatario del enlace.';
+
 interface VerifyEmailAccessRequest {
   paymentId?: string;
-  contractorId?: string; // Para URLCC
+  contractorId?: string;
   mandanteId?: string;
-  projectId?: string; // Para deep links de adicionales/RFI
+  projectId?: string;
+  rfiId?: string;        // ID específico del RFI para filtrar
+  adicionalId?: string;  // ID específico del adicional para filtrar
   token: string;
-  email?: string; // Añadido para verificación de email CC
+  email?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -22,27 +27,29 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { paymentId, contractorId, mandanteId, projectId, token, email }: VerifyEmailAccessRequest = await req.json();
+    const { 
+      paymentId, contractorId, mandanteId, projectId, 
+      rfiId, adicionalId, token, email 
+    }: VerifyEmailAccessRequest = await req.json();
 
-    console.log('🔍 Inicio de verificación - PaymentId:', paymentId, 'ContractorId:', contractorId, 'MandanteId:', mandanteId, 'ProjectId:', projectId, 'Token:', token, 'Email:', email);
+    console.log('🔍 Verificación de acceso:', { paymentId, contractorId, mandanteId, projectId, rfiId, adicionalId, token: token?.substring(0, 8) + '...', email });
 
+    // Validación básica
     if ((!paymentId && !contractorId && !mandanteId && !projectId) || !token) {
       return new Response(
-        JSON.stringify({ error: 'PaymentId, ContractorId, MandanteId o ProjectId y token son requeridos' }),
+        JSON.stringify({ error: 'Enlace inválido o incompleto.' }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    // Create Supabase client with service role key for admin operations
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    let payment = null;
-    let project = null;
-
+    // ============================================
     // CASO 1: Acceso via URLCC (contractorId)
+    // ============================================
     if (contractorId) {
       console.log('🔍 Verificando acceso CC para contractorId:', contractorId);
       
@@ -54,42 +61,40 @@ const handler = async (req: Request): Promise<Response> => {
 
       if (contractorError || !contractor) {
         return new Response(
-          JSON.stringify({ error: 'Contratista no encontrado' }),
-          { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
-        );
-      }
-
-      if (contractor.URLCC && contractor.URLCC.includes(`token=${token}`)) {
-        console.log('✅ Token CC verificado exitosamente');
-        
-        if (email && contractor.CCEmail && contractor.CCEmail.toLowerCase().trim() === email.toLowerCase().trim()) {
-          console.log('✅ Email CC verificado exitosamente');
-          return new Response(
-            JSON.stringify({ userType: 'cc', accessType: 'cc' }),
-            { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
-          );
-        } else if (!email) {
-          return new Response(
-            JSON.stringify({ userType: 'cc', accessType: 'cc' }),
-            { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
-          );
-        } else {
-          return new Response(
-            JSON.stringify({ error: 'Token o email inválido' }),
-            { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
-          );
-        }
-      } else {
-        return new Response(
-          JSON.stringify({ error: 'Token de acceso inválido' }),
+          JSON.stringify({ error: ACCESS_DENIED_MESSAGE }),
           { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
+
+      if (!contractor.URLCC || !contractor.URLCC.includes(`token=${token}`)) {
+        return new Response(
+          JSON.stringify({ error: ACCESS_DENIED_MESSAGE }),
+          { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+
+      // Verificar email si se proporciona
+      if (email && contractor.CCEmail) {
+        if (contractor.CCEmail.toLowerCase().trim() !== email.toLowerCase().trim()) {
+          return new Response(
+            JSON.stringify({ error: ACCESS_DENIED_MESSAGE }),
+            { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+          );
+        }
+      }
+
+      console.log('✅ Acceso CC verificado');
+      return new Response(
+        JSON.stringify({ userType: 'cc', accessType: 'cc' }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
     }
 
-    // CASO 3: Acceso via projectId (deep links para adicionales/RFI)
+    // ============================================
+    // CASO 2: Acceso via projectId (RFI/Adicionales)
+    // ============================================
     if (projectId) {
-      console.log('🔍 Verificando acceso por projectId:', projectId);
+      console.log('🔍 Verificando acceso por projectId:', projectId, 'rfiId:', rfiId, 'adicionalId:', adicionalId);
       
       const { data: projectData, error: projectError } = await supabaseAdmin
         .from('Proyectos')
@@ -98,49 +103,45 @@ const handler = async (req: Request): Promise<Response> => {
         .single();
 
       if (projectError || !projectData) {
-        console.log('❌ Proyecto no encontrado:', projectError);
+        console.log('❌ Proyecto no encontrado');
         return new Response(
-          JSON.stringify({ error: 'Proyecto no encontrado' }),
-          { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
-        );
-      }
-
-      // Verificar que el token coincida con el URL del proyecto
-      if (projectData.URL !== token) {
-        console.log('❌ Token no coincide con URL del proyecto');
-        console.log('   Token esperado:', projectData.URL);
-        console.log('   Token recibido:', token);
-        return new Response(
-          JSON.stringify({ error: 'Token de acceso inválido' }),
+          JSON.stringify({ error: ACCESS_DENIED_MESSAGE }),
           { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
 
-      console.log('✅ Token de proyecto verificado exitosamente');
+      // Verificar token del proyecto
+      if (projectData.URL !== token) {
+        console.log('❌ Token de proyecto inválido');
+        return new Response(
+          JSON.stringify({ error: ACCESS_DENIED_MESSAGE }),
+          { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
 
-      // Si hay email, verificar que pertenezca al mandante, contratista, aprobador o especialista
+      console.log('✅ Token de proyecto verificado');
+
+      // Si hay email, determinar permisos específicos
       if (email) {
-        // Verificar email del mandante
+        const emailLower = email.toLowerCase().trim();
+        
+        // Obtener datos del proyecto completos
         const { data: mandante } = await supabaseAdmin
           .from('Mandantes')
           .select('ContactEmail')
           .eq('id', projectData.Owner)
           .single();
 
-        const mandanteEmailMatch = mandante?.ContactEmail && 
-          mandante.ContactEmail.toLowerCase().trim() === email.toLowerCase().trim();
-
-        // Verificar email del contratista
         const { data: contractor } = await supabaseAdmin
           .from('Contratistas')
           .select('ContactEmail')
           .eq('id', projectData.Contratista)
           .single();
 
-        const contratistaEmailMatch = contractor?.ContactEmail && 
-          contractor.ContactEmail.toLowerCase().trim() === email.toLowerCase().trim();
+        const mandanteEmail = mandante?.ContactEmail?.toLowerCase().trim();
+        const contratistaEmail = contractor?.ContactEmail?.toLowerCase().trim();
 
-        // Verificar si es aprobador (usando project_approvers)
+        // Verificar si es aprobador
         const { data: approverConfig } = await supabaseAdmin
           .from('project_approval_config')
           .select('id')
@@ -153,36 +154,150 @@ const handler = async (req: Request): Promise<Response> => {
             .from('project_approvers')
             .select('approver_email')
             .eq('config_id', approverConfig.id)
-            .ilike('approver_email', email)
+            .ilike('approver_email', emailLower)
             .maybeSingle();
-          
           isApprover = !!approver;
         }
 
-        // Verificar si es un contacto/especialista del proyecto
+        // Verificar si es especialista (contacto del proyecto)
         const { data: contacto } = await supabaseAdmin
           .from('contactos')
           .select('id, email')
           .eq('proyecto_id', projectId)
-          .ilike('email', email)
+          .ilike('email', emailLower)
           .maybeSingle();
-
         const isSpecialist = !!contacto;
 
-        if (mandanteEmailMatch || isApprover) {
+        // ===========================================
+        // VALIDACIÓN DE ACCESO A RFI ESPECÍFICO
+        // ===========================================
+        if (rfiId) {
+          // Obtener el RFI para verificar quién puede accederlo
+          const { data: rfi } = await supabaseAdmin
+            .from('RFI')
+            .select('id, Proyecto')
+            .eq('id', rfiId)
+            .single();
+
+          if (!rfi || rfi.Proyecto !== parseInt(projectId)) {
+            return new Response(
+              JSON.stringify({ error: ACCESS_DENIED_MESSAGE }),
+              { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+            );
+          }
+
+          // Verificar si el usuario es destinatario del RFI
+          const { data: destinatarios } = await supabaseAdmin
+            .from('rfi_destinatarios')
+            .select('contacto_id, contactos!inner(email)')
+            .eq('rfi_id', rfiId);
+
+          const destinatarioEmails = destinatarios?.map((d: any) => 
+            d.contactos?.email?.toLowerCase().trim()
+          ).filter(Boolean) || [];
+
+          // ===== REGLA CRÍTICA: EL CONTRATISTA (EMISOR) NO PUEDE ACCEDER =====
+          // El contratista envía el RFI, por lo tanto NO debe poder acceder vía token
+          if (emailLower === contratistaEmail) {
+            console.log('❌ Contratista (emisor) intentando acceder a RFI - DENEGADO');
+            return new Response(
+              JSON.stringify({ error: ACCESS_DENIED_MESSAGE }),
+              { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+            );
+          }
+
+          // Usuarios autorizados para RFI: mandante, aprobadores, especialistas destinatarios
+          const canAccessRFI = 
+            emailLower === mandanteEmail || 
+            isApprover || 
+            destinatarioEmails.includes(emailLower);
+
+          if (!canAccessRFI) {
+            console.log('❌ Email no autorizado para este RFI');
+            return new Response(
+              JSON.stringify({ error: ACCESS_DENIED_MESSAGE }),
+              { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+            );
+          }
+
+          console.log('✅ Acceso a RFI verificado para:', emailLower);
+          return new Response(
+            JSON.stringify({ 
+              userType: 'mandante', 
+              accessType: isSpecialist ? 'specialist' : 'mandante',
+              authorizedRfiId: rfiId,
+              canRespond: true
+            }),
+            { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+          );
+        }
+
+        // ===========================================
+        // VALIDACIÓN DE ACCESO A ADICIONAL ESPECÍFICO
+        // ===========================================
+        if (adicionalId) {
+          const { data: adicional } = await supabaseAdmin
+            .from('Adicionales')
+            .select('id, Proyecto')
+            .eq('id', adicionalId)
+            .single();
+
+          if (!adicional || adicional.Proyecto !== parseInt(projectId)) {
+            return new Response(
+              JSON.stringify({ error: ACCESS_DENIED_MESSAGE }),
+              { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+            );
+          }
+
+          // ===== REGLA CRÍTICA: EL CONTRATISTA (EMISOR) NO PUEDE APROBAR SU PROPIO ADICIONAL =====
+          if (emailLower === contratistaEmail) {
+            console.log('❌ Contratista (emisor) intentando acceder a adicional - DENEGADO');
+            return new Response(
+              JSON.stringify({ error: ACCESS_DENIED_MESSAGE }),
+              { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+            );
+          }
+
+          // Solo mandante y aprobadores pueden acceder a adicionales
+          const canAccessAdicional = emailLower === mandanteEmail || isApprover;
+
+          if (!canAccessAdicional) {
+            console.log('❌ Email no autorizado para este adicional');
+            return new Response(
+              JSON.stringify({ error: ACCESS_DENIED_MESSAGE }),
+              { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+            );
+          }
+
+          console.log('✅ Acceso a adicional verificado para:', emailLower);
+          return new Response(
+            JSON.stringify({ 
+              userType: 'mandante', 
+              accessType: 'mandante',
+              authorizedAdicionalId: adicionalId,
+              canApprove: true
+            }),
+            { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+          );
+        }
+
+        // ===========================================
+        // ACCESO GENERAL AL PROYECTO (sin item específico)
+        // ===========================================
+        if (emailLower === mandanteEmail || isApprover) {
           console.log('✅ Email verificado como MANDANTE/APROBADOR');
           return new Response(
             JSON.stringify({ userType: 'mandante', accessType: 'mandante' }),
             { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
           );
-        } else if (contratistaEmailMatch) {
-          console.log('✅ Email verificado como CONTRATISTA');
+        } else if (emailLower === contratistaEmail) {
+          // Contratista puede ver el proyecto pero NO acceder a items específicos via deep link
+          console.log('✅ Email verificado como CONTRATISTA (solo lectura general)');
           return new Response(
-            JSON.stringify({ userType: 'contratista', accessType: 'contratista' }),
+            JSON.stringify({ userType: 'contratista', accessType: 'contratista', readOnly: true }),
             { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
           );
         } else if (isSpecialist) {
-          // Especialistas tienen acceso de lectura para responder RFIs
           console.log('✅ Email verificado como ESPECIALISTA');
           return new Response(
             JSON.stringify({ userType: 'mandante', accessType: 'specialist' }),
@@ -191,20 +306,22 @@ const handler = async (req: Request): Promise<Response> => {
         } else {
           console.log('❌ Email no autorizado para este proyecto');
           return new Response(
-            JSON.stringify({ error: 'Email no autorizado para este proyecto' }),
+            JSON.stringify({ error: ACCESS_DENIED_MESSAGE }),
             { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
           );
         }
       }
 
-      // Sin email, retornar tipo mandante por defecto (para deep links de adicionales/RFI)
+      // Sin email, retornar acceso básico (se requerirá verificación de email)
       return new Response(
-        JSON.stringify({ userType: 'mandante', accessType: 'mandante' }),
+        JSON.stringify({ userType: 'mandante', accessType: 'mandante', requiresEmailVerification: true }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    // CASO 4: Acceso via mandanteId
+    // ============================================
+    // CASO 3: Acceso via mandanteId (CC del mandante)
+    // ============================================
     if (mandanteId) {
       console.log('🔍 Verificando acceso por mandanteId:', mandanteId);
       
@@ -216,203 +333,158 @@ const handler = async (req: Request): Promise<Response> => {
 
       if (mandanteError || !mandante) {
         return new Response(
-          JSON.stringify({ error: 'Mandante no encontrado' }),
-          { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
-        );
-      }
-
-      if (mandante.CC && mandante.CC.includes(`token=${token}`)) {
-        console.log('✅ Token CC de mandante verificado exitosamente');
-        
-        if (email) {
-          if (mandante.ContactEmail && mandante.ContactEmail.toLowerCase().trim() === email.toLowerCase().trim()) {
-            console.log('✅ Email de mandante verificado exitosamente');
-            return new Response(
-              JSON.stringify({ userType: 'mandante', accessType: 'cc' }),
-              { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
-            );
-          } else {
-            return new Response(
-              JSON.stringify({ error: 'Email no autorizado' }),
-              { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
-            );
-          }
-        }
-        
-        return new Response(
-          JSON.stringify({ userType: 'mandante', accessType: 'cc' }),
-          { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
-        );
-      } else {
-        return new Response(
-          JSON.stringify({ error: 'Token de acceso inválido' }),
+          JSON.stringify({ error: ACCESS_DENIED_MESSAGE }),
           { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
-    }
 
-    // CASO 5: Acceso via URLMandante/URLContratista (paymentId)
-    if (!paymentId) {
+      if (!mandante.CC || !mandante.CC.includes(`token=${token}`)) {
+        return new Response(
+          JSON.stringify({ error: ACCESS_DENIED_MESSAGE }),
+          { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+
+      if (email && mandante.ContactEmail) {
+        if (mandante.ContactEmail.toLowerCase().trim() !== email.toLowerCase().trim()) {
+          return new Response(
+            JSON.stringify({ error: ACCESS_DENIED_MESSAGE }),
+            { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+          );
+        }
+      }
+
+      console.log('✅ Acceso CC mandante verificado');
       return new Response(
-        JSON.stringify({ error: 'PaymentId requerido' }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        JSON.stringify({ userType: 'mandante', accessType: 'cc' }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    // Fetch payment data to check token validity
-    const { data: paymentData, error: paymentError } = await supabaseAdmin
-      .from('Estados de pago')
-      .select('URLContratista, URLMandante, Notes, Project')
-      .eq('id', paymentId)
-      .single();
-
-    if (paymentError) {
-      return new Response(
-        JSON.stringify({ error: 'Pago no encontrado' }),
-        { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
-    payment = paymentData;
-
-    // Get project data to find contractor
-    const { data: projectData, error: projectError } = await supabaseAdmin
-      .from('Proyectos')
-      .select('Contratista, Owner')
-      .eq('id', payment.Project)
-      .single();
-
-    if (projectError) {
-      return new Response(
-        JSON.stringify({ error: 'Proyecto no encontrado' }),
-        { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
-    project = projectData;
-
-    let userType = null;
-    let accessType = null; // 'cc', 'mandante', 'contratista'
-
-    // PASO 1: Identificar el tipo de acceso basado en el token
-    if (payment.URLContratista && payment.URLContratista.includes(`token=${token}`)) {
-      console.log('🔍 Token identificado como CONTRATISTA');
-      userType = 'contratista';
-      accessType = 'contratista';
-    } else if (payment.URLMandante && payment.URLMandante.includes(`token=${token}`)) {
-      console.log('🔍 Token identificado como MANDANTE');
-      userType = 'mandante';
-      accessType = 'mandante';
-    } else {
-      // Check if token matches URLCC of the contractor
-      const { data: contractor } = await supabaseAdmin
-        .from('Contratistas')
-        .select('URLCC, CCEmail')
-        .eq('id', project.Contratista)
+    // ============================================
+    // CASO 4: Acceso via paymentId (Estados de pago)
+    // ============================================
+    if (paymentId) {
+      console.log('🔍 Verificando acceso por paymentId:', paymentId);
+      
+      const { data: payment, error: paymentError } = await supabaseAdmin
+        .from('Estados de pago')
+        .select('URLContratista, URLMandante, Notes, Project')
+        .eq('id', paymentId)
         .single();
 
-      console.log('🔍 Verificando URLCC del contratista:', {
-        contractorId: project.Contratista,
-        urlcc: contractor?.URLCC,
-        tokenBuscado: token
-      });
+      if (paymentError || !payment) {
+        return new Response(
+          JSON.stringify({ error: ACCESS_DENIED_MESSAGE }),
+          { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
 
-      if (contractor?.URLCC && contractor.URLCC.includes(`token=${token}`)) {
-        console.log('🔍 Token identificado como CC (URLCC)');
-        userType = 'cc';
-        accessType = 'cc';
-      } else if (payment.Notes && payment.Notes.includes(`CC_TOKEN:${token}`)) {
-        console.log('🔍 Token identificado como CC (Notes)');
-        userType = 'cc';
-        accessType = 'cc';
+      const { data: project } = await supabaseAdmin
+        .from('Proyectos')
+        .select('Contratista, Owner')
+        .eq('id', payment.Project)
+        .single();
+
+      if (!project) {
+        return new Response(
+          JSON.stringify({ error: ACCESS_DENIED_MESSAGE }),
+          { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+
+      let userType: string | null = null;
+      let accessType: string | null = null;
+
+      // Identificar tipo de acceso por token
+      if (payment.URLContratista?.includes(`token=${token}`)) {
+        userType = 'contratista';
+        accessType = 'contratista';
+      } else if (payment.URLMandante?.includes(`token=${token}`)) {
+        userType = 'mandante';
+        accessType = 'mandante';
       } else {
-        console.log('❌ Token no encontrado en URLCC ni en Notes');
-      }
-    }
-
-    // PASO 2: Verificar email según el tipo de acceso identificado
-    if (userType && email) {
-      console.log(`🔍 Verificando email para tipo de acceso: ${accessType}`);
-      
-      if (accessType === 'cc') {
-        // ESCENARIO 2: Verificar CCEmail del contratista
+        // Verificar URLCC del contratista
         const { data: contractor } = await supabaseAdmin
           .from('Contratistas')
-          .select('CCEmail')
+          .select('URLCC, CCEmail')
           .eq('id', project.Contratista)
           .single();
 
-        if (contractor?.CCEmail && contractor.CCEmail.toLowerCase().trim() === email.toLowerCase().trim()) {
-          console.log('✅ Email CC verificado exitosamente');
-        } else {
-          console.log('❌ Email CC no coincide');
-          console.log('    Esperado:', contractor?.CCEmail || 'null');
-          console.log('    Recibido:', email);
-          userType = null;
-        }
-      } else if (accessType === 'mandante') {
-        // ESCENARIO 1: Verificar ContactEmail del mandante, campo CC, O aprobadores del proyecto
-        const { data: mandante } = await supabaseAdmin
-          .from('Mandantes')
-          .select('ContactEmail, CC')
-          .eq('id', project.Owner)
-          .single();
-
-        const contactEmailMatch = mandante?.ContactEmail && mandante.ContactEmail.toLowerCase().trim() === email.toLowerCase().trim();
-        const ccEmailMatch = mandante?.CC && mandante.CC.toLowerCase().trim() === email.toLowerCase().trim();
-
-        // NUEVO: Verificar si el email está en la lista de aprobadores del proyecto
-        const { data: approverAccess } = await supabaseAdmin
-          .rpc('verify_approver_email_access', { 
-            payment_id: parseInt(paymentId),
-            user_email: email 
-          });
-
-        if (contactEmailMatch || ccEmailMatch || approverAccess) {
-          console.log('✅ Email MANDANTE/APROBADOR verificado exitosamente');
-        } else {
-          console.log('❌ Email MANDANTE/APROBADOR no coincide');
-          console.log('    ContactEmail esperado:', mandante?.ContactEmail || 'null');
-          console.log('    CC esperado:', mandante?.CC || 'null');
-          console.log('    Es aprobador:', approverAccess);
-          console.log('    Recibido:', email);
-          userType = null;
-        }
-      } else if (accessType === 'contratista') {
-        // ESCENARIO 3: Verificar ContactEmail del contratista
-        const { data: contractor } = await supabaseAdmin
-          .from('Contratistas')
-          .select('ContactEmail')
-          .eq('id', project.Contratista)
-          .single();
-
-        if (contractor?.ContactEmail && contractor.ContactEmail.toLowerCase().trim() === email.toLowerCase().trim()) {
-          console.log('✅ Email CONTRATISTA verificado exitosamente');
-        } else {
-          console.log('❌ Email CONTRATISTA no coincide');
-          console.log('    Esperado:', contractor?.ContactEmail || 'null');
-          console.log('    Recibido:', email);
-          userType = null;
+        if (contractor?.URLCC?.includes(`token=${token}`)) {
+          userType = 'cc';
+          accessType = 'cc';
+        } else if (payment.Notes?.includes(`CC_TOKEN:${token}`)) {
+          userType = 'cc';
+          accessType = 'cc';
         }
       }
-    }
 
-    if (!userType) {
+      if (!userType) {
+        return new Response(
+          JSON.stringify({ error: ACCESS_DENIED_MESSAGE }),
+          { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+
+      // Verificar email si se proporciona
+      if (email) {
+        let emailValid = false;
+
+        if (accessType === 'cc') {
+          const { data: contractor } = await supabaseAdmin
+            .from('Contratistas')
+            .select('CCEmail')
+            .eq('id', project.Contratista)
+            .single();
+          emailValid = contractor?.CCEmail?.toLowerCase().trim() === email.toLowerCase().trim();
+        } else if (accessType === 'mandante') {
+          const { data: mandante } = await supabaseAdmin
+            .from('Mandantes')
+            .select('ContactEmail')
+            .eq('id', project.Owner)
+            .single();
+          
+          const { data: approverAccess } = await supabaseAdmin
+            .rpc('verify_approver_email_access', { 
+              payment_id: parseInt(paymentId),
+              user_email: email 
+            });
+
+          emailValid = mandante?.ContactEmail?.toLowerCase().trim() === email.toLowerCase().trim() || approverAccess;
+        } else if (accessType === 'contratista') {
+          const { data: contractor } = await supabaseAdmin
+            .from('Contratistas')
+            .select('ContactEmail')
+            .eq('id', project.Contratista)
+            .single();
+          emailValid = contractor?.ContactEmail?.toLowerCase().trim() === email.toLowerCase().trim();
+        }
+
+        if (!emailValid) {
+          return new Response(
+            JSON.stringify({ error: ACCESS_DENIED_MESSAGE }),
+            { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+          );
+        }
+      }
+
+      console.log('✅ Acceso a payment verificado:', userType);
       return new Response(
-        JSON.stringify({ error: 'Token o email inválido' }),
-        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        JSON.stringify({ userType, accessType }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
     return new Response(
-      JSON.stringify({ userType, accessType }),
-      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      JSON.stringify({ error: ACCESS_DENIED_MESSAGE }),
+      { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
 
   } catch (error) {
-    console.error('Error in verify-email-access function:', error);
+    console.error('Error en verify-email-access:', error);
     return new Response(
-      JSON.stringify({ error: 'Error interno del servidor' }),
+      JSON.stringify({ error: 'Error interno del servidor.' }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }

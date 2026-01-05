@@ -16,6 +16,8 @@ type AccessData = {
   accessToken?: string | null;
   email?: string | null;
   userType?: string | null;
+  // Modo de vista: 'rfi' = solo RFIs, 'adicional' = solo adicionales, 'general' = ambos
+  viewMode?: 'rfi' | 'adicional' | 'general';
   // Arrays de IDs autorizados (del backend)
   authorizedRfiIds?: number[];
   authorizedAdicionalIds?: number[];
@@ -132,8 +134,12 @@ const ProjectAccess = () => {
   const deepLinkRfiId = urlRfiId || access?.deepLinkRfiId;
   const deepLinkAdicionalId = urlAdicionalId || access?.deepLinkAdicionalId;
   
-  // Determinar si tiene acceso limitado (solo ciertos items)
-  const hasLimitedAccess = authorizedRfiIds.length > 0 || authorizedAdicionalIds.length > 0;
+  // Modo de vista: determina qué secciones mostrar
+  const viewMode = access?.viewMode || 'general';
+  
+  // Determinar si mostrar cada sección basado en viewMode
+  const showRfiSection = viewMode === 'rfi' || viewMode === 'general';
+  const showAdicionalesSection = viewMode === 'adicional' || viewMode === 'general';
 
   useEffect(() => {
     const pid = Number(id);
@@ -176,10 +182,10 @@ const ProjectAccess = () => {
         setProject((projectData as any) || null);
 
         // ========================================
-        // FILTRADO DE RFIs BASADO EN PERMISOS
+        // FILTRADO DE RFIs BASADO EN PERMISOS Y viewMode
         // ========================================
-        if (authorizedRfiIds.length > 0) {
-          // Cargar solo los RFIs autorizados (pendientes donde el usuario está involucrado)
+        if (showRfiSection && authorizedRfiIds.length > 0) {
+          // Cargar solo los RFIs autorizados
           const { data: rfiData } = await supabase
             .from("RFI" as any)
             .select("*")
@@ -187,24 +193,24 @@ const ProjectAccess = () => {
             .eq("Proyecto", pid)
             .order("created_at", { ascending: false });
           setRfis((rfiData as any) || []);
-        } else if (isMandante && !hasLimitedAccess) {
+        } else if (showRfiSection && isMandante && viewMode === 'general') {
           // Mandante con acceso general puede ver todos los RFIs del proyecto
           const { data: rfiData } = await supabase
             .from("RFI" as any)
             .select("*")
             .eq("Proyecto", pid)
+            .eq("Status", "Pendiente")
             .order("created_at", { ascending: false });
           setRfis((rfiData as any) || []);
         } else {
-          // Sin autorización específica
           setRfis([]);
         }
 
         // ========================================
-        // FILTRADO DE ADICIONALES BASADO EN PERMISOS
+        // FILTRADO DE ADICIONALES BASADO EN PERMISOS Y viewMode
         // ========================================
-        if (authorizedAdicionalIds.length > 0) {
-          // Cargar solo los adicionales autorizados (pendientes donde el usuario puede aprobar)
+        if (showAdicionalesSection && authorizedAdicionalIds.length > 0) {
+          // Cargar solo los adicionales autorizados
           const { data: adicionalesData } = await supabase
             .from("Adicionales" as any)
             .select("*")
@@ -212,21 +218,21 @@ const ProjectAccess = () => {
             .eq("Proyecto", pid)
             .order("created_at", { ascending: false });
           setAdicionales((adicionalesData as any) || []);
-        } else if (isMandante && !hasLimitedAccess) {
+        } else if (showAdicionalesSection && isMandante && viewMode === 'general') {
           // Mandante con acceso general puede ver todos los adicionales del proyecto
           const { data: adicionalesData } = await supabase
             .from("Adicionales" as any)
             .select("*")
             .eq("Proyecto", pid)
+            .eq("Status", "Pendiente")
             .order("created_at", { ascending: false });
           setAdicionales((adicionalesData as any) || []);
         } else {
-          // Sin autorización específica
           setAdicionales([]);
         }
 
         // Estados de Pago (solo para mandante con acceso general)
-        if (isMandante && !hasLimitedAccess) {
+        if (isMandante && viewMode === 'general') {
           const { data: pagosData, error: pagosError } = await supabase
             .from("Estados de pago" as any)
             .select("*")
@@ -245,7 +251,7 @@ const ProjectAccess = () => {
     };
 
     load();
-  }, [id, authorizedRfiIds, authorizedAdicionalIds, isMandante, hasLimitedAccess]);
+  }, [id, authorizedRfiIds, authorizedAdicionalIds, isMandante, viewMode, showRfiSection, showAdicionalesSection]);
 
   // Deep link: abrir modal automáticamente para RFI del deep link
   useEffect(() => {
@@ -330,7 +336,8 @@ const ProjectAccess = () => {
               </h1>
               <p className="text-xs text-muted-foreground truncate">
                 Acceso por enlace {isMandante ? '(Mandante)' : '(Contratista)'}
-                {hasLimitedAccess && ' • Elementos pendientes'}
+                {viewMode === 'rfi' && ' • RFIs pendientes'}
+                {viewMode === 'adicional' && ' • Adicionales pendientes'}
               </p>
             </div>
           </div>
@@ -342,14 +349,19 @@ const ProjectAccess = () => {
       </header>
 
       <section className="container mx-auto px-6 py-8 space-y-6">
-        {/* Aviso de acceso limitado con pendientes */}
-        {hasLimitedAccess && (
+        {/* Aviso de acceso específico */}
+        {viewMode !== 'general' && (
           <Card className="border-blue-200 bg-blue-50/50">
             <CardContent className="py-4">
               <div className="flex items-center gap-3">
                 <AlertTriangle className="h-5 w-5 text-blue-600 shrink-0" />
                 <p className="text-sm text-blue-800">
-                  <strong>Elementos pendientes:</strong> A continuación se muestran los RFIs y adicionales que requieren su respuesta o aprobación.
+                  {viewMode === 'rfi' && (
+                    <><strong>RFIs pendientes:</strong> A continuación se muestran los RFIs que requieren su respuesta.</>
+                  )}
+                  {viewMode === 'adicional' && (
+                    <><strong>Adicionales pendientes:</strong> A continuación se muestran los adicionales que requieren su aprobación.</>
+                  )}
                 </p>
               </div>
             </CardContent>
@@ -357,7 +369,7 @@ const ProjectAccess = () => {
         )}
 
         {/* Estados de Pago Pendientes Section - Solo para mandante con acceso general */}
-        {estadosPago.length > 0 && (
+        {viewMode === 'general' && estadosPago.length > 0 && (
           <Card className="border-amber-200 bg-amber-50/30">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-slate-800 font-rubik">
@@ -422,13 +434,13 @@ const ProjectAccess = () => {
           </Card>
         )}
 
-        {/* RFIs Section */}
-        {rfis.length > 0 && (
+        {/* RFIs Section - Solo si viewMode es 'rfi' o 'general' */}
+        {showRfiSection && rfis.length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-slate-800 font-rubik">
                 <HelpCircle className="h-5 w-5" />
-                {hasLimitedAccess ? 'RFIs pendientes de respuesta' : 'RFIs del proyecto'}
+                {viewMode === 'rfi' ? 'RFIs pendientes de respuesta' : 'RFIs del proyecto'}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -479,13 +491,13 @@ const ProjectAccess = () => {
           </Card>
         )}
 
-        {/* Adicionales Section */}
-        {adicionales.length > 0 && (
+        {/* Adicionales Section - Solo si viewMode es 'adicional' o 'general' */}
+        {showAdicionalesSection && adicionales.length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-slate-800 font-rubik">
                 <FileText className="h-5 w-5" />
-                {hasLimitedAccess ? 'Adicionales pendientes de aprobación' : 'Adicionales del proyecto'}
+                {viewMode === 'adicional' ? 'Adicionales pendientes de aprobación' : 'Adicionales del proyecto'}
               </CardTitle>
             </CardHeader>
             <CardContent>

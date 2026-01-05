@@ -247,44 +247,63 @@ const handler = async (req: Request): Promise<Response> => {
 
       // Handle attachments if any
       if (data.attachments && data.attachments.length > 0) {
-        const rfiFolderId = extractFolderId(project.URL_RFI || '');
+        console.log('📎 Processing attachments:', data.attachments.length);
         
-        if (!rfiFolderId) {
-          throw new Error('Project RFI folder not configured');
-        }
-
-        const accessToken = await getAccessToken();
-
-        if (data.attachments.length === 1) {
-          // Single file: upload directly to RFI folder
-          const file = data.attachments[0];
-          const result = await uploadFileToDrive(
-            accessToken,
-            rfiFolderId,
-            file.fileName,
-            file.fileContent,
-            file.mimeType
-          );
-          attachmentsUrl = result.webViewLink;
-          console.log('✅ Single file uploaded:', result.webViewLink);
+        const rfiFolderUrl = project.URL_RFI;
+        
+        if (!rfiFolderUrl) {
+          console.log('⚠️ Project URL_RFI not configured, skipping attachments');
+          // Continue without attachments - don't block the message
         } else {
-          // Multiple files: create subfolder
-          const folderName = `RFI-${data.rfiId}_${new Date().toISOString().slice(0, 10)}_${Date.now()}`;
-          const folder = await createDriveFolder(accessToken, rfiFolderId, folderName);
+          const rfiFolderId = extractFolderId(rfiFolderUrl);
           
-          // Upload all files to subfolder
-          for (const file of data.attachments) {
-            await uploadFileToDrive(
-              accessToken,
-              folder.id,
-              file.fileName,
-              file.fileContent,
-              file.mimeType
-            );
+          if (!rfiFolderId) {
+            console.log('⚠️ Could not extract folder ID from URL_RFI:', rfiFolderUrl);
+            // Continue without attachments
+          } else {
+            try {
+              const accessToken = await getAccessToken();
+              console.log('✅ Got access token for Drive');
+
+              if (data.attachments.length === 1) {
+                // Single file: upload directly to RFI folder
+                const file = data.attachments[0];
+                console.log('📁 Uploading single file:', file.fileName);
+                const result = await uploadFileToDrive(
+                  accessToken,
+                  rfiFolderId,
+                  file.fileName,
+                  file.fileContent,
+                  file.mimeType
+                );
+                attachmentsUrl = result.webViewLink;
+                console.log('✅ Single file uploaded:', result.webViewLink);
+              } else {
+                // Multiple files: create subfolder
+                const folderName = `RFI-${data.rfiId}_${new Date().toISOString().slice(0, 10)}_${Date.now()}`;
+                console.log('📂 Creating subfolder:', folderName);
+                const folder = await createDriveFolder(accessToken, rfiFolderId, folderName);
+                
+                // Upload all files to subfolder
+                for (const file of data.attachments) {
+                  console.log('📁 Uploading file to subfolder:', file.fileName);
+                  await uploadFileToDrive(
+                    accessToken,
+                    folder.id,
+                    file.fileName,
+                    file.fileContent,
+                    file.mimeType
+                  );
+                }
+                
+                attachmentsUrl = folder.webViewLink;
+                console.log('✅ Multiple files uploaded to folder:', folder.webViewLink);
+              }
+            } catch (uploadError: any) {
+              console.error('⚠️ Error uploading attachments:', uploadError.message);
+              // Continue without attachments - don't fail the whole message
+            }
           }
-          
-          attachmentsUrl = folder.webViewLink;
-          console.log('✅ Multiple files uploaded to folder:', folder.webViewLink);
         }
       }
 

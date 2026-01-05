@@ -145,8 +145,8 @@ export const RFIDetailModal: React.FC<RFIDetailModalProps> = ({
   // Everyone can respond to pending or responded RFIs (not closed)
   const canRespond = !isCerrado && !!userEmail;
   
-  // Everyone can forward pending RFIs
-  const canForward = isPending && !!projectId;
+  // Everyone can forward RFIs that are not closed (pending or respondido)
+  const canForward = !isCerrado && !!projectId;
   
   // Only the contratista who created the RFI can close it
   const canClose = isContratista && (isPending || isRespondido) && hasResponses;

@@ -985,8 +985,10 @@ export type Database = {
           StartDate: string | null
           Status: boolean | null
           URL: string | null
+          URL_Ad: string | null
           URL_docs: string | null
           URL_Fotos: string | null
+          URL_RFI: string | null
           Utilidades: number | null
         }
         Insert: {
@@ -1006,8 +1008,10 @@ export type Database = {
           StartDate?: string | null
           Status?: boolean | null
           URL?: string | null
+          URL_Ad?: string | null
           URL_docs?: string | null
           URL_Fotos?: string | null
+          URL_RFI?: string | null
           Utilidades?: number | null
         }
         Update: {
@@ -1027,8 +1031,10 @@ export type Database = {
           StartDate?: string | null
           Status?: boolean | null
           URL?: string | null
+          URL_Ad?: string | null
           URL_docs?: string | null
           URL_Fotos?: string | null
+          URL_RFI?: string | null
           Utilidades?: number | null
         }
         Relationships: [

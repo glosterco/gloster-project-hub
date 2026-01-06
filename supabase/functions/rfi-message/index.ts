@@ -135,6 +135,60 @@ function extractFolderId(url: string): string | null {
   return match ? match[1] : null;
 }
 
+// Create RFI subfolder if it doesn't exist
+async function ensureRFIFolder(
+  accessToken: string,
+  projectId: number,
+  projectName: string,
+  projectUrl: string | null
+): Promise<string | null> {
+  try {
+    let parentFolderId: string | null = null;
+    
+    // Try to get parent folder from project URL
+    if (projectUrl) {
+      // Check if projectUrl is already a folder ID (no slashes, just alphanumeric with hyphens/underscores)
+      if (/^[a-zA-Z0-9_-]+$/.test(projectUrl)) {
+        parentFolderId = projectUrl;
+        console.log('📁 Project URL is a direct folder ID:', parentFolderId);
+      } else {
+        // It's a full URL, extract the folder ID
+        parentFolderId = extractFolderId(projectUrl);
+        console.log('📁 Extracted folder ID from URL:', parentFolderId);
+      }
+    }
+    
+    if (!parentFolderId) {
+      console.log('⚠️ No parent folder found for project, cannot create RFI subfolder');
+      return null;
+    }
+    
+    console.log('📁 Creating RFI subfolder for project:', projectId);
+    
+    // Create RFI subfolder
+    const folder = await createDriveFolder(accessToken, parentFolderId, 'RFI');
+    
+    console.log('✅ RFI folder created:', folder.webViewLink);
+    
+    // Update project with RFI folder URL
+    const { error: updateError } = await supabase
+      .from('Proyectos')
+      .update({ URL_RFI: folder.webViewLink })
+      .eq('id', projectId);
+    
+    if (updateError) {
+      console.error('⚠️ Error updating project URL_RFI:', updateError.message);
+    } else {
+      console.log('✅ Project URL_RFI updated');
+    }
+    
+    return folder.id;
+  } catch (error: any) {
+    console.error('❌ Error creating RFI folder:', error.message);
+    return null;
+  }
+}
+
 // Send notification emails for new message
 async function sendMessageNotification(
   rfiId: number,
@@ -235,7 +289,7 @@ const handler = async (req: Request): Promise<Response> => {
       // Fetch project for RFI folder URL
       const { data: project, error: projectError } = await supabase
         .from('Proyectos')
-        .select('URL_RFI, Name')
+        .select('URL_RFI, Name, URL')
         .eq('id', projectId)
         .single();
 
@@ -249,60 +303,74 @@ const handler = async (req: Request): Promise<Response> => {
       if (data.attachments && data.attachments.length > 0) {
         console.log('📎 Processing attachments:', data.attachments.length);
         
-        const rfiFolderUrl = project.URL_RFI;
+        let rfiFolderId: string | null = null;
         
-        if (!rfiFolderUrl) {
-          console.log('⚠️ Project URL_RFI not configured, skipping attachments');
+        // Try to get existing RFI folder
+        if (project.URL_RFI) {
+          rfiFolderId = extractFolderId(project.URL_RFI);
+        }
+        
+        // If no RFI folder exists, try to create it
+        if (!rfiFolderId) {
+          console.log('⚠️ Project URL_RFI not configured, attempting to create...');
+          try {
+            const accessToken = await getAccessToken();
+            rfiFolderId = await ensureRFIFolder(
+              accessToken, 
+              projectId, 
+              project.Name || `Proyecto_${projectId}`,
+              project.URL
+            );
+          } catch (tokenError: any) {
+            console.error('⚠️ Could not get token to create RFI folder:', tokenError.message);
+          }
+        }
+        
+        if (!rfiFolderId) {
+          console.log('⚠️ Could not get or create RFI folder, skipping attachments');
           // Continue without attachments - don't block the message
         } else {
-          const rfiFolderId = extractFolderId(rfiFolderUrl);
-          
-          if (!rfiFolderId) {
-            console.log('⚠️ Could not extract folder ID from URL_RFI:', rfiFolderUrl);
-            // Continue without attachments
-          } else {
-            try {
-              const accessToken = await getAccessToken();
-              console.log('✅ Got access token for Drive');
+          try {
+            const accessToken = await getAccessToken();
+            console.log('✅ Got access token for Drive');
 
-              if (data.attachments.length === 1) {
-                // Single file: upload directly to RFI folder
-                const file = data.attachments[0];
-                console.log('📁 Uploading single file:', file.fileName);
-                const result = await uploadFileToDrive(
+            if (data.attachments.length === 1) {
+              // Single file: upload directly to RFI folder
+              const file = data.attachments[0];
+              console.log('📁 Uploading single file:', file.fileName);
+              const result = await uploadFileToDrive(
+                accessToken,
+                rfiFolderId,
+                file.fileName,
+                file.fileContent,
+                file.mimeType
+              );
+              attachmentsUrl = result.webViewLink;
+              console.log('✅ Single file uploaded:', result.webViewLink);
+            } else {
+              // Multiple files: create subfolder
+              const folderName = `RFI-${data.rfiId}_${new Date().toISOString().slice(0, 10)}_${Date.now()}`;
+              console.log('📂 Creating subfolder:', folderName);
+              const folder = await createDriveFolder(accessToken, rfiFolderId, folderName);
+              
+              // Upload all files to subfolder
+              for (const file of data.attachments) {
+                console.log('📁 Uploading file to subfolder:', file.fileName);
+                await uploadFileToDrive(
                   accessToken,
-                  rfiFolderId,
+                  folder.id,
                   file.fileName,
                   file.fileContent,
                   file.mimeType
                 );
-                attachmentsUrl = result.webViewLink;
-                console.log('✅ Single file uploaded:', result.webViewLink);
-              } else {
-                // Multiple files: create subfolder
-                const folderName = `RFI-${data.rfiId}_${new Date().toISOString().slice(0, 10)}_${Date.now()}`;
-                console.log('📂 Creating subfolder:', folderName);
-                const folder = await createDriveFolder(accessToken, rfiFolderId, folderName);
-                
-                // Upload all files to subfolder
-                for (const file of data.attachments) {
-                  console.log('📁 Uploading file to subfolder:', file.fileName);
-                  await uploadFileToDrive(
-                    accessToken,
-                    folder.id,
-                    file.fileName,
-                    file.fileContent,
-                    file.mimeType
-                  );
-                }
-                
-                attachmentsUrl = folder.webViewLink;
-                console.log('✅ Multiple files uploaded to folder:', folder.webViewLink);
               }
-            } catch (uploadError: any) {
-              console.error('⚠️ Error uploading attachments:', uploadError.message);
-              // Continue without attachments - don't fail the whole message
+              
+              attachmentsUrl = folder.webViewLink;
+              console.log('✅ Multiple files uploaded to folder:', folder.webViewLink);
             }
+          } catch (uploadError: any) {
+            console.error('⚠️ Error uploading attachments:', uploadError.message);
+            // Continue without attachments - don't fail the whole message
           }
         }
       }

@@ -1,19 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React from 'react';
 import { 
   MessageSquare, 
   User, 
   Calendar, 
-  Paperclip, 
-  Download,
-  Folder,
-  FileText,
   Loader2,
-  ExternalLink
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { RFIMessage, AttachmentFile, useRFIMessages } from '@/hooks/useRFIMessages';
+import { useRFIMessages } from '@/hooks/useRFIMessages';
+import { RFIAttachmentViewer } from './RFIAttachmentViewer';
 
 interface RFIConversationHistoryProps {
   rfiId: number;
@@ -50,128 +45,11 @@ const getRoleLabel = (role: string) => {
   }
 };
 
-const formatFileSize = (bytes: number | null): string => {
-  if (!bytes) return '';
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-};
-
-const MessageAttachments: React.FC<{
-  attachmentsUrl: string;
-  getAttachmentFiles: (url: string) => Promise<AttachmentFile[]>;
-}> = ({ attachmentsUrl, getAttachmentFiles }) => {
-  const [files, setFiles] = useState<AttachmentFile[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isFolder, setIsFolder] = useState(false);
-  const loadedRef = useRef(false);
-
-  useEffect(() => {
-    if (loadedRef.current) return;
-    loadedRef.current = true;
-
-    const load = async () => {
-      const result = await getAttachmentFiles(attachmentsUrl);
-      setFiles(result);
-      setIsFolder(attachmentsUrl.includes('/folders/'));
-      setLoading(false);
-    };
-    load();
-  }, [attachmentsUrl, getAttachmentFiles]);
-
-  if (loading) {
-    return (
-      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2">
-        <Loader2 className="h-3 w-3 animate-spin" />
-        Cargando adjuntos...
-      </div>
-    );
-  }
-
-  if (files.length === 0) {
-    return (
-      <div className="mt-2">
-        <a 
-          href={attachmentsUrl} 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:underline"
-        >
-          <Paperclip className="h-3 w-3" />
-          Ver adjunto
-          <ExternalLink className="h-3 w-3" />
-        </a>
-      </div>
-    );
-  }
-
-  return (
-    <div className="mt-3 space-y-2">
-      <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-        {isFolder ? <Folder className="h-3.5 w-3.5" /> : <Paperclip className="h-3.5 w-3.5" />}
-        {isFolder ? `${files.length} archivos adjuntos` : 'Archivo adjunto'}
-      </div>
-      
-      <div className="space-y-1.5">
-        {files.map((file) => (
-          <div 
-            key={file.id}
-            className="flex items-center justify-between gap-2 p-2 bg-muted/50 rounded-md text-xs"
-          >
-            <div className="flex items-center gap-2 min-w-0">
-              <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-              <span className="truncate">{file.name}</span>
-              {file.size && (
-                <span className="text-muted-foreground shrink-0">
-                  ({formatFileSize(file.size)})
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-1 shrink-0">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 px-2"
-                onClick={() => window.open(file.webViewLink, '_blank')}
-              >
-                <ExternalLink className="h-3 w-3" />
-              </Button>
-              {file.webContentLink && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 px-2"
-                  onClick={() => window.open(file.webContentLink, '_blank')}
-                >
-                  <Download className="h-3 w-3" />
-                </Button>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {isFolder && (
-        <a 
-          href={attachmentsUrl} 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:underline"
-        >
-          <Folder className="h-3 w-3" />
-          Abrir carpeta en Drive
-          <ExternalLink className="h-3 w-3" />
-        </a>
-      )}
-    </div>
-  );
-};
-
 export const RFIConversationHistory: React.FC<RFIConversationHistoryProps> = ({
   rfiId,
   projectId,
 }) => {
-  const { messages, loading, getAttachmentFiles } = useRFIMessages(rfiId);
+  const { messages, loading } = useRFIMessages(rfiId);
 
   if (loading) {
     return (
@@ -231,10 +109,7 @@ export const RFIConversationHistory: React.FC<RFIConversationHistoryProps> = ({
               </p>
               
               {message.attachments_url && (
-                <MessageAttachments 
-                  attachmentsUrl={message.attachments_url}
-                  getAttachmentFiles={getAttachmentFiles}
-                />
+                <RFIAttachmentViewer attachmentsUrl={message.attachments_url} />
               )}
             </div>
           </div>

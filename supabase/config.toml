@@ -96,3 +96,9 @@ verify_jwt = false
 
 [functions.get-drive-folder-files]
 verify_jwt = false
+
+[functions.normalize-rfi-folders]
+verify_jwt = false
+
+[functions.rfi-file-access]
+verify_jwt = false

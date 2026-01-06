@@ -181,12 +181,13 @@ const handler = async (req: Request): Promise<Response> => {
         if (emailLower !== contratistaEmail) {
           
           // Solo cargar RFIs si el acceso es por RFI o general (mandante)
+          // Incluir tanto Pendiente como Respondido (no cerrado) para permitir continuar conversaciones
           if (accessType === 'rfi' || (accessType === 'general' && (emailLower === mandanteEmail || isApprover))) {
             const { data: allRfis } = await supabaseAdmin
               .from('RFI')
               .select('id')
               .eq('Proyecto', projectId)
-              .eq('Status', 'Pendiente');
+              .in('Status', ['Pendiente', 'Respondido']);
 
             if (allRfis && allRfis.length > 0) {
               for (const rfi of allRfis) {

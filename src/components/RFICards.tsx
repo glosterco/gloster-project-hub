@@ -2,8 +2,7 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Button } from '@/components/ui/button';
-import { HelpCircle, ExternalLink, Calendar, AlertTriangle, AlertCircle, Clock } from 'lucide-react';
+import { HelpCircle, Calendar, AlertTriangle, AlertCircle, Clock, CheckCircle } from 'lucide-react';
 import { RFI } from '@/hooks/useRFI';
 
 interface RFICardsProps {
@@ -60,6 +59,14 @@ const getUrgenciaIcon = (urgencia: string | null) => {
   }
 };
 
+// Calculate days between two dates
+const getDaysBetween = (startDate: string, endDate?: string | null): number => {
+  const start = new Date(startDate);
+  const end = endDate ? new Date(endDate) : new Date();
+  const diffTime = Math.abs(end.getTime() - start.getTime());
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+};
+
 export const RFICards: React.FC<RFICardsProps> = ({
   rfis,
   loading,
@@ -92,73 +99,82 @@ export const RFICards: React.FC<RFICardsProps> = ({
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {rfis.map((rfi) => (
-        <Card 
-          key={rfi.id} 
-          className="hover:shadow-md transition-shadow cursor-pointer"
-          onClick={() => onCardClick?.(rfi)}
-        >
-          <CardContent className="p-4">
-            <div className="flex items-start justify-between mb-3 gap-2">
-              <div className="flex items-center gap-2">
-                <HelpCircle className="h-5 w-5 text-blue-500 shrink-0" />
-                <span className="font-medium text-sm">RFI #{rfi.Correlativo || rfi.id}</span>
-              </div>
-              <div className="flex flex-wrap gap-1 justify-end">
-                <Badge className={getStatusColor(rfi.Status)}>
-                  {rfi.Status || 'Pendiente'}
-                </Badge>
-                {(rfi as any).Urgencia && (
-                  <Badge className={`${getUrgenciaColor((rfi as any).Urgencia)} flex items-center gap-1`}>
-                    {getUrgenciaIcon((rfi as any).Urgencia)}
-                    {getUrgenciaLabel((rfi as any).Urgencia)}
-                  </Badge>
-                )}
-              </div>
-            </div>
-            
-            <h3 className="font-semibold text-base mb-2 line-clamp-2">
-              {rfi.Titulo || 'Sin título'}
-            </h3>
-            
-            {rfi.Descripcion && (
-              <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                {rfi.Descripcion}
-              </p>
-            )}
-            
-            <div className="flex items-center justify-between text-xs text-muted-foreground gap-2">
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-1">
-                  <Calendar className="h-3 w-3" />
-                  <span>Creado: {new Date(rfi.created_at).toLocaleDateString('es-CL')}</span>
+      {rfis.map((rfi) => {
+        const isCerrado = rfi.Status?.toLowerCase() === 'cerrado';
+        // For closed RFIs, use Fecha_Respuesta as close date; otherwise show due date
+        const closeDate = isCerrado ? rfi.Fecha_Respuesta : null;
+        const dueDate = (rfi as any).Fecha_Vencimiento;
+        
+        // Days elapsed: if closed, days from creation to close; otherwise days from creation to now
+        const daysElapsed = getDaysBetween(rfi.created_at, closeDate);
+        
+        return (
+          <Card 
+            key={rfi.id} 
+            className="hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => onCardClick?.(rfi)}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between mb-3 gap-2">
+                <div className="flex items-center gap-2">
+                  <HelpCircle className="h-5 w-5 text-blue-500 shrink-0" />
+                  <span className="font-medium text-sm">RFI #{rfi.Correlativo || rfi.id}</span>
                 </div>
-                {(rfi as any).Fecha_Vencimiento && (
-                  <div className="flex items-center gap-1 text-amber-600">
-                    <Clock className="h-3 w-3" />
-                    <span>Vence: {new Date((rfi as any).Fecha_Vencimiento).toLocaleDateString('es-CL')}</span>
-                  </div>
-                )}
+                <div className="flex flex-wrap gap-1 justify-end">
+                  <Badge className={getStatusColor(rfi.Status)}>
+                    {rfi.Status || 'Pendiente'}
+                  </Badge>
+                  {(rfi as any).Urgencia && (
+                    <Badge className={`${getUrgenciaColor((rfi as any).Urgencia)} flex items-center gap-1`}>
+                      {getUrgenciaIcon((rfi as any).Urgencia)}
+                      {getUrgenciaLabel((rfi as any).Urgencia)}
+                    </Badge>
+                  )}
+                </div>
               </div>
               
-              {rfi.URL && (
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  className="h-6 px-2 shrink-0"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    window.open(rfi.URL!, '_blank');
-                  }}
-                >
-                  <ExternalLink className="h-3 w-3 mr-1" />
-                  Ver adjunto
-                </Button>
+              <h3 className="font-semibold text-base mb-2 line-clamp-2">
+                {rfi.Titulo || 'Sin título'}
+              </h3>
+              
+              {rfi.Descripcion && (
+                <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                  {rfi.Descripcion}
+                </p>
               )}
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+              
+              {/* Dates and duration section */}
+              <div className="space-y-1.5 text-xs text-muted-foreground border-t pt-3 mt-3">
+                {/* Creation date */}
+                <div className="flex items-center gap-1.5">
+                  <Calendar className="h-3.5 w-3.5 shrink-0" />
+                  <span>Creado: {new Date(rfi.created_at).toLocaleDateString('es-CL')}</span>
+                </div>
+                
+                {/* Due date or Close date */}
+                {isCerrado && closeDate ? (
+                  <div className="flex items-center gap-1.5 text-gray-600">
+                    <CheckCircle className="h-3.5 w-3.5 shrink-0" />
+                    <span>Cerrado: {new Date(closeDate).toLocaleDateString('es-CL')}</span>
+                  </div>
+                ) : dueDate ? (
+                  <div className="flex items-center gap-1.5 text-amber-600">
+                    <Clock className="h-3.5 w-3.5 shrink-0" />
+                    <span>Vence: {new Date(dueDate).toLocaleDateString('es-CL')}</span>
+                  </div>
+                ) : null}
+                
+                {/* Days elapsed */}
+                <div className="flex items-center gap-1.5">
+                  <span className={`font-medium ${isCerrado ? 'text-gray-600' : daysElapsed > 7 ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                    {daysElapsed} día{daysElapsed !== 1 ? 's' : ''} {isCerrado ? 'de duración' : 'transcurridos'}
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 };

@@ -7,7 +7,8 @@ import {
   Loader2,
   Image as ImageIcon,
   File,
-  Archive
+  Archive,
+  LucideIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -34,11 +35,11 @@ const formatFileSize = (bytes: number | null): string => {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
 
-const getFileIcon = (mimeType: string) => {
-  if (mimeType.startsWith('image/')) return ImageIcon;
-  if (mimeType === 'application/pdf') return FileText;
-  if (mimeType.includes('zip') || mimeType.includes('rar')) return Archive;
-  return File;
+const FileIconComponent: React.FC<{ mimeType: string; className?: string }> = ({ mimeType, className }) => {
+  if (mimeType.startsWith('image/')) return <ImageIcon className={className} />;
+  if (mimeType === 'application/pdf') return <FileText className={className} />;
+  if (mimeType.includes('zip') || mimeType.includes('rar')) return <Archive className={className} />;
+  return <File className={className} />;
 };
 
 export const RFIAttachmentViewer: React.FC<RFIAttachmentViewerProps> = ({ attachmentsUrl }) => {
@@ -210,7 +211,6 @@ export const RFIAttachmentViewer: React.FC<RFIAttachmentViewerProps> = ({ attach
       
       <div className="space-y-1.5">
         {files.map((file) => {
-          const FileIcon = getFileIcon(file.mimeType);
           const isDownloading = downloadingId === file.id;
           
           return (
@@ -219,7 +219,7 @@ export const RFIAttachmentViewer: React.FC<RFIAttachmentViewerProps> = ({ attach
               className="flex items-center justify-between gap-2 p-2 bg-muted/50 rounded-md text-xs"
             >
               <div className="flex items-center gap-2 min-w-0">
-                <FileIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+                <FileIconComponent mimeType={file.mimeType} className="h-4 w-4 text-muted-foreground shrink-0" />
                 <span className="truncate">{file.name}</span>
                 {file.size && (
                   <span className="text-muted-foreground shrink-0">

@@ -62,7 +62,6 @@ export const RFIForm: React.FC<RFIFormProps> = ({
   const { toast } = useToast();
   const { contactos, loading: contactosLoading, addContacto } = useContactos(projectId);
 
-  // Default date: 1 week from today
   const defaultDate = format(addDays(new Date(), 7), 'yyyy-MM-dd');
 
   const form = useForm<RFIFormData>({
@@ -75,7 +74,6 @@ export const RFIForm: React.FC<RFIFormProps> = ({
     },
   });
 
-  // Reset form when dialog opens
   useEffect(() => {
     if (open) {
       form.reset({
@@ -134,64 +132,73 @@ export const RFIForm: React.FC<RFIFormProps> = ({
         throw new Error('ID de proyecto inválido');
       }
 
-      let documentUrl: string | null = null;
-
-      // Upload files to Drive if attached
-      if (attachedFiles.length > 0) {
-        const documents = await Promise.all(
-          attachedFiles.map(async (file) => {
-            const fileContent = await convertFileToBase64(file);
-            const base64Data = fileContent.includes(',') ? fileContent.split(',')[1] : fileContent;
-            return {
-              fileName: `RFI_${data.titulo.replace(/[^a-zA-Z0-9]/g, '_')}_${file.name}`,
-              fileContent: base64Data,
-              tipo: 'RFI',
-              mimeType: file.type
-            };
-          })
-        );
-
-        const { data: uploadData, error: uploadError } = await supabase.functions.invoke('upload-project-documents', {
-          body: {
-            projectId: pid,
-            documents
-          }
-        });
-
-        if (uploadError) {
-          console.error('Error uploading files:', uploadError);
-          toast({
-            title: "Advertencia",
-            description: "No se pudieron adjuntar los documentos, pero el RFI se creará",
-            variant: "destructive",
-          });
-        } else if (uploadData?.uploadedFiles?.[0]) {
-          // If single file, store direct URL; if multiple, store folder URL
-          documentUrl = uploadData.uploadedFiles[0].webViewLink;
-        }
-      }
-
-      // Create RFI
-      const { data: rfiData, error } = await supabase
+      // First create the RFI to get its ID and Correlativo
+      const { data: rfiData, error: rfiError } = await supabase
         .from('RFI' as any)
         .insert({
           Proyecto: pid,
           Titulo: data.titulo,
           Descripcion: data.descripcion,
           Status: 'Pendiente',
-          URL: documentUrl,
           Urgencia: data.urgencia,
           Fecha_Vencimiento: data.fecha_vencimiento,
         } as any)
         .select()
         .single();
 
-      if (error) throw error;
+      if (rfiError) throw rfiError;
+
+      const rfiId = (rfiData as any).id;
+      const rfiCorrelativo = (rfiData as any).Correlativo || rfiId;
+
+      // Upload files using rfi-message edge function (for proper folder structure)
+      if (attachedFiles.length > 0) {
+        try {
+          const attachments = await Promise.all(
+            attachedFiles.map(async (file) => {
+              const base64 = await convertFileToBase64(file);
+              const base64Data = base64.includes(',') ? base64.split(',')[1] : base64;
+              return {
+                fileName: file.name,
+                fileContent: base64Data,
+                mimeType: file.type || 'application/octet-stream'
+              };
+            })
+          );
+
+          // Use rfi-message to upload - this creates proper RFI_XX structure
+          const { data: messageData, error: messageError } = await supabase.functions.invoke('rfi-message', {
+            body: {
+              action: 'add_message',
+              rfiId,
+              projectId: pid,
+              authorEmail: 'sistema@gloster.cl',
+              authorName: 'Sistema',
+              authorRole: 'contratista',
+              messageText: `Documentos adjuntos al crear RFI: ${attachedFiles.map(f => f.name).join(', ')}`,
+              attachments
+            }
+          });
+
+          if (messageError) {
+            console.error('Error uploading attachments:', messageError);
+          } else {
+            console.log('✅ Attachments uploaded:', messageData?.attachmentsUrl);
+          }
+        } catch (uploadError) {
+          console.error('Error uploading files:', uploadError);
+          toast({
+            title: "Advertencia",
+            description: "No se pudieron adjuntar los documentos, pero el RFI se creó correctamente",
+            variant: "destructive",
+          });
+        }
+      }
 
       // Add destinatarios if selected
-      if (selectedContactIds.length > 0 && rfiData) {
+      if (selectedContactIds.length > 0) {
         const inserts = selectedContactIds.map(contacto_id => ({
-          rfi_id: (rfiData as any).id,
+          rfi_id: rfiId,
           contacto_id
         }));
 
@@ -200,7 +207,6 @@ export const RFIForm: React.FC<RFIFormProps> = ({
           .insert(inserts as any);
       }
 
-      // El RFI se creó correctamente - mostrar éxito inmediatamente
       toast({
         title: "RFI creado",
         description: attachedFiles.length > 0 
@@ -214,22 +220,15 @@ export const RFIForm: React.FC<RFIFormProps> = ({
       onOpenChange(false);
       onSuccess?.();
       
-      // Send notification to mandante and specialists (fire and forget)
+      // Send notification (fire and forget)
       supabase.functions.invoke('send-rfi-notification', {
         body: { 
-          rfiId: (rfiData as any).id,
+          rfiId,
           projectId: pid,
           destinatarioIds: selectedContactIds
         }
-      }).then(({ error: notifError }) => {
-        if (notifError) {
-          console.error('⚠️ Error sending RFI notification:', notifError);
-        } else {
-          console.log('✅ RFI notification sent to mandante and specialists');
-        }
-      }).catch(notifError => {
-        console.error('⚠️ Error sending RFI notification:', notifError);
-      });
+      }).catch(console.error);
+
     } catch (error) {
       console.error('Error creating RFI:', error);
       toast({
@@ -239,15 +238,6 @@ export const RFIForm: React.FC<RFIFormProps> = ({
       });
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  const getUrgenciaLabel = (value: string) => {
-    switch (value) {
-      case 'no_urgente': return 'No urgente';
-      case 'urgente': return 'Urgente';
-      case 'muy_urgente': return 'Muy urgente';
-      default: return value;
     }
   };
 

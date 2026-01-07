@@ -9,7 +9,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { 
-  ExternalLink, 
   HelpCircle, 
   Calendar, 
   Forward, 
@@ -28,6 +27,7 @@ import { useRFIMessages } from '@/hooks/useRFIMessages';
 import { ContactoSelector } from './ContactoSelector';
 import { RFIConversationHistory } from './RFIConversationHistory';
 import { RFIResponseForm } from './RFIResponseForm';
+import { RFIAttachmentViewer } from './RFIAttachmentViewer';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -114,19 +114,16 @@ export const RFIDetailModal: React.FC<RFIDetailModalProps> = ({
     fetchMessages 
   } = useRFIMessages(rfi?.id || null);
 
-  // Determine user role for responses
   const userRole = useMemo(() => {
     if (isContratista) return 'contratista';
     if (isMandante) return 'mandante';
     return 'especialista';
   }, [isMandante, isContratista]);
 
-  // Check if RFI has at least one response (for close button)
   const hasResponses = useMemo(() => {
     return messages.length > 0 || !!rfi?.Respuesta;
   }, [messages, rfi?.Respuesta]);
 
-  // Reset state when modal opens/closes
   useEffect(() => {
     if (!open) {
       setShowForwardSection(false);
@@ -142,13 +139,8 @@ export const RFIDetailModal: React.FC<RFIDetailModalProps> = ({
   const isRespondido = rfi.Status?.toLowerCase() === 'respondido';
   const isCerrado = rfi.Status?.toLowerCase() === 'cerrado';
   
-  // Everyone can respond to pending or responded RFIs (not closed)
   const canRespond = !isCerrado && !!userEmail;
-  
-  // Everyone can forward RFIs that are not closed (pending or respondido)
   const canForward = !isCerrado && !!projectId;
-  
-  // Only the contratista who created the RFI can close it
   const canClose = isContratista && (isPending || isRespondido) && hasResponses;
 
   const handleForward = async () => {
@@ -176,7 +168,6 @@ export const RFIDetailModal: React.FC<RFIDetailModalProps> = ({
       const idsToNotify = [...selectedContactIds];
       await addDestinatarios(rfi.id, idsToNotify);
 
-      // Send notification (fire & forget)
       supabase.functions
         .invoke('send-rfi-notification', {
           body: {
@@ -239,7 +230,7 @@ export const RFIDetailModal: React.FC<RFIDetailModalProps> = ({
   const handleSendMessage = async (params: Parameters<typeof sendMessage>[0]) => {
     const success = await sendMessage(params);
     if (success) {
-      onSuccess?.(); // Refresh parent data
+      onSuccess?.();
     }
     return success;
   };
@@ -306,18 +297,11 @@ export const RFIDetailModal: React.FC<RFIDetailModalProps> = ({
             </div>
           )}
 
-          {/* Original attachment */}
+          {/* Original attachment - Using embedded viewer instead of external link */}
           {rfi.URL && (
             <div>
               <h3 className="text-sm font-medium text-muted-foreground mb-2">Documento original</h3>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => window.open(rfi.URL!, '_blank')}
-              >
-                <ExternalLink className="h-4 w-4 mr-2" />
-                Ver documento
-              </Button>
+              <RFIAttachmentViewer attachmentsUrl={rfi.URL} />
             </div>
           )}
 

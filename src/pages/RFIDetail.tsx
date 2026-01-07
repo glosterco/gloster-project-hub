@@ -6,7 +6,6 @@ import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
-  ExternalLink, 
   HelpCircle, 
   Calendar, 
   MessageSquare, 
@@ -24,6 +23,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useContactos } from '@/hooks/useContactos';
 import { useRFIDestinatarios } from '@/hooks/useRFIDestinatarios';
 import { ContactoSelector } from '@/components/ContactoSelector';
+import { RFIAttachmentViewer } from '@/components/RFIAttachmentViewer';
 
 interface RFI {
   id: number;
@@ -96,7 +96,6 @@ const RFIDetail = () => {
   const [showForwardSection, setShowForwardSection] = useState(false);
   const [selectedContactIds, setSelectedContactIds] = useState<number[]>([]);
 
-  // Get user type from URL params (set by email access flow)
   const userType = searchParams.get('userType');
   const isMandante = userType === 'mandante' || userType === 'approver';
 
@@ -177,7 +176,6 @@ const RFIDetail = () => {
 
       if (error) throw error;
 
-      // Send response notification
       supabase.functions.invoke('send-rfi-response', {
         body: { rfiId: rfi.id, respuesta }
       }).catch(console.error);
@@ -187,7 +185,6 @@ const RFIDetail = () => {
         description: "El RFI ha sido respondido correctamente",
       });
 
-      // Refresh data
       setRfi({ ...rfi, Respuesta: respuesta, Status: 'Respondido', Fecha_Respuesta: new Date().toISOString() });
       setRespuesta('');
     } catch (error) {
@@ -435,20 +432,14 @@ const RFIDetail = () => {
           </CardContent>
         </Card>
 
-        {/* Attachment */}
+        {/* Attachment - Using embedded viewer instead of external link */}
         {rfi.URL && (
           <Card>
             <CardHeader>
               <CardTitle>Documento adjunto</CardTitle>
             </CardHeader>
             <CardContent>
-              <Button
-                variant="outline"
-                onClick={() => window.open(rfi.URL!, '_blank')}
-              >
-                <ExternalLink className="h-4 w-4 mr-2" />
-                Ver documento
-              </Button>
+              <RFIAttachmentViewer attachmentsUrl={rfi.URL} />
             </CardContent>
           </Card>
         )}

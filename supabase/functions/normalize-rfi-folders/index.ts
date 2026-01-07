@@ -46,6 +46,13 @@ function extractFolderId(url: string | null): string | null {
   return match ? match[1] : null;
 }
 
+// Extract file ID from URL
+function extractFileId(url: string | null): string | null {
+  if (!url) return null;
+  const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+  return match ? match[1] : null;
+}
+
 // Create a subfolder in Google Drive
 async function createDriveFolder(
   accessToken: string,
@@ -78,13 +85,30 @@ async function createDriveFolder(
   return await response.json();
 }
 
+// Find subfolder by name
+async function findSubfolder(
+  accessToken: string,
+  parentFolderId: string,
+  folderName: string
+): Promise<string | null> {
+  const query = encodeURIComponent(`'${parentFolderId}' in parents and name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`);
+  const response = await fetch(
+    `https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,webViewLink)`,
+    { headers: { 'Authorization': `Bearer ${accessToken}` } }
+  );
+
+  if (!response.ok) return null;
+  const data = await response.json();
+  return data.files?.[0]?.id || null;
+}
+
 // List files in a folder
 async function listFolderFiles(
   accessToken: string,
   folderId: string
-): Promise<Array<{ id: string; name: string; mimeType: string; webViewLink: string }>> {
+): Promise<Array<{ id: string; name: string; mimeType: string; webViewLink: string; parents?: string[] }>> {
   const response = await fetch(
-    `https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents+and+trashed=false&fields=files(id,name,mimeType,webViewLink)&orderBy=name`,
+    `https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents+and+trashed=false&fields=files(id,name,mimeType,webViewLink,parents)&orderBy=name`,
     {
       headers: { 'Authorization': `Bearer ${accessToken}` },
     }
@@ -105,9 +129,9 @@ async function moveFile(
   fileId: string,
   newParentFolderId: string,
   currentParentFolderId: string
-): Promise<void> {
+): Promise<{ webViewLink: string } | null> {
   const response = await fetch(
-    `https://www.googleapis.com/drive/v3/files/${fileId}?addParents=${newParentFolderId}&removeParents=${currentParentFolderId}`,
+    `https://www.googleapis.com/drive/v3/files/${fileId}?addParents=${newParentFolderId}&removeParents=${currentParentFolderId}&fields=webViewLink`,
     {
       method: 'PATCH',
       headers: { 'Authorization': `Bearer ${accessToken}` },
@@ -117,27 +141,10 @@ async function moveFile(
   if (!response.ok) {
     const errorText = await response.text();
     console.error(`⚠️ Failed to move file ${fileId}:`, errorText);
-  }
-}
-
-// Get file metadata
-async function getFileMetadata(
-  accessToken: string,
-  fileId: string
-): Promise<{ id: string; name: string; webViewLink: string } | null> {
-  try {
-    const response = await fetch(
-      `https://www.googleapis.com/drive/v3/files/${fileId}?fields=id,name,webViewLink`,
-      {
-        headers: { 'Authorization': `Bearer ${accessToken}` },
-      }
-    );
-
-    if (!response.ok) return null;
-    return await response.json();
-  } catch {
     return null;
   }
+  
+  return await response.json();
 }
 
 // Check if folder exists
@@ -157,28 +164,46 @@ async function folderExists(accessToken: string, folderId: string): Promise<bool
   }
 }
 
+// Get or create RFI subfolder
+async function ensureRFISubfolder(
+  accessToken: string,
+  rfiFolderId: string,
+  rfiCorrelativo: number
+): Promise<{ id: string; webViewLink: string }> {
+  const folderName = `RFI_${String(rfiCorrelativo).padStart(2, '0')}`;
+  
+  const existingId = await findSubfolder(accessToken, rfiFolderId, folderName);
+  if (existingId) {
+    return { id: existingId, webViewLink: `https://drive.google.com/drive/folders/${existingId}` };
+  }
+  
+  return await createDriveFolder(accessToken, rfiFolderId, folderName);
+}
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    console.log("🚀 Starting RFI folder normalization...");
+    console.log("🚀 Starting RFI folder normalization with FULL MIGRATION...");
     
     const accessToken = await getAccessToken();
     console.log("✅ Got Google Drive access token");
 
     const stats = {
       projectsProcessed: 0,
+      projectsWithoutURL: 0,
       rfiFoldersCreated: 0,
-      rfiFoldersSkipped: 0,
+      rfiFoldersExisting: 0,
       rfiSubfoldersCreated: 0,
       filesMovedToRFIFolder: 0,
       messagesUpdated: 0,
+      urlsUpdated: 0,
       errors: [] as string[],
     };
 
-    // 1️⃣ Get all projects that need URL_RFI normalization
+    // 1️⃣ Get all projects
     const { data: projects, error: projectsError } = await supabase
       .from('Proyectos')
       .select('id, Name, URL, URL_RFI')
@@ -193,153 +218,209 @@ const handler = async (req: Request): Promise<Response> => {
     for (const project of projects || []) {
       try {
         stats.projectsProcessed++;
-        console.log(`\n📁 Processing project ${project.id}: ${project.Name}`);
+        console.log(`\n========================================`);
+        console.log(`📁 Processing project ${project.id}: ${project.Name}`);
 
-        // Check if URL_RFI exists and is valid
-        let rfiFolderId: string | null = null;
+        // Get parent folder ID
+        const parentFolderId = extractFolderId(project.URL);
+        if (!parentFolderId) {
+          console.log(`⚠️ Project ${project.id} has no parent folder URL, skipping`);
+          stats.projectsWithoutURL++;
+          continue;
+        }
+
+        // Check/create URL_RFI
+        let rfiFolderId: string | null = extractFolderId(project.URL_RFI);
         
-        if (project.URL_RFI) {
-          rfiFolderId = extractFolderId(project.URL_RFI);
-          if (rfiFolderId) {
-            const exists = await folderExists(accessToken, rfiFolderId);
-            if (exists) {
-              console.log(`✅ Project ${project.id} already has valid URL_RFI`);
-              stats.rfiFoldersSkipped++;
-            } else {
-              console.log(`⚠️ Project ${project.id} URL_RFI folder doesn't exist, will recreate`);
-              rfiFolderId = null;
-            }
+        if (rfiFolderId) {
+          const exists = await folderExists(accessToken, rfiFolderId);
+          if (exists) {
+            console.log(`✅ Project ${project.id} has valid URL_RFI: ${rfiFolderId}`);
+            stats.rfiFoldersExisting++;
+          } else {
+            console.log(`⚠️ URL_RFI folder doesn't exist, will recreate`);
+            rfiFolderId = null;
           }
         }
 
-        // If no valid URL_RFI, create the RFI folder
+        // Create RFI folder if missing
         if (!rfiFolderId) {
-          const parentFolderId = extractFolderId(project.URL);
-          
-          if (!parentFolderId) {
-            console.log(`⚠️ Project ${project.id} has no parent folder URL, skipping`);
-            stats.errors.push(`Project ${project.id}: No parent folder URL`);
-            continue;
-          }
-
-          // Create RFI folder
           console.log(`📁 Creating RFI folder for project ${project.id}...`);
-          const rfiFolder = await createDriveFolder(accessToken, parentFolderId, 'RFI');
-          rfiFolderId = rfiFolder.id;
+          
+          // Check if RFI folder already exists with that name
+          const existingRfiFolderId = await findSubfolder(accessToken, parentFolderId, 'RFI');
+          
+          if (existingRfiFolderId) {
+            rfiFolderId = existingRfiFolderId;
+            console.log(`✅ Found existing RFI folder: ${rfiFolderId}`);
+          } else {
+            const rfiFolder = await createDriveFolder(accessToken, parentFolderId, 'RFI');
+            rfiFolderId = rfiFolder.id;
+            console.log(`✅ Created RFI folder: ${rfiFolder.webViewLink}`);
+          }
           
           // Update project with new URL_RFI
           const { error: updateError } = await supabase
             .from('Proyectos')
-            .update({ URL_RFI: rfiFolder.webViewLink })
+            .update({ URL_RFI: `https://drive.google.com/drive/folders/${rfiFolderId}` })
             .eq('id', project.id);
 
           if (updateError) {
-            console.error(`⚠️ Failed to update project ${project.id}:`, updateError.message);
+            console.error(`⚠️ Failed to update project URL_RFI:`, updateError.message);
             stats.errors.push(`Project ${project.id}: Failed to update URL_RFI`);
           } else {
-            console.log(`✅ Created and saved RFI folder for project ${project.id}`);
             stats.rfiFoldersCreated++;
+            stats.urlsUpdated++;
           }
         }
 
-        // 2️⃣ Get all RFIs for this project that have attachments
+        // 2️⃣ Get all RFIs for this project
         const { data: rfis, error: rfisError } = await supabase
           .from('RFI')
           .select('id, Correlativo, URL')
           .eq('Proyecto', project.id)
-          .order('id', { ascending: true });
+          .order('Correlativo', { ascending: true });
 
         if (rfisError) {
-          console.error(`⚠️ Failed to fetch RFIs for project ${project.id}:`, rfisError.message);
+          console.error(`⚠️ Failed to fetch RFIs:`, rfisError.message);
           continue;
         }
 
-        // 3️⃣ Get all RFI messages with attachments for this project
-        const { data: messages, error: messagesError } = await supabase
-          .from('rfi_messages')
-          .select('id, rfi_id, attachments_url, created_at')
-          .eq('project_id', project.id)
-          .not('attachments_url', 'is', null)
-          .order('created_at', { ascending: true });
+        console.log(`  📋 Found ${rfis?.length || 0} RFIs for project ${project.id}`);
 
-        if (messagesError) {
-          console.error(`⚠️ Failed to fetch messages for project ${project.id}:`, messagesError.message);
-          continue;
+        // 3️⃣ Get list of files currently in RFI folder (to migrate)
+        let looseFiles: Array<{ id: string; name: string; mimeType: string; webViewLink: string }> = [];
+        try {
+          looseFiles = await listFolderFiles(accessToken, rfiFolderId!);
+          // Filter out folders (subfolders we create)
+          looseFiles = looseFiles.filter(f => f.mimeType !== 'application/vnd.google-apps.folder');
+          console.log(`  📄 Found ${looseFiles.length} loose files in RFI folder to potentially migrate`);
+        } catch (err) {
+          console.log(`  ⚠️ Could not list files in RFI folder`);
         }
 
-        // Group messages by RFI
-        const messagesByRfi: Map<number, typeof messages> = new Map();
-        for (const msg of messages || []) {
-          const existing = messagesByRfi.get(msg.rfi_id) || [];
-          existing.push(msg);
-          messagesByRfi.set(msg.rfi_id, existing);
-        }
-
-        // Process each RFI
+        // 4️⃣ Process each RFI
         for (const rfi of rfis || []) {
-          const rfiMessages = messagesByRfi.get(rfi.id) || [];
-          const hasAttachments = rfi.URL || rfiMessages.length > 0;
-
-          if (!hasAttachments) continue;
-
-          // Create RFI-specific subfolder: RFI_XX
           const rfiCorrelativo = rfi.Correlativo || rfi.id;
-          const rfiFolderName = `RFI_${String(rfiCorrelativo).padStart(2, '0')}`;
+          const folderName = `RFI_${String(rfiCorrelativo).padStart(2, '0')}`;
           
-          console.log(`  📁 Creating subfolder ${rfiFolderName} for RFI ${rfi.id}...`);
+          // Get messages for this RFI
+          const { data: messages } = await supabase
+            .from('rfi_messages')
+            .select('id, attachments_url, created_at')
+            .eq('rfi_id', rfi.id)
+            .order('created_at', { ascending: true });
           
+          // Check if this RFI has attachments
+          const hasRfiUrl = !!rfi.URL;
+          const hasMessageAttachments = messages?.some(m => m.attachments_url);
+          
+          if (!hasRfiUrl && !hasMessageAttachments) {
+            console.log(`  📁 RFI ${rfi.id} (${folderName}): No attachments, skipping subfolder creation`);
+            continue;
+          }
+
+          // Create RFI subfolder
+          console.log(`  📁 Creating/verifying subfolder ${folderName}...`);
           try {
-            const rfiSubfolder = await createDriveFolder(accessToken, rfiFolderId!, rfiFolderName);
+            const rfiSubfolder = await ensureRFISubfolder(accessToken, rfiFolderId!, rfiCorrelativo);
             stats.rfiSubfoldersCreated++;
-
-            // Move original RFI attachment if exists and is a direct file
+            
+            // Try to identify and move original RFI attachment
             if (rfi.URL) {
-              const fileId = rfi.URL.match(/\/d\/([a-zA-Z0-9-_]+)/)?.[1];
+              const fileId = extractFileId(rfi.URL);
               if (fileId) {
-                console.log(`    📄 Moving original RFI attachment to ${rfiFolderName}...`);
-                // We'll update the URL to point to the new location
-                // Note: Moving files requires knowing the current parent, which we may not have
-                // For now, we just update the RFI record if needed
+                // Check if file is in the loose files list
+                const looseFile = looseFiles.find(f => f.id === fileId);
+                if (looseFile) {
+                  console.log(`    📄 Moving original RFI file ${looseFile.name} to ${folderName}...`);
+                  const moveResult = await moveFile(accessToken, fileId, rfiSubfolder.id, rfiFolderId!);
+                  if (moveResult) {
+                    stats.filesMovedToRFIFolder++;
+                    // Update RFI URL
+                    await supabase
+                      .from('RFI')
+                      .update({ URL: moveResult.webViewLink })
+                      .eq('id', rfi.id);
+                    stats.urlsUpdated++;
+                  }
+                }
               }
             }
-
+            
             // Process message attachments
-            for (const msg of rfiMessages) {
+            for (const msg of messages || []) {
               if (!msg.attachments_url) continue;
-
+              
               const isFolder = msg.attachments_url.includes('/folders/');
-              const existingFolderId = extractFolderId(msg.attachments_url);
-              const existingFileId = msg.attachments_url.match(/\/d\/([a-zA-Z0-9-_]+)/)?.[1];
-
-              if (isFolder && existingFolderId) {
-                // It's already a folder - check if it's in the right place
-                // For now, we just log it - moving folders is complex
-                console.log(`    📁 Message ${msg.id} already has folder: ${existingFolderId}`);
-              } else if (existingFileId) {
-                // It's a single file - we could move it but that's complex
-                // For now, just log it
-                console.log(`    📄 Message ${msg.id} has file: ${existingFileId}`);
-                stats.messagesUpdated++;
+              const fileId = extractFileId(msg.attachments_url);
+              
+              if (!isFolder && fileId) {
+                // Single file - check if it's loose and needs moving
+                const looseFile = looseFiles.find(f => f.id === fileId);
+                if (looseFile) {
+                  console.log(`    📄 Moving message file ${looseFile.name} to ${folderName}...`);
+                  const moveResult = await moveFile(accessToken, fileId, rfiSubfolder.id, rfiFolderId!);
+                  if (moveResult) {
+                    stats.filesMovedToRFIFolder++;
+                    // Update message attachments_url
+                    await supabase
+                      .from('rfi_messages')
+                      .update({ attachments_url: moveResult.webViewLink })
+                      .eq('id', msg.id);
+                    stats.messagesUpdated++;
+                    stats.urlsUpdated++;
+                  }
+                }
               }
             }
+            
           } catch (subfolderError: any) {
-            console.error(`  ⚠️ Failed to create subfolder for RFI ${rfi.id}:`, subfolderError.message);
+            console.error(`  ⚠️ Failed to process RFI ${rfi.id}:`, subfolderError.message);
             stats.errors.push(`RFI ${rfi.id}: ${subfolderError.message}`);
           }
         }
+
+        // 5️⃣ Try to identify orphan files and match them to RFIs by name
+        // Pattern: RFI_<titulo>_<filename> or similar
+        for (const looseFile of looseFiles) {
+          // Check if file name contains RFI identifier
+          const rfiMatch = looseFile.name.match(/RFI[_-]?(\d+)/i);
+          if (rfiMatch) {
+            const rfiNum = parseInt(rfiMatch[1]);
+            const targetRfi = rfis?.find(r => (r.Correlativo || r.id) === rfiNum);
+            if (targetRfi) {
+              const folderName = `RFI_${String(rfiNum).padStart(2, '0')}`;
+              console.log(`  📄 Moving orphan file "${looseFile.name}" to ${folderName}...`);
+              
+              try {
+                const rfiSubfolder = await ensureRFISubfolder(accessToken, rfiFolderId!, rfiNum);
+                const moveResult = await moveFile(accessToken, looseFile.id, rfiSubfolder.id, rfiFolderId!);
+                if (moveResult) {
+                  stats.filesMovedToRFIFolder++;
+                  console.log(`    ✅ Moved ${looseFile.name}`);
+                }
+              } catch (err) {
+                console.log(`    ⚠️ Could not move file`);
+              }
+            }
+          }
+        }
+
       } catch (projectError: any) {
         console.error(`❌ Error processing project ${project.id}:`, projectError.message);
         stats.errors.push(`Project ${project.id}: ${projectError.message}`);
       }
     }
 
-    console.log("\n🎉 Normalization complete!");
+    console.log("\n========================================");
+    console.log("🎉 Normalization complete!");
     console.log("📊 Stats:", JSON.stringify(stats, null, 2));
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: "RFI folder normalization complete",
+        message: "RFI folder normalization complete with full migration",
         stats,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }

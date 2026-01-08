@@ -486,6 +486,125 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // ========================================
+    // ACTION: UPLOAD ATTACHMENTS (for RFI creation - no message, no status change)
+    // ========================================
+    if (data.action === 'upload_attachments') {
+      // Fetch RFI and project info
+      const { data: rfi, error: rfiError } = await supabase
+        .from('RFI')
+        .select('*, Proyecto, Correlativo')
+        .eq('id', data.rfiId)
+        .single();
+
+      if (rfiError || !rfi) {
+        throw new Error(`RFI not found: ${rfiError?.message}`);
+      }
+
+      const projectId = data.projectId || rfi.Proyecto;
+      const rfiCorrelativo = rfi.Correlativo || rfi.id;
+
+      // Fetch project for RFI folder URL
+      const { data: project, error: projectError } = await supabase
+        .from('Proyectos')
+        .select('URL_RFI, Name, URL')
+        .eq('id', projectId)
+        .single();
+
+      if (projectError || !project) {
+        throw new Error(`Project not found: ${projectError?.message}`);
+      }
+
+      if (!data.attachments || data.attachments.length === 0) {
+        throw new Error('No attachments provided');
+      }
+
+      let attachmentsUrl: string | null = null;
+
+      console.log('📎 Uploading attachments for new RFI:', data.attachments.length);
+      
+      try {
+        const accessToken = await getAccessToken();
+        console.log('✅ Got access token');
+        
+        // 1️⃣ Ensure base RFI folder exists
+        let rfiFolderId: string | null = extractFolderId(project.URL_RFI);
+        
+        if (!rfiFolderId || !(await folderExists(accessToken, rfiFolderId))) {
+          console.log('⚠️ RFI folder not found, creating...');
+          rfiFolderId = await ensureRFIFolder(
+            accessToken,
+            projectId,
+            project.Name || `Proyecto_${projectId}`,
+            project.URL
+          );
+        }
+
+        if (!rfiFolderId) {
+          throw new Error('Could not create RFI folder');
+        }
+
+        // 2️⃣ Get or create RFI-specific subfolder (RFI_XX)
+        const rfiSubfolder = await ensureRFISubfolder(accessToken, rfiFolderId, rfiCorrelativo);
+        console.log(`✅ RFI subfolder ready: RFI_${String(rfiCorrelativo).padStart(2, '0')}`);
+
+        // 3️⃣ Upload files based on count
+        if (data.attachments.length === 1) {
+          // Single file: upload directly to RFI_XX folder
+          const file = data.attachments[0];
+          console.log('📁 Uploading single file:', file.fileName);
+          const result = await uploadFileToDrive(
+            accessToken,
+            rfiSubfolder.id,
+            file.fileName,
+            file.fileContent,
+            file.mimeType
+          );
+          attachmentsUrl = result.webViewLink;
+          console.log('✅ Single file uploaded:', result.webViewLink);
+        } else {
+          // Multiple files: upload all to RFI_XX folder directly (no subfolder for creation)
+          for (const file of data.attachments) {
+            console.log('📁 Uploading file:', file.fileName);
+            await uploadFileToDrive(
+              accessToken,
+              rfiSubfolder.id,
+              file.fileName,
+              file.fileContent,
+              file.mimeType
+            );
+          }
+          // Use folder URL when multiple files
+          attachmentsUrl = rfiSubfolder.webViewLink;
+          console.log('✅ Multiple files uploaded to folder:', rfiSubfolder.webViewLink);
+        }
+
+        // 4️⃣ Update RFI.URL with attachments URL (NOT create a message)
+        const { error: updateError } = await supabase
+          .from('RFI')
+          .update({ URL: attachmentsUrl })
+          .eq('id', data.rfiId);
+
+        if (updateError) {
+          console.error('⚠️ Error updating RFI.URL:', updateError.message);
+        } else {
+          console.log('✅ RFI.URL updated with attachments');
+        }
+
+      } catch (uploadError: any) {
+        console.error('❌ Error uploading attachments:', uploadError.message);
+        throw uploadError;
+      }
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          attachmentsUrl 
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
+    // ========================================
     // ACTION: CLOSE RFI
     // ========================================
     if (data.action === 'close_rfi') {

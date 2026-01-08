@@ -151,7 +151,7 @@ export const RFIForm: React.FC<RFIFormProps> = ({
       const rfiId = (rfiData as any).id;
       const rfiCorrelativo = (rfiData as any).Correlativo || rfiId;
 
-      // Upload files using rfi-message edge function (for proper folder structure)
+      // Upload files using upload_attachments action (updates RFI.URL, no message created)
       if (attachedFiles.length > 0) {
         try {
           const attachments = await Promise.all(
@@ -166,24 +166,25 @@ export const RFIForm: React.FC<RFIFormProps> = ({
             })
           );
 
-          // Use rfi-message to upload - this creates proper RFI_XX structure
-          const { data: messageData, error: messageError } = await supabase.functions.invoke('rfi-message', {
+          // Use upload_attachments action - stores in RFI.URL, no message, no status change
+          const { data: uploadData, error: uploadError } = await supabase.functions.invoke('rfi-message', {
             body: {
-              action: 'add_message',
+              action: 'upload_attachments',
               rfiId,
               projectId: pid,
-              authorEmail: 'sistema@gloster.cl',
-              authorName: 'Sistema',
-              authorRole: 'contratista',
-              messageText: `Documentos adjuntos al crear RFI: ${attachedFiles.map(f => f.name).join(', ')}`,
               attachments
             }
           });
 
-          if (messageError) {
-            console.error('Error uploading attachments:', messageError);
+          if (uploadError) {
+            console.error('Error uploading attachments:', uploadError);
+            toast({
+              title: "Advertencia",
+              description: "No se pudieron adjuntar los documentos, pero el RFI se creó correctamente",
+              variant: "destructive",
+            });
           } else {
-            console.log('✅ Attachments uploaded:', messageData?.attachmentsUrl);
+            console.log('✅ Attachments uploaded to RFI.URL:', uploadData?.attachmentsUrl);
           }
         } catch (uploadError) {
           console.error('Error uploading files:', uploadError);

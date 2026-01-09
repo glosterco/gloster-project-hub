@@ -92,15 +92,7 @@ export const AdicionalesDetailModal: React.FC<AdicionalesDetailModalProps> = ({
   };
 
   const handleApprove = async () => {
-    if (!actionNotes.trim()) {
-      toast({
-        title: "Comentario requerido",
-        description: "Debe ingresar un comentario para aprobar",
-        variant: "destructive",
-      });
-      return;
-    }
-
+    // Comentario opcional para aprobación
     setLoading(true);
     try {
       const userEmail = getVerifiedEmail();
@@ -541,9 +533,9 @@ export const AdicionalesDetailModal: React.FC<AdicionalesDetailModalProps> = ({
               <CardContent className="space-y-4">
                 {!showRejectForm && !showPauseForm ? (
                   <>
-                    {/* Campo de comentario obligatorio */}
+                    {/* Campo de comentario (opcional para aprobación) */}
                     <div className="space-y-2">
-                      <Label className="font-rubik">Comentario / Nota *</Label>
+                      <Label className="font-rubik">Comentario / Nota (opcional)</Label>
                       <Textarea
                         placeholder="Ingrese un comentario para su acción..."
                         value={actionNotes}

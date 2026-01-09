@@ -12,8 +12,9 @@ const supabase = createClient(
 );
 
 interface RFIMessageRequest {
-  action: 'add_message' | 'close_rfi' | 'get_messages' | 'upload_attachments';
-  rfiId: number;
+  action: 'add_message' | 'close_rfi' | 'get_messages' | 'upload_attachments' | 'upload_adicional_attachments';
+  rfiId?: number;
+  adicionalId?: number;
   projectId?: number;
   authorEmail: string;
   authorName?: string;
@@ -588,6 +589,152 @@ const handler = async (req: Request): Promise<Response> => {
           console.error('⚠️ Error updating RFI.URL:', updateError.message);
         } else {
           console.log('✅ RFI.URL updated with attachments');
+        }
+
+      } catch (uploadError: any) {
+        console.error('❌ Error uploading attachments:', uploadError.message);
+        throw uploadError;
+      }
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          attachmentsUrl 
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
+    // ========================================
+    // ACTION: UPLOAD ADICIONAL ATTACHMENTS
+    // ========================================
+    if (data.action === 'upload_adicional_attachments') {
+      if (!data.adicionalId) {
+        throw new Error('adicionalId is required for upload_adicional_attachments');
+      }
+
+      // Fetch Adicional and project info
+      const { data: adicional, error: adicionalError } = await supabase
+        .from('Adicionales')
+        .select('*, Proyecto, Correlativo')
+        .eq('id', data.adicionalId)
+        .single();
+
+      if (adicionalError || !adicional) {
+        throw new Error(`Adicional not found: ${adicionalError?.message}`);
+      }
+
+      const projectId = data.projectId || adicional.Proyecto;
+      const adicionalCorrelativo = adicional.Correlativo || adicional.id;
+
+      // Fetch project for Adicionales folder URL
+      const { data: project, error: projectError } = await supabase
+        .from('Proyectos')
+        .select('URL_Ad, Name, URL')
+        .eq('id', projectId)
+        .single();
+
+      if (projectError || !project) {
+        throw new Error(`Project not found: ${projectError?.message}`);
+      }
+
+      if (!data.attachments || data.attachments.length === 0) {
+        throw new Error('No attachments provided');
+      }
+
+      let attachmentsUrl: string | null = null;
+
+      console.log('📎 Uploading attachments for Adicional:', data.attachments.length);
+      
+      try {
+        const accessToken = await getAccessToken();
+        console.log('✅ Got access token');
+        
+        // 1️⃣ Get or ensure Adicionales base folder exists
+        let adicionalFolderId: string | null = extractFolderId(project.URL_Ad);
+        
+        if (!adicionalFolderId || !(await folderExists(accessToken, adicionalFolderId))) {
+          console.log('⚠️ Adicionales folder not found, creating...');
+          // Get parent project folder
+          const parentFolderId = extractFolderId(project.URL);
+          if (parentFolderId) {
+            // Check if Adicionales folder exists
+            const existingFolderId = await findSubfolder(accessToken, parentFolderId, 'Adicionales');
+            if (existingFolderId) {
+              adicionalFolderId = existingFolderId;
+            } else {
+              // Create Adicionales folder
+              const folder = await createDriveFolder(accessToken, parentFolderId, 'Adicionales');
+              adicionalFolderId = folder.id;
+              
+              // Update project with Adicionales folder URL
+              await supabase
+                .from('Proyectos')
+                .update({ URL_Ad: folder.webViewLink })
+                .eq('id', projectId);
+            }
+          }
+        }
+
+        if (!adicionalFolderId) {
+          throw new Error('Could not create Adicionales folder');
+        }
+
+        // 2️⃣ Create subfolder for this specific adicional (AD_XX)
+        const folderName = `AD_${String(adicionalCorrelativo).padStart(2, '0')}`;
+        let adicionalSubfolderId = await findSubfolder(accessToken, adicionalFolderId, folderName);
+        let adicionalSubfolderUrl: string;
+        
+        if (!adicionalSubfolderId) {
+          console.log(`📁 Creating Adicional subfolder: ${folderName}`);
+          const subfolder = await createDriveFolder(accessToken, adicionalFolderId, folderName);
+          adicionalSubfolderId = subfolder.id;
+          adicionalSubfolderUrl = subfolder.webViewLink;
+        } else {
+          adicionalSubfolderUrl = `https://drive.google.com/drive/folders/${adicionalSubfolderId}`;
+        }
+
+        console.log(`✅ Adicional subfolder ready: ${folderName}`);
+
+        // 3️⃣ Upload files
+        if (data.attachments.length === 1) {
+          const file = data.attachments[0];
+          console.log('📁 Uploading single file:', file.fileName);
+          const result = await uploadFileToDrive(
+            accessToken,
+            adicionalSubfolderId,
+            file.fileName,
+            file.fileContent,
+            file.mimeType
+          );
+          attachmentsUrl = result.webViewLink;
+          console.log('✅ Single file uploaded:', result.webViewLink);
+        } else {
+          // Multiple files: upload all to AD_XX folder
+          for (const file of data.attachments) {
+            console.log('📁 Uploading file:', file.fileName);
+            await uploadFileToDrive(
+              accessToken,
+              adicionalSubfolderId,
+              file.fileName,
+              file.fileContent,
+              file.mimeType
+            );
+          }
+          attachmentsUrl = adicionalSubfolderUrl;
+          console.log('✅ Multiple files uploaded to folder:', adicionalSubfolderUrl);
+        }
+
+        // 4️⃣ Update Adicional.URL with attachments URL
+        const { error: updateError } = await supabase
+          .from('Adicionales')
+          .update({ URL: attachmentsUrl })
+          .eq('id', data.adicionalId);
+
+        if (updateError) {
+          console.error('⚠️ Error updating Adicional.URL:', updateError.message);
+        } else {
+          console.log('✅ Adicional.URL updated with attachments');
         }
 
       } catch (uploadError: any) {

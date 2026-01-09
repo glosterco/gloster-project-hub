@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Calendar, DollarSign, Clock, FileText, TrendingUp, ExternalLink, Check, X, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Calendar, DollarSign, Clock, FileText, TrendingUp, Paperclip, Check, X, Loader2 } from 'lucide-react';
 import { formatCurrency } from '@/utils/currencyUtils';
 import { Adicional } from '@/hooks/useAdicionales';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { RFIAttachmentViewer } from './RFIAttachmentViewer';
 
 interface AdicionalesDetailModalProps {
   open: boolean;
@@ -443,24 +444,17 @@ export const AdicionalesDetailModal: React.FC<AdicionalesDetailModalProps> = ({
             </Card>
           )}
 
-          {/* Acciones */}
+          {/* Documentos adjuntos - usando visor embebido sin referencias a Drive */}
           {adicional.URL && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2 font-rubik">
-                  <ExternalLink className="h-5 w-5" />
-                  <span>Documentos</span>
+                  <Paperclip className="h-5 w-5" />
+                  <span>Documentos adjuntos</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <Button 
-                  variant="outline" 
-                  className="w-full font-rubik"
-                  onClick={() => window.open(adicional.URL!, '_blank')}
-                >
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  Ver documentos adicionales
-                </Button>
+                <RFIAttachmentViewer attachmentsUrl={adicional.URL} />
               </CardContent>
             </Card>
           )}

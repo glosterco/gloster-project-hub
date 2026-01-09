@@ -162,10 +162,10 @@ export const AdicionalesForm: React.FC<AdicionalesFormProps> = ({
               action: 'upload_adicional_attachments',
               projectId: parseInt(projectId),
               adicionalId: (adicionalData as any).id,
-              files: await Promise.all(files.map(async (file) => ({
-                name: file.name,
-                type: file.type,
-                content: await fileToBase64(file)
+              attachments: await Promise.all(files.map(async (file) => ({
+                fileName: file.name,
+                mimeType: file.type,
+                fileContent: await fileToBase64(file)
               })))
             }
           });

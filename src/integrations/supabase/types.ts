@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       Adicionales: {
         Row: {
+          action_notes: string | null
           approved_at: string | null
           approved_by_email: string | null
           approved_by_name: string | null
@@ -28,14 +29,19 @@ export type Database = {
           id: number
           Monto_aprobado: number | null
           Monto_presentado: number | null
+          paused_at: string | null
+          paused_days: number | null
           Proyecto: number | null
           rejection_notes: string | null
           Status: string | null
+          Subtotal: number | null
           Titulo: string | null
           URL: string | null
+          Utilidades: number | null
           Vencimiento: string | null
         }
         Insert: {
+          action_notes?: string | null
           approved_at?: string | null
           approved_by_email?: string | null
           approved_by_name?: string | null
@@ -48,14 +54,19 @@ export type Database = {
           id?: number
           Monto_aprobado?: number | null
           Monto_presentado?: number | null
+          paused_at?: string | null
+          paused_days?: number | null
           Proyecto?: number | null
           rejection_notes?: string | null
           Status?: string | null
+          Subtotal?: number | null
           Titulo?: string | null
           URL?: string | null
+          Utilidades?: number | null
           Vencimiento?: string | null
         }
         Update: {
+          action_notes?: string | null
           approved_at?: string | null
           approved_by_email?: string | null
           approved_by_name?: string | null
@@ -68,11 +79,15 @@ export type Database = {
           id?: number
           Monto_aprobado?: number | null
           Monto_presentado?: number | null
+          paused_at?: string | null
+          paused_days?: number | null
           Proyecto?: number | null
           rejection_notes?: string | null
           Status?: string | null
+          Subtotal?: number | null
           Titulo?: string | null
           URL?: string | null
+          Utilidades?: number | null
           Vencimiento?: string | null
         }
         Relationships: [

@@ -13,7 +13,7 @@ const supabase = createClient(
 
 interface AdicionalResponseRequest {
   adicionalId: number;
-  status: 'Aprobado' | 'Rechazado';
+  status: 'Aprobado' | 'Rechazado' | 'Pausado';
   rejectionNotes?: string;
   montoAprobado?: number;
 }

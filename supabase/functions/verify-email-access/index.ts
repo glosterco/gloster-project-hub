@@ -217,11 +217,12 @@ const handler = async (req: Request): Promise<Response> => {
           // Solo cargar Adicionales si el acceso es por Adicional o general (mandante/aprobador)
           if (accessType === 'adicional' || (accessType === 'general' && (emailLower === mandanteEmail || isApprover))) {
             if (emailLower === mandanteEmail || isApprover) {
+              // Incluir adicionales pendientes: 'Enviado' (nuevo) y 'Pausado' (en espera)
               const { data: allAdicionales } = await supabaseAdmin
                 .from('Adicionales')
                 .select('id')
                 .eq('Proyecto', projectId)
-                .eq('Status', 'Pendiente');
+                .in('Status', ['Enviado', 'Pausado']);
 
               if (allAdicionales) {
                 authorizedAdicionalIds.push(...allAdicionales.map(a => a.id));

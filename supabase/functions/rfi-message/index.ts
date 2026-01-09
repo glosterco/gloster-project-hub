@@ -609,6 +609,13 @@ const handler = async (req: Request): Promise<Response> => {
     // ACTION: UPLOAD ADICIONAL ATTACHMENTS
     // ========================================
     if (data.action === 'upload_adicional_attachments') {
+      console.log('📎 upload_adicional_attachments called with:', {
+        adicionalId: data.adicionalId,
+        projectId: data.projectId,
+        hasAttachments: !!data.attachments,
+        attachmentsLength: data.attachments?.length || 0
+      });
+
       if (!data.adicionalId) {
         throw new Error('adicionalId is required for upload_adicional_attachments');
       }
@@ -639,6 +646,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
 
       if (!data.attachments || data.attachments.length === 0) {
+        console.log('❌ No attachments in request body. Full data keys:', Object.keys(data));
         throw new Error('No attachments provided');
       }
 

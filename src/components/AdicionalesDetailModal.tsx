@@ -339,6 +339,17 @@ export const AdicionalesDetailModal: React.FC<AdicionalesDetailModalProps> = ({
                   <p className="text-sm font-rubik mt-1">{adicional.Descripcion}</p>
                 </div>
               )}
+
+              {/* Documentos adjuntos - dentro de Información General */}
+              {adicional.URL && (
+                <div className="pt-4 border-t">
+                  <div className="flex items-center space-x-2 mb-3">
+                    <Paperclip className="h-4 w-4 text-muted-foreground" />
+                    <p className="text-sm font-medium text-muted-foreground font-rubik">Documentos adjuntos</p>
+                  </div>
+                  <RFIAttachmentViewer attachmentsUrl={adicional.URL} />
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -697,20 +708,6 @@ export const AdicionalesDetailModal: React.FC<AdicionalesDetailModalProps> = ({
             </Card>
           )}
 
-          {/* Documentos adjuntos */}
-          {adicional.URL && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2 font-rubik">
-                  <Paperclip className="h-5 w-5" />
-                  <span>Documentos adjuntos</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <RFIAttachmentViewer attachmentsUrl={adicional.URL} />
-              </CardContent>
-            </Card>
-          )}
         </div>
       </DialogContent>
     </Dialog>

@@ -57,11 +57,16 @@ type Adicional = {
   Proyecto: number | null;
   Correlativo: number | null;
   GG: number | null;
+  Utilidades: number | null;
+  Subtotal: number | null;
   URL: string | null;
   approved_by_email: string | null;
   approved_by_name: string | null;
   approved_at: string | null;
   rejection_notes: string | null;
+  action_notes: string | null;
+  paused_at: string | null;
+  paused_days: number | null;
 };
 
 type EstadoPago = {

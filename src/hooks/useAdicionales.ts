@@ -14,14 +14,56 @@ export interface Adicional {
   Monto_aprobado: number | null;
   Vencimiento: string | null;
   GG: number | null;
+  Utilidades: number | null;
+  Subtotal: number | null;
   URL: string | null;
   created_at: string;
   approved_by_email: string | null;
   approved_by_name: string | null;
   approved_at: string | null;
   rejection_notes: string | null;
+  action_notes: string | null;
+  paused_at: string | null;
+  paused_days: number | null;
   Correlativo: number | null;
 }
+
+// Helper para calcular días transcurridos
+export const calculateDaysElapsed = (adicional: Adicional): number => {
+  const createdAt = new Date(adicional.created_at);
+  const now = new Date();
+  
+  // Si está aprobado o rechazado, congelar en fecha de acción
+  if ((adicional.Status === 'Aprobado' || adicional.Status === 'Rechazado') && adicional.approved_at) {
+    const approvedAt = new Date(adicional.approved_at);
+    const totalDays = Math.floor((approvedAt.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
+    // Restar días pausados
+    return Math.max(0, totalDays - (adicional.paused_days || 0));
+  }
+  
+  // Si está pausado, no seguir contando desde la pausa
+  if (adicional.Status === 'Pausado' && adicional.paused_at) {
+    const pausedAt = new Date(adicional.paused_at);
+    const daysBeforePause = Math.floor((pausedAt.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
+    return Math.max(0, daysBeforePause - (adicional.paused_days || 0));
+  }
+  
+  // Para estados activos (Enviado)
+  const totalDays = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
+  return Math.max(0, totalDays - (adicional.paused_days || 0));
+};
+
+// Helper para calcular días en pausa
+export const calculatePausedDays = (adicional: Adicional): number => {
+  if (adicional.Status !== 'Pausado' || !adicional.paused_at) {
+    return adicional.paused_days || 0;
+  }
+  
+  const pausedAt = new Date(adicional.paused_at);
+  const now = new Date();
+  const currentPauseDays = Math.floor((now.getTime() - pausedAt.getTime()) / (1000 * 60 * 60 * 24));
+  return (adicional.paused_days || 0) + currentPauseDays;
+};
 
 export const useAdicionales = (projectId: string) => {
   const [adicionales, setAdicionales] = useState<Adicional[]>([]);

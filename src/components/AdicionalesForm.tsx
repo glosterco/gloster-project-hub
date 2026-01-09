@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -10,20 +10,23 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Upload, X } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CalendarIcon, Upload, X, Calculator } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { formatCurrency } from '@/utils/currencyUtils';
 
 const adicionalesSchema = z.object({
   categoria: z.string().min(1, 'La categoría es requerida'),
   especialidad: z.string().min(1, 'La especialidad es requerida'),
   titulo: z.string().min(1, 'El título es requerido'),
   descripcion: z.string().optional(),
-  monto_presentado: z.string().optional(),
-  vencimiento: z.date().optional(),
+  subtotal: z.string().min(1, 'El subtotal es requerido'),
   gg: z.string().optional(),
+  utilidades: z.string().optional(),
+  vencimiento: z.date().optional(),
 });
 
 type AdicionalesFormData = z.infer<typeof adicionalesSchema>;
@@ -34,6 +37,8 @@ interface AdicionalesFormProps {
   projectId: string;
   onSuccess: () => void;
   currency?: string;
+  defaultGG?: number;
+  defaultUtilidades?: number;
 }
 
 const categorias = [
@@ -59,10 +64,15 @@ export const AdicionalesForm: React.FC<AdicionalesFormProps> = ({
   onOpenChange,
   projectId,
   onSuccess,
-  currency = 'CLP'
+  currency = 'CLP',
+  defaultGG = 0,
+  defaultUtilidades = 0
 }) => {
   const [files, setFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
+  const [subtotal, setSubtotal] = useState<number>(0);
+  const [gg, setGG] = useState<number>(defaultGG);
+  const [utilidades, setUtilidades] = useState<number>(defaultUtilidades);
   const { toast } = useToast();
 
   const {
@@ -73,10 +83,26 @@ export const AdicionalesForm: React.FC<AdicionalesFormProps> = ({
     setValue,
     watch
   } = useForm<AdicionalesFormData>({
-    resolver: zodResolver(adicionalesSchema)
+    resolver: zodResolver(adicionalesSchema),
+    defaultValues: {
+      gg: defaultGG.toString(),
+      utilidades: defaultUtilidades.toString()
+    }
   });
 
   const vencimiento = watch('vencimiento');
+
+  // Calcular total automáticamente
+  const montoGG = subtotal * (gg / 100);
+  const montoUtilidades = subtotal * (utilidades / 100);
+  const total = subtotal + montoGG + montoUtilidades;
+
+  useEffect(() => {
+    setGG(defaultGG);
+    setUtilidades(defaultUtilidades);
+    setValue('gg', defaultGG.toString());
+    setValue('utilidades', defaultUtilidades.toString());
+  }, [defaultGG, defaultUtilidades, setValue]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -93,6 +119,11 @@ export const AdicionalesForm: React.FC<AdicionalesFormProps> = ({
     try {
       console.log('🚀 Submitting adicional:', data);
       
+      const subtotalValue = parseFloat(data.subtotal) || 0;
+      const ggValue = parseFloat(data.gg || '0') || 0;
+      const utilidadesValue = parseFloat(data.utilidades || '0') || 0;
+      const montoTotal = subtotalValue * (1 + ggValue/100 + utilidadesValue/100);
+      
       const { data: adicionalData, error } = await supabase
         .from('Adicionales')
         .insert({
@@ -100,12 +131,14 @@ export const AdicionalesForm: React.FC<AdicionalesFormProps> = ({
           Especialidad: data.especialidad,
           Titulo: data.titulo,
           Descripcion: data.descripcion || null,
-          Monto_presentado: data.monto_presentado ? parseFloat(data.monto_presentado) : null,
+          Subtotal: subtotalValue,
+          Monto_presentado: montoTotal,
           Vencimiento: data.vencimiento ? data.vencimiento.toISOString().split('T')[0] : null,
-          GG: data.gg ? parseFloat(data.gg) : null,
+          GG: ggValue,
+          Utilidades: utilidadesValue,
           Proyecto: parseInt(projectId),
-          Status: 'Pendiente'
-        })
+          Status: 'Enviado'
+        } as any)
         .select()
         .single();
 
@@ -121,7 +154,30 @@ export const AdicionalesForm: React.FC<AdicionalesFormProps> = ({
 
       console.log('✅ Adicional created:', adicionalData);
       
-      // El adicional se creó correctamente - mostrar éxito inmediatamente
+      // Si hay archivos, subirlos a Drive
+      if (files.length > 0 && adicionalData) {
+        try {
+          const { error: uploadError } = await supabase.functions.invoke('rfi-message', {
+            body: {
+              action: 'upload_adicional_attachments',
+              projectId: parseInt(projectId),
+              adicionalId: (adicionalData as any).id,
+              files: await Promise.all(files.map(async (file) => ({
+                name: file.name,
+                type: file.type,
+                content: await fileToBase64(file)
+              })))
+            }
+          });
+
+          if (uploadError) {
+            console.error('⚠️ Error uploading attachments:', uploadError);
+          }
+        } catch (uploadErr) {
+          console.error('⚠️ Error uploading attachments:', uploadErr);
+        }
+      }
+      
       toast({
         title: "Éxito",
         description: "Adicional presentado correctamente",
@@ -129,24 +185,17 @@ export const AdicionalesForm: React.FC<AdicionalesFormProps> = ({
 
       reset();
       setFiles([]);
+      setSubtotal(0);
       onOpenChange(false);
       onSuccess();
       
-      // Send notification to mandante (fire and forget - no bloquea UI)
+      // Send notification to mandante (fire and forget)
       supabase.functions.invoke('send-adicional-notification', {
         body: { 
-          adicionalId: adicionalData.id,
+          adicionalId: (adicionalData as any).id,
           projectId: parseInt(projectId)
         }
-      }).then(({ error: notifError }) => {
-        if (notifError) {
-          console.error('⚠️ Error sending notification:', notifError);
-        } else {
-          console.log('✅ Notification sent to mandante');
-        }
-      }).catch(notifError => {
-        console.error('⚠️ Error sending notification:', notifError);
-      });
+      }).catch(console.error);
       
     } catch (error) {
       console.error('❌ CRITICAL ERROR creating adicional:', error);
@@ -160,9 +209,21 @@ export const AdicionalesForm: React.FC<AdicionalesFormProps> = ({
     }
   };
 
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const result = reader.result as string;
+        resolve(result.split(',')[1]);
+      };
+      reader.onerror = reject;
+    });
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-rubik">Presentar Nuevo Adicional</DialogTitle>
           <DialogDescription className="font-rubik">
@@ -237,33 +298,100 @@ export const AdicionalesForm: React.FC<AdicionalesFormProps> = ({
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Monto Presentado */}
-            <div className="space-y-2">
-              <Label htmlFor="monto_presentado" className="font-rubik">Monto Presentado ({currency})</Label>
-              <Input
-                id="monto_presentado"
-                type="number"
-                step="0.01"
-                {...register('monto_presentado')}
-                placeholder="0.00"
-                className="font-rubik"
-              />
-            </div>
-
-            {/* GG */}
-            <div className="space-y-2">
-              <Label htmlFor="gg" className="font-rubik">GG (%)</Label>
-              <Input
-                id="gg"
-                type="number"
-                step="0.01"
-                {...register('gg')}
-                placeholder="0.00"
-                className="font-rubik"
-              />
-            </div>
-          </div>
+          {/* TABLA DE MONTOS ESTRUCTURADA */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-rubik flex items-center gap-2">
+                <Calculator className="h-4 w-4" />
+                Desglose de Montos ({currency})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="border rounded-lg overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-muted/50">
+                    <tr>
+                      <th className="text-left p-3 font-medium text-sm">Concepto</th>
+                      <th className="text-right p-3 font-medium text-sm">Monto</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {/* Subtotal */}
+                    <tr className="border-t">
+                      <td className="p-3 font-medium">Subtotal *</td>
+                      <td className="p-3">
+                        <Input
+                          type="number"
+                          step="0.01"
+                          {...register('subtotal')}
+                          placeholder="0.00"
+                          className="text-right font-rubik"
+                          onChange={(e) => {
+                            setSubtotal(parseFloat(e.target.value) || 0);
+                            setValue('subtotal', e.target.value);
+                          }}
+                        />
+                      </td>
+                    </tr>
+                    {/* GG */}
+                    <tr className="border-t bg-muted/30">
+                      <td className="p-3 font-medium">
+                        Gastos Generales (%)
+                        <span className="block text-xs text-muted-foreground">
+                          = {formatCurrency(montoGG, currency)}
+                        </span>
+                      </td>
+                      <td className="p-3">
+                        <Input
+                          type="number"
+                          step="0.01"
+                          {...register('gg')}
+                          placeholder="0.00"
+                          className="text-right font-rubik"
+                          onChange={(e) => {
+                            setGG(parseFloat(e.target.value) || 0);
+                            setValue('gg', e.target.value);
+                          }}
+                        />
+                      </td>
+                    </tr>
+                    {/* Utilidades */}
+                    <tr className="border-t bg-muted/30">
+                      <td className="p-3 font-medium">
+                        Utilidades (%)
+                        <span className="block text-xs text-muted-foreground">
+                          = {formatCurrency(montoUtilidades, currency)}
+                        </span>
+                      </td>
+                      <td className="p-3">
+                        <Input
+                          type="number"
+                          step="0.01"
+                          {...register('utilidades')}
+                          placeholder="0.00"
+                          className="text-right font-rubik"
+                          onChange={(e) => {
+                            setUtilidades(parseFloat(e.target.value) || 0);
+                            setValue('utilidades', e.target.value);
+                          }}
+                        />
+                      </td>
+                    </tr>
+                    {/* Total */}
+                    <tr className="border-t-2 border-primary/30 bg-primary/5">
+                      <td className="p-3 font-bold text-lg">TOTAL</td>
+                      <td className="p-3 text-right font-bold text-lg text-primary">
+                        {formatCurrency(total, currency)}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              {errors.subtotal && (
+                <p className="text-sm text-destructive font-rubik mt-2">{errors.subtotal.message}</p>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Fecha de Vencimiento */}
           <div className="space-y-2">
@@ -296,7 +424,7 @@ export const AdicionalesForm: React.FC<AdicionalesFormProps> = ({
 
           {/* Carga de Archivos */}
           <div className="space-y-2">
-            <Label className="font-rubik">Archivos de Respaldo</Label>
+            <Label className="font-rubik">Archivos de Respaldo (Opcional)</Label>
             <div className="border-2 border-dashed border-muted rounded-lg p-6">
               <div className="text-center">
                 <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
@@ -321,7 +449,6 @@ export const AdicionalesForm: React.FC<AdicionalesFormProps> = ({
               </div>
             </div>
 
-            {/* Lista de archivos seleccionados */}
             {files.length > 0 && (
               <div className="space-y-2">
                 <Label className="text-sm font-rubik">Archivos seleccionados:</Label>

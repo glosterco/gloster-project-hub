@@ -2,9 +2,11 @@ import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Calendar, DollarSign, Clock, Pause } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Calendar, DollarSign, Clock, Pause, Download } from 'lucide-react';
 import { formatCurrency } from '@/utils/currencyUtils';
 import { Adicional, calculateDaysElapsed, calculatePausedDays } from '@/hooks/useAdicionales';
+import { useExportPDF } from '@/hooks/useExportPDF';
 
 const getStatusVariant = (status: string) => {
   switch (status?.toLowerCase()) {
@@ -49,6 +51,12 @@ export const AdicionalesCards: React.FC<AdicionalesCardsProps> = ({
   currency = 'CLP',
   onCardClick
 }) => {
+  const { exportAdicionalToPDF } = useExportPDF();
+
+  const handleDownload = async (e: React.MouseEvent, adicional: Adicional) => {
+    e.stopPropagation();
+    await exportAdicionalToPDF(adicional, currency);
+  };
   if (loading) {
     return (
       <div className="space-y-6">
@@ -110,9 +118,20 @@ export const AdicionalesCards: React.FC<AdicionalesCardsProps> = ({
                         <DollarSign className="h-5 w-5 text-primary" />
                       </div>
                       <div>
-                        <CardTitle className="text-lg font-rubik text-slate-800">
-                          Adicional #{adicional.Correlativo || adicional.id}
-                        </CardTitle>
+                        <div className="flex items-center gap-2">
+                          <CardTitle className="text-lg font-rubik text-slate-800">
+                            Adicional #{adicional.Correlativo || adicional.id}
+                          </CardTitle>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 shrink-0"
+                            onClick={(e) => handleDownload(e, adicional)}
+                            title="Descargar PDF"
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </div>
                         <p className="text-sm text-muted-foreground font-rubik">
                           {new Date(adicional.created_at).toLocaleDateString('es-CL')}
                         </p>

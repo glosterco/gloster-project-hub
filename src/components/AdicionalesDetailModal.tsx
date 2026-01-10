@@ -6,12 +6,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Calendar, DollarSign, Clock, FileText, TrendingUp, Paperclip, Check, X, Loader2, Pause, Play, User } from 'lucide-react';
+import { Calendar, DollarSign, Clock, FileText, TrendingUp, Paperclip, Check, X, Loader2, Pause, Play, User, History } from 'lucide-react';
 import { formatCurrency } from '@/utils/currencyUtils';
 import { Adicional, calculateDaysElapsed, calculatePausedDays } from '@/hooks/useAdicionales';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { RFIAttachmentViewer } from './RFIAttachmentViewer';
+import { useAdicionalActionsHistory, getActionLabel, getActionColor, getActionBgColor } from '@/hooks/useAdicionalActionsHistory';
 
 interface AdicionalesDetailModalProps {
   open: boolean;
@@ -66,6 +67,7 @@ export const AdicionalesDetailModal: React.FC<AdicionalesDetailModalProps> = ({
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [showPauseForm, setShowPauseForm] = useState(false);
   const { toast } = useToast();
+  const { actions: actionsHistory, recordAction } = useAdicionalActionsHistory(adicional?.id || null);
 
   if (!adicional) return null;
 
@@ -109,6 +111,9 @@ export const AdicionalesDetailModal: React.FC<AdicionalesDetailModalProps> = ({
         .eq('id', adicional.id);
 
       if (error) throw error;
+
+      // Registrar en historial
+      await recordAction('aprobado', userEmail, actionNotes || undefined);
 
       // Send response notification
       supabase.functions.invoke('send-adicional-response', {
@@ -164,6 +169,9 @@ export const AdicionalesDetailModal: React.FC<AdicionalesDetailModalProps> = ({
 
       if (error) throw error;
 
+      // Registrar en historial
+      await recordAction('pausado', userEmail, actionNotes);
+
       // Send notification
       supabase.functions.invoke('send-adicional-response', {
         body: { 
@@ -196,6 +204,7 @@ export const AdicionalesDetailModal: React.FC<AdicionalesDetailModalProps> = ({
   const handleResume = async () => {
     setLoading(true);
     try {
+      const userEmail = getVerifiedEmail();
       // Calcular días pausados acumulados
       const currentPausedDays = calculatePausedDays(adicional);
       
@@ -209,6 +218,9 @@ export const AdicionalesDetailModal: React.FC<AdicionalesDetailModalProps> = ({
         .eq('id', adicional.id);
 
       if (error) throw error;
+
+      // Registrar en historial
+      await recordAction('reanudado', userEmail);
 
       toast({
         title: "Adicional reactivado",
@@ -260,6 +272,9 @@ export const AdicionalesDetailModal: React.FC<AdicionalesDetailModalProps> = ({
         .eq('id', adicional.id);
 
       if (error) throw error;
+
+      // Registrar en historial
+      await recordAction('rechazado', userEmail, actionNotes);
 
       // Send rejection notification
       supabase.functions.invoke('send-adicional-response', {
@@ -491,92 +506,126 @@ export const AdicionalesDetailModal: React.FC<AdicionalesDetailModalProps> = ({
             </CardContent>
           </Card>
 
-          {/* Historial de acciones */}
-          {(adicional.approved_at || adicional.paused_at || adicional.action_notes || adicional.rejection_notes) && (
+          {/* Historial de acciones completo */}
+          {(actionsHistory.length > 0 || adicional.approved_at || adicional.paused_at || adicional.action_notes || adicional.rejection_notes) && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2 font-rubik">
-                  {adicional.Status === 'Aprobado' ? (
-                    <Check className="h-5 w-5 text-green-600" />
-                  ) : adicional.Status === 'Rechazado' ? (
-                    <X className="h-5 w-5 text-red-600" />
-                  ) : adicional.Status === 'Pausado' ? (
-                    <Pause className="h-5 w-5 text-amber-600" />
-                  ) : null}
+                  <History className="h-5 w-5" />
                   <span>Historial de Revisión</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {adicional.approved_by_email && (
-                  <div className="flex items-center space-x-2 text-sm font-rubik">
-                    <User className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">Revisado por:</span>
-                    <span className="font-medium">{adicional.approved_by_email}</span>
+                {/* Timeline de acciones del historial */}
+                {actionsHistory.length > 0 ? (
+                  <div className="space-y-3">
+                    {actionsHistory.map((action, index) => (
+                      <div 
+                        key={action.id} 
+                        className={`p-3 rounded-lg border ${getActionBgColor(action.action_type)}`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className={`font-semibold text-sm ${getActionColor(action.action_type)}`}>
+                            {getActionLabel(action.action_type)}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(action.created_at).toLocaleDateString('es-CL', { 
+                              day: '2-digit', 
+                              month: 'short', 
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </span>
+                        </div>
+                        {action.action_by_email && (
+                          <p className="text-xs text-muted-foreground">
+                            Por: {action.action_by_email}
+                          </p>
+                        )}
+                        {action.notes && (
+                          <p className="text-sm mt-2 text-foreground/80">
+                            {action.notes}
+                          </p>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                )}
+                ) : (
+                  /* Fallback para adicionales sin historial en la nueva tabla */
+                  <>
+                    {adicional.approved_by_email && (
+                      <div className="flex items-center space-x-2 text-sm font-rubik">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-muted-foreground">Revisado por:</span>
+                        <span className="font-medium">{adicional.approved_by_email}</span>
+                      </div>
+                    )}
 
-                {/* Fecha de Aprobación */}
-                {adicional.Status === 'Aprobado' && adicional.approved_at && (
-                  <div className="flex items-center space-x-2 text-sm font-rubik">
-                    <Calendar className="h-4 w-4 text-green-600" />
-                    <span className="text-muted-foreground">Fecha de aprobación:</span>
-                    <span className="font-medium text-green-700">
-                      {new Date(adicional.approved_at).toLocaleDateString('es-CL', { 
-                        day: '2-digit', 
-                        month: 'long', 
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </span>
-                  </div>
-                )}
+                    {/* Fecha de Aprobación */}
+                    {adicional.Status === 'Aprobado' && adicional.approved_at && (
+                      <div className="flex items-center space-x-2 text-sm font-rubik">
+                        <Calendar className="h-4 w-4 text-green-600" />
+                        <span className="text-muted-foreground">Fecha de aprobación:</span>
+                        <span className="font-medium text-green-700">
+                          {new Date(adicional.approved_at).toLocaleDateString('es-CL', { 
+                            day: '2-digit', 
+                            month: 'long', 
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </span>
+                      </div>
+                    )}
 
-                {/* Fecha de Rechazo */}
-                {adicional.Status === 'Rechazado' && adicional.approved_at && (
-                  <div className="flex items-center space-x-2 text-sm font-rubik">
-                    <Calendar className="h-4 w-4 text-red-600" />
-                    <span className="text-muted-foreground">Fecha de rechazo:</span>
-                    <span className="font-medium text-red-700">
-                      {new Date(adicional.approved_at).toLocaleDateString('es-CL', { 
-                        day: '2-digit', 
-                        month: 'long', 
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </span>
-                  </div>
-                )}
+                    {/* Fecha de Rechazo */}
+                    {adicional.Status === 'Rechazado' && adicional.approved_at && (
+                      <div className="flex items-center space-x-2 text-sm font-rubik">
+                        <Calendar className="h-4 w-4 text-red-600" />
+                        <span className="text-muted-foreground">Fecha de rechazo:</span>
+                        <span className="font-medium text-red-700">
+                          {new Date(adicional.approved_at).toLocaleDateString('es-CL', { 
+                            day: '2-digit', 
+                            month: 'long', 
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </span>
+                      </div>
+                    )}
 
-                {/* Fecha de Pausa */}
-                {adicional.Status === 'Pausado' && adicional.paused_at && (
-                  <div className="flex items-center space-x-2 text-sm font-rubik">
-                    <Calendar className="h-4 w-4 text-amber-600" />
-                    <span className="text-muted-foreground">Fecha de pausa:</span>
-                    <span className="font-medium text-amber-700">
-                      {new Date(adicional.paused_at).toLocaleDateString('es-CL', { 
-                        day: '2-digit', 
-                        month: 'long', 
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </span>
-                  </div>
-                )}
+                    {/* Fecha de Pausa */}
+                    {adicional.Status === 'Pausado' && adicional.paused_at && (
+                      <div className="flex items-center space-x-2 text-sm font-rubik">
+                        <Calendar className="h-4 w-4 text-amber-600" />
+                        <span className="text-muted-foreground">Fecha de pausa:</span>
+                        <span className="font-medium text-amber-700">
+                          {new Date(adicional.paused_at).toLocaleDateString('es-CL', { 
+                            day: '2-digit', 
+                            month: 'long', 
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </span>
+                      </div>
+                    )}
 
-                {adicional.action_notes && (
-                  <div className="mt-2 p-3 bg-muted rounded-lg">
-                    <p className="text-sm font-medium text-muted-foreground font-rubik">Comentario:</p>
-                    <p className="text-sm font-rubik mt-1">{adicional.action_notes}</p>
-                  </div>
-                )}
-                {adicional.rejection_notes && adicional.Status === 'Rechazado' && (
-                  <div className="mt-2 p-3 bg-red-50 rounded-lg border border-red-200">
-                    <p className="text-sm font-medium text-red-700 font-rubik">Motivo de rechazo:</p>
-                    <p className="text-sm text-red-600 font-rubik mt-1">{adicional.rejection_notes}</p>
-                  </div>
+                    {adicional.action_notes && (
+                      <div className="mt-2 p-3 bg-muted rounded-lg">
+                        <p className="text-sm font-medium text-muted-foreground font-rubik">Comentario:</p>
+                        <p className="text-sm font-rubik mt-1">{adicional.action_notes}</p>
+                      </div>
+                    )}
+                    {adicional.rejection_notes && adicional.Status === 'Rechazado' && (
+                      <div className="mt-2 p-3 bg-red-50 rounded-lg border border-red-200">
+                        <p className="text-sm font-medium text-red-700 font-rubik">Motivo de rechazo:</p>
+                        <p className="text-sm text-red-600 font-rubik mt-1">{adicional.rejection_notes}</p>
+                      </div>
+                    )}
+                  </>
                 )}
               </CardContent>
             </Card>

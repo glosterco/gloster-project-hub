@@ -2,8 +2,10 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { HelpCircle, Calendar, AlertTriangle, AlertCircle, Clock, CheckCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { HelpCircle, Calendar, AlertTriangle, AlertCircle, Clock, CheckCircle, Download } from 'lucide-react';
 import { RFI } from '@/hooks/useRFI';
+import { useExportPDF } from '@/hooks/useExportPDF';
 
 interface RFICardsProps {
   rfis: RFI[];
@@ -72,6 +74,12 @@ export const RFICards: React.FC<RFICardsProps> = ({
   loading,
   onCardClick
 }) => {
+  const { exportRFIToPDF } = useExportPDF();
+
+  const handleDownload = async (e: React.MouseEvent, rfi: RFI) => {
+    e.stopPropagation();
+    await exportRFIToPDF(rfi);
+  };
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -119,6 +127,15 @@ export const RFICards: React.FC<RFICardsProps> = ({
                 <div className="flex items-center gap-2">
                   <HelpCircle className="h-5 w-5 text-blue-500 shrink-0" />
                   <span className="font-medium text-sm">RFI #{rfi.Correlativo || rfi.id}</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 shrink-0"
+                    onClick={(e) => handleDownload(e, rfi)}
+                    title="Descargar PDF"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
                 <div className="flex flex-wrap gap-1 justify-end">
                   <Badge className={getStatusColor(rfi.Status)}>

@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      adicional_actions_history: {
+        Row: {
+          action_by_email: string | null
+          action_by_name: string | null
+          action_type: string
+          adicional_id: number
+          created_at: string
+          id: string
+          notes: string | null
+        }
+        Insert: {
+          action_by_email?: string | null
+          action_by_name?: string | null
+          action_type: string
+          adicional_id: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+        }
+        Update: {
+          action_by_email?: string | null
+          action_by_name?: string | null
+          action_type?: string
+          adicional_id?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "adicional_actions_history_adicional_id_fkey"
+            columns: ["adicional_id"]
+            isOneToOne: false
+            referencedRelation: "Adicionales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       Adicionales: {
         Row: {
           action_notes: string | null

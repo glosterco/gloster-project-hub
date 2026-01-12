@@ -1,7 +1,83 @@
 import { useCallback } from 'react';
 import html2pdf from 'html2pdf.js';
+import { supabase } from '@/integrations/supabase/client';
+
+interface RFIMessage {
+  id: string;
+  author_email: string;
+  author_name: string | null;
+  author_role: string;
+  message_text: string;
+  attachments_url: string | null;
+  created_at: string;
+}
+
+interface AdicionalAction {
+  id: string;
+  action_type: string;
+  action_by_email: string | null;
+  action_by_name: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
+const getActionLabel = (actionType: string): string => {
+  const labels: Record<string, string> = {
+    enviado: 'Enviado',
+    pausado: 'Pausado',
+    reanudado: 'Reanudado',
+    aprobado: 'Aprobado',
+    rechazado: 'Rechazado'
+  };
+  return labels[actionType] || actionType;
+};
+
+const getRoleLabel = (role: string): string => {
+  const labels: Record<string, string> = {
+    contratista: 'Contratista',
+    mandante: 'Mandante',
+    aprobador: 'Aprobador',
+    especialista: 'Especialista'
+  };
+  return labels[role] || role;
+};
 
 export const useExportPDF = () => {
+  const fetchAdicionalHistory = async (adicionalId: number): Promise<AdicionalAction[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('adicional_actions_history')
+        .select('*')
+        .eq('adicional_id', adicionalId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      return (data || []) as AdicionalAction[];
+    } catch (error) {
+      console.error('Error fetching adicional history:', error);
+      return [];
+    }
+  };
+
+  const fetchRFIMessages = async (rfiId: number): Promise<RFIMessage[]> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('rfi-message', {
+        body: {
+          action: 'get_messages',
+          rfiId,
+          authorEmail: '',
+          authorRole: 'contratista',
+        }
+      });
+
+      if (error) throw error;
+      return data?.messages || [];
+    } catch (error) {
+      console.error('Error fetching RFI messages:', error);
+      return [];
+    }
+  };
+
   const exportAdicionalToPDF = useCallback(async (adicional: any, currency = 'CLP') => {
     const formatCurrency = (value: number) => {
       return new Intl.NumberFormat('es-CL', { 
@@ -10,6 +86,35 @@ export const useExportPDF = () => {
         minimumFractionDigits: 0 
       }).format(value);
     };
+
+    // Fetch action history
+    const actions = await fetchAdicionalHistory(adicional.id);
+
+    const historyHtml = actions.length > 0 ? `
+      <div style="background: #fefce8; padding: 20px; border-radius: 8px; border: 1px solid #fef08a; margin-bottom: 24px;">
+        <h2 style="color: #854d0e; font-size: 18px; margin: 0 0 16px 0;">Historial de Revisión</h2>
+        ${actions.map((action, index) => `
+          <div style="padding: 12px; margin-bottom: ${index < actions.length - 1 ? '12px' : '0'}; background: white; border-radius: 6px; border-left: 4px solid ${
+            action.action_type === 'aprobado' ? '#22c55e' :
+            action.action_type === 'rechazado' ? '#ef4444' :
+            action.action_type === 'pausado' ? '#f59e0b' :
+            action.action_type === 'reanudado' ? '#06b6d4' : '#3b82f6'
+          };">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+              <strong style="color: ${
+                action.action_type === 'aprobado' ? '#166534' :
+                action.action_type === 'rechazado' ? '#dc2626' :
+                action.action_type === 'pausado' ? '#d97706' :
+                action.action_type === 'reanudado' ? '#0891b2' : '#2563eb'
+              };">${getActionLabel(action.action_type)}</strong>
+              <span style="color: #64748b; font-size: 12px;">${new Date(action.created_at).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+            </div>
+            <p style="color: #475569; margin: 0; font-size: 13px;">Por: ${action.action_by_email || 'Sistema'}</p>
+            ${action.notes ? `<p style="color: #64748b; margin: 8px 0 0 0; font-size: 13px; font-style: italic;">"${action.notes}"</p>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    ` : '';
 
     const content = `
       <div style="font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto;">
@@ -49,13 +154,13 @@ export const useExportPDF = () => {
           </table>
         </div>
 
-        ${adicional.approved_by_email || adicional.action_notes || adicional.rejection_notes ? `
-        <div style="background: #fefce8; padding: 20px; border-radius: 8px; border: 1px solid #fef08a;">
-          <h2 style="color: #854d0e; font-size: 18px; margin: 0 0 16px 0;">Historial de Revisión</h2>
-          ${adicional.approved_by_email ? `<p style="color: #475569; margin: 0 0 8px 0;"><strong>Revisado por:</strong> ${adicional.approved_by_email}</p>` : ''}
-          ${adicional.approved_at ? `<p style="color: #475569; margin: 0 0 8px 0;"><strong>Fecha:</strong> ${new Date(adicional.approved_at).toLocaleDateString('es-CL', { day: '2-digit', month: 'long', year: 'numeric' })}</p>` : ''}
-          ${adicional.action_notes ? `<p style="color: #475569; margin: 0 0 8px 0;"><strong>Comentario:</strong> ${adicional.action_notes}</p>` : ''}
-          ${adicional.rejection_notes && adicional.Status === 'Rechazado' ? `<p style="color: #dc2626; margin: 0;"><strong>Motivo de rechazo:</strong> ${adicional.rejection_notes}</p>` : ''}
+        ${historyHtml}
+
+        ${adicional.URL ? `
+        <div style="background: #eff6ff; padding: 16px; border-radius: 8px; margin-bottom: 24px; border: 1px solid #bfdbfe;">
+          <p style="color: #1e40af; margin: 0; font-size: 13px;">
+            <strong>Archivos adjuntos:</strong> Los documentos asociados están disponibles en la plataforma Gloster.
+          </p>
         </div>` : ''}
 
         <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center;">
@@ -79,6 +184,28 @@ export const useExportPDF = () => {
   }, []);
 
   const exportRFIToPDF = useCallback(async (rfi: any) => {
+    // Fetch conversation history
+    const messages = await fetchRFIMessages(rfi.id);
+
+    const messagesHtml = messages.length > 0 ? `
+      <div style="margin-bottom: 24px;">
+        <h2 style="color: #334155; font-size: 18px; margin: 0 0 16px 0;">Historial de Conversación</h2>
+        ${messages.map((msg, index) => `
+          <div style="padding: 16px; margin-bottom: ${index < messages.length - 1 ? '12px' : '0'}; background: ${msg.author_role === 'contratista' ? '#eff6ff' : '#f0fdf4'}; border-radius: 8px; border-left: 4px solid ${msg.author_role === 'contratista' ? '#3b82f6' : '#22c55e'};">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+              <div>
+                <strong style="color: #1e293b;">${msg.author_name || msg.author_email}</strong>
+                <span style="color: #64748b; font-size: 12px; margin-left: 8px;">(${getRoleLabel(msg.author_role)})</span>
+              </div>
+              <span style="color: #64748b; font-size: 12px;">${new Date(msg.created_at).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+            </div>
+            <p style="color: #475569; margin: 0; line-height: 1.6; white-space: pre-wrap;">${msg.message_text}</p>
+            ${msg.attachments_url ? `<p style="color: #2563eb; margin: 8px 0 0 0; font-size: 12px;">📎 Archivos adjuntos disponibles en la plataforma</p>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    ` : '';
+
     const content = `
       <div style="font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto;">
         <div style="border-bottom: 3px solid #3b82f6; padding-bottom: 20px; margin-bottom: 30px;">
@@ -102,15 +229,18 @@ export const useExportPDF = () => {
 
         ${rfi.Descripcion ? `
         <div style="margin-bottom: 24px;">
-          <h2 style="color: #334155; font-size: 18px; margin: 0 0 12px 0;">Descripción / Consulta</h2>
+          <h2 style="color: #334155; font-size: 18px; margin: 0 0 12px 0;">Descripción / Consulta Inicial</h2>
           <p style="color: #475569; line-height: 1.6; margin: 0; white-space: pre-wrap;">${rfi.Descripcion}</p>
         </div>` : ''}
 
-        ${rfi.Respuesta ? `
-        <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; margin-bottom: 24px; border: 1px solid #bbf7d0;">
-          <h2 style="color: #166534; font-size: 18px; margin: 0 0 12px 0;">Respuesta</h2>
-          <p style="color: #475569; line-height: 1.6; margin: 0; white-space: pre-wrap;">${rfi.Respuesta}</p>
+        ${rfi.URL ? `
+        <div style="background: #eff6ff; padding: 16px; border-radius: 8px; margin-bottom: 24px; border: 1px solid #bfdbfe;">
+          <p style="color: #1e40af; margin: 0; font-size: 13px;">
+            <strong>Archivos iniciales adjuntos:</strong> Los documentos asociados a esta consulta están disponibles en la plataforma Gloster.
+          </p>
         </div>` : ''}
+
+        ${messagesHtml}
 
         <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center;">
           <p style="color: #94a3b8; font-size: 12px; margin: 0;">Documento generado automáticamente por Gloster</p>

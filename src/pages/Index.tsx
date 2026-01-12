@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle, FileText, DollarSign, HelpCircle, Camera, BarChart3, ChevronLeft, ChevronRight } from 'lucide-react';
+import { CheckCircle, FileText, DollarSign, HelpCircle, Camera, BarChart3, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -163,19 +163,48 @@ const Index = () => {
           </p>
         </div>
 
-        {/* Features Grid - Updated with all tools */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
-          {tools.slice(0, 6).map((tool) => (
-            <Card key={tool.id} className="text-center p-6 bg-white shadow-md hover:shadow-lg transition-shadow">
+        {/* Platform Advantages */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+          {[
+            {
+              icon: Clock,
+              title: 'Seguimiento Automático',
+              description: 'Notificaciones de vencimientos y recordatorios automáticos para nunca perder un plazo',
+              color: 'text-blue-600',
+              bgColor: 'bg-blue-100'
+            },
+            {
+              icon: CheckCircle,
+              title: 'Transparencia Total',
+              description: 'Trazabilidad completa de cada acción, aprobación y cambio en tus proyectos',
+              color: 'text-green-600',
+              bgColor: 'bg-green-100'
+            },
+            {
+              icon: FileText,
+              title: 'Centralización',
+              description: 'Toda la documentación, comunicación y gestión en un solo lugar accesible',
+              color: 'text-purple-600',
+              bgColor: 'bg-purple-100'
+            },
+            {
+              icon: DollarSign,
+              title: 'Control Financiero',
+              description: 'Visibilidad en tiempo real del estado de pagos, adicionales y presupuestos',
+              color: 'text-amber-600',
+              bgColor: 'bg-amber-100'
+            }
+          ].map((advantage, index) => (
+            <Card key={index} className="text-center p-6 bg-white shadow-md hover:shadow-lg transition-shadow border-t-4 border-t-gloster-yellow">
               <CardHeader>
-                <div className={`w-12 h-12 ${tool.bgColor} rounded-lg flex items-center justify-center mx-auto mb-4`}>
-                  <tool.icon className={`h-6 w-6 ${tool.color}`} />
+                <div className={`w-12 h-12 ${advantage.bgColor} rounded-lg flex items-center justify-center mx-auto mb-4`}>
+                  <advantage.icon className={`h-6 w-6 ${advantage.color}`} />
                 </div>
-                <CardTitle className="text-lg font-rubik">{tool.title}</CardTitle>
+                <CardTitle className="text-lg font-rubik">{advantage.title}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-slate-600 font-rubik text-sm">
-                  {tool.description}
+                  {advantage.description}
                 </p>
               </CardContent>
             </Card>

@@ -37,6 +37,7 @@ const rfiSchema = z.object({
   titulo: z.string().min(1, 'El título es requerido'),
   descripcion: z.string().min(1, 'La descripción/pregunta es requerida'),
   urgencia: z.enum(['no_urgente', 'urgente', 'muy_urgente']),
+  especialidad: z.string().optional(),
   fecha_vencimiento: z.string().min(1, 'La fecha de vencimiento es requerida'),
 });
 
@@ -70,6 +71,7 @@ export const RFIForm: React.FC<RFIFormProps> = ({
       titulo: '',
       descripcion: '',
       urgencia: 'no_urgente',
+      especialidad: '',
       fecha_vencimiento: defaultDate,
     },
   });
@@ -80,6 +82,7 @@ export const RFIForm: React.FC<RFIFormProps> = ({
         titulo: '',
         descripcion: '',
         urgencia: 'no_urgente',
+        especialidad: '',
         fecha_vencimiento: format(addDays(new Date(), 7), 'yyyy-MM-dd'),
       });
       setSelectedContactIds([]);
@@ -141,6 +144,7 @@ export const RFIForm: React.FC<RFIFormProps> = ({
           Descripcion: data.descripcion,
           Status: 'Pendiente',
           Urgencia: data.urgencia,
+          Especialidad: data.especialidad || null,
           Fecha_Vencimiento: data.fecha_vencimiento,
         } as any)
         .select()
@@ -309,25 +313,54 @@ export const RFIForm: React.FC<RFIFormProps> = ({
 
               <FormField
                 control={form.control}
-                name="fecha_vencimiento"
+                name="especialidad"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Fecha vencimiento</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input 
-                          type="date"
-                          className="pl-10"
-                          {...field} 
-                        />
-                      </div>
-                    </FormControl>
+                    <FormLabel>Especialidad</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || ''}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="arquitectura">Arquitectura</SelectItem>
+                        <SelectItem value="estructura">Estructura</SelectItem>
+                        <SelectItem value="electricidad">Electricidad</SelectItem>
+                        <SelectItem value="sanitario">Sanitario</SelectItem>
+                        <SelectItem value="mecanico">Mecánico</SelectItem>
+                        <SelectItem value="climatizacion">Climatización</SelectItem>
+                        <SelectItem value="incendio">Incendio</SelectItem>
+                        <SelectItem value="paisajismo">Paisajismo</SelectItem>
+                        <SelectItem value="otro">Otro</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="fecha_vencimiento"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Fecha vencimiento</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input 
+                        type="date"
+                        className="pl-10"
+                        {...field} 
+                      />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             {/* File attachment section */}
             <div className="space-y-2">

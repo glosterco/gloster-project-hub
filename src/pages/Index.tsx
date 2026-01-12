@@ -153,9 +153,9 @@ const Index = () => {
       <div className="container mx-auto px-6 py-16">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-slate-800 mb-6 font-rubik">
-            Gestiona tus Subcontratos
+            Gestiona tus <span className="text-gloster-yellow">Subcontratos</span>
             <br />
-            <span className="text-gloster-yellow">de Forma Simple</span>
+            de Forma Simple
           </h2>
           <p className="text-xl text-slate-600 mb-8 max-w-3xl mx-auto font-rubik">
             Plataforma digital que simplifica la gestión de subcontratos para contratistas y mandantes, 
@@ -188,9 +188,9 @@ const Index = () => {
               bgColor: 'bg-purple-100'
             },
             {
-              icon: DollarSign,
-              title: 'Control Financiero',
-              description: 'Visibilidad en tiempo real del estado de pagos, adicionales y presupuestos',
+              icon: BarChart3,
+              title: 'Métricas',
+              description: 'Dashboards con indicadores clave, análisis de RFIs, adicionales y avance financiero',
               color: 'text-amber-600',
               bgColor: 'bg-amber-100'
             }

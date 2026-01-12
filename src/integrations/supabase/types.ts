@@ -1127,6 +1127,7 @@ export type Database = {
           Correlativo: number | null
           created_at: string
           Descripcion: string | null
+          Especialidad: string | null
           Fecha_Respuesta: string | null
           Fecha_Vencimiento: string | null
           id: number
@@ -1141,6 +1142,7 @@ export type Database = {
           Correlativo?: number | null
           created_at?: string
           Descripcion?: string | null
+          Especialidad?: string | null
           Fecha_Respuesta?: string | null
           Fecha_Vencimiento?: string | null
           id?: number
@@ -1155,6 +1157,7 @@ export type Database = {
           Correlativo?: number | null
           created_at?: string
           Descripcion?: string | null
+          Especialidad?: string | null
           Fecha_Respuesta?: string | null
           Fecha_Vencimiento?: string | null
           id?: number

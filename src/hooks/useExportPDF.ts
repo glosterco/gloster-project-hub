@@ -210,7 +210,21 @@ export const useExportPDF = () => {
         console.error('Error fetching history, continuing without it:', fetchError);
       }
 
-      const historyHtml = actions.length > 0 ? `
+      // If no history exists, create a fallback with the current status
+      if (actions.length === 0) {
+        const currentStatus = (adicional.Status || 'Enviado').toLowerCase();
+        actions = [{
+          id: 'fallback',
+          action_type: currentStatus,
+          action_by_email: null,
+          action_by_name: null,
+          notes: null,
+          created_at: adicional.created_at || new Date().toISOString()
+        }];
+        console.log('No history found, using fallback with current status:', currentStatus);
+      }
+
+      const historyHtml = `
         <div style="background: #fefce8; padding: 20px; border-radius: 8px; border: 1px solid #fef08a; margin-bottom: 24px;">
           <h2 style="color: #854d0e; font-size: 18px; margin: 0 0 16px 0;">Historial de Revisión</h2>
           ${actions.map((action, index) => `
@@ -234,7 +248,7 @@ export const useExportPDF = () => {
             </div>
           `).join('')}
         </div>
-      ` : '';
+      `;
 
       // Safe value extraction
       const correlativo = adicional.Correlativo || adicional.id;

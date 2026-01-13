@@ -55,7 +55,13 @@ export const AdicionalesCards: React.FC<AdicionalesCardsProps> = ({
 
   const handleDownload = async (e: React.MouseEvent, adicional: Adicional) => {
     e.stopPropagation();
-    await exportAdicionalToPDF(adicional, currency);
+    try {
+      console.log('Downloading PDF for Adicional:', adicional.id);
+      await exportAdicionalToPDF(adicional, currency);
+    } catch (error) {
+      console.error('Error downloading Adicional PDF:', error);
+      // Could add toast notification here for user feedback
+    }
   };
   if (loading) {
     return (

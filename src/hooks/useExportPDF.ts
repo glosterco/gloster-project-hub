@@ -139,116 +139,167 @@ export const useExportPDF = () => {
   };
 
   const exportAdicionalToPDF = useCallback(async (adicional: any, currency = 'CLP') => {
-    const formatCurrency = (value: number) => {
-      return new Intl.NumberFormat('es-CL', { 
-        style: 'currency', 
-        currency: currency,
-        minimumFractionDigits: 0 
-      }).format(value);
-    };
-
-    // Fetch action history
-    const actions = await fetchAdicionalHistory(adicional.id);
-
-    const historyHtml = actions.length > 0 ? `
-      <div style="background: #fefce8; padding: 20px; border-radius: 8px; border: 1px solid #fef08a; margin-bottom: 24px;">
-        <h2 style="color: #854d0e; font-size: 18px; margin: 0 0 16px 0;">Historial de Revisión</h2>
-        ${actions.map((action, index) => `
-          <div style="padding: 12px; margin-bottom: ${index < actions.length - 1 ? '12px' : '0'}; background: white; border-radius: 6px; border-left: 4px solid ${
-            action.action_type === 'aprobado' ? '#22c55e' :
-            action.action_type === 'rechazado' ? '#ef4444' :
-            action.action_type === 'pausado' ? '#f59e0b' :
-            action.action_type === 'reanudado' ? '#06b6d4' : '#3b82f6'
-          };">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-              <strong style="color: ${
-                action.action_type === 'aprobado' ? '#166534' :
-                action.action_type === 'rechazado' ? '#dc2626' :
-                action.action_type === 'pausado' ? '#d97706' :
-                action.action_type === 'reanudado' ? '#0891b2' : '#2563eb'
-              };">${getActionLabel(action.action_type)}</strong>
-              <span style="color: #64748b; font-size: 12px;">${new Date(action.created_at).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
-            </div>
-            <p style="color: #475569; margin: 0; font-size: 13px;">Por: ${action.action_by_email || 'Sistema'}</p>
-            ${action.notes ? `<p style="color: #64748b; margin: 8px 0 0 0; font-size: 13px; font-style: italic;">"${action.notes}"</p>` : ''}
-          </div>
-        `).join('')}
-      </div>
-    ` : '';
-
-    const content = `
-      <div style="font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; position: relative;">
-        <!-- Watermark Logo -->
-        <div style="position: absolute; top: 20px; right: 20px; opacity: 0.15;">
-          <img src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" alt="Gloster" style="width: 80px; height: 80px;" crossorigin="anonymous" />
-        </div>
-
-        <div style="border-bottom: 3px solid #f59e0b; padding-bottom: 20px; margin-bottom: 30px;">
-          <h1 style="color: #1e293b; margin: 0; font-size: 28px;">Adicional #${adicional.Correlativo || adicional.id}</h1>
-          <p style="color: #64748b; margin: 8px 0 0 0; font-size: 14px;">
-            Generado el ${new Date().toLocaleDateString('es-CL', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-          </p>
-        </div>
-
-        <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin-bottom: 24px;">
-          <h2 style="color: #334155; font-size: 18px; margin: 0 0 16px 0;">Información General</h2>
-          <table style="width: 100%; border-collapse: collapse;">
-            <tr><td style="padding: 8px 0; color: #64748b; width: 40%;">Título:</td><td style="padding: 8px 0; color: #1e293b; font-weight: 500;">${adicional.Titulo || 'Sin título'}</td></tr>
-            <tr><td style="padding: 8px 0; color: #64748b;">Estado:</td><td style="padding: 8px 0; color: #1e293b; font-weight: 500;">${adicional.Status || 'Enviado'}</td></tr>
-            <tr><td style="padding: 8px 0; color: #64748b;">Fecha de Creación:</td><td style="padding: 8px 0; color: #1e293b;">${new Date(adicional.created_at).toLocaleDateString('es-CL')}</td></tr>
-            ${adicional.Categoria ? `<tr><td style="padding: 8px 0; color: #64748b;">Categoría:</td><td style="padding: 8px 0; color: #1e293b;">${adicional.Categoria}</td></tr>` : ''}
-            ${adicional.Especialidad ? `<tr><td style="padding: 8px 0; color: #64748b;">Especialidad:</td><td style="padding: 8px 0; color: #1e293b;">${adicional.Especialidad}</td></tr>` : ''}
-            ${adicional.Vencimiento ? `<tr><td style="padding: 8px 0; color: #64748b;">Vencimiento:</td><td style="padding: 8px 0; color: #1e293b;">${new Date(adicional.Vencimiento).toLocaleDateString('es-CL')}</td></tr>` : ''}
-          </table>
-        </div>
-
-        ${adicional.Descripcion ? `
-        <div style="margin-bottom: 24px;">
-          <h2 style="color: #334155; font-size: 18px; margin: 0 0 12px 0;">Descripción</h2>
-          <p style="color: #475569; line-height: 1.6; margin: 0;">${adicional.Descripcion}</p>
-        </div>` : ''}
-
-        <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; margin-bottom: 24px; border: 1px solid #bbf7d0;">
-          <h2 style="color: #166534; font-size: 18px; margin: 0 0 16px 0;">Información Financiera</h2>
-          <table style="width: 100%; border-collapse: collapse;">
-            ${adicional.Subtotal ? `<tr><td style="padding: 8px 0; color: #64748b; width: 40%;">Subtotal:</td><td style="padding: 8px 0; color: #1e293b;">${formatCurrency(adicional.Subtotal)}</td></tr>` : ''}
-            ${adicional.GG !== null && adicional.GG !== undefined ? `<tr><td style="padding: 8px 0; color: #64748b;">Gastos Generales:</td><td style="padding: 8px 0; color: #1e293b;">${adicional.GG}%</td></tr>` : ''}
-            ${adicional.Utilidades !== null && adicional.Utilidades !== undefined ? `<tr><td style="padding: 8px 0; color: #64748b;">Utilidades:</td><td style="padding: 8px 0; color: #1e293b;">${adicional.Utilidades}%</td></tr>` : ''}
-            <tr style="border-top: 2px solid #166534;"><td style="padding: 12px 0; color: #166534; font-weight: 600;">Monto Presentado:</td><td style="padding: 12px 0; color: #166534; font-weight: 600; font-size: 18px;">${adicional.Monto_presentado ? formatCurrency(adicional.Monto_presentado) : 'No especificado'}</td></tr>
-            ${adicional.Status === 'Aprobado' && adicional.Monto_aprobado ? `<tr><td style="padding: 8px 0; color: #166534; font-weight: 600;">Monto Aprobado:</td><td style="padding: 8px 0; color: #166534; font-weight: 600; font-size: 18px;">${formatCurrency(adicional.Monto_aprobado)}</td></tr>` : ''}
-          </table>
-        </div>
-
-        ${historyHtml}
-
-        ${adicional.URL ? `
-        <div style="background: #eff6ff; padding: 16px; border-radius: 8px; margin-bottom: 24px; border: 1px solid #bfdbfe;">
-          <p style="color: #1e40af; margin: 0; font-size: 13px;">
-            <strong>Archivos adjuntos:</strong> Los documentos asociados están disponibles en la plataforma Gloster.
-          </p>
-        </div>` : ''}
-
-        <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center;">
-          <p style="color: #94a3b8; font-size: 12px; margin: 0;">Documento generado automáticamente por Gloster</p>
-        </div>
-      </div>
-    `;
-
-    const element = document.createElement('div');
-    element.innerHTML = content;
-
-    const opt = {
-      margin: 10,
-      filename: `Adicional_${adicional.Correlativo || adicional.id}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
-
     try {
+      // Validate adicional object
+      if (!adicional || (!adicional.id && adicional.id !== 0)) {
+        console.error('exportAdicionalToPDF: Invalid adicional object', adicional);
+        throw new Error('Adicional inválido: no se puede generar el PDF');
+      }
+
+      console.log('Starting PDF export for Adicional:', adicional.id);
+
+      const formatMoney = (value: number | null | undefined): string => {
+        if (value === null || value === undefined || isNaN(Number(value))) {
+          return 'No especificado';
+        }
+        try {
+          return new Intl.NumberFormat('es-CL', { 
+            style: 'currency', 
+            currency: currency,
+            minimumFractionDigits: 0 
+          }).format(Number(value));
+        } catch (e) {
+          console.error('Error formatting currency:', e);
+          return `${currency} ${value}`;
+        }
+      };
+
+      // Fetch action history with explicit error handling
+      let actions: AdicionalAction[] = [];
+      try {
+        actions = await fetchAdicionalHistory(adicional.id);
+        console.log('Fetched actions history:', actions.length, 'records');
+      } catch (fetchError) {
+        console.error('Error fetching history, continuing without it:', fetchError);
+      }
+
+      const historyHtml = actions.length > 0 ? `
+        <div style="background: #fefce8; padding: 20px; border-radius: 8px; border: 1px solid #fef08a; margin-bottom: 24px;">
+          <h2 style="color: #854d0e; font-size: 18px; margin: 0 0 16px 0;">Historial de Revisión</h2>
+          ${actions.map((action, index) => `
+            <div style="padding: 12px; margin-bottom: ${index < actions.length - 1 ? '12px' : '0'}; background: white; border-radius: 6px; border-left: 4px solid ${
+              action.action_type === 'aprobado' ? '#22c55e' :
+              action.action_type === 'rechazado' ? '#ef4444' :
+              action.action_type === 'pausado' ? '#f59e0b' :
+              action.action_type === 'reanudado' ? '#06b6d4' : '#3b82f6'
+            };">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                <strong style="color: ${
+                  action.action_type === 'aprobado' ? '#166534' :
+                  action.action_type === 'rechazado' ? '#dc2626' :
+                  action.action_type === 'pausado' ? '#d97706' :
+                  action.action_type === 'reanudado' ? '#0891b2' : '#2563eb'
+                };">${getActionLabel(action.action_type)}</strong>
+                <span style="color: #64748b; font-size: 12px;">${new Date(action.created_at).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+              </div>
+              <p style="color: #475569; margin: 0; font-size: 13px;">Por: ${action.action_by_email || 'Sistema'}</p>
+              ${action.notes ? `<p style="color: #64748b; margin: 8px 0 0 0; font-size: 13px; font-style: italic;">"${action.notes}"</p>` : ''}
+            </div>
+          `).join('')}
+        </div>
+      ` : '';
+
+      // Safe value extraction
+      const correlativo = adicional.Correlativo || adicional.id;
+      const titulo = adicional.Titulo || 'Sin título';
+      const status = adicional.Status || 'Enviado';
+      const createdAt = adicional.created_at ? new Date(adicional.created_at).toLocaleDateString('es-CL') : 'No disponible';
+      const categoria = adicional.Categoria || null;
+      const especialidad = adicional.Especialidad || null;
+      const vencimiento = adicional.Vencimiento ? new Date(adicional.Vencimiento).toLocaleDateString('es-CL') : null;
+      const descripcion = adicional.Descripcion || null;
+      const subtotal = adicional.Subtotal;
+      const gg = adicional.GG;
+      const utilidades = adicional.Utilidades;
+      const montoPresentado = adicional.Monto_presentado;
+      const montoAprobado = adicional.Monto_aprobado;
+      const hasUrl = !!adicional.URL;
+
+      const content = `
+        <div style="font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; position: relative;">
+          <!-- Watermark Logo -->
+          <div style="position: absolute; top: 20px; right: 20px; opacity: 0.15;">
+            <img src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" alt="Gloster" style="width: 80px; height: 80px;" crossorigin="anonymous" />
+          </div>
+
+          <div style="border-bottom: 3px solid #f59e0b; padding-bottom: 20px; margin-bottom: 30px;">
+            <h1 style="color: #1e293b; margin: 0; font-size: 28px;">Adicional #${correlativo}</h1>
+            <p style="color: #64748b; margin: 8px 0 0 0; font-size: 14px;">
+              Generado el ${new Date().toLocaleDateString('es-CL', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+            </p>
+          </div>
+
+          <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin-bottom: 24px;">
+            <h2 style="color: #334155; font-size: 18px; margin: 0 0 16px 0;">Información General</h2>
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr><td style="padding: 8px 0; color: #64748b; width: 40%;">Título:</td><td style="padding: 8px 0; color: #1e293b; font-weight: 500;">${titulo}</td></tr>
+              <tr><td style="padding: 8px 0; color: #64748b;">Estado:</td><td style="padding: 8px 0; color: #1e293b; font-weight: 500;">${status}</td></tr>
+              <tr><td style="padding: 8px 0; color: #64748b;">Fecha de Creación:</td><td style="padding: 8px 0; color: #1e293b;">${createdAt}</td></tr>
+              ${categoria ? `<tr><td style="padding: 8px 0; color: #64748b;">Categoría:</td><td style="padding: 8px 0; color: #1e293b;">${categoria}</td></tr>` : ''}
+              ${especialidad ? `<tr><td style="padding: 8px 0; color: #64748b;">Especialidad:</td><td style="padding: 8px 0; color: #1e293b;">${especialidad}</td></tr>` : ''}
+              ${vencimiento ? `<tr><td style="padding: 8px 0; color: #64748b;">Vencimiento:</td><td style="padding: 8px 0; color: #1e293b;">${vencimiento}</td></tr>` : ''}
+            </table>
+          </div>
+
+          ${descripcion ? `
+          <div style="margin-bottom: 24px;">
+            <h2 style="color: #334155; font-size: 18px; margin: 0 0 12px 0;">Descripción</h2>
+            <p style="color: #475569; line-height: 1.6; margin: 0;">${descripcion}</p>
+          </div>` : ''}
+
+          <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; margin-bottom: 24px; border: 1px solid #bbf7d0;">
+            <h2 style="color: #166534; font-size: 18px; margin: 0 0 16px 0;">Información Financiera</h2>
+            <table style="width: 100%; border-collapse: collapse;">
+              ${subtotal !== null && subtotal !== undefined ? `<tr><td style="padding: 8px 0; color: #64748b; width: 40%;">Subtotal:</td><td style="padding: 8px 0; color: #1e293b;">${formatMoney(subtotal)}</td></tr>` : ''}
+              ${gg !== null && gg !== undefined ? `<tr><td style="padding: 8px 0; color: #64748b;">Gastos Generales:</td><td style="padding: 8px 0; color: #1e293b;">${gg}%</td></tr>` : ''}
+              ${utilidades !== null && utilidades !== undefined ? `<tr><td style="padding: 8px 0; color: #64748b;">Utilidades:</td><td style="padding: 8px 0; color: #1e293b;">${utilidades}%</td></tr>` : ''}
+              <tr style="border-top: 2px solid #166534;"><td style="padding: 12px 0; color: #166534; font-weight: 600;">Monto Presentado:</td><td style="padding: 12px 0; color: #166534; font-weight: 600; font-size: 18px;">${formatMoney(montoPresentado)}</td></tr>
+              ${status === 'Aprobado' && montoAprobado !== null && montoAprobado !== undefined ? `<tr><td style="padding: 8px 0; color: #166534; font-weight: 600;">Monto Aprobado:</td><td style="padding: 8px 0; color: #166534; font-weight: 600; font-size: 18px;">${formatMoney(montoAprobado)}</td></tr>` : ''}
+            </table>
+          </div>
+
+          ${historyHtml}
+
+          ${hasUrl ? `
+          <div style="background: #eff6ff; padding: 16px; border-radius: 8px; margin-bottom: 24px; border: 1px solid #bfdbfe;">
+            <p style="color: #1e40af; margin: 0; font-size: 13px;">
+              <strong>Archivos adjuntos:</strong> Los documentos asociados están disponibles en la plataforma Gloster.
+            </p>
+          </div>` : ''}
+
+          <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center;">
+            <p style="color: #94a3b8; font-size: 12px; margin: 0;">Documento generado automáticamente por Gloster</p>
+          </div>
+        </div>
+      `;
+
+      console.log('HTML content generated, creating element...');
+
+      const element = document.createElement('div');
+      element.innerHTML = content;
+      document.body.appendChild(element); // Temporarily append to DOM for html2pdf
+
+      const opt = {
+        margin: 10,
+        filename: `Adicional_${correlativo}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      console.log('Starting html2pdf generation...');
+      
       await html2pdf().set(opt).from(element).save();
+      
+      console.log('PDF generated successfully');
+      
+      // Clean up
+      document.body.removeChild(element);
+      
     } catch (error) {
-      console.error('Error generating PDF:', error);
+      console.error('Error generating Adicional PDF:', error);
+      // Re-throw to allow UI to handle the error
+      throw error;
     }
   }, []);
 

@@ -139,6 +139,9 @@ export const useExportPDF = () => {
   };
 
   const exportAdicionalToPDF = useCallback(async (adicional: any, currency = 'CLP') => {
+    // Gloster brand yellow color
+    const GLOSTER_YELLOW = '#F5B800';
+    
     try {
       // Validate adicional object
       if (!adicional || (!adicional.id && adicional.id !== 0)) {
@@ -163,6 +166,40 @@ export const useExportPDF = () => {
           return `${currency} ${value}`;
         }
       };
+
+      // Calculate days elapsed and paused days
+      const calculateDays = () => {
+        const createdAt = new Date(adicional.created_at);
+        const now = new Date();
+        
+        if ((adicional.Status === 'Aprobado' || adicional.Status === 'Rechazado') && adicional.approved_at) {
+          const approvedAt = new Date(adicional.approved_at);
+          const totalDays = Math.floor((approvedAt.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
+          return Math.max(0, totalDays - (adicional.paused_days || 0));
+        }
+        
+        if (adicional.Status === 'Pausado' && adicional.paused_at) {
+          const pausedAt = new Date(adicional.paused_at);
+          const daysBeforePause = Math.floor((pausedAt.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
+          return Math.max(0, daysBeforePause - (adicional.paused_days || 0));
+        }
+        
+        const totalDays = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
+        return Math.max(0, totalDays - (adicional.paused_days || 0));
+      };
+
+      const calculatePausedDaysTotal = () => {
+        if (adicional.Status !== 'Pausado' || !adicional.paused_at) {
+          return adicional.paused_days || 0;
+        }
+        const pausedAt = new Date(adicional.paused_at);
+        const now = new Date();
+        const currentPauseDays = Math.floor((now.getTime() - pausedAt.getTime()) / (1000 * 60 * 60 * 24));
+        return (adicional.paused_days || 0) + currentPauseDays;
+      };
+
+      const daysElapsed = calculateDays();
+      const pausedDays = calculatePausedDaysTotal();
 
       // Fetch action history with explicit error handling
       let actions: AdicionalAction[] = [];
@@ -214,6 +251,7 @@ export const useExportPDF = () => {
       const montoPresentado = adicional.Monto_presentado;
       const montoAprobado = adicional.Monto_aprobado;
       const hasUrl = !!adicional.URL;
+      const approvedAt = adicional.approved_at ? new Date(adicional.approved_at).toLocaleDateString('es-CL') : null;
 
       const content = `
         <div style="font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; position: relative;">
@@ -222,23 +260,36 @@ export const useExportPDF = () => {
             <img src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" alt="Gloster" style="width: 80px; height: 80px;" crossorigin="anonymous" />
           </div>
 
-          <div style="border-bottom: 3px solid #f59e0b; padding-bottom: 20px; margin-bottom: 30px;">
+          <div style="border-bottom: 3px solid ${GLOSTER_YELLOW}; padding-bottom: 20px; margin-bottom: 30px;">
             <h1 style="color: #1e293b; margin: 0; font-size: 28px;">Adicional #${correlativo}</h1>
             <p style="color: #64748b; margin: 8px 0 0 0; font-size: 14px;">
               Generado el ${new Date().toLocaleDateString('es-CL', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
             </p>
           </div>
 
-          <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin-bottom: 24px;">
-            <h2 style="color: #334155; font-size: 18px; margin: 0 0 16px 0;">Información General</h2>
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr><td style="padding: 8px 0; color: #64748b; width: 40%;">Título:</td><td style="padding: 8px 0; color: #1e293b; font-weight: 500;">${titulo}</td></tr>
-              <tr><td style="padding: 8px 0; color: #64748b;">Estado:</td><td style="padding: 8px 0; color: #1e293b; font-weight: 500;">${status}</td></tr>
-              <tr><td style="padding: 8px 0; color: #64748b;">Fecha de Creación:</td><td style="padding: 8px 0; color: #1e293b;">${createdAt}</td></tr>
-              ${categoria ? `<tr><td style="padding: 8px 0; color: #64748b;">Categoría:</td><td style="padding: 8px 0; color: #1e293b;">${categoria}</td></tr>` : ''}
-              ${especialidad ? `<tr><td style="padding: 8px 0; color: #64748b;">Especialidad:</td><td style="padding: 8px 0; color: #1e293b;">${especialidad}</td></tr>` : ''}
-              ${vencimiento ? `<tr><td style="padding: 8px 0; color: #64748b;">Vencimiento:</td><td style="padding: 8px 0; color: #1e293b;">${vencimiento}</td></tr>` : ''}
-            </table>
+          <div style="display: flex; gap: 24px; margin-bottom: 24px; flex-wrap: wrap;">
+            <!-- Left column: General info -->
+            <div style="flex: 1; min-width: 280px; background: #f8fafc; padding: 20px; border-radius: 8px;">
+              <h2 style="color: #334155; font-size: 18px; margin: 0 0 16px 0;">Información General</h2>
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr><td style="padding: 8px 0; color: #64748b; width: 40%;">Título:</td><td style="padding: 8px 0; color: #1e293b; font-weight: 500;">${titulo}</td></tr>
+                <tr><td style="padding: 8px 0; color: #64748b;">Estado:</td><td style="padding: 8px 0; color: #1e293b; font-weight: 500;">${status}</td></tr>
+                ${categoria ? `<tr><td style="padding: 8px 0; color: #64748b;">Categoría:</td><td style="padding: 8px 0; color: #1e293b;">${categoria}</td></tr>` : ''}
+                ${especialidad ? `<tr><td style="padding: 8px 0; color: #64748b;">Especialidad:</td><td style="padding: 8px 0; color: #1e293b;">${especialidad}</td></tr>` : ''}
+              </table>
+            </div>
+
+            <!-- Right column: Dates and deadlines -->
+            <div style="flex: 1; min-width: 280px; background: #fffbeb; padding: 20px; border-radius: 8px; border: 1px solid #fef08a;">
+              <h2 style="color: #854d0e; font-size: 18px; margin: 0 0 16px 0;">Fechas y Plazos</h2>
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr><td style="padding: 8px 0; color: #64748b; width: 50%;">Fecha de Creación:</td><td style="padding: 8px 0; color: #1e293b;">${createdAt}</td></tr>
+                ${vencimiento ? `<tr><td style="padding: 8px 0; color: #64748b;">Fecha de Vencimiento:</td><td style="padding: 8px 0; color: #1e293b;">${vencimiento}</td></tr>` : ''}
+                ${approvedAt && (status === 'Aprobado' || status === 'Rechazado') ? `<tr><td style="padding: 8px 0; color: #64748b;">Fecha de Cierre:</td><td style="padding: 8px 0; color: #1e293b;">${approvedAt}</td></tr>` : ''}
+                <tr style="border-top: 1px solid #e2e8f0;"><td style="padding: 12px 0; color: #854d0e; font-weight: 600;">Días Transcurridos:</td><td style="padding: 12px 0; color: #854d0e; font-weight: 600; font-size: 16px;">${daysElapsed} días</td></tr>
+                ${pausedDays > 0 ? `<tr><td style="padding: 8px 0; color: #d97706;">Días en Pausa:</td><td style="padding: 8px 0; color: #d97706; font-weight: 500;">${pausedDays} días</td></tr>` : ''}
+              </table>
+            </div>
           </div>
 
           ${descripcion ? `
@@ -277,7 +328,7 @@ export const useExportPDF = () => {
 
       const element = document.createElement('div');
       element.innerHTML = content;
-      document.body.appendChild(element); // Temporarily append to DOM for html2pdf
+      document.body.appendChild(element);
 
       const opt = {
         margin: 10,
@@ -293,12 +344,10 @@ export const useExportPDF = () => {
       
       console.log('PDF generated successfully');
       
-      // Clean up
       document.body.removeChild(element);
       
     } catch (error) {
       console.error('Error generating Adicional PDF:', error);
-      // Re-throw to allow UI to handle the error
       throw error;
     }
   }, []);
@@ -345,6 +394,9 @@ export const useExportPDF = () => {
       </div>
     ` : '';
 
+    // Gloster brand yellow color
+    const GLOSTER_YELLOW = '#F5B800';
+
     const content = `
       <div style="font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; position: relative;">
         <!-- Watermark Logo -->
@@ -352,7 +404,7 @@ export const useExportPDF = () => {
           <img src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" alt="Gloster" style="width: 80px; height: 80px;" crossorigin="anonymous" />
         </div>
 
-        <div style="border-bottom: 3px solid #3b82f6; padding-bottom: 20px; margin-bottom: 30px;">
+        <div style="border-bottom: 3px solid ${GLOSTER_YELLOW}; padding-bottom: 20px; margin-bottom: 30px;">
           <h1 style="color: #1e293b; margin: 0; font-size: 28px;">RFI #${rfi.Correlativo || rfi.id}</h1>
           <p style="color: #64748b; margin: 8px 0 0 0; font-size: 14px;">
             Generado el ${new Date().toLocaleDateString('es-CL', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
@@ -399,19 +451,25 @@ export const useExportPDF = () => {
 
     const element = document.createElement('div');
     element.innerHTML = content;
+    document.body.appendChild(element);
 
     const opt = {
       margin: 10,
       filename: `RFI_${rfi.Correlativo || rfi.id}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
+      html2canvas: { scale: 2, useCORS: true, logging: false },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
     try {
       await html2pdf().set(opt).from(element).save();
+      document.body.removeChild(element);
     } catch (error) {
       console.error('Error generating PDF:', error);
+      if (document.body.contains(element)) {
+        document.body.removeChild(element);
+      }
+      throw error;
     }
   }, []);
 

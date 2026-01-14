@@ -11,7 +11,7 @@ const tools = [
   {
     id: 'estados-pago',
     title: 'Estados de Pago',
-    description: 'Gestiona y automatiza el proceso de cobro con seguimiento de vencimientos, aprobaciones múltiples y notificaciones automáticas.',
+    description: 'Gestiona cobros con aprobaciones múltiples, seguimiento de vencimientos, notificaciones automáticas y progreso de aprobación en tiempo real.',
     icon: DollarSign,
     color: 'text-green-600',
     bgColor: 'bg-green-100',
@@ -19,7 +19,7 @@ const tools = [
   {
     id: 'adicionales',
     title: 'Adicionales',
-    description: 'Registra y controla trabajos adicionales con flujo de aprobación, montos, y trazabilidad completa del proceso de revisión.',
+    description: 'Registra trabajos adicionales con flujo de aprobación, historial de revisión completo, exportación a PDF con fechas, plazos y trazabilidad.',
     icon: FileText,
     color: 'text-amber-600',
     bgColor: 'bg-amber-100',
@@ -27,7 +27,7 @@ const tools = [
   {
     id: 'rfi',
     title: 'RFI (Solicitudes)',
-    description: 'Sistema de consultas técnicas con seguimiento de respuestas, reenvío a especialistas, y historial conversacional completo.',
+    description: 'Sistema conversacional de consultas técnicas con reenvío a especialistas, adjuntos múltiples, historial completo y exportación a PDF.',
     icon: HelpCircle,
     color: 'text-blue-600',
     bgColor: 'bg-blue-100',
@@ -35,7 +35,7 @@ const tools = [
   {
     id: 'presupuesto',
     title: 'Presupuesto',
-    description: 'Control del avance físico y financiero del proyecto con seguimiento de partidas, actualizaciones parciales y totales.',
+    description: 'Control del avance físico y financiero con actualizaciones parciales, historial de cambios y métricas de progreso por partida.',
     icon: BarChart3,
     color: 'text-purple-600',
     bgColor: 'bg-purple-100',
@@ -43,7 +43,7 @@ const tools = [
   {
     id: 'documentos',
     title: 'Documentos',
-    description: 'Repositorio centralizado de documentación del proyecto integrado con Google Drive para fácil acceso y organización.',
+    description: 'Repositorio centralizado integrado con Google Drive. Soporta planos DWG, PDFs y documentación técnica organizada por proyecto.',
     icon: FileText,
     color: 'text-slate-600',
     bgColor: 'bg-slate-100',
@@ -51,7 +51,7 @@ const tools = [
   {
     id: 'fotos',
     title: 'Registro Fotográfico',
-    description: 'Galería de fotos del proyecto para documentar avances, problemas y el estado general de la obra.',
+    description: 'Galería de fotos sincronizada con Google Drive para documentar avances, problemas y el estado de la obra con acceso desde cualquier lugar.',
     icon: Camera,
     color: 'text-pink-600',
     bgColor: 'bg-pink-100',

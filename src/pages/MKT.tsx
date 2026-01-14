@@ -14,6 +14,12 @@ import {
   Monitor,
   Smartphone,
   FolderTree,
+  MessageSquare,
+  PlusCircle,
+  Calculator,
+  FolderOpen,
+  Camera,
+  CreditCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -233,6 +239,219 @@ const MKT = () => {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Tools Suite Section */}
+      <section className="py-24 px-6 bg-muted/30">
+        <div className="container mx-auto max-w-6xl">
+          <div className="text-center mb-16">
+            <Badge className="bg-brand-yellow text-brand-yellow-foreground mb-4">Suite Completa</Badge>
+            <h2 className="text-4xl font-bold text-foreground mb-6">Herramientas que Transforman tu Gestión</h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              Todo lo que necesitas para gestionar tus proyectos de construcción en un solo lugar
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* Estados de Pago */}
+            <Card className="border-2 hover:border-brand-yellow/50 transition-colors">
+              <CardHeader>
+                <div className="bg-brand-yellow w-14 h-14 rounded-lg flex items-center justify-center mb-4">
+                  <CreditCard className="w-7 h-7 text-brand-yellow-foreground" />
+                </div>
+                <CardTitle className="text-xl">Estados de Pago</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-muted-foreground text-sm mb-4">
+                  Control completo del ciclo de facturación y aprobaciones entre mandantes y contratistas.
+                </p>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="w-4 h-4 text-brand-yellow flex-shrink-0" />
+                    <span>Flujo de aprobación multi-persona</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="w-4 h-4 text-brand-yellow flex-shrink-0" />
+                    <span>Notificaciones automáticas</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="w-4 h-4 text-brand-yellow flex-shrink-0" />
+                    <span>Control de vencimientos</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="w-4 h-4 text-brand-yellow flex-shrink-0" />
+                    <span>Integración con Google Drive</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* RFI */}
+            <Card className="border-2 hover:border-brand-yellow/50 transition-colors">
+              <CardHeader>
+                <div className="bg-primary w-14 h-14 rounded-lg flex items-center justify-center mb-4">
+                  <MessageSquare className="w-7 h-7 text-primary-foreground" />
+                </div>
+                <CardTitle className="text-xl">RFI (Solicitudes de Información)</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-muted-foreground text-sm mb-4">
+                  Gestiona consultas técnicas con historial conversacional y seguimiento por especialidad.
+                </p>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="w-4 h-4 text-brand-yellow flex-shrink-0" />
+                    <span>Historial conversacional completo</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="w-4 h-4 text-brand-yellow flex-shrink-0" />
+                    <span>Reenvío a especialistas</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="w-4 h-4 text-brand-yellow flex-shrink-0" />
+                    <span>Adjuntos múltiples</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="w-4 h-4 text-brand-yellow flex-shrink-0" />
+                    <span>Exportación a PDF</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Adicionales */}
+            <Card className="border-2 hover:border-brand-yellow/50 transition-colors">
+              <CardHeader>
+                <div className="bg-brand-yellow w-14 h-14 rounded-lg flex items-center justify-center mb-4">
+                  <PlusCircle className="w-7 h-7 text-brand-yellow-foreground" />
+                </div>
+                <CardTitle className="text-xl">Adicionales</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-muted-foreground text-sm mb-4">
+                  Controla trabajos adicionales con workflow de estados y seguimiento financiero completo.
+                </p>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="w-4 h-4 text-brand-yellow flex-shrink-0" />
+                    <span>Workflow de estados (Enviado→Aprobado)</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="w-4 h-4 text-brand-yellow flex-shrink-0" />
+                    <span>Historial de revisiones</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="w-4 h-4 text-brand-yellow flex-shrink-0" />
+                    <span>Control financiero detallado</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="w-4 h-4 text-brand-yellow flex-shrink-0" />
+                    <span>Exportación a PDF</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Presupuesto */}
+            <Card className="border-2 hover:border-brand-yellow/50 transition-colors">
+              <CardHeader>
+                <div className="bg-primary w-14 h-14 rounded-lg flex items-center justify-center mb-4">
+                  <Calculator className="w-7 h-7 text-primary-foreground" />
+                </div>
+                <CardTitle className="text-xl">Presupuesto</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-muted-foreground text-sm mb-4">
+                  Controla el avance físico y financiero de tu proyecto con gráficos y reportes detallados.
+                </p>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="w-4 h-4 text-brand-yellow flex-shrink-0" />
+                    <span>Avance parcial y acumulado</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="w-4 h-4 text-brand-yellow flex-shrink-0" />
+                    <span>Actualización masiva de ítems</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="w-4 h-4 text-brand-yellow flex-shrink-0" />
+                    <span>Historial de cambios</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="w-4 h-4 text-brand-yellow flex-shrink-0" />
+                    <span>Gráficos de evolución</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Documentos */}
+            <Card className="border-2 hover:border-brand-yellow/50 transition-colors">
+              <CardHeader>
+                <div className="bg-brand-yellow w-14 h-14 rounded-lg flex items-center justify-center mb-4">
+                  <FolderOpen className="w-7 h-7 text-brand-yellow-foreground" />
+                </div>
+                <CardTitle className="text-xl">Documentos</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-muted-foreground text-sm mb-4">
+                  Centraliza toda la documentación del proyecto con organización automática y acceso seguro.
+                </p>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="w-4 h-4 text-brand-yellow flex-shrink-0" />
+                    <span>Integración con Google Drive</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="w-4 h-4 text-brand-yellow flex-shrink-0" />
+                    <span>Organización automática por proyecto</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="w-4 h-4 text-brand-yellow flex-shrink-0" />
+                    <span>Soporte múltiples formatos (PDF, DWG, etc.)</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="w-4 h-4 text-brand-yellow flex-shrink-0" />
+                    <span>Descarga directa</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Fotos */}
+            <Card className="border-2 hover:border-brand-yellow/50 transition-colors">
+              <CardHeader>
+                <div className="bg-primary w-14 h-14 rounded-lg flex items-center justify-center mb-4">
+                  <Camera className="w-7 h-7 text-primary-foreground" />
+                </div>
+                <CardTitle className="text-xl">Fotos</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-muted-foreground text-sm mb-4">
+                  Documenta visualmente el avance de obra con galería organizada y carga masiva de imágenes.
+                </p>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="w-4 h-4 text-brand-yellow flex-shrink-0" />
+                    <span>Galería visual organizada</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="w-4 h-4 text-brand-yellow flex-shrink-0" />
+                    <span>Carga masiva de imágenes</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="w-4 h-4 text-brand-yellow flex-shrink-0" />
+                    <span>Organización por proyecto</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="w-4 h-4 text-brand-yellow flex-shrink-0" />
+                    <span>Documentación de avance</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>

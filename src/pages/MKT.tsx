@@ -282,7 +282,7 @@ const MKT = () => {
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <CheckCircle className="w-4 h-4 text-brand-yellow flex-shrink-0" />
-                    <span>Integración con Google Drive</span>
+                    <span>Historial de aprobaciones</span>
                   </div>
                 </div>
               </CardContent>
@@ -400,10 +400,6 @@ const MKT = () => {
                   Centraliza toda la documentación del proyecto con organización automática y acceso seguro.
                 </p>
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm">
-                    <CheckCircle className="w-4 h-4 text-brand-yellow flex-shrink-0" />
-                    <span>Integración con Google Drive</span>
-                  </div>
                   <div className="flex items-center gap-2 text-sm">
                     <CheckCircle className="w-4 h-4 text-brand-yellow flex-shrink-0" />
                     <span>Organización automática por proyecto</span>

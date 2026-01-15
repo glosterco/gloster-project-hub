@@ -33,6 +33,8 @@ interface PendingActionsSectionProps {
   currency: string;
   onPaymentClick: (paymentId: number) => void;
   onProjectDetailsClick: () => void;
+  onAdicionalClick?: (adicionalId: number) => void;
+  onRFIClick?: (rfiId: number) => void;
 }
 
 export const PendingActionsSection: React.FC<PendingActionsSectionProps> = ({
@@ -42,6 +44,8 @@ export const PendingActionsSection: React.FC<PendingActionsSectionProps> = ({
   currency,
   onPaymentClick,
   onProjectDetailsClick,
+  onAdicionalClick,
+  onRFIClick,
 }) => {
   const pendingPayments = payments?.filter((p) => p.Status === "Enviado") || [];
   const pendingAdicionales = adicionales?.filter((a) => a.Status === "Pendiente") || [];
@@ -90,7 +94,7 @@ export const PendingActionsSection: React.FC<PendingActionsSectionProps> = ({
           <div
             key={`adicional-${adicional.id}`}
             className="flex items-center justify-between p-2 rounded border text-sm cursor-pointer hover:bg-green-50 border-green-200"
-            onClick={onProjectDetailsClick}
+            onClick={() => onAdicionalClick ? onAdicionalClick(adicional.id) : onProjectDetailsClick()}
           >
             <div className="flex items-center gap-2">
               <PlusCircle className="w-4 h-4 text-green-600" />
@@ -115,7 +119,7 @@ export const PendingActionsSection: React.FC<PendingActionsSectionProps> = ({
           <div
             key={`rfi-${rfiItem.id}`}
             className="flex items-center justify-between p-2 rounded border text-sm cursor-pointer hover:bg-orange-50 border-orange-200"
-            onClick={onProjectDetailsClick}
+            onClick={() => onRFIClick ? onRFIClick(rfiItem.id) : onProjectDetailsClick()}
           >
             <div className="flex items-center gap-2">
               <HelpCircle className="w-4 h-4 text-orange-600" />

@@ -59,7 +59,9 @@ export const RFIForm: React.FC<RFIFormProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedContactIds, setSelectedContactIds] = useState<number[]>([]);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropZoneRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { contactos, loading: contactosLoading, addContacto } = useContactos(projectId);
 
@@ -90,8 +92,8 @@ export const RFIForm: React.FC<RFIFormProps> = ({
     }
   }, [open]);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
+  const validateAndAddFiles = (files: File[]) => {
+    const validFiles: File[] = [];
     for (const file of files) {
       if (file.size > 12 * 1024 * 1024) {
         toast({
@@ -99,12 +101,46 @@ export const RFIForm: React.FC<RFIFormProps> = ({
           description: `${file.name} no puede superar los 12MB`,
           variant: "destructive",
         });
-        return;
+        continue;
       }
+      validFiles.push(file);
     }
-    setAttachedFiles(prev => [...prev, ...files]);
+    if (validFiles.length > 0) {
+      setAttachedFiles(prev => [...prev, ...validFiles]);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    validateAndAddFiles(files);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only set dragging false if we're actually leaving the drop zone
+    if (dropZoneRef.current && !dropZoneRef.current.contains(e.relatedTarget as Node)) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      validateAndAddFiles(files);
     }
   };
 
@@ -362,7 +398,7 @@ export const RFIForm: React.FC<RFIFormProps> = ({
               )}
             />
 
-            {/* File attachment section */}
+            {/* File attachment section with drag and drop */}
             <div className="space-y-2">
               <FormLabel>Documentos adjuntos (opcional)</FormLabel>
               <input
@@ -373,6 +409,33 @@ export const RFIForm: React.FC<RFIFormProps> = ({
                 accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.dwg"
                 multiple
               />
+              
+              {/* Drop zone */}
+              <div
+                ref={dropZoneRef}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+                className={`
+                  border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors
+                  ${isDragging 
+                    ? 'border-brand-yellow bg-brand-yellow/10' 
+                    : 'border-muted-foreground/25 hover:border-muted-foreground/50 hover:bg-muted/50'
+                  }
+                `}
+              >
+                <Paperclip className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">
+                  {isDragging 
+                    ? 'Suelta los archivos aquí' 
+                    : 'Arrastra archivos aquí o haz clic para seleccionar'
+                  }
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  PDF, Word, Excel, Imágenes, DWG (máx. 12MB)
+                </p>
+              </div>
               
               {attachedFiles.length > 0 && (
                 <div className="space-y-1.5">
@@ -388,7 +451,10 @@ export const RFIForm: React.FC<RFIFormProps> = ({
                         variant="ghost"
                         size="sm"
                         className="h-6 w-6 p-0"
-                        onClick={() => removeFile(index)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeFile(index);
+                        }}
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -396,20 +462,6 @@ export const RFIForm: React.FC<RFIFormProps> = ({
                   ))}
                 </div>
               )}
-              
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full"
-              >
-                <Paperclip className="h-4 w-4 mr-2" />
-                {attachedFiles.length > 0 ? 'Agregar más documentos' : 'Adjuntar documentos'}
-              </Button>
-              
-              <p className="text-xs text-muted-foreground">
-                Formatos: PDF, Word, Excel, Imágenes, DWG (máx. 12MB por archivo)
-              </p>
             </div>
 
             <div className="border-t pt-4">

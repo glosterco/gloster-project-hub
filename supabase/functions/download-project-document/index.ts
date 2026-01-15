@@ -71,6 +71,20 @@ const searchFileInFolder = async (
   return data.files?.[0] || null;
 };
 
+// Helper function to encode ArrayBuffer to base64 in chunks to avoid stack overflow
+const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
+  const uint8Array = new Uint8Array(buffer);
+  const chunkSize = 8192; // Process in 8KB chunks to avoid stack overflow
+  let result = '';
+  
+  for (let i = 0; i < uint8Array.length; i += chunkSize) {
+    const chunk = uint8Array.slice(i, i + chunkSize);
+    result += String.fromCharCode.apply(null, Array.from(chunk));
+  }
+  
+  return btoa(result);
+};
+
 const downloadFileContent = async (
   accessToken: string,
   fileId: string
@@ -108,8 +122,8 @@ const downloadFileContent = async (
   }
 
   const arrayBuffer = await downloadResponse.arrayBuffer();
-  const uint8Array = new Uint8Array(arrayBuffer);
-  const base64Content = btoa(String.fromCharCode(...uint8Array));
+  // Use chunked encoding to avoid "Maximum call stack size exceeded" error
+  const base64Content = arrayBufferToBase64(arrayBuffer);
 
   return {
     content: base64Content,

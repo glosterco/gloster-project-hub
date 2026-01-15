@@ -917,6 +917,8 @@ const DashboardMandante: React.FC = () => {
                                 currency={project.Currency}
                                 onPaymentClick={handlePaymentClick}
                                 onProjectDetailsClick={() => handleProjectDetails(project.id)}
+                                onAdicionalClick={(adicionalId) => navigate(`/project-mandante/${project.id}?adicionalId=${adicionalId}`)}
+                                onRFIClick={(rfiId) => navigate(`/project-mandante/${project.id}?rfiId=${rfiId}`)}
                               />
 
                               {/* Botones de acción */}
@@ -1043,6 +1045,8 @@ const DashboardMandante: React.FC = () => {
                           currency={project.Currency}
                           onPaymentClick={handlePaymentClick}
                           onProjectDetailsClick={() => handleProjectDetails(project.id)}
+                          onAdicionalClick={(adicionalId) => navigate(`/project-mandante/${project.id}?adicionalId=${adicionalId}`)}
+                          onRFIClick={(rfiId) => navigate(`/project-mandante/${project.id}?rfiId=${rfiId}`)}
                         />
 
                         {/* Botón de acción */}

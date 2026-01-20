@@ -979,18 +979,38 @@ const ExecutiveSummary = () => {
                 </CardHeader>
                 <CardContent>
                   {summaryData?.rfiPorEspecialidad && summaryData.rfiPorEspecialidad.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={280}>
-                      <BarChart
-                        data={summaryData.rfiPorEspecialidad.slice(0, 8)}
-                        layout="vertical"
-                        margin={{ left: 20, right: 20 }}
-                      >
-                        <XAxis type="number" />
-                        <YAxis dataKey="especialidad" type="category" width={100} tick={{ fontSize: 11 }} />
-                        <Tooltip />
-                        <Bar dataKey="total" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} name="Total RFI" />
-                      </BarChart>
-                    </ResponsiveContainer>
+                    (() => {
+                      // Brand colors: yellow, gray, light blue, plus additional colors from logo palette
+                      const brandColors = [
+                        '#F5DF4D', // gloster-yellow
+                        '#6B7280', // gloster-gray  
+                        '#93C5FD', // light blue (celeste claro)
+                        '#1F2937', // gloster-dark
+                        '#FCD34D', // amber-300
+                        '#A78BFA', // violet-400
+                        '#34D399', // emerald-400
+                        '#F87171', // red-400
+                      ];
+
+                      return (
+                        <ResponsiveContainer width="100%" height={280}>
+                          <BarChart
+                            data={summaryData.rfiPorEspecialidad.slice(0, 8)}
+                            layout="vertical"
+                            margin={{ left: 20, right: 20 }}
+                          >
+                            <XAxis type="number" />
+                            <YAxis dataKey="especialidad" type="category" width={100} tick={{ fontSize: 11 }} />
+                            <Tooltip />
+                            <Bar dataKey="total" radius={[0, 4, 4, 0]} name="Total RFI">
+                              {summaryData.rfiPorEspecialidad.slice(0, 8).map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={brandColors[index % brandColors.length]} />
+                              ))}
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
+                      );
+                    })()
                   ) : (
                     <p className="text-sm text-muted-foreground text-center py-4">No hay RFI registrados</p>
                   )}

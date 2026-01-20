@@ -776,8 +776,9 @@ const ExecutiveSummary = () => {
               </Card>
             </div>
 
-            {/* Status/Urgency Matrix */}
-            <div className="mb-8">
+            {/* Status/Urgency Matrix + Pie Chart */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              {/* Matrix */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -788,7 +789,6 @@ const ExecutiveSummary = () => {
                 <CardContent>
                   {summaryData?.rfiPorEspecialidad && summaryData.rfiPorEspecialidad.length > 0 ? (
                     (() => {
-                      // Calculate totals by status and urgency
                       const matrix = {
                         Pendiente: { noUrgente: 0, urgente: 0, muyUrgente: 0, total: 0 },
                         Respondido: { noUrgente: 0, urgente: 0, muyUrgente: 0, total: 0 },
@@ -803,9 +803,7 @@ const ExecutiveSummary = () => {
 
                         matrix.Respondido.noUrgente += Math.round(esp.respondidos * (esp.noUrgente / (esp.total || 1)));
                         matrix.Respondido.urgente += Math.round(esp.respondidos * (esp.urgente / (esp.total || 1)));
-                        matrix.Respondido.muyUrgente += Math.round(
-                          esp.respondidos * (esp.muyUrgente / (esp.total || 1)),
-                        );
+                        matrix.Respondido.muyUrgente += Math.round(esp.respondidos * (esp.muyUrgente / (esp.total || 1)));
                         matrix.Respondido.total += esp.respondidos;
 
                         matrix.Cerrado.noUrgente += Math.round(esp.cerrados * (esp.noUrgente / (esp.total || 1)));
@@ -817,8 +815,7 @@ const ExecutiveSummary = () => {
                       const urgencyTotals = {
                         noUrgente: matrix.Pendiente.noUrgente + matrix.Respondido.noUrgente + matrix.Cerrado.noUrgente,
                         urgente: matrix.Pendiente.urgente + matrix.Respondido.urgente + matrix.Cerrado.urgente,
-                        muyUrgente:
-                          matrix.Pendiente.muyUrgente + matrix.Respondido.muyUrgente + matrix.Cerrado.muyUrgente,
+                        muyUrgente: matrix.Pendiente.muyUrgente + matrix.Respondido.muyUrgente + matrix.Cerrado.muyUrgente,
                       };
 
                       return (
@@ -842,12 +839,8 @@ const ExecutiveSummary = () => {
                                 </td>
                                 <td className="text-center py-3 px-3">{matrix.Pendiente.noUrgente}</td>
                                 <td className="text-center py-3 px-3">{matrix.Pendiente.urgente}</td>
-                                <td className="text-center py-3 px-3 font-medium text-destructive">
-                                  {matrix.Pendiente.muyUrgente}
-                                </td>
-                                <td className="text-center py-3 px-3 font-bold bg-muted/50">
-                                  {matrix.Pendiente.total}
-                                </td>
+                                <td className="text-center py-3 px-3 font-medium text-destructive">{matrix.Pendiente.muyUrgente}</td>
+                                <td className="text-center py-3 px-3 font-bold bg-muted/50">{matrix.Pendiente.total}</td>
                               </tr>
                               <tr className="border-b border-muted hover:bg-muted/30">
                                 <td className="py-3 px-3">
@@ -857,12 +850,8 @@ const ExecutiveSummary = () => {
                                 </td>
                                 <td className="text-center py-3 px-3">{matrix.Respondido.noUrgente}</td>
                                 <td className="text-center py-3 px-3">{matrix.Respondido.urgente}</td>
-                                <td className="text-center py-3 px-3 font-medium text-destructive">
-                                  {matrix.Respondido.muyUrgente}
-                                </td>
-                                <td className="text-center py-3 px-3 font-bold bg-muted/50">
-                                  {matrix.Respondido.total}
-                                </td>
+                                <td className="text-center py-3 px-3 font-medium text-destructive">{matrix.Respondido.muyUrgente}</td>
+                                <td className="text-center py-3 px-3 font-bold bg-muted/50">{matrix.Respondido.total}</td>
                               </tr>
                               <tr className="border-b border-muted hover:bg-muted/30">
                                 <td className="py-3 px-3">
@@ -872,9 +861,7 @@ const ExecutiveSummary = () => {
                                 </td>
                                 <td className="text-center py-3 px-3">{matrix.Cerrado.noUrgente}</td>
                                 <td className="text-center py-3 px-3">{matrix.Cerrado.urgente}</td>
-                                <td className="text-center py-3 px-3 font-medium text-destructive">
-                                  {matrix.Cerrado.muyUrgente}
-                                </td>
+                                <td className="text-center py-3 px-3 font-medium text-destructive">{matrix.Cerrado.muyUrgente}</td>
                                 <td className="text-center py-3 px-3 font-bold bg-muted/50">{matrix.Cerrado.total}</td>
                               </tr>
                               <tr className="bg-muted/50 font-bold">
@@ -891,6 +878,52 @@ const ExecutiveSummary = () => {
                     })()
                   ) : (
                     <p className="text-sm text-muted-foreground text-center py-4">No hay RFI registrados</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Pie Chart - Urgency Distribution */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <AlertCircle className="h-5 w-5" />
+                    Distribución de Urgencia
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {summaryData?.rfiDistribucionUrgencia &&
+                  summaryData.rfiDistribucionUrgencia.some((u) => u.count > 0) ? (
+                    <ResponsiveContainer width="100%" height={250}>
+                      <PieChart>
+                        <Pie
+                          data={summaryData.rfiDistribucionUrgencia.filter((u) => u.count > 0)}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
+                          outerRadius={80}
+                          dataKey="count"
+                          nameKey="urgencia"
+                        >
+                          {summaryData.rfiDistribucionUrgencia.map((entry, index) => (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={
+                                entry.urgencia === "Muy Urgente"
+                                  ? "hsl(var(--destructive))"
+                                  : entry.urgencia === "Urgente"
+                                    ? "#F5DF4D"
+                                    : "#6B7280"
+                              }
+                            />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-8">No hay RFI registrados</p>
                   )}
                 </CardContent>
               </Card>

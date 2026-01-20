@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CalendarIcon, Upload, X, Calculator } from 'lucide-react';
+import { CalendarIcon, Upload, X, Calculator, Paperclip, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -73,6 +73,9 @@ export const AdicionalesForm: React.FC<AdicionalesFormProps> = ({
   const [subtotal, setSubtotal] = useState<number>(0);
   const [gg, setGG] = useState<number>(defaultGG);
   const [utilidades, setUtilidades] = useState<number>(defaultUtilidades);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropZoneRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   const {
@@ -104,14 +107,66 @@ export const AdicionalesForm: React.FC<AdicionalesFormProps> = ({
     setValue('utilidades', defaultUtilidades.toString());
   }, [defaultGG, defaultUtilidades, setValue]);
 
+  const validateAndAddFiles = (newFiles: File[]) => {
+    const validFiles: File[] = [];
+    for (const file of newFiles) {
+      if (file.size > 10 * 1024 * 1024) {
+        toast({
+          title: "Archivo muy grande",
+          description: `${file.name} no puede superar los 10MB`,
+          variant: "destructive",
+        });
+        continue;
+      }
+      validFiles.push(file);
+    }
+    if (validFiles.length > 0) {
+      setFiles(prev => [...prev, ...validFiles]);
+    }
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      setFiles(Array.from(e.target.files));
+      validateAndAddFiles(Array.from(e.target.files));
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (dropZoneRef.current && !dropZoneRef.current.contains(e.relatedTarget as Node)) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    const droppedFiles = Array.from(e.dataTransfer.files);
+    if (droppedFiles.length > 0) {
+      validateAndAddFiles(droppedFiles);
     }
   };
 
   const removeFile = (index: number) => {
     setFiles(files.filter((_, i) => i !== index));
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   const onSubmit = async (data: AdicionalesFormData) => {
@@ -422,44 +477,63 @@ export const AdicionalesForm: React.FC<AdicionalesFormProps> = ({
             </Popover>
           </div>
 
-          {/* Carga de Archivos */}
+          {/* Carga de Archivos con Drag & Drop */}
           <div className="space-y-2">
             <Label className="font-rubik">Archivos de Respaldo (Opcional)</Label>
-            <div className="border-2 border-dashed border-muted rounded-lg p-6">
-              <div className="text-center">
-                <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
-                <div className="mt-4">
-                  <Label htmlFor="files" className="cursor-pointer">
-                    <span className="mt-2 block text-sm font-medium text-primary hover:text-primary/80 font-rubik">
-                      Seleccionar archivos
-                    </span>
-                  </Label>
-                  <Input
-                    id="files"
-                    type="file"
-                    multiple
-                    onChange={handleFileChange}
-                    className="hidden"
-                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xlsx,.xls"
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground mt-2 font-rubik">
-                  PDF, DOC, DOCX, JPG, PNG, XLSX (máx. 10MB cada uno)
-                </p>
-              </div>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              className="hidden"
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.dwg"
+              multiple
+            />
+            
+            {/* Drop zone */}
+            <div
+              ref={dropZoneRef}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+              className={`
+                border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors
+                ${isDragging 
+                  ? 'border-brand-yellow bg-brand-yellow/10' 
+                  : 'border-muted-foreground/25 hover:border-muted-foreground/50 hover:bg-muted/50'
+                }
+              `}
+            >
+              <Paperclip className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground font-rubik">
+                {isDragging 
+                  ? 'Suelta los archivos aquí' 
+                  : 'Arrastra archivos aquí o haz clic para seleccionar'
+                }
+              </p>
+              <p className="text-xs text-muted-foreground mt-1 font-rubik">
+                PDF, Word, Excel, Imágenes, DWG (máx. 10MB)
+              </p>
             </div>
-
+            
             {files.length > 0 && (
-              <div className="space-y-2">
-                <Label className="text-sm font-rubik">Archivos seleccionados:</Label>
+              <div className="space-y-1.5">
                 {files.map((file, index) => (
-                  <div key={index} className="flex items-center justify-between p-2 bg-muted rounded-md">
-                    <span className="text-sm font-rubik truncate">{file.name}</span>
+                  <div key={index} className="flex items-center gap-2 p-2 bg-muted rounded-md">
+                    <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="text-sm flex-1 truncate font-rubik">{file.name}</span>
+                    <span className="text-xs text-muted-foreground shrink-0">
+                      ({formatFileSize(file.size)})
+                    </span>
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
-                      onClick={() => removeFile(index)}
+                      className="h-6 w-6 p-0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeFile(index);
+                      }}
                     >
                       <X className="h-4 w-4" />
                     </Button>

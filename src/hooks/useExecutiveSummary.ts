@@ -85,6 +85,7 @@ export interface ExecutiveSummaryData {
   rfiPendientes: number;
   rfiRespondidos: number;
   rfiCerrados: number;
+  rfiTiempoPromedioRespuesta: number; // in days
   rfiPorEspecialidad: RFIPorEspecialidad[];
   rfiDistribucionUrgencia: { urgencia: string; count: number }[];
   projects: { id: number; name: string }[];
@@ -205,6 +206,7 @@ export const useExecutiveSummary = (selectedProjectIds?: number[]) => {
           rfiPendientes: 0,
           rfiRespondidos: 0,
           rfiCerrados: 0,
+          rfiTiempoPromedioRespuesta: 0,
           rfiPorEspecialidad: [],
           rfiDistribucionUrgencia: [],
           projects: [],
@@ -280,10 +282,10 @@ export const useExecutiveSummary = (selectedProjectIds?: number[]) => {
         .from('Reuniones')
         .select('id');
 
-      // Fetch RFI data with urgency
+      // Fetch RFI data with urgency and dates for response time calculation
       const { data: rfiData } = await supabase
         .from('RFI')
-        .select('id, Status, Proyecto, Urgencia')
+        .select('id, Status, Proyecto, Urgencia, created_at, Fecha_Respuesta')
         .in('Proyecto', projectIds);
 
       // Fetch RFI destinatarios with contactos to get especialidad
@@ -437,6 +439,20 @@ export const useExecutiveSummary = (selectedProjectIds?: number[]) => {
       const rfiPendientes = rfiData?.filter((r: any) => r.Status === 'Pendiente').length || 0;
       const rfiRespondidos = rfiData?.filter((r: any) => r.Status === 'Respondido').length || 0;
       const rfiCerrados = rfiData?.filter((r: any) => r.Status === 'Cerrado').length || 0;
+      
+      // Calculate average response time in days
+      const rfiWithResponse = (rfiData || []).filter((r: any) => r.Fecha_Respuesta && r.created_at);
+      let rfiTiempoPromedioRespuesta = 0;
+      if (rfiWithResponse.length > 0) {
+        const totalDays = rfiWithResponse.reduce((sum: number, r: any) => {
+          const created = new Date(r.created_at);
+          const responded = new Date(r.Fecha_Respuesta);
+          const diffTime = Math.abs(responded.getTime() - created.getTime());
+          const diffDays = diffTime / (1000 * 60 * 60 * 24);
+          return sum + diffDays;
+        }, 0);
+        rfiTiempoPromedioRespuesta = totalDays / rfiWithResponse.length;
+      }
 
       const rfiEspecialidadMap: Record<number, string> = {};
       (rfiDestinatarios as any[])?.forEach((rd: any) => {
@@ -508,6 +524,7 @@ export const useExecutiveSummary = (selectedProjectIds?: number[]) => {
         rfiPendientes,
         rfiRespondidos,
         rfiCerrados,
+        rfiTiempoPromedioRespuesta,
         rfiPorEspecialidad,
         rfiDistribucionUrgencia,
         projects: projects.map(p => ({ id: p.id, name: p.Name || 'Sin nombre' })),

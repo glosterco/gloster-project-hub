@@ -896,6 +896,7 @@ const ProjectDetail = () => {
                       documentos={documentos} 
                       loading={documentosLoading} 
                       projectId={id || ""} 
+                      onRefresh={refetchDocumentos}
                     />
                   </TabsContent>
                 )}

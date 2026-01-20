@@ -715,7 +715,7 @@ const ExecutiveSummary = () => {
 
           {/* RFI Tab */}
           <TabsContent value="rfi">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Total RFI</CardTitle>
@@ -723,25 +723,25 @@ const ExecutiveSummary = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{summaryData?.totalRFI || 0}</div>
-                  <p className="text-xs text-muted-foreground">Solicitudes de información registradas</p>
+                  <p className="text-xs text-muted-foreground">Solicitudes registradas</p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Pendientes</CardTitle>
-                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <Clock className="h-4 w-4 text-gloster-yellow" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{summaryData?.rfiPendientes || 0}</div>
-                  <p className="text-xs text-muted-foreground">RFI pendientes de respuesta</p>
+                  <p className="text-xs text-muted-foreground">Pendientes de respuesta</p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Respondidos</CardTitle>
-                  <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                  <CheckCircle className="h-4 w-4 text-gloster-gray" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{summaryData?.rfiRespondidos || 0}</div>
@@ -752,11 +752,26 @@ const ExecutiveSummary = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Cerrados</CardTitle>
-                  <XCircle className="h-4 w-4 text-muted-foreground" />
+                  <XCircle className="h-4 w-4 text-gloster-dark" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{summaryData?.rfiCerrados || 0}</div>
                   <p className="text-xs text-muted-foreground">RFI cerrados</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Tiempo Promedio</CardTitle>
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {summaryData?.rfiTiempoPromedioRespuesta 
+                      ? `${summaryData.rfiTiempoPromedioRespuesta.toFixed(1)} días`
+                      : 'N/A'}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Plazo de respuesta</p>
                 </CardContent>
               </Card>
             </div>
@@ -980,16 +995,16 @@ const ExecutiveSummary = () => {
                 <CardContent>
                   {summaryData?.rfiPorEspecialidad && summaryData.rfiPorEspecialidad.length > 0 ? (
                     (() => {
-                      // Brand colors: yellow, gray, light blue, plus additional colors from logo palette
+                      // Brand colors: yellow, gray, light blue (matching the muted totals), plus additional colors
                       const brandColors = [
                         '#F5DF4D', // gloster-yellow
                         '#6B7280', // gloster-gray  
-                        '#93C5FD', // light blue (celeste claro)
+                        '#E2E8F0', // slate-200 (celeste/gris claro como los totales de la matriz)
                         '#1F2937', // gloster-dark
                         '#FCD34D', // amber-300
-                        '#A78BFA', // violet-400
-                        '#34D399', // emerald-400
-                        '#F87171', // red-400
+                        '#94A3B8', // slate-400
+                        '#CBD5E1', // slate-300
+                        '#475569', // slate-600
                       ];
 
                       return (

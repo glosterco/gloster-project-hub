@@ -13,6 +13,8 @@ interface UploadRequest {
     tipo: string;
     mimeType: string;
   }[];
+  uploadedByEmail?: string;
+  uploadedByName?: string;
 }
 
 async function getAccessToken(): Promise<string> {
@@ -101,8 +103,8 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { projectId, documents }: UploadRequest = await req.json();
-    console.log(`Processing upload for project ${projectId}, ${documents.length} documents`);
+    const { projectId, documents, uploadedByEmail, uploadedByName }: UploadRequest = await req.json();
+    console.log(`Processing upload for project ${projectId} by ${uploadedByEmail || 'unknown'}, ${documents.length} documents`);
 
     // Get project's Google Drive URL
     const { data: project, error: projectError } = await supabase
@@ -187,6 +189,8 @@ Deno.serve(async (req) => {
             MimeType: doc.mimeType,
             DriveId: driveFile.id,
             WebViewLink: driveFile.webViewLink,
+            uploaded_by_email: uploadedByEmail || null,
+            uploaded_by_name: uploadedByName || null
           })
           .select()
           .single();

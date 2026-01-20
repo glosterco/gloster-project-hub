@@ -50,6 +50,11 @@ export const useProjectPhotoUpload = (projectId: number) => {
 
     setUploading(true);
     try {
+      // Get current user info
+      const { data: { user } } = await supabase.auth.getUser();
+      const userEmail = user?.email || 'unknown';
+      const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuario';
+
       const photosToUpload = await Promise.all(
         files.map(async ({ file }) => ({
           fileName: file.name,
@@ -61,7 +66,9 @@ export const useProjectPhotoUpload = (projectId: number) => {
       const { data, error } = await supabase.functions.invoke('upload-project-photos', {
         body: {
           projectId,
-          photos: photosToUpload
+          photos: photosToUpload,
+          uploadedByEmail: userEmail,
+          uploadedByName: userName
         }
       });
 

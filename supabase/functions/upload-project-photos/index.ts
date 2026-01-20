@@ -105,7 +105,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { projectId, photos } = await req.json();
+    const { projectId, photos, uploadedByEmail, uploadedByName } = await req.json();
 
     if (!projectId || !photos || !Array.isArray(photos)) {
       return new Response(
@@ -113,6 +113,9 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    console.log(`Processing upload for project ${projectId} by ${uploadedByEmail || 'unknown'}`);
+
 
     const accessToken = await getAccessToken();
 
@@ -179,7 +182,9 @@ Deno.serve(async (req) => {
             DriveId: driveFile.id,
             WebViewLink: driveFile.webViewLink,
             Nombre: photo.fileName,
-            MimeType: photo.mimeType
+            MimeType: photo.mimeType,
+            uploaded_by_email: uploadedByEmail || null,
+            uploaded_by_name: uploadedByName || null
           })
           .select()
           .single();

@@ -776,95 +776,8 @@ const ExecutiveSummary = () => {
               </Card>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <AlertCircle className="h-5 w-5" />
-                    Distribución de Urgencia
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {summaryData?.rfiDistribucionUrgencia &&
-                  summaryData.rfiDistribucionUrgencia.some((u) => u.count > 0) ? (
-                    <ResponsiveContainer width="100%" height={220}>
-                      <PieChart>
-                        <Pie
-                          data={summaryData.rfiDistribucionUrgencia.filter((u) => u.count > 0)}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
-                          outerRadius={70}
-                          dataKey="count"
-                          nameKey="urgencia"
-                        >
-                          {summaryData.rfiDistribucionUrgencia.map((entry, index) => (
-                            <Cell
-                              key={`cell-${index}`}
-                              fill={
-                                entry.urgencia === "Muy Urgente"
-                                  ? "hsl(var(--destructive))"
-                                  : entry.urgencia === "Urgente"
-                                    ? "hsl(var(--primary))"
-                                    : "hsl(var(--muted-foreground))"
-                              }
-                            />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                        <Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <p className="text-sm text-muted-foreground text-center py-8">No hay RFI registrados</p>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5" />
-                    Resumen de Urgencia
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {summaryData?.rfiDistribucionUrgencia?.map((item) => (
-                      <div key={item.urgencia} className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Badge
-                            variant={
-                              item.urgencia === "Muy Urgente"
-                                ? "destructive"
-                                : item.urgencia === "Urgente"
-                                  ? "secondary"
-                                  : "outline"
-                            }
-                          >
-                            {item.urgencia}
-                          </Badge>
-                          <span className="font-semibold">{item.count}</span>
-                        </div>
-                        <div className="h-2 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-primary rounded-full transition-all"
-                            style={{
-                              width: `${summaryData.totalRFI > 0 ? (item.count / summaryData.totalRFI) * 100 : 0}%`,
-                            }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Status/Urgency Matrix and Specialty Distribution */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Status vs Urgency Matrix */}
+            {/* Status/Urgency Matrix */}
+            <div className="mb-8">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -883,8 +796,6 @@ const ExecutiveSummary = () => {
                       };
 
                       summaryData.rfiPorEspecialidad.forEach((esp) => {
-                        // Distribute by status - we need to estimate since we only have totals per specialty
-                        // Using the specialty data to build the matrix
                         matrix.Pendiente.noUrgente += Math.round(esp.pendientes * (esp.noUrgente / (esp.total || 1)));
                         matrix.Pendiente.urgente += Math.round(esp.pendientes * (esp.urgente / (esp.total || 1)));
                         matrix.Pendiente.muyUrgente += Math.round(esp.pendientes * (esp.muyUrgente / (esp.total || 1)));
@@ -983,23 +894,25 @@ const ExecutiveSummary = () => {
                   )}
                 </CardContent>
               </Card>
+            </div>
 
-              {/* Specialty Distribution Chart */}
+            {/* Two Specialty Distribution Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Distribution by RFI Count */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <BarChart3 className="h-5 w-5" />
-                    Distribución por Especialidad
+                    Distribución por Especialidad (Cantidad)
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   {summaryData?.rfiPorEspecialidad && summaryData.rfiPorEspecialidad.length > 0 ? (
                     (() => {
-                      // Brand colors: yellow, gray, light blue (matching the muted totals), plus additional colors
                       const brandColors = [
                         '#F5DF4D', // gloster-yellow
                         '#6B7280', // gloster-gray  
-                        '#E2E8F0', // slate-200 (celeste/gris claro como los totales de la matriz)
+                        '#E2E8F0', // slate-200
                         '#1F2937', // gloster-dark
                         '#FCD34D', // amber-300
                         '#94A3B8', // slate-400
@@ -1026,6 +939,37 @@ const ExecutiveSummary = () => {
                         </ResponsiveContainer>
                       );
                     })()
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">No hay RFI registrados</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Distribution by Urgency per Specialty */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <AlertCircle className="h-5 w-5" />
+                    Distribución por Especialidad (Urgencia)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {summaryData?.rfiPorEspecialidad && summaryData.rfiPorEspecialidad.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={280}>
+                      <BarChart
+                        data={summaryData.rfiPorEspecialidad.slice(0, 8)}
+                        layout="vertical"
+                        margin={{ left: 20, right: 20 }}
+                      >
+                        <XAxis type="number" />
+                        <YAxis dataKey="especialidad" type="category" width={100} tick={{ fontSize: 11 }} />
+                        <Tooltip />
+                        <Legend />
+                        <Bar dataKey="noUrgente" stackId="urgency" fill="#6B7280" name="No Urgente" radius={[0, 0, 0, 0]} />
+                        <Bar dataKey="urgente" stackId="urgency" fill="#F5DF4D" name="Urgente" radius={[0, 0, 0, 0]} />
+                        <Bar dataKey="muyUrgente" stackId="urgency" fill="hsl(var(--destructive))" name="Muy Urgente" radius={[0, 4, 4, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
                   ) : (
                     <p className="text-sm text-muted-foreground text-center py-4">No hay RFI registrados</p>
                   )}

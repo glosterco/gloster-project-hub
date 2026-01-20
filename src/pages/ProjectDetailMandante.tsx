@@ -770,7 +770,7 @@ const ProjectDetailMandante = () => {
                 {renderControls(documentosSearch, setDocumentosSearch, "Cargar Documento", () =>
                   setShowDocumentUpload(true),
                 )}
-                <DocumentosTableWithSidebar documentos={documentos} loading={documentosLoading} projectId={id || ""} />
+                <DocumentosTableWithSidebar documentos={documentos} loading={documentosLoading} projectId={id || ""} onRefresh={refetchDocumentos} />
               </TabsContent>
             )}
 

@@ -283,28 +283,46 @@ export const DocumentosTableWithSidebar = ({ documentos, loading, projectId, onR
                         </div>
                       </TableCell>
                       <TableCell>
-                        {doc.uploaded_by_name ? (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <div className="flex items-center gap-1 text-muted-foreground cursor-help">
-                                  <User className="h-3 w-3" />
-                                  <span className="text-sm truncate max-w-[80px]">{doc.uploaded_by_name}</span>
-                                </div>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>{doc.uploaded_by_email}</p>
-                                {doc.moved_at && doc.moved_by_name && (
-                                  <p className="text-xs text-muted-foreground mt-1">
-                                    Movido por {doc.moved_by_name} el {format(new Date(doc.moved_at), 'dd/MM/yyyy HH:mm', { locale: es })}
-                                  </p>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex flex-col gap-0.5 cursor-help">
+                                {doc.uploaded_by_name ? (
+                                  <div className="flex items-center gap-1 text-muted-foreground">
+                                    <User className="h-3 w-3" />
+                                    <span className="text-sm truncate max-w-[80px]">{doc.uploaded_by_name}</span>
+                                  </div>
+                                ) : (
+                                  <span className="text-sm text-muted-foreground">-</span>
                                 )}
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">-</span>
-                        )}
+                                {doc.moved_at && doc.moved_by_name && (
+                                  <div className="flex items-center gap-1 text-xs text-amber-600">
+                                    <FolderInput className="h-3 w-3" />
+                                    <span className="truncate max-w-[80px]">{doc.moved_by_name}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {doc.uploaded_by_name && (
+                                <p className="text-sm">
+                                  Subido por: {doc.uploaded_by_name}
+                                  <br />
+                                  <span className="text-xs text-muted-foreground">{doc.uploaded_by_email}</span>
+                                </p>
+                              )}
+                              {doc.moved_at && doc.moved_by_name && (
+                                <p className="text-sm mt-2 pt-2 border-t">
+                                  Movido por: {doc.moved_by_name}
+                                  <br />
+                                  <span className="text-xs text-muted-foreground">
+                                    {doc.moved_by_email} - {format(new Date(doc.moved_at), 'dd/MM/yyyy HH:mm', { locale: es })}
+                                  </span>
+                                </p>
+                              )}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">

@@ -823,118 +823,124 @@ const ExecutiveSummary = () => {
                   )}
                 </CardContent>
               </Card>
+
+              {/* Matrix */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <HelpCircle className="h-5 w-5" />
+                    Matriz Estado / Urgencia
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {summaryData?.rfiPorEspecialidad && summaryData.rfiPorEspecialidad.length > 0 ? (
+                    (() => {
+                      const matrix = {
+                        Pendiente: { noUrgente: 0, urgente: 0, muyUrgente: 0, total: 0 },
+                        Respondido: { noUrgente: 0, urgente: 0, muyUrgente: 0, total: 0 },
+                        Cerrado: { noUrgente: 0, urgente: 0, muyUrgente: 0, total: 0 },
+                      };
+
+                      summaryData.rfiPorEspecialidad.forEach((esp) => {
+                        matrix.Pendiente.noUrgente += Math.round(esp.pendientes * (esp.noUrgente / (esp.total || 1)));
+                        matrix.Pendiente.urgente += Math.round(esp.pendientes * (esp.urgente / (esp.total || 1)));
+                        matrix.Pendiente.muyUrgente += Math.round(esp.pendientes * (esp.muyUrgente / (esp.total || 1)));
+                        matrix.Pendiente.total += esp.pendientes;
+
+                        matrix.Respondido.noUrgente += Math.round(esp.respondidos * (esp.noUrgente / (esp.total || 1)));
+                        matrix.Respondido.urgente += Math.round(esp.respondidos * (esp.urgente / (esp.total || 1)));
+                        matrix.Respondido.muyUrgente += Math.round(
+                          esp.respondidos * (esp.muyUrgente / (esp.total || 1)),
+                        );
+                        matrix.Respondido.total += esp.respondidos;
+
+                        matrix.Cerrado.noUrgente += Math.round(esp.cerrados * (esp.noUrgente / (esp.total || 1)));
+                        matrix.Cerrado.urgente += Math.round(esp.cerrados * (esp.urgente / (esp.total || 1)));
+                        matrix.Cerrado.muyUrgente += Math.round(esp.cerrados * (esp.muyUrgente / (esp.total || 1)));
+                        matrix.Cerrado.total += esp.cerrados;
+                      });
+
+                      const urgencyTotals = {
+                        noUrgente: matrix.Pendiente.noUrgente + matrix.Respondido.noUrgente + matrix.Cerrado.noUrgente,
+                        urgente: matrix.Pendiente.urgente + matrix.Respondido.urgente + matrix.Cerrado.urgente,
+                        muyUrgente:
+                          matrix.Pendiente.muyUrgente + matrix.Respondido.muyUrgente + matrix.Cerrado.muyUrgente,
+                      };
+
+                      return (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b">
+                                <th className="text-left py-3 px-3 font-medium">Estado</th>
+                                <th className="text-center py-3 px-3 font-medium">No Urgente</th>
+                                <th className="text-center py-3 px-3 font-medium">Urgente</th>
+                                <th className="text-center py-3 px-3 font-medium">Muy Urgente</th>
+                                <th className="text-center py-3 px-3 font-medium bg-muted/50">Total</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr className="border-b border-muted hover:bg-muted/30">
+                                <td className="py-3 px-3">
+                                  <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                                    Pendiente
+                                  </Badge>
+                                </td>
+                                <td className="text-center py-3 px-3">{matrix.Pendiente.noUrgente}</td>
+                                <td className="text-center py-3 px-3">{matrix.Pendiente.urgente}</td>
+                                <td className="text-center py-3 px-3 font-medium text-destructive">
+                                  {matrix.Pendiente.muyUrgente}
+                                </td>
+                                <td className="text-center py-3 px-3 font-bold bg-muted/50">
+                                  {matrix.Pendiente.total}
+                                </td>
+                              </tr>
+                              <tr className="border-b border-muted hover:bg-muted/30">
+                                <td className="py-3 px-3">
+                                  <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                                    Respondido
+                                  </Badge>
+                                </td>
+                                <td className="text-center py-3 px-3">{matrix.Respondido.noUrgente}</td>
+                                <td className="text-center py-3 px-3">{matrix.Respondido.urgente}</td>
+                                <td className="text-center py-3 px-3 font-medium text-destructive">
+                                  {matrix.Respondido.muyUrgente}
+                                </td>
+                                <td className="text-center py-3 px-3 font-bold bg-muted/50">
+                                  {matrix.Respondido.total}
+                                </td>
+                              </tr>
+                              <tr className="border-b border-muted hover:bg-muted/30">
+                                <td className="py-3 px-3">
+                                  <Badge variant="secondary" className="bg-green-100 text-green-800">
+                                    Cerrado
+                                  </Badge>
+                                </td>
+                                <td className="text-center py-3 px-3">{matrix.Cerrado.noUrgente}</td>
+                                <td className="text-center py-3 px-3">{matrix.Cerrado.urgente}</td>
+                                <td className="text-center py-3 px-3 font-medium text-destructive">
+                                  {matrix.Cerrado.muyUrgente}
+                                </td>
+                                <td className="text-center py-3 px-3 font-bold bg-muted/50">{matrix.Cerrado.total}</td>
+                              </tr>
+                              <tr className="bg-muted/50 font-bold">
+                                <td className="py-3 px-3">Total</td>
+                                <td className="text-center py-3 px-3">{urgencyTotals.noUrgente}</td>
+                                <td className="text-center py-3 px-3">{urgencyTotals.urgente}</td>
+                                <td className="text-center py-3 px-3 text-destructive">{urgencyTotals.muyUrgente}</td>
+                                <td className="text-center py-3 px-3">{summaryData.totalRFI}</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      );
+                    })()
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">No hay RFI registrados</p>
+                  )}
+                </CardContent>
+              </Card>
             </div>
-
-            {/* Matrix */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <HelpCircle className="h-5 w-5" />
-                  Matriz Estado / Urgencia
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {summaryData?.rfiPorEspecialidad && summaryData.rfiPorEspecialidad.length > 0 ? (
-                  (() => {
-                    const matrix = {
-                      Pendiente: { noUrgente: 0, urgente: 0, muyUrgente: 0, total: 0 },
-                      Respondido: { noUrgente: 0, urgente: 0, muyUrgente: 0, total: 0 },
-                      Cerrado: { noUrgente: 0, urgente: 0, muyUrgente: 0, total: 0 },
-                    };
-
-                    summaryData.rfiPorEspecialidad.forEach((esp) => {
-                      matrix.Pendiente.noUrgente += Math.round(esp.pendientes * (esp.noUrgente / (esp.total || 1)));
-                      matrix.Pendiente.urgente += Math.round(esp.pendientes * (esp.urgente / (esp.total || 1)));
-                      matrix.Pendiente.muyUrgente += Math.round(esp.pendientes * (esp.muyUrgente / (esp.total || 1)));
-                      matrix.Pendiente.total += esp.pendientes;
-
-                      matrix.Respondido.noUrgente += Math.round(esp.respondidos * (esp.noUrgente / (esp.total || 1)));
-                      matrix.Respondido.urgente += Math.round(esp.respondidos * (esp.urgente / (esp.total || 1)));
-                      matrix.Respondido.muyUrgente += Math.round(esp.respondidos * (esp.muyUrgente / (esp.total || 1)));
-                      matrix.Respondido.total += esp.respondidos;
-
-                      matrix.Cerrado.noUrgente += Math.round(esp.cerrados * (esp.noUrgente / (esp.total || 1)));
-                      matrix.Cerrado.urgente += Math.round(esp.cerrados * (esp.urgente / (esp.total || 1)));
-                      matrix.Cerrado.muyUrgente += Math.round(esp.cerrados * (esp.muyUrgente / (esp.total || 1)));
-                      matrix.Cerrado.total += esp.cerrados;
-                    });
-
-                    const urgencyTotals = {
-                      noUrgente: matrix.Pendiente.noUrgente + matrix.Respondido.noUrgente + matrix.Cerrado.noUrgente,
-                      urgente: matrix.Pendiente.urgente + matrix.Respondido.urgente + matrix.Cerrado.urgente,
-                      muyUrgente:
-                        matrix.Pendiente.muyUrgente + matrix.Respondido.muyUrgente + matrix.Cerrado.muyUrgente,
-                    };
-
-                    return (
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="border-b">
-                              <th className="text-left py-3 px-3 font-medium">Estado</th>
-                              <th className="text-center py-3 px-3 font-medium">No Urgente</th>
-                              <th className="text-center py-3 px-3 font-medium">Urgente</th>
-                              <th className="text-center py-3 px-3 font-medium">Muy Urgente</th>
-                              <th className="text-center py-3 px-3 font-medium bg-muted/50">Total</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <tr className="border-b border-muted hover:bg-muted/30">
-                              <td className="py-3 px-3">
-                                <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
-                                  Pendiente
-                                </Badge>
-                              </td>
-                              <td className="text-center py-3 px-3">{matrix.Pendiente.noUrgente}</td>
-                              <td className="text-center py-3 px-3">{matrix.Pendiente.urgente}</td>
-                              <td className="text-center py-3 px-3 font-medium text-destructive">
-                                {matrix.Pendiente.muyUrgente}
-                              </td>
-                              <td className="text-center py-3 px-3 font-bold bg-muted/50">{matrix.Pendiente.total}</td>
-                            </tr>
-                            <tr className="border-b border-muted hover:bg-muted/30">
-                              <td className="py-3 px-3">
-                                <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                                  Respondido
-                                </Badge>
-                              </td>
-                              <td className="text-center py-3 px-3">{matrix.Respondido.noUrgente}</td>
-                              <td className="text-center py-3 px-3">{matrix.Respondido.urgente}</td>
-                              <td className="text-center py-3 px-3 font-medium text-destructive">
-                                {matrix.Respondido.muyUrgente}
-                              </td>
-                              <td className="text-center py-3 px-3 font-bold bg-muted/50">{matrix.Respondido.total}</td>
-                            </tr>
-                            <tr className="border-b border-muted hover:bg-muted/30">
-                              <td className="py-3 px-3">
-                                <Badge variant="secondary" className="bg-green-100 text-green-800">
-                                  Cerrado
-                                </Badge>
-                              </td>
-                              <td className="text-center py-3 px-3">{matrix.Cerrado.noUrgente}</td>
-                              <td className="text-center py-3 px-3">{matrix.Cerrado.urgente}</td>
-                              <td className="text-center py-3 px-3 font-medium text-destructive">
-                                {matrix.Cerrado.muyUrgente}
-                              </td>
-                              <td className="text-center py-3 px-3 font-bold bg-muted/50">{matrix.Cerrado.total}</td>
-                            </tr>
-                            <tr className="bg-muted/50 font-bold">
-                              <td className="py-3 px-3">Total</td>
-                              <td className="text-center py-3 px-3">{urgencyTotals.noUrgente}</td>
-                              <td className="text-center py-3 px-3">{urgencyTotals.urgente}</td>
-                              <td className="text-center py-3 px-3 text-destructive">{urgencyTotals.muyUrgente}</td>
-                              <td className="text-center py-3 px-3">{summaryData.totalRFI}</td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                    );
-                  })()
-                ) : (
-                  <p className="text-sm text-muted-foreground text-center py-4">No hay RFI registrados</p>
-                )}
-              </CardContent>
-            </Card>
 
             {/* Two Specialty Distribution Charts */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

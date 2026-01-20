@@ -63,6 +63,11 @@ export const useProjectDocumentUpload = (projectId: number) => {
 
     setUploading(true);
     try {
+      // Get current user info
+      const { data: { user } } = await supabase.auth.getUser();
+      const userEmail = user?.email || 'unknown';
+      const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuario';
+
       const documentsToUpload = await Promise.all(
         files.map(async ({ file, tipo }) => ({
           fileName: file.name,
@@ -75,7 +80,9 @@ export const useProjectDocumentUpload = (projectId: number) => {
       const { data, error } = await supabase.functions.invoke('upload-project-documents', {
         body: {
           projectId,
-          documents: documentsToUpload
+          documents: documentsToUpload,
+          uploadedByEmail: userEmail,
+          uploadedByName: userName
         }
       });
 

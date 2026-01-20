@@ -10,6 +10,8 @@ export interface Foto {
   WebViewLink?: string;
   Nombre?: string;
   MimeType?: string;
+  uploaded_by_email?: string;
+  uploaded_by_name?: string;
 }
 
 export const useFotos = (projectId: string) => {

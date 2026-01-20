@@ -1,13 +1,22 @@
 import { useState } from 'react';
-import { FileText, Folder, File, ExternalLink, Calendar, HardDrive, Eye, Download } from 'lucide-react';
+import { FileText, Folder, File, Calendar, HardDrive, Eye, Download, FolderInput, User, Trash2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { useProjectDocumentDownload } from '@/hooks/useProjectDocumentDownload';
+import { useMoveDocument } from '@/hooks/useMoveDocument';
 import { DocumentPreviewModal } from '@/components/DocumentPreviewModal';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface Documento {
   id: number;
@@ -20,15 +29,24 @@ interface Documento {
   DriveId: string | null;
   WebViewLink: string | null;
   created_at: string;
+  uploaded_by_email?: string | null;
+  uploaded_by_name?: string | null;
+  moved_at?: string | null;
+  moved_by_email?: string | null;
+  moved_by_name?: string | null;
 }
 
 interface DocumentosTableWithSidebarProps {
   documentos: Documento[];
   loading: boolean;
   projectId: string;
+  onRefresh?: () => void;
 }
 
-export const DocumentosTableWithSidebar = ({ documentos, loading, projectId }: DocumentosTableWithSidebarProps) => {
+// Default document types including Papelera
+const DEFAULT_FOLDERS = ['Papelera'];
+
+export const DocumentosTableWithSidebar = ({ documentos, loading, projectId, onRefresh }: DocumentosTableWithSidebarProps) => {
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [previewModal, setPreviewModal] = useState<{
     isOpen: boolean;
@@ -44,6 +62,7 @@ export const DocumentosTableWithSidebar = ({ documentos, loading, projectId }: D
     isLoading: false,
   });
   const { downloadDocument, previewDocument, isDocumentLoading } = useProjectDocumentDownload();
+  const { moveDocument, loading: moveLoading } = useMoveDocument();
 
   const handlePreview = async (doc: Documento) => {
     if (!doc.Nombre) return;
@@ -74,12 +93,29 @@ export const DocumentosTableWithSidebar = ({ documentos, loading, projectId }: D
     }
   };
 
-  // Get unique document types with counts
+  const handleMoveDocument = async (doc: Documento, newTipo: string) => {
+    const success = await moveDocument(doc.id, newTipo);
+    if (success && onRefresh) {
+      onRefresh();
+    }
+  };
+
+  // Get unique document types with counts, always include Papelera
   const documentTypes = documentos.reduce((acc, doc) => {
     const tipo = doc.Tipo || 'Sin Categoría';
     acc[tipo] = (acc[tipo] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
+
+  // Add default folders if they don't exist
+  DEFAULT_FOLDERS.forEach(folder => {
+    if (!(folder in documentTypes)) {
+      documentTypes[folder] = 0;
+    }
+  });
+
+  // Get all folder names for move menu
+  const allFolders = [...new Set([...Object.keys(documentTypes), ...DEFAULT_FOLDERS])].sort();
 
   // Filter documents by selected type
   const filteredDocuments = selectedType
@@ -102,6 +138,11 @@ export const DocumentosTableWithSidebar = ({ documentos, loading, projectId }: D
     if (['xls', 'xlsx'].includes(ext)) return <FileText className="h-4 w-4 text-green-500" />;
     if (['jpg', 'jpeg', 'png'].includes(ext)) return <FileText className="h-4 w-4 text-purple-500" />;
     return <File className="h-4 w-4 text-muted-foreground" />;
+  };
+
+  const getFolderIcon = (tipo: string) => {
+    if (tipo === 'Papelera') return <Trash2 className="h-4 w-4 flex-shrink-0" />;
+    return <Folder className="h-4 w-4 flex-shrink-0" />;
   };
 
   if (loading) {
@@ -157,7 +198,12 @@ export const DocumentosTableWithSidebar = ({ documentos, loading, projectId }: D
             </button>
 
             {Object.entries(documentTypes)
-              .sort(([a], [b]) => a.localeCompare(b))
+              .sort(([a], [b]) => {
+                // Put Papelera at the end
+                if (a === 'Papelera') return 1;
+                if (b === 'Papelera') return -1;
+                return a.localeCompare(b);
+              })
               .map(([tipo, count]) => (
                 <button
                   key={tipo}
@@ -166,9 +212,9 @@ export const DocumentosTableWithSidebar = ({ documentos, loading, projectId }: D
                     selectedType === tipo
                       ? 'bg-primary text-primary-foreground'
                       : 'hover:bg-muted text-muted-foreground'
-                  }`}
+                  } ${tipo === 'Papelera' ? 'border-t mt-2 pt-3' : ''}`}
                 >
-                  <Folder className="h-4 w-4 flex-shrink-0" />
+                  {getFolderIcon(tipo)}
                   <span className="text-sm font-medium truncate">{tipo}</span>
                   <span className="ml-auto text-xs bg-muted px-2 py-0.5 rounded-full">
                     {count}
@@ -192,13 +238,14 @@ export const DocumentosTableWithSidebar = ({ documentos, loading, projectId }: D
                   <TableHead className="w-[100px]">Tipo</TableHead>
                   <TableHead className="w-[100px]">Extensión</TableHead>
                   <TableHead className="w-[160px]">Fecha</TableHead>
-                  <TableHead className="w-[120px] text-right">Acciones</TableHead>
+                  <TableHead className="w-[120px]">Subido por</TableHead>
+                  <TableHead className="w-[140px] text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredDocuments.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       {selectedType
                         ? `No hay documentos en la categoría "${selectedType}"`
                         : 'No hay documentos cargados'}
@@ -235,6 +282,30 @@ export const DocumentosTableWithSidebar = ({ documentos, loading, projectId }: D
                           </span>
                         </div>
                       </TableCell>
+                      <TableCell>
+                        {doc.uploaded_by_name ? (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="flex items-center gap-1 text-muted-foreground cursor-help">
+                                  <User className="h-3 w-3" />
+                                  <span className="text-sm truncate max-w-[80px]">{doc.uploaded_by_name}</span>
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{doc.uploaded_by_email}</p>
+                                {doc.moved_at && doc.moved_by_name && (
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    Movido por {doc.moved_by_name} el {format(new Date(doc.moved_at), 'dd/MM/yyyy HH:mm', { locale: es })}
+                                  </p>
+                                )}
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
                           <Button
@@ -260,6 +331,41 @@ export const DocumentosTableWithSidebar = ({ documentos, loading, projectId }: D
                           >
                             <Download className="h-4 w-4" />
                           </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0"
+                                disabled={moveLoading}
+                                title="Mover a carpeta"
+                              >
+                                <FolderInput className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48">
+                              <p className="px-2 py-1.5 text-xs text-muted-foreground font-medium">
+                                Mover a carpeta
+                              </p>
+                              <DropdownMenuSeparator />
+                              {allFolders
+                                .filter(folder => folder !== doc.Tipo)
+                                .map((folder) => (
+                                  <DropdownMenuItem
+                                    key={folder}
+                                    onClick={() => handleMoveDocument(doc, folder)}
+                                    className="cursor-pointer"
+                                  >
+                                    {folder === 'Papelera' ? (
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                    ) : (
+                                      <Folder className="h-4 w-4 mr-2" />
+                                    )}
+                                    {folder}
+                                  </DropdownMenuItem>
+                                ))}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </TableCell>
                     </TableRow>

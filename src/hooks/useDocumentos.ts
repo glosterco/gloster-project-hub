@@ -13,6 +13,11 @@ export interface Documento {
   DriveId: string | null;
   WebViewLink: string | null;
   created_at: string;
+  uploaded_by_email?: string | null;
+  uploaded_by_name?: string | null;
+  moved_at?: string | null;
+  moved_by_email?: string | null;
+  moved_by_name?: string | null;
 }
 
 export const useDocumentos = (projectId: string) => {

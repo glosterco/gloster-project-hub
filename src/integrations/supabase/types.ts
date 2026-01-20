@@ -294,10 +294,15 @@ export type Database = {
           Extension: string | null
           id: number
           MimeType: string | null
+          moved_at: string | null
+          moved_by_email: string | null
+          moved_by_name: string | null
           Nombre: string | null
           Proyecto: number | null
           Size: number | null
           Tipo: string | null
+          uploaded_by_email: string | null
+          uploaded_by_name: string | null
           WebViewLink: string | null
         }
         Insert: {
@@ -306,10 +311,15 @@ export type Database = {
           Extension?: string | null
           id?: number
           MimeType?: string | null
+          moved_at?: string | null
+          moved_by_email?: string | null
+          moved_by_name?: string | null
           Nombre?: string | null
           Proyecto?: number | null
           Size?: number | null
           Tipo?: string | null
+          uploaded_by_email?: string | null
+          uploaded_by_name?: string | null
           WebViewLink?: string | null
         }
         Update: {
@@ -318,10 +328,15 @@ export type Database = {
           Extension?: string | null
           id?: number
           MimeType?: string | null
+          moved_at?: string | null
+          moved_by_email?: string | null
+          moved_by_name?: string | null
           Nombre?: string | null
           Proyecto?: number | null
           Size?: number | null
           Tipo?: string | null
+          uploaded_by_email?: string | null
+          uploaded_by_name?: string | null
           WebViewLink?: string | null
         }
         Relationships: [
@@ -425,6 +440,8 @@ export type Database = {
           MimeType: string | null
           Nombre: string | null
           Proyecto: number | null
+          uploaded_by_email: string | null
+          uploaded_by_name: string | null
           WebViewLink: string | null
         }
         Insert: {
@@ -434,6 +451,8 @@ export type Database = {
           MimeType?: string | null
           Nombre?: string | null
           Proyecto?: number | null
+          uploaded_by_email?: string | null
+          uploaded_by_name?: string | null
           WebViewLink?: string | null
         }
         Update: {
@@ -443,6 +462,8 @@ export type Database = {
           MimeType?: string | null
           Nombre?: string | null
           Proyecto?: number | null
+          uploaded_by_email?: string | null
+          uploaded_by_name?: string | null
           WebViewLink?: string | null
         }
         Relationships: [

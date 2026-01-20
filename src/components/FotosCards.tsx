@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Camera, ExternalLink } from 'lucide-react';
+import { Camera, Download, User, Clock, Loader2 } from 'lucide-react';
 import { Foto } from '@/hooks/useFotos';
 import { Dialog, DialogContent } from './ui/dialog';
 import { Button } from './ui/button';
+import { useProjectDocumentDownload } from '@/hooks/useProjectDocumentDownload';
 
 interface FotosCardsProps {
   fotos: Foto[];
@@ -18,6 +19,7 @@ export const FotosCards: React.FC<FotosCardsProps> = ({
   onCardClick
 }) => {
   const [selectedPhoto, setSelectedPhoto] = useState<Foto | null>(null);
+  const { downloadDocument, isDocumentLoading } = useProjectDocumentDownload();
 
   if (loading) {
     return (
@@ -112,24 +114,45 @@ export const FotosCards: React.FC<FotosCardsProps> = ({
                 )}
               </div>
               <div className="flex items-center justify-between">
-                <div>
+                <div className="space-y-1">
                   <p className="font-medium">{selectedPhoto.Nombre || 'Sin nombre'}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {new Date(selectedPhoto.created_at).toLocaleDateString('es-ES', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
-                  </p>
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <Clock className="h-3.5 w-3.5" />
+                      <span>
+                        {new Date(selectedPhoto.created_at).toLocaleDateString('es-ES', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </span>
+                    </div>
+                    {selectedPhoto.uploaded_by_name && (
+                      <div className="flex items-center gap-1">
+                        <User className="h-3.5 w-3.5" />
+                        <span>{selectedPhoto.uploaded_by_name}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                {selectedPhoto.WebViewLink && (
+                {selectedPhoto.DriveId && (
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => window.open(selectedPhoto.WebViewLink, '_blank')}
+                    onClick={() => selectedPhoto.Nombre && downloadDocument({
+                      fileName: selectedPhoto.Nombre,
+                      driveId: selectedPhoto.DriveId
+                    })}
+                    disabled={!selectedPhoto.Nombre || isDocumentLoading(selectedPhoto.Nombre || '')}
                   >
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    Ver en Drive
+                    {isDocumentLoading(selectedPhoto.Nombre || '') ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Download className="h-4 w-4 mr-2" />
+                    )}
+                    Descargar
                   </Button>
                 )}
               </div>

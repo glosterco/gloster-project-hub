@@ -282,20 +282,11 @@ export const useExecutiveSummary = (selectedProjectIds?: number[]) => {
         .from('Reuniones')
         .select('id');
 
-      // Fetch RFI data with urgency and dates for response time calculation
+      // Fetch RFI data with urgency, dates and Especialidad field directly from RFI table
       const { data: rfiData } = await supabase
         .from('RFI')
-        .select('id, Status, Proyecto, Urgencia, created_at, Fecha_Respuesta')
+        .select('id, Status, Proyecto, Urgencia, Especialidad, created_at, Fecha_Respuesta')
         .in('Proyecto', projectIds);
-
-      // Fetch RFI destinatarios with contactos to get especialidad
-      const rfiIds = (rfiData || [])?.map((r: any) => r.id) || [];
-      const { data: rfiDestinatarios } = rfiIds.length
-        ? await supabase
-            .from('rfi_destinatarios')
-            .select('rfi_id, contacto_id, contactos:contacto_id(especialidad)')
-            .in('rfi_id', rfiIds)
-        : { data: [] as any[] };
 
       if (paymentsError) {
         throw paymentsError;
@@ -454,15 +445,16 @@ export const useExecutiveSummary = (selectedProjectIds?: number[]) => {
         rfiTiempoPromedioRespuesta = totalDays / rfiWithResponse.length;
       }
 
-      const rfiEspecialidadMap: Record<number, string> = {};
-      (rfiDestinatarios as any[])?.forEach((rd: any) => {
-        const esp = rd.contactos?.especialidad || 'Sin especialidad';
-        if (!rfiEspecialidadMap[rd.rfi_id]) rfiEspecialidadMap[rd.rfi_id] = esp;
-      });
-
+      // Build RFI por especialidad directly from RFI.Especialidad field
       const rfiPorEspecialidadMap: Record<string, RFIPorEspecialidad> = {};
       (rfiData || [])?.forEach((rfi: any) => {
-        const esp = rfiEspecialidadMap[rfi.id] || 'Sin especialidad';
+        // Normalize specialty name for consistency
+        let esp = rfi.Especialidad || 'Sin especialidad';
+        // Capitalize first letter
+        if (esp && esp !== 'Sin especialidad') {
+          esp = esp.charAt(0).toUpperCase() + esp.slice(1).toLowerCase();
+        }
+        
         if (!rfiPorEspecialidadMap[esp]) {
           rfiPorEspecialidadMap[esp] = {
             especialidad: esp,

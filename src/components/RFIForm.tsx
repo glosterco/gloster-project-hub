@@ -60,6 +60,7 @@ export const RFIForm: React.FC<RFIFormProps> = ({
   const [selectedContactIds, setSelectedContactIds] = useState<number[]>([]);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [mandanteContactId, setMandanteContactId] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -78,6 +79,60 @@ export const RFIForm: React.FC<RFIFormProps> = ({
     },
   });
 
+  // Fetch mandante contact and auto-add to selected contacts
+  useEffect(() => {
+    const fetchMandanteContact = async () => {
+      if (!projectId || !open) return;
+      
+      const pid = parseInt(projectId);
+      if (Number.isNaN(pid)) return;
+
+      try {
+        // Get project's mandante (Owner)
+        const { data: project } = await supabase
+          .from('Proyectos')
+          .select('Owner, Mandantes:Owner(id, ContactName, ContactEmail)')
+          .eq('id', pid)
+          .single();
+
+        const mandanteData = project?.Mandantes as any;
+        if (mandanteData?.ContactEmail) {
+          // Check if mandante already exists as contact
+          const existingContact = contactos.find(
+            c => c.email?.toLowerCase() === mandanteData.ContactEmail?.toLowerCase()
+          );
+
+          if (existingContact) {
+            setMandanteContactId(existingContact.id);
+            // Auto-select mandante contact
+            setSelectedContactIds(prev => 
+              prev.includes(existingContact.id) ? prev : [...prev, existingContact.id]
+            );
+          } else {
+            // Create mandante as contact if not exists
+            const newContact = await addContacto({
+              nombre: mandanteData.ContactName || 'Mandante',
+              email: mandanteData.ContactEmail,
+              rol: 'Mandante',
+              especialidad: 'General',
+              telefono: null,
+              proyecto_id: pid
+            }) as any;
+            
+            if (newContact?.id) {
+              setMandanteContactId(newContact.id);
+              setSelectedContactIds(prev => [...prev, newContact.id]);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching mandante contact:', error);
+      }
+    };
+
+    fetchMandanteContact();
+  }, [projectId, open, contactos]);
+
   useEffect(() => {
     if (open) {
       form.reset({
@@ -87,8 +142,8 @@ export const RFIForm: React.FC<RFIFormProps> = ({
         especialidad: '',
         fecha_vencimiento: format(addDays(new Date(), 7), 'yyyy-MM-dd'),
       });
-      setSelectedContactIds([]);
       setAttachedFiles([]);
+      // Don't reset selectedContactIds here - let the mandante fetch handle it
     }
   }, [open]);
 

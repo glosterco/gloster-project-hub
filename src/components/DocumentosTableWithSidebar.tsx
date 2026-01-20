@@ -296,9 +296,14 @@ export const DocumentosTableWithSidebar = ({ documentos, loading, projectId, onR
                                   <span className="text-sm text-muted-foreground">-</span>
                                 )}
                                 {doc.moved_at && doc.moved_by_name && (
-                                  <div className="flex items-center gap-1 text-xs text-amber-600">
-                                    <FolderInput className="h-3 w-3" />
-                                    <span className="truncate max-w-[80px]">{doc.moved_by_name}</span>
+                                  <div className="flex flex-col text-xs text-amber-600">
+                                    <div className="flex items-center gap-1">
+                                      <FolderInput className="h-3 w-3" />
+                                      <span className="truncate max-w-[80px]">{doc.moved_by_name}</span>
+                                    </div>
+                                    <span className="text-[10px] text-amber-500 ml-4">
+                                      {format(new Date(doc.moved_at), 'dd/MM/yy HH:mm', { locale: es })}
+                                    </span>
                                   </div>
                                 )}
                               </div>

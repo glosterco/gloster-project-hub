@@ -285,8 +285,8 @@ export const DocumentosTableWithSidebar = ({ documentos, loading, projectId, onR
                       <TableCell>
                         <TooltipProvider>
                           <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div className="flex flex-col gap-0.5 cursor-help">
+                            <TooltipTrigger className="cursor-help">
+                              <div className="flex flex-col gap-0.5 text-left">
                                 {doc.uploaded_by_name ? (
                                   <div className="flex items-center gap-1 text-muted-foreground">
                                     <User className="h-3 w-3" />

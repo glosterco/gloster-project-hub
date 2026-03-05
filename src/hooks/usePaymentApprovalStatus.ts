@@ -99,7 +99,7 @@ export const usePaymentApprovalStatus = (paymentId: number | null, currentUserEm
 
       // Find current user's approval if they have one
       const currentUserApproval = currentUserEmail
-        ? typedApprovals.find(a => a.approver_email.toLowerCase() === currentUserEmail.toLowerCase()) || null
+        ? typedApprovals.find(a => a.approver_email.toLowerCase().trim() === currentUserEmail.toLowerCase().trim()) || null
         : null;
 
       // Determine if user can approve:

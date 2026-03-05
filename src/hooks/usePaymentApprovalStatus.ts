@@ -99,14 +99,14 @@ export const usePaymentApprovalStatus = (paymentId: number | null, currentUserEm
 
       // Find current user's approval if they have one
       const currentUserApproval = currentUserEmail
-        ? typedApprovals.find(a => a.approver_email.toLowerCase() === currentUserEmail.toLowerCase()) || null
+        ? typedApprovals.find(a => a.approver_email.toLowerCase().trim() === currentUserEmail.toLowerCase().trim()) || null
         : null;
 
       // Determine if user can approve:
       // 1. User is in project_approvers list, OR
       // 2. User is the mandante of the project
       const isInApproversList = currentUserEmail && approvers?.some(
-        a => a.approver_email.toLowerCase() === currentUserEmail.toLowerCase()
+        a => a.approver_email.toLowerCase().trim() === currentUserEmail.toLowerCase().trim()
       );
       const isApprover = isInApproversList || isMandanteOfProject;
       
@@ -115,20 +115,32 @@ export const usePaymentApprovalStatus = (paymentId: number | null, currentUserEm
       
       // Check if order matters and if it's this user's turn
       let isUsersTurn = true;
-      if (config?.approval_order_matters && approvers && currentUserEmail) {
+      if (config?.approval_order_matters === true && approvers && approvers.length > 0 && currentUserEmail) {
+        const normalizedUserEmail = currentUserEmail.toLowerCase().trim();
         const userApprover = approvers.find(
-          a => a.approver_email.toLowerCase() === currentUserEmail.toLowerCase()
+          a => a.approver_email.toLowerCase().trim() === normalizedUserEmail
         );
         if (userApprover) {
           // Check if all previous approvers (lower order) have approved
           const previousApprovers = approvers.filter(a => a.approval_order < userApprover.approval_order);
-          const previousApproverEmails = previousApprovers.map(a => a.approver_email.toLowerCase());
+          const previousApproverEmails = previousApprovers.map(a => a.approver_email.toLowerCase().trim());
           const allPreviousApproved = previousApproverEmails.every(email =>
             typedApprovals.some(a => 
-              a.approver_email.toLowerCase() === email && a.approval_status === 'Aprobado'
+              a.approver_email.toLowerCase().trim() === email && a.approval_status === 'Aprobado'
             )
           );
           isUsersTurn = allPreviousApproved;
+          console.log('🔄 Turn check:', { 
+            userOrder: userApprover.approval_order, 
+            previousCount: previousApprovers.length,
+            previousEmails: previousApproverEmails,
+            allPreviousApproved,
+            isUsersTurn 
+          });
+        } else {
+          // User is mandante but not in approvers list - always their turn
+          console.log('🔄 User not in approvers list (mandante access) - allowing approval');
+          isUsersTurn = true;
         }
       }
       

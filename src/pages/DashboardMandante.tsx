@@ -327,6 +327,22 @@ const DashboardMandante: React.FC = () => {
     {} as Record<string, number>,
   );
 
+  // Calcular totales de adicionales aprobados por moneda
+  const totalApprovedAdicionalesByCurrency = projects.reduce(
+    (acc, project) => {
+      const currency = project.Currency || "CLP";
+      const approvedAdicionales = (project.Adicionales || [])
+        .filter((a: any) => a.Status === "Aprobado")
+        .reduce((sum: number, a: any) => sum + (a.Monto_aprobado || a.Monto_presentado || 0), 0);
+      if (!acc[currency]) {
+        acc[currency] = 0;
+      }
+      acc[currency] += approvedAdicionales;
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
+
   // Función para obtener el estado de pago más cercano a notificar
   const getClosestPaymentToNotify = (project: any) => {
     if (!project.EstadosPago) return null;
@@ -572,11 +588,32 @@ const DashboardMandante: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-1">
-                {Object.entries(totalsByCurrency).map(([currency, total]) => (
-                  <div key={currency} className="text-lg font-bold text-slate-800 font-rubik">
-                    {formatCurrency(total, currency)}
-                  </div>
-                ))}
+                {Object.entries(totalsByCurrency).map(([currency, total]) => {
+                  const adicionalesTotal = totalApprovedAdicionalesByCurrency[currency] || 0;
+                  const grandTotal = total + adicionalesTotal;
+                  return (
+                    <div key={currency}>
+                      <div className="flex items-baseline gap-1 flex-wrap">
+                        <span className="text-lg font-bold text-slate-800 font-rubik">
+                          {formatCurrency(total, currency)}
+                        </span>
+                        {adicionalesTotal > 0 && (
+                          <>
+                            <span className="text-sm font-bold text-emerald-600 font-rubik">
+                              + {formatCurrency(adicionalesTotal, currency)}
+                            </span>
+                            <span className="text-sm font-medium text-slate-500 font-rubik">
+                              = {formatCurrency(grandTotal, currency)}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                      {adicionalesTotal > 0 && (
+                        <p className="text-xs text-emerald-600 font-rubik">Adicionales aprobados</p>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>

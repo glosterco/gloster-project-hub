@@ -40,6 +40,7 @@ export interface ProjectWithDetailsMandante {
     Status: string;
     Titulo: string;
     Monto_presentado: number;
+    Monto_aprobado: number;
     created_at: string;
   }>;
   RFI: Array<{
@@ -138,7 +139,7 @@ export const useProjectsWithDetailsMandante = (mandanteId?: number) => {
             // Fetch adicionales
             const { data: adicionalesData, error: adicionalesError } = await supabase
               .from('Adicionales')
-              .select('id, Status, Titulo, Monto_presentado, created_at')
+              .select('id, Status, Titulo, Monto_presentado, Monto_aprobado, created_at')
               .eq('Proyecto', project.id);
 
             if (adicionalesError) {

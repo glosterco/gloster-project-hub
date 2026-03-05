@@ -40,6 +40,7 @@ export interface ProjectWithDetailsMandante {
     Status: string;
     Titulo: string;
     Monto_presentado: number;
+    Monto_aprobado: number;
     created_at: string;
   }>;
   RFI: Array<{

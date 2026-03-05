@@ -327,6 +327,22 @@ const DashboardMandante: React.FC = () => {
     {} as Record<string, number>,
   );
 
+  // Calcular totales de adicionales aprobados por moneda
+  const totalApprovedAdicionalesByCurrency = projects.reduce(
+    (acc, project) => {
+      const currency = project.Currency || "CLP";
+      const approvedAdicionales = (project.Adicionales || [])
+        .filter((a: any) => a.Status === "Aprobado")
+        .reduce((sum: number, a: any) => sum + (a.Monto_aprobado || a.Monto_presentado || 0), 0);
+      if (!acc[currency]) {
+        acc[currency] = 0;
+      }
+      acc[currency] += approvedAdicionales;
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
+
   // Función para obtener el estado de pago más cercano a notificar
   const getClosestPaymentToNotify = (project: any) => {
     if (!project.EstadosPago) return null;

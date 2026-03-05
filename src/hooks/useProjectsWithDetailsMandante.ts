@@ -139,7 +139,7 @@ export const useProjectsWithDetailsMandante = (mandanteId?: number) => {
             // Fetch adicionales
             const { data: adicionalesData, error: adicionalesError } = await supabase
               .from('Adicionales')
-              .select('id, Status, Titulo, Monto_presentado, created_at')
+              .select('id, Status, Titulo, Monto_presentado, Monto_aprobado, created_at')
               .eq('Proyecto', project.id);
 
             if (adicionalesError) {

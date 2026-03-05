@@ -106,7 +106,7 @@ export const usePaymentApprovalStatus = (paymentId: number | null, currentUserEm
       // 1. User is in project_approvers list, OR
       // 2. User is the mandante of the project
       const isInApproversList = currentUserEmail && approvers?.some(
-        a => a.approver_email.toLowerCase() === currentUserEmail.toLowerCase()
+        a => a.approver_email.toLowerCase().trim() === currentUserEmail.toLowerCase().trim()
       );
       const isApprover = isInApproversList || isMandanteOfProject;
       

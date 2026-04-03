@@ -121,7 +121,7 @@ const Licitaciones = () => {
           </div>
         )}
 
-        <LicitacionForm
+        <LicitacionChat
           open={showForm}
           onOpenChange={setShowForm}
           onSuccess={handleFormSuccess}

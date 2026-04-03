@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Plus, FileText, Calendar, Mail } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
-import LicitacionForm from '@/components/LicitacionForm';
+import LicitacionChat from '@/components/LicitacionChat';
 import { useLicitaciones, Licitacion } from '@/hooks/useLicitaciones';
 import { format } from 'date-fns';
 
@@ -121,7 +121,7 @@ const Licitaciones = () => {
           </div>
         )}
 
-        <LicitacionForm
+        <LicitacionChat
           open={showForm}
           onOpenChange={setShowForm}
           onSuccess={handleFormSuccess}

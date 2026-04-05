@@ -19,7 +19,7 @@ const LicitacionDetail = () => {
   const licitacionId = id ? parseInt(id) : null;
 
   const {
-    licitacion, rondas, preguntas, ofertas, loading,
+    licitacion, rondas, preguntas, ofertas, loading, refetch,
     createRonda, closeRonda, openRonda, answerPregunta, publishPreguntas,
     updateEvento, completeEvento
   } = useLicitacionDetail(licitacionId);
@@ -125,7 +125,11 @@ const LicitacionDetail = () => {
           </TabsContent>
 
           <TabsContent value="documentos">
-            <LicitacionDocumentosTab documentos={licitacion.documentos || []} />
+            <LicitacionDocumentosTab 
+              documentos={licitacion.documentos || []} 
+              licitacionId={licitacion.id}
+              onRefresh={refetch}
+            />
           </TabsContent>
 
           <TabsContent value="preguntas">

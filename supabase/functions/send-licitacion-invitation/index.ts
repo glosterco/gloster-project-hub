@@ -11,14 +11,91 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { licitacionId, type } = await req.json();
-    // type: 'invitacion' | 'evento'
+    const body = await req.json();
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    // Fetch licitacion with oferentes and mandante
+    // Get Gmail access token
+    const gmailClientId = Deno.env.get('GMAIL_CLIENT_ID')!;
+    const gmailClientSecret = Deno.env.get('GMAIL_CLIENT_SECRET')!;
+    const gmailRefreshToken = Deno.env.get('GMAIL_REFRESH_TOKEN')!;
+    const fromEmail = Deno.env.get('GMAIL_FROM_EMAIL')!;
+
+    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: gmailClientId,
+        client_secret: gmailClientSecret,
+        refresh_token: gmailRefreshToken,
+        grant_type: 'refresh_token',
+      }),
+    });
+    const tokenData = await tokenRes.json();
+    const accessToken = tokenData.access_token;
+
+    if (!accessToken) {
+      return new Response(JSON.stringify({ error: 'No se pudo obtener token de Gmail' }), {
+        status: 500, headers: { ...corsHead, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // === Direct single-email call from upload-licitacion-documents ===
+    if (body.email && body.isDocumentNotification) {
+      const subject = `Nuevos documentos disponibles - ${body.licitacionNombre}`;
+      const htmlBody = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: #1a1a2e; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+            <h1 style="margin: 0; font-size: 20px;">Nuevos Documentos Disponibles</h1>
+          </div>
+          <div style="border: 1px solid #e0e0e0; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
+            <h2 style="color: #333; margin-top: 0;">${body.licitacionNombre}</h2>
+            <p style="color: #666;">Se han agregado <strong>${body.documentCount || 'nuevos'}</strong> documento(s) al proceso de licitación.</p>
+            <p style="color: #666;">Revisa los nuevos antecedentes disponibles accediendo a la plataforma.</p>
+            ${body.urlAcceso ? `
+            <div style="text-align: center; margin: 24px 0;">
+              <a href="${body.urlAcceso}" style="background: #1a1a2e; color: white; padding: 12px 32px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block;">
+                Ver Documentos
+              </a>
+            </div>` : ''}
+            <p style="color: #999; font-size: 12px; text-align: center;">
+              Este enlace es exclusivo para su participación en el proceso de licitación.
+            </p>
+          </div>
+        </div>
+      `;
+
+      const rawEmail = [
+        `From: ${fromEmail}`,
+        `To: ${body.email}`,
+        `Subject: ${subject}`,
+        'MIME-Version: 1.0',
+        'Content-Type: text/html; charset=UTF-8',
+        '',
+        htmlBody,
+      ].join('\r\n');
+
+      const encodedEmail = btoa(unescape(encodeURIComponent(rawEmail)))
+        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+      const sendRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ raw: encodedEmail }),
+      });
+
+      const sendData = await sendRes.json();
+      return new Response(
+        JSON.stringify({ success: sendRes.ok, messageId: sendData.id }),
+        { headers: { ...corsHead, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // === Batch invitation call ===
+    const { licitacionId, type } = body;
+
     const { data: licitacion, error } = await supabase
       .from('Licitaciones')
       .select(`
@@ -38,32 +115,6 @@ Deno.serve(async (req) => {
     const mandante = (licitacion as any).Mandantes;
     const oferentes = (licitacion as any).LicitacionOferentes || [];
     const accessUrl = licitacion.url_acceso || '';
-
-    // Send via Gmail API (reuse existing pattern)
-    const gmailClientId = Deno.env.get('GMAIL_CLIENT_ID')!;
-    const gmailClientSecret = Deno.env.get('GMAIL_CLIENT_SECRET')!;
-    const gmailRefreshToken = Deno.env.get('GMAIL_REFRESH_TOKEN')!;
-    const fromEmail = Deno.env.get('GMAIL_FROM_EMAIL')!;
-
-    // Get access token
-    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        client_id: gmailClientId,
-        client_secret: gmailClientSecret,
-        refresh_token: gmailRefreshToken,
-        grant_type: 'refresh_token',
-      }),
-    });
-    const tokenData = await tokenRes.json();
-    const accessToken = tokenData.access_token;
-
-    if (!accessToken) {
-      return new Response(JSON.stringify({ error: 'No se pudo obtener token de Gmail' }), {
-        status: 500, headers: { ...corsHead, 'Content-Type': 'application/json' }
-      });
-    }
 
     const results: any[] = [];
 

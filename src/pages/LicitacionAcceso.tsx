@@ -33,6 +33,7 @@ const LicitacionAcceso = () => {
   const [loading, setLoading] = useState(true);
   const [oferenteEmail, setOferenteEmail] = useState('');
   const [emailVerified, setEmailVerified] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const [verifyError, setVerifyError] = useState<string | null>(null);
 
   // Draft question state

@@ -114,15 +114,10 @@ const LicitacionAcceso = () => {
 
       if (data) {
         setEmailVerified(true);
-        toast({ title: "Email verificado", description: "Puedes participar en las rondas de consultas" });
-        // Re-fetch to get my questions
-        setTimeout(fetchData, 100);
+        setVerifyError(null);
+        toast({ title: "Email verificado", description: "Acceso concedido a la licitación" });
       } else {
-        toast({
-          title: "Email no registrado",
-          description: "Este email no está invitado a esta licitación",
-          variant: "destructive"
-        });
+        setVerifyError('Este email no está invitado a esta licitación. Verifica que sea el email correcto.');
       }
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });

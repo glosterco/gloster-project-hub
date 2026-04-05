@@ -200,6 +200,62 @@ const LicitacionAcceso = () => {
   const getSentForRonda = (rondaId: number) =>
     misPreguntas.filter(p => p.ronda_id === rondaId && p.enviada);
 
+  // Show email verification gate FIRST (before loading data)
+  if (!emailVerified) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Lock className="h-8 w-8 text-primary" />
+            </div>
+            <CardTitle className="text-2xl font-bold font-rubik">
+              Portal del Oferente
+            </CardTitle>
+            <p className="text-sm text-muted-foreground mt-2">
+              Ingresa tu email para verificar tu acceso a esta licitación
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label htmlFor="email" className="text-sm font-medium">Email</label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="tu@empresa.com"
+                  value={oferenteEmail}
+                  onChange={e => setOferenteEmail(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && verifyEmail()}
+                  disabled={verifying}
+                />
+              </div>
+              <Button
+                onClick={verifyEmail}
+                disabled={verifying || !oferenteEmail.trim()}
+                className="w-full"
+              >
+                {verifying ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Verificando...
+                  </>
+                ) : (
+                  'Verificar Acceso'
+                )}
+              </Button>
+              {verifyError && (
+                <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                  <p className="text-sm text-destructive">{verifyError}</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">

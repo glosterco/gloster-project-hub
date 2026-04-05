@@ -50,6 +50,8 @@ export interface LicitacionItem {
   precio_unitario: number;
   precio_total: number;
   orden: number;
+  agregado_por_oferente?: boolean;
+  oferente_email?: string;
 }
 
 export interface Licitacion {

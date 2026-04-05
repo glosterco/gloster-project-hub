@@ -84,7 +84,7 @@ const Licitaciones = () => {
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {licitaciones.map((licitacion) => (
-              <Card key={licitacion.id} className="hover:shadow-lg transition-shadow">
+              <Card key={licitacion.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate(`/licitacion/${licitacion.id}`)}>
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <CardTitle className="font-rubik">{licitacion.nombre}</CardTitle>

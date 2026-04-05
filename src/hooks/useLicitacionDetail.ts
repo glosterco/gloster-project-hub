@@ -75,7 +75,7 @@ export const useLicitacionDetail = (licitacionId: number | null) => {
         .select(`
           *,
           LicitacionOferentes(id, email),
-          LicitacionEventos(id, fecha, titulo, descripcion, requiere_archivos),
+          LicitacionEventos(id, fecha, titulo, descripcion, requiere_archivos, estado, es_ronda_preguntas),
           LicitacionDocumentos(id, nombre, size, tipo, url),
           LicitacionItems(id, descripcion, unidad, cantidad, precio_unitario, precio_total, orden)
         `)
@@ -99,7 +99,8 @@ export const useLicitacionDetail = (licitacionId: number | null) => {
         oferentes: (data.LicitacionOferentes || []).map((o: any) => ({ id: o.id, email: o.email })),
         eventos: (data.LicitacionEventos || []).map((e: any) => ({
           id: e.id, fecha: e.fecha, titulo: e.titulo,
-          descripcion: e.descripcion, requiereArchivos: e.requiere_archivos
+          descripcion: e.descripcion, requiereArchivos: e.requiere_archivos,
+          estado: e.estado, esRondaPreguntas: e.es_ronda_preguntas
         })),
         documentos: (data.LicitacionDocumentos || []).map((d: any) => ({
           id: d.id, nombre: d.nombre, size: d.size, tipo: d.tipo, url: d.url
@@ -192,6 +193,28 @@ export const useLicitacionDetail = (licitacionId: number | null) => {
     }
   };
 
+  const updateEvento = async (eventoId: number, updates: { titulo?: string; fecha?: string; descripcion?: string }) => {
+    const { error } = await supabase.from('LicitacionEventos')
+      .update(updates)
+      .eq('id', eventoId);
+    if (!error) {
+      toast({ title: "Evento actualizado" });
+      fetchLicitacion();
+    } else {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const completeEvento = async (eventoId: number) => {
+    const { error } = await supabase.from('LicitacionEventos')
+      .update({ estado: 'completado' })
+      .eq('id', eventoId);
+    if (!error) {
+      toast({ title: "Evento finalizado" });
+      fetchLicitacion();
+    }
+  };
+
   useEffect(() => {
     fetchLicitacion();
   }, [fetchLicitacion]);
@@ -207,6 +230,8 @@ export const useLicitacionDetail = (licitacionId: number | null) => {
     closeRonda,
     openRonda,
     answerPregunta,
-    publishPreguntas
+    publishPreguntas,
+    updateEvento,
+    completeEvento
   };
 };

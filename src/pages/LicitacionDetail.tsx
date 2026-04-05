@@ -20,7 +20,8 @@ const LicitacionDetail = () => {
 
   const {
     licitacion, rondas, preguntas, ofertas, loading,
-    createRonda, closeRonda, openRonda, answerPregunta, publishPreguntas
+    createRonda, closeRonda, openRonda, answerPregunta, publishPreguntas,
+    updateEvento, completeEvento
   } = useLicitacionDetail(licitacionId);
 
   const getEstadoBadgeVariant = (estado?: string) => {
@@ -118,6 +119,8 @@ const LicitacionDetail = () => {
             <LicitacionCalendarioTab 
               eventos={licitacion.eventos || []} 
               fechaCreacion={licitacion.created_at}
+              onUpdateEvento={updateEvento}
+              onCompleteEvento={completeEvento}
             />
           </TabsContent>
 

@@ -8,6 +8,8 @@ export interface CalendarEvent {
   titulo: string;
   descripcion: string;
   requiereArchivos: boolean;
+  estado?: string;
+  esRondaPreguntas?: boolean;
 }
 
 export interface Oferente {
@@ -115,7 +117,9 @@ export const useLicitaciones = () => {
             fecha,
             titulo,
             descripcion,
-            requiere_archivos
+            requiere_archivos,
+            estado,
+            es_ronda_preguntas
           ),
           LicitacionDocumentos (
             id,
@@ -168,7 +172,9 @@ export const useLicitaciones = () => {
           fecha: e.fecha,
           titulo: e.titulo,
           descripcion: e.descripcion,
-          requiereArchivos: e.requiere_archivos
+          requiereArchivos: e.requiere_archivos,
+          estado: e.estado,
+          esRondaPreguntas: e.es_ronda_preguntas
         })),
         documentos: (item.LicitacionDocumentos || []).map((d: any) => ({
           id: d.id,

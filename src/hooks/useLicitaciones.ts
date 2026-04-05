@@ -61,6 +61,7 @@ export interface NewLicitacion {
   oferentes_emails: string[];
   calendario_eventos: CalendarEvent[];
   documentos: Documento[];
+  documentFiles?: File[];
   items?: LicitacionItem[];
   gastos_generales?: number;
   iva_porcentaje?: number;

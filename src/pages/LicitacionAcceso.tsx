@@ -73,6 +73,7 @@ const LicitacionAcceso = () => {
   const [ofertaDuracion, setOfertaDuracion] = useState('');
   const [ofertaNotas, setOfertaNotas] = useState('');
   const [savingOferta, setSavingOferta] = useState(false);
+  const [sendingItemizado, setSendingItemizado] = useState(false);
 
   const licitacionId = id ? parseInt(id) : null;
 

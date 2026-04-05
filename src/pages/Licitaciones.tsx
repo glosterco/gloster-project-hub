@@ -109,12 +109,9 @@ const Licitaciones = () => {
                       <span>Creada: {format(new Date(licitacion.created_at), 'dd/MM/yyyy')}</span>
                     </div>
                   </div>
-                  <div className="mt-4 flex gap-2">
-                    <Button variant="outline" size="sm" className="flex-1">
-                      Ver Detalles
-                    </Button>
-                    <Button variant="outline" size="sm" className="flex-1">
-                      Gestionar
+                  <div className="mt-4">
+                    <Button variant="outline" size="sm" className="w-full" onClick={(e) => { e.stopPropagation(); navigate(`/licitacion/${licitacion.id}`); }}>
+                      Ver Detalles y Gestionar
                     </Button>
                   </div>
                 </CardContent>

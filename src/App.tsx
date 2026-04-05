@@ -69,6 +69,7 @@ const App = () => (
             <Route path="/executive-summary" element={<RouteProtection><ExecutiveSummary /></RouteProtection>} />
             <Route path="/executive-summary-mandante" element={<RouteProtection><ExecutiveSummaryMandante /></RouteProtection>} />
             <Route path="/licitaciones" element={<RouteProtection><Licitaciones /></RouteProtection>} />
+            <Route path="/licitacion/:id" element={<RouteProtection><LicitacionDetail /></RouteProtection>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </TooltipProvider>

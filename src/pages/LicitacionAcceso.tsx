@@ -340,7 +340,28 @@ const LicitacionAcceso = () => {
     }
   };
 
-  // === OFERTA FINAL ===
+  // === ENVIAR ITEMIZADO ===
+  const sendItemizado = async () => {
+    if (!oferenteRecord) return;
+    setSendingItemizado(true);
+    try {
+      const { error } = await supabase
+        .from('LicitacionOferentes')
+        .update({
+          itemizado_enviado: true,
+          itemizado_enviado_at: new Date().toISOString(),
+        })
+        .eq('id', oferenteRecord.id);
+      if (error) throw error;
+      toast({ title: "Itemizado enviado", description: "El mandante podrá ver tu itemizado" });
+      fetchData();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setSendingItemizado(false);
+    }
+  };
+
   const saveOferta = async () => {
     if (!licitacionId) return;
     setSavingOferta(true);

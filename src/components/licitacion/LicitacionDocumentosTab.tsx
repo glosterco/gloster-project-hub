@@ -230,7 +230,7 @@ const LicitacionDocumentosTab: React.FC<Props> = ({ documentos, licitacionId, on
               <p>
                 Estás a punto de cargar <strong>{selectedFiles.length} documento(s)</strong> a la licitación.
               </p>
-              <p className="text-amber-600 font-medium">
+              <p className="text-destructive font-medium">
                 ⚠️ Esta acción notificará automáticamente a todos los oferentes sobre la disponibilidad de nuevos documentos.
               </p>
               <p>¿Deseas continuar?</p>

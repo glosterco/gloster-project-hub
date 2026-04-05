@@ -60,7 +60,7 @@ const LicitacionPreguntasTab: React.FC<Props> = ({
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold font-rubik flex items-center gap-2">
           <MessageSquare className="h-5 w-5" />
-          Rondas de Preguntas ({rondas.length})
+          Rondas de Consultas ({rondas.length})
         </h3>
         <Button size="sm" onClick={() => onCreateRonda(`Ronda ${rondas.length + 1}`)}>
           <Plus className="h-4 w-4 mr-1" /> Nueva Ronda

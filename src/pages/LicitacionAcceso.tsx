@@ -30,10 +30,11 @@ const LicitacionAcceso = () => {
   const [rondas, setRondas] = useState<any[]>([]);
   const [misPreguntas, setMisPreguntas] = useState<any[]>([]);
   const [preguntasPublicadas, setPreguntasPublicadas] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [oferenteEmail, setOferenteEmail] = useState('');
   const [emailVerified, setEmailVerified] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  const [verifyError, setVerifyError] = useState<string | null>(null);
 
   // Draft question state
   const [newPregunta, setNewPregunta] = useState('');
@@ -46,7 +47,7 @@ const LicitacionAcceso = () => {
   const licitacionId = id ? parseInt(id) : null;
 
   const fetchData = useCallback(async () => {
-    if (!licitacionId) return;
+    if (!licitacionId || !emailVerified) return;
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -80,8 +81,8 @@ const LicitacionAcceso = () => {
         .order('created_at');
       setPreguntasPublicadas(publicadas || []);
 
-      // Fetch my questions if email verified
-      if (emailVerified && oferenteEmail) {
+      // Fetch my questions
+      if (oferenteEmail) {
         const { data: mias } = await supabase
           .from('LicitacionPreguntas')
           .select('*')
@@ -113,15 +114,10 @@ const LicitacionAcceso = () => {
 
       if (data) {
         setEmailVerified(true);
-        toast({ title: "Email verificado", description: "Puedes participar en las rondas de consultas" });
-        // Re-fetch to get my questions
-        setTimeout(fetchData, 100);
+        setVerifyError(null);
+        toast({ title: "Email verificado", description: "Acceso concedido a la licitación" });
       } else {
-        toast({
-          title: "Email no registrado",
-          description: "Este email no está invitado a esta licitación",
-          variant: "destructive"
-        });
+        setVerifyError('Este email no está invitado a esta licitación. Verifica que sea el email correcto.');
       }
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -200,6 +196,62 @@ const LicitacionAcceso = () => {
   const getSentForRonda = (rondaId: number) =>
     misPreguntas.filter(p => p.ronda_id === rondaId && p.enviada);
 
+  // Show email verification gate FIRST (before loading data)
+  if (!emailVerified) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Lock className="h-8 w-8 text-primary" />
+            </div>
+            <CardTitle className="text-2xl font-bold font-rubik">
+              Portal del Oferente
+            </CardTitle>
+            <p className="text-sm text-muted-foreground mt-2">
+              Ingresa tu email para verificar tu acceso a esta licitación
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label htmlFor="email" className="text-sm font-medium">Email</label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="tu@empresa.com"
+                  value={oferenteEmail}
+                  onChange={e => setOferenteEmail(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && verifyEmail()}
+                  disabled={verifying}
+                />
+              </div>
+              <Button
+                onClick={verifyEmail}
+                disabled={verifying || !oferenteEmail.trim()}
+                className="w-full"
+              >
+                {verifying ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Verificando...
+                  </>
+                ) : (
+                  'Verificar Acceso'
+                )}
+              </Button>
+              {verifyError && (
+                <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                  <p className="text-sm text-destructive">{verifyError}</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -246,32 +298,6 @@ const LicitacionAcceso = () => {
       </div>
 
       <div className="container mx-auto px-6 py-6">
-        {/* Email verification */}
-        {!emailVerified && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="text-base">Verificar identidad</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-3">
-                Ingresa tu email para participar en las rondas de consultas.
-              </p>
-              <div className="flex gap-2 max-w-md">
-                <Input
-                  type="email"
-                  placeholder="tu@empresa.com"
-                  value={oferenteEmail}
-                  onChange={e => setOferenteEmail(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && verifyEmail()}
-                />
-                <Button onClick={verifyEmail} disabled={verifying}>
-                  {verifying ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Verificar'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Tabs */}
         <Tabs defaultValue="documentos" className="space-y-4">
           <TabsList>

@@ -49,6 +49,7 @@ const App = () => (
             <Route path="/contractor-access/:paymentId" element={<ContractorAccess />} />
             <Route path="/rfi/:id" element={<RFIDetail />} />
             <Route path="/adicional/:id" element={<AdicionalDetail />} />
+            <Route path="/licitacion-acceso/:id" element={<LicitacionAcceso />} />
             <Route path="/home" element={<MKT />} />
             <Route path="/rrss" element={<RRSS />} />
             <Route path="/pricing" element={<Pricing />} />

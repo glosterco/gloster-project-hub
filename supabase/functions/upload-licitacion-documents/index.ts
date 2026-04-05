@@ -239,6 +239,7 @@ serve(async (req) => {
                 email: oferente.email,
                 licitacionNombre: licitacionFull?.nombre || licitacion.nombre,
                 urlAcceso: licitacionFull?.url_acceso || '',
+                licitacionId: licitacionId,
                 isDocumentNotification: true,
                 documentCount: documents.length,
               }),

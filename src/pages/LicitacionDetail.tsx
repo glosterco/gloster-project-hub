@@ -127,6 +127,7 @@ const LicitacionDetail = () => {
               licitacionId={licitacion.id}
               mensajeOferentes={licitacion.mensaje_oferentes}
               oferentes={oferentesDetail}
+              ofertas={ofertas}
               onRefresh={refetch}
             />
           </TabsContent>

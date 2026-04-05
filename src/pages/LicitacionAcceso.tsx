@@ -44,6 +44,14 @@ const LicitacionAcceso = () => {
   const [verifying, setVerifying] = useState(false);
   const [verifyError, setVerifyError] = useState<string | null>(null);
 
+  // OTP state
+  const [otpStep, setOtpStep] = useState<'email' | 'code'>('email');
+  const [otpCode, setOtpCode] = useState('');
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [otpError, setOtpError] = useState<string | null>(null);
+  const [otpCountdown, setOtpCountdown] = useState(0);
+
   // Draft question state
   const [newPregunta, setNewPregunta] = useState('');
   const [newEspecialidad, setNewEspecialidad] = useState('');
@@ -156,28 +164,74 @@ const LicitacionAcceso = () => {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const verifyEmail = async () => {
+  // OTP countdown timer
+  useEffect(() => {
+    if (otpCountdown <= 0) return;
+    const timer = setInterval(() => setOtpCountdown(prev => prev - 1), 1000);
+    return () => clearInterval(timer);
+  }, [otpCountdown]);
+
+  const requestOtp = async () => {
     if (!oferenteEmail.trim() || !licitacionId) return;
-    setVerifying(true);
+    setSendingOtp(true);
+    setVerifyError(null);
+    setOtpError(null);
     try {
-      const { data } = await supabase
-        .from('LicitacionOferentes')
-        .select('id')
+      const { data, error } = await supabase.functions.invoke('send-licitacion-otp', {
+        body: { licitacionId, email: oferenteEmail.trim() },
+      });
+      if (error) throw error;
+      if (data?.error) {
+        setVerifyError(data.error);
+        return;
+      }
+      setOtpStep('code');
+      setOtpCountdown(600); // 10 min
+      toast({ title: "Código enviado", description: "Revisa tu correo electrónico" });
+    } catch (err: any) {
+      setVerifyError(err.message || 'Error al enviar el código');
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+  const verifyOtp = async () => {
+    if (!otpCode.trim() || !licitacionId) return;
+    setVerifyingOtp(true);
+    setOtpError(null);
+    try {
+      const { data, error } = await supabase
+        .from('licitacion_otp_codes')
+        .select('id, expires_at')
         .eq('licitacion_id', licitacionId)
         .eq('email', oferenteEmail.toLowerCase().trim())
+        .eq('code', otpCode.trim())
+        .eq('used', false)
         .maybeSingle();
 
-      if (data) {
-        setEmailVerified(true);
-        setVerifyError(null);
-        toast({ title: "Email verificado", description: "Acceso concedido a la licitación" });
-      } else {
-        setVerifyError('Este email no está invitado a esta licitación. Verifica que sea el email correcto.');
+      if (!data) {
+        setOtpError('Código inválido o ya utilizado');
+        return;
       }
+
+      if (new Date(data.expires_at) < new Date()) {
+        setOtpError('El código ha expirado. Solicita uno nuevo.');
+        return;
+      }
+
+      // Mark as used
+      await supabase
+        .from('licitacion_otp_codes')
+        .update({ used: true })
+        .eq('id', data.id);
+
+      setEmailVerified(true);
+      setOtpError(null);
+      toast({ title: "Acceso verificado", description: "Bienvenido al portal de la licitación" });
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      setOtpError(err.message);
     } finally {
-      setVerifying(false);
+      setVerifyingOtp(false);
     }
   };
 
@@ -455,43 +509,90 @@ const LicitacionAcceso = () => {
 
   // === RENDER ===
   if (!emailVerified) {
+    const formatCountdown = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
+
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Lock className="h-8 w-8 text-primary" />
+              {otpStep === 'email' ? <Lock className="h-8 w-8 text-primary" /> : <Mail className="h-8 w-8 text-primary" />}
             </div>
             <CardTitle className="text-2xl font-bold font-rubik">
               Portal del Oferente
             </CardTitle>
             <p className="text-sm text-muted-foreground mt-2">
-              Ingresa tu email para verificar tu acceso a esta licitación
+              {otpStep === 'email'
+                ? 'Ingresa tu email para recibir un código de verificación'
+                : `Ingresa el código de 6 dígitos enviado a ${oferenteEmail}`}
             </p>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium">Email</label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="tu@empresa.com"
-                  value={oferenteEmail}
-                  onChange={e => setOferenteEmail(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && verifyEmail()}
-                  disabled={verifying}
-                />
-              </div>
-              <Button onClick={verifyEmail} disabled={verifying || !oferenteEmail.trim()} className="w-full">
-                {verifying ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Verificando...</> : 'Verificar Acceso'}
-              </Button>
-              {verifyError && (
-                <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-                  <p className="text-sm text-destructive">{verifyError}</p>
+            {otpStep === 'email' ? (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label htmlFor="email" className="text-sm font-medium">Email</label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="tu@empresa.com"
+                    value={oferenteEmail}
+                    onChange={e => setOferenteEmail(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && requestOtp()}
+                    disabled={sendingOtp}
+                  />
                 </div>
-              )}
-            </div>
+                <Button onClick={requestOtp} disabled={sendingOtp || !oferenteEmail.trim()} className="w-full">
+                  {sendingOtp ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Enviando código...</> : <><Send className="h-4 w-4 mr-2" />Enviar código de acceso</>}
+                </Button>
+                {verifyError && (
+                  <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                    <p className="text-sm text-destructive">{verifyError}</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label htmlFor="otp" className="text-sm font-medium">Código de verificación</label>
+                  <Input
+                    id="otp"
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    placeholder="000000"
+                    value={otpCode}
+                    onChange={e => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                    onKeyDown={e => e.key === 'Enter' && verifyOtp()}
+                    disabled={verifyingOtp}
+                    className="text-center text-2xl tracking-[0.5em] font-mono"
+                  />
+                </div>
+                {otpCountdown > 0 && (
+                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                    <Clock className="h-4 w-4" />
+                    <span>Expira en {formatCountdown(otpCountdown)}</span>
+                  </div>
+                )}
+                <Button onClick={verifyOtp} disabled={verifyingOtp || otpCode.length !== 6} className="w-full">
+                  {verifyingOtp ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Verificando...</> : <><CheckCircle className="h-4 w-4 mr-2" />Verificar código</>}
+                </Button>
+                {otpError && (
+                  <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                    <p className="text-sm text-destructive">{otpError}</p>
+                  </div>
+                )}
+                <div className="flex items-center justify-between pt-2">
+                  <Button variant="ghost" size="sm" onClick={() => { setOtpStep('email'); setOtpCode(''); setOtpError(null); }}>
+                    ← Cambiar email
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={requestOtp} disabled={sendingOtp}>
+                    {sendingOtp ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+                    Reenviar código
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

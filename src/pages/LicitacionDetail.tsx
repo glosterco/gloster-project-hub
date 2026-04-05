@@ -125,7 +125,16 @@ const LicitacionDetail = () => {
           </TabsContent>
 
           <TabsContent value="documentos">
-            <LicitacionDocumentosTab documentos={licitacion.documentos || []} />
+            <LicitacionDocumentosTab 
+              documentos={licitacion.documentos || []} 
+              licitacionId={licitacion.id}
+              onRefresh={() => {
+                // Trigger refetch
+                if (licitacionId) {
+                  const detail = useLicitacionDetail(licitacionId);
+                }
+              }}
+            />
           </TabsContent>
 
           <TabsContent value="preguntas">

@@ -2,6 +2,23 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+const convertFileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      const base64Content = result.split(',')[1];
+      if (!base64Content) {
+        reject(new Error('Empty base64 content'));
+        return;
+      }
+      resolve(base64Content);
+    };
+    reader.onerror = () => reject(new Error('Error reading file'));
+    reader.readAsDataURL(file);
+  });
+};
+
 export interface CalendarEvent {
   id?: number;
   fecha: string;

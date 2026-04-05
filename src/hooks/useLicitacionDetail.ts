@@ -43,6 +43,9 @@ export interface Oferta {
   utilidades: number | null;
   total: number | null;
   notas: string | null;
+  duracion_dias: number | null;
+  archivo_oferta_url: string | null;
+  archivo_oferta_nombre: string | null;
   created_at: string;
   items: OfertaItem[];
 }

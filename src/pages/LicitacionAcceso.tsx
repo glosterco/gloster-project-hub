@@ -46,7 +46,7 @@ const LicitacionAcceso = () => {
   const licitacionId = id ? parseInt(id) : null;
 
   const fetchData = useCallback(async () => {
-    if (!licitacionId) return;
+    if (!licitacionId || !emailVerified) return;
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -80,8 +80,8 @@ const LicitacionAcceso = () => {
         .order('created_at');
       setPreguntasPublicadas(publicadas || []);
 
-      // Fetch my questions if email verified
-      if (emailVerified && oferenteEmail) {
+      // Fetch my questions
+      if (oferenteEmail) {
         const { data: mias } = await supabase
           .from('LicitacionPreguntas')
           .select('*')

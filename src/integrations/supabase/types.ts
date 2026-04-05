@@ -625,33 +625,39 @@ export type Database = {
       }
       LicitacionItems: {
         Row: {
+          agregado_por_oferente: boolean
           cantidad: number | null
           created_at: string
           descripcion: string
           id: number
           licitacion_id: number
+          oferente_email: string | null
           orden: number
           precio_total: number | null
           precio_unitario: number | null
           unidad: string | null
         }
         Insert: {
+          agregado_por_oferente?: boolean
           cantidad?: number | null
           created_at?: string
           descripcion: string
           id?: never
           licitacion_id: number
+          oferente_email?: string | null
           orden?: number
           precio_total?: number | null
           precio_unitario?: number | null
           unidad?: string | null
         }
         Update: {
+          agregado_por_oferente?: boolean
           cantidad?: number | null
           created_at?: string
           descripcion?: string
           id?: never
           licitacion_id?: number
+          oferente_email?: string | null
           orden?: number
           precio_total?: number | null
           precio_unitario?: number | null
@@ -669,18 +675,33 @@ export type Database = {
       }
       LicitacionOferentes: {
         Row: {
+          aceptada: boolean
+          aceptada_at: string | null
+          aceptada_por_nombre: string | null
+          archivo_aceptacion_nombre: string | null
+          archivo_aceptacion_url: string | null
           created_at: string
           email: string
           id: number
           licitacion_id: number
         }
         Insert: {
+          aceptada?: boolean
+          aceptada_at?: string | null
+          aceptada_por_nombre?: string | null
+          archivo_aceptacion_nombre?: string | null
+          archivo_aceptacion_url?: string | null
           created_at?: string
           email: string
           id?: never
           licitacion_id: number
         }
         Update: {
+          aceptada?: boolean
+          aceptada_at?: string | null
+          aceptada_por_nombre?: string | null
+          archivo_aceptacion_nombre?: string | null
+          archivo_aceptacion_url?: string | null
           created_at?: string
           email?: string
           id?: never
@@ -752,7 +773,10 @@ export type Database = {
       }
       LicitacionOfertas: {
         Row: {
+          archivo_oferta_nombre: string | null
+          archivo_oferta_url: string | null
           created_at: string
+          duracion_dias: number | null
           estado: string
           gastos_generales: number | null
           id: number
@@ -766,7 +790,10 @@ export type Database = {
           utilidades: number | null
         }
         Insert: {
+          archivo_oferta_nombre?: string | null
+          archivo_oferta_url?: string | null
           created_at?: string
+          duracion_dias?: number | null
           estado?: string
           gastos_generales?: number | null
           id?: never
@@ -780,7 +807,10 @@ export type Database = {
           utilidades?: number | null
         }
         Update: {
+          archivo_oferta_nombre?: string | null
+          archivo_oferta_url?: string | null
           created_at?: string
+          duracion_dias?: number | null
           estado?: string
           gastos_generales?: number | null
           id?: never

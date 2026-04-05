@@ -95,7 +95,7 @@ const LicitacionDetail = () => {
               <FileText className="h-4 w-4" /> Documentos
             </TabsTrigger>
             <TabsTrigger value="preguntas" className="flex items-center gap-1.5">
-              <MessageSquare className="h-4 w-4" /> Preguntas
+              <MessageSquare className="h-4 w-4" /> Consultas
               {preguntas.filter(p => !p.respondida).length > 0 && (
                 <Badge variant="destructive" className="text-[10px] h-4 px-1">
                   {preguntas.filter(p => !p.respondida).length}

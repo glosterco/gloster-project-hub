@@ -60,7 +60,7 @@ const LicitacionPreguntasTab: React.FC<Props> = ({
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold font-rubik flex items-center gap-2">
           <MessageSquare className="h-5 w-5" />
-          Rondas de Preguntas ({rondas.length})
+          Rondas de Consultas ({rondas.length})
         </h3>
         <Button size="sm" onClick={() => onCreateRonda(`Ronda ${rondas.length + 1}`)}>
           <Plus className="h-4 w-4 mr-1" /> Nueva Ronda
@@ -71,7 +71,7 @@ const LicitacionPreguntasTab: React.FC<Props> = ({
         <Card>
           <CardContent className="py-8 text-center text-muted-foreground">
             <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-50" />
-            <p>No hay rondas de preguntas. Crea una para que los oferentes puedan consultar.</p>
+            <p>No hay rondas de consultas. Se crean automáticamente desde el calendario.</p>
           </CardContent>
         </Card>
       ) : (

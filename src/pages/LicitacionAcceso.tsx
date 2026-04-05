@@ -164,28 +164,74 @@ const LicitacionAcceso = () => {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const verifyEmail = async () => {
+  // OTP countdown timer
+  useEffect(() => {
+    if (otpCountdown <= 0) return;
+    const timer = setInterval(() => setOtpCountdown(prev => prev - 1), 1000);
+    return () => clearInterval(timer);
+  }, [otpCountdown]);
+
+  const requestOtp = async () => {
     if (!oferenteEmail.trim() || !licitacionId) return;
-    setVerifying(true);
+    setSendingOtp(true);
+    setVerifyError(null);
+    setOtpError(null);
     try {
-      const { data } = await supabase
-        .from('LicitacionOferentes')
-        .select('id')
+      const { data, error } = await supabase.functions.invoke('send-licitacion-otp', {
+        body: { licitacionId, email: oferenteEmail.trim() },
+      });
+      if (error) throw error;
+      if (data?.error) {
+        setVerifyError(data.error);
+        return;
+      }
+      setOtpStep('code');
+      setOtpCountdown(600); // 10 min
+      toast({ title: "Código enviado", description: "Revisa tu correo electrónico" });
+    } catch (err: any) {
+      setVerifyError(err.message || 'Error al enviar el código');
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+  const verifyOtp = async () => {
+    if (!otpCode.trim() || !licitacionId) return;
+    setVerifyingOtp(true);
+    setOtpError(null);
+    try {
+      const { data, error } = await supabase
+        .from('licitacion_otp_codes')
+        .select('id, expires_at')
         .eq('licitacion_id', licitacionId)
         .eq('email', oferenteEmail.toLowerCase().trim())
+        .eq('code', otpCode.trim())
+        .eq('used', false)
         .maybeSingle();
 
-      if (data) {
-        setEmailVerified(true);
-        setVerifyError(null);
-        toast({ title: "Email verificado", description: "Acceso concedido a la licitación" });
-      } else {
-        setVerifyError('Este email no está invitado a esta licitación. Verifica que sea el email correcto.');
+      if (!data) {
+        setOtpError('Código inválido o ya utilizado');
+        return;
       }
+
+      if (new Date(data.expires_at) < new Date()) {
+        setOtpError('El código ha expirado. Solicita uno nuevo.');
+        return;
+      }
+
+      // Mark as used
+      await supabase
+        .from('licitacion_otp_codes')
+        .update({ used: true })
+        .eq('id', data.id);
+
+      setEmailVerified(true);
+      setOtpError(null);
+      toast({ title: "Acceso verificado", description: "Bienvenido al portal de la licitación" });
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      setOtpError(err.message);
     } finally {
-      setVerifying(false);
+      setVerifyingOtp(false);
     }
   };
 

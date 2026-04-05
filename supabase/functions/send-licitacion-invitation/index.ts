@@ -141,7 +141,7 @@ Deno.serve(async (req) => {
             <p style="color: #666;">${licitacion.descripcion}</p>
             ${licitacion.mensaje_oferentes ? `<p style="color: #444; background: #f5f5f5; padding: 12px; border-radius: 6px; border-left: 3px solid #1a1a2e;">${licitacion.mensaje_oferentes}</p>` : ''}
             <div style="text-align: center; margin: 24px 0;">
-              <a href="${accessUrl}" style="background: #1a1a2e; color: white; padding: 12px 32px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block;">
+              <a href="${portalUrl}" style="background: #1a1a2e; color: white; padding: 12px 32px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block;">
                 Acceder a la Licitacion
               </a>
             </div>

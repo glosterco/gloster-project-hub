@@ -128,12 +128,7 @@ const LicitacionDetail = () => {
             <LicitacionDocumentosTab 
               documentos={licitacion.documentos || []} 
               licitacionId={licitacion.id}
-              onRefresh={() => {
-                // Trigger refetch
-                if (licitacionId) {
-                  const detail = useLicitacionDetail(licitacionId);
-                }
-              }}
+              onRefresh={refetch}
             />
           </TabsContent>
 

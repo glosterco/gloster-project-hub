@@ -117,7 +117,9 @@ export const useLicitaciones = () => {
             fecha,
             titulo,
             descripcion,
-            requiere_archivos
+            requiere_archivos,
+            estado,
+            es_ronda_preguntas
           ),
           LicitacionDocumentos (
             id,

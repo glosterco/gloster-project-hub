@@ -30,7 +30,7 @@ const LicitacionAcceso = () => {
   const [rondas, setRondas] = useState<any[]>([]);
   const [misPreguntas, setMisPreguntas] = useState<any[]>([]);
   const [preguntasPublicadas, setPreguntasPublicadas] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [oferenteEmail, setOferenteEmail] = useState('');
   const [emailVerified, setEmailVerified] = useState(false);
   const [verifying, setVerifying] = useState(false);

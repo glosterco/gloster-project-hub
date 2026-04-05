@@ -8,6 +8,8 @@ export interface CalendarEvent {
   titulo: string;
   descripcion: string;
   requiereArchivos: boolean;
+  estado?: string;
+  esRondaPreguntas?: boolean;
 }
 
 export interface Oferente {

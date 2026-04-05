@@ -44,6 +44,12 @@ Deno.serve(async (req) => {
 
     // === Direct single-email call from upload-licitacion-documents ===
     if (body.email && body.isDocumentNotification) {
+      // Build the bidder portal URL
+      const siteUrl = Deno.env.get('SITE_URL') || 'https://gloster-project-hub.lovable.app';
+      const portalUrl = body.licitacionId
+        ? `${siteUrl}/licitacion-acceso/${body.licitacionId}`
+        : body.urlAcceso || '';
+
       const subject = `Nuevos documentos disponibles - ${body.licitacionNombre}`;
       const htmlBody = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -54,9 +60,9 @@ Deno.serve(async (req) => {
             <h2 style="color: #333; margin-top: 0;">${body.licitacionNombre}</h2>
             <p style="color: #666;">Se han agregado <strong>${body.documentCount || 'nuevos'}</strong> documento(s) al proceso de licitación.</p>
             <p style="color: #666;">Revisa los nuevos antecedentes disponibles accediendo a la plataforma.</p>
-            ${body.urlAcceso ? `
+            ${portalUrl ? `
             <div style="text-align: center; margin: 24px 0;">
-              <a href="${body.urlAcceso}" style="background: #1a1a2e; color: white; padding: 12px 32px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block;">
+              <a href="${portalUrl}" style="background: #1a1a2e; color: white; padding: 12px 32px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block;">
                 Ver Documentos
               </a>
             </div>` : ''}
@@ -114,7 +120,8 @@ Deno.serve(async (req) => {
 
     const mandante = (licitacion as any).Mandantes;
     const oferentes = (licitacion as any).LicitacionOferentes || [];
-    const accessUrl = licitacion.url_acceso || '';
+    const siteUrl = Deno.env.get('SITE_URL') || 'https://gloster-project-hub.lovable.app';
+    const portalUrl = `${siteUrl}/licitacion-acceso/${licitacionId}`;
 
     const results: any[] = [];
 
@@ -134,7 +141,7 @@ Deno.serve(async (req) => {
             <p style="color: #666;">${licitacion.descripcion}</p>
             ${licitacion.mensaje_oferentes ? `<p style="color: #444; background: #f5f5f5; padding: 12px; border-radius: 6px; border-left: 3px solid #1a1a2e;">${licitacion.mensaje_oferentes}</p>` : ''}
             <div style="text-align: center; margin: 24px 0;">
-              <a href="${accessUrl}" style="background: #1a1a2e; color: white; padding: 12px 32px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block;">
+              <a href="${portalUrl}" style="background: #1a1a2e; color: white; padding: 12px 32px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block;">
                 Acceder a la Licitacion
               </a>
             </div>

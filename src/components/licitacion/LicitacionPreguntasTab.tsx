@@ -115,8 +115,17 @@ const LicitacionPreguntasTab: React.FC<Props> = ({
               <CardContent>
                 {rondaPreguntas.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-4">
-                    Aún no hay preguntas en esta ronda
+                    Aún no hay consultas en esta ronda
                   </p>
+                ) : (
+                  <div className="space-y-3">
+                    {/* Sent questions (enviada = true) - visible to mandante for answering */}
+                    {rondaPreguntas.filter(p => p.enviada).length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                          Consultas recibidas ({rondaPreguntas.filter(p => p.enviada).length})
+                        </p>
+                        {rondaPreguntas.filter(p => p.enviada).map(p => (
                 ) : (
                   <div className="space-y-3">
                     {rondaPreguntas.map(p => (

@@ -28,6 +28,7 @@ export interface Pregunta {
   respondida: boolean;
   publicada: boolean;
   respondida_por: string | null;
+  enviada: boolean;
   created_at: string;
 }
 

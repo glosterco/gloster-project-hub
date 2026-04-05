@@ -14,7 +14,7 @@ Debes recopilar la siguiente información para crear la licitación:
 3. **Especificaciones técnicas** (opcional pero recomendado)
 4. **Emails de oferentes** a invitar (lista de correos)
 5. **Mensaje para los oferentes** (texto que recibirán los oferentes invitados)
-6. **Calendario de eventos** (fechas importantes como visita a terreno, cierre de consultas, entrega de ofertas, etc.)
+6. **Calendario de eventos** (fechas importantes como visita a terreno, ronda de consultas, entrega de ofertas, etc.)
    - Para cada evento: fecha, título, descripción, y si requiere que los oferentes envíen archivos
 7. **Itemizado/Presupuesto** (opcional - lista de partidas con descripción, unidad, cantidad, precio unitario)
 8. **Gastos generales** (monto en pesos, opcional)

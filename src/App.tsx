@@ -25,6 +25,7 @@ import ExecutiveSummary from "./pages/ExecutiveSummary";
 import ExecutiveSummaryMandante from "./pages/ExecutiveSummaryMandante";
 import Licitaciones from "./pages/Licitaciones";
 import LicitacionDetail from "./pages/LicitacionDetail";
+import LicitacionAcceso from "./pages/LicitacionAcceso";
 import MKT from "./pages/MKT";
 import RRSS from "./pages/RRSS";
 import NotFound from "./pages/NotFound";
@@ -48,6 +49,7 @@ const App = () => (
             <Route path="/contractor-access/:paymentId" element={<ContractorAccess />} />
             <Route path="/rfi/:id" element={<RFIDetail />} />
             <Route path="/adicional/:id" element={<AdicionalDetail />} />
+            <Route path="/licitacion-acceso/:id" element={<LicitacionAcceso />} />
             <Route path="/home" element={<MKT />} />
             <Route path="/rrss" element={<RRSS />} />
             <Route path="/pricing" element={<Pricing />} />

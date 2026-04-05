@@ -99,7 +99,8 @@ export const useLicitacionDetail = (licitacionId: number | null) => {
         oferentes: (data.LicitacionOferentes || []).map((o: any) => ({ id: o.id, email: o.email })),
         eventos: (data.LicitacionEventos || []).map((e: any) => ({
           id: e.id, fecha: e.fecha, titulo: e.titulo,
-          descripcion: e.descripcion, requiereArchivos: e.requiere_archivos
+          descripcion: e.descripcion, requiereArchivos: e.requiere_archivos,
+          estado: e.estado, esRondaPreguntas: e.es_ronda_preguntas
         })),
         documentos: (data.LicitacionDocumentos || []).map((d: any) => ({
           id: d.id, nombre: d.nombre, size: d.size, tipo: d.tipo, url: d.url

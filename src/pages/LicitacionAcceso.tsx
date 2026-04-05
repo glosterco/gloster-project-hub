@@ -1092,9 +1092,42 @@ const LicitacionAcceso = () => {
                         </div>
                       </div>
                     ) : (
-                      <Button variant="outline" size="sm" onClick={() => setShowNewItemForm(true)}>
-                        <Plus className="h-4 w-4 mr-2" /> Agregar partida
-                      </Button>
+                      <div className="flex items-center gap-3">
+                        <Button variant="outline" size="sm" onClick={() => setShowNewItemForm(true)}>
+                          <Plus className="h-4 w-4 mr-2" /> Agregar partida
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* Enviar Itemizado button */}
+                    {(bidderItems.length > 0 || mandanteItems.length > 0) && (
+                      <div className="border-t pt-4">
+                        {oferenteRecord?.itemizado_enviado ? (
+                          <div className="flex items-center gap-2 p-3 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 rounded-lg">
+                            <CheckCircle className="h-5 w-5 text-emerald-500" />
+                            <div>
+                              <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">Itemizado enviado al mandante</p>
+                              {oferenteRecord.itemizado_enviado_at && (
+                                <p className="text-xs text-muted-foreground">
+                                  Enviado el {format(new Date(oferenteRecord.itemizado_enviado_at), "d MMM yyyy HH:mm", { locale: es })}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <Button
+                            className="w-full"
+                            onClick={sendItemizado}
+                            disabled={sendingItemizado}
+                          >
+                            {sendingItemizado ? (
+                              <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Enviando...</>
+                            ) : (
+                              <><Send className="h-4 w-4 mr-2" />Enviar itemizado al mandante</>
+                            )}
+                          </Button>
+                        )}
+                      </div>
                     )}
                   </div>
                 )}

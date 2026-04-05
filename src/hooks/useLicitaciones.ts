@@ -170,7 +170,9 @@ export const useLicitaciones = () => {
           fecha: e.fecha,
           titulo: e.titulo,
           descripcion: e.descripcion,
-          requiereArchivos: e.requiere_archivos
+          requiereArchivos: e.requiere_archivos,
+          estado: e.estado,
+          esRondaPreguntas: e.es_ronda_preguntas
         })),
         documentos: (item.LicitacionDocumentos || []).map((d: any) => ({
           id: d.id,

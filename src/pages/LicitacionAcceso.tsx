@@ -298,32 +298,6 @@ const LicitacionAcceso = () => {
       </div>
 
       <div className="container mx-auto px-6 py-6">
-        {/* Email verification */}
-        {!emailVerified && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="text-base">Verificar identidad</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-3">
-                Ingresa tu email para participar en las rondas de consultas.
-              </p>
-              <div className="flex gap-2 max-w-md">
-                <Input
-                  type="email"
-                  placeholder="tu@empresa.com"
-                  value={oferenteEmail}
-                  onChange={e => setOferenteEmail(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && verifyEmail()}
-                />
-                <Button onClick={verifyEmail} disabled={verifying}>
-                  {verifying ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Verificar'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Tabs */}
         <Tabs defaultValue="documentos" className="space-y-4">
           <TabsList>

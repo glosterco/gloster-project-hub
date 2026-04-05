@@ -71,7 +71,7 @@ const LicitacionPreguntasTab: React.FC<Props> = ({
         <Card>
           <CardContent className="py-8 text-center text-muted-foreground">
             <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-50" />
-            <p>No hay rondas de preguntas. Crea una para que los oferentes puedan consultar.</p>
+            <p>No hay rondas de consultas. Se crean automáticamente desde el calendario.</p>
           </CardContent>
         </Card>
       ) : (

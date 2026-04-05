@@ -211,7 +211,7 @@ const LicitacionCalendarioTab: React.FC<Props> = ({ eventos, fechaCreacion, onUp
                       <FileText className="h-3.5 w-3.5 text-muted-foreground" />
                     )}
                     {evento.esRondaPreguntas && (
-                      <Badge variant="outline" className="text-[9px] h-4 px-1">Ronda Q&A</Badge>
+                      <Badge variant="outline" className="text-[9px] h-4 px-1">Ronda de consultas</Badge>
                     )}
                   </div>
                   {evento.descripcion && (

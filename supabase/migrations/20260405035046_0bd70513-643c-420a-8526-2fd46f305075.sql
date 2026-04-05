@@ -1,0 +1,1 @@
+ALTER TABLE public."LicitacionPreguntas" ADD COLUMN IF NOT EXISTS enviada boolean NOT NULL DEFAULT false;

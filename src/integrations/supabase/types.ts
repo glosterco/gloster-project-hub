@@ -806,6 +806,7 @@ export type Database = {
       LicitacionPreguntas: {
         Row: {
           created_at: string
+          enviada: boolean
           especialidad: string | null
           grupo_similar_id: number | null
           id: number
@@ -823,6 +824,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          enviada?: boolean
           especialidad?: string | null
           grupo_similar_id?: number | null
           id?: never
@@ -840,6 +842,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          enviada?: boolean
           especialidad?: string | null
           grupo_similar_id?: number | null
           id?: never

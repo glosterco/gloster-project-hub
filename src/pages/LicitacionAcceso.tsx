@@ -44,6 +44,14 @@ const LicitacionAcceso = () => {
   const [verifying, setVerifying] = useState(false);
   const [verifyError, setVerifyError] = useState<string | null>(null);
 
+  // OTP state
+  const [otpStep, setOtpStep] = useState<'email' | 'code'>('email');
+  const [otpCode, setOtpCode] = useState('');
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [otpError, setOtpError] = useState<string | null>(null);
+  const [otpCountdown, setOtpCountdown] = useState(0);
+
   // Draft question state
   const [newPregunta, setNewPregunta] = useState('');
   const [newEspecialidad, setNewEspecialidad] = useState('');

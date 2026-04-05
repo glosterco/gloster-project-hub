@@ -24,6 +24,7 @@ import Pricing from "./pages/Pricing";
 import ExecutiveSummary from "./pages/ExecutiveSummary";
 import ExecutiveSummaryMandante from "./pages/ExecutiveSummaryMandante";
 import Licitaciones from "./pages/Licitaciones";
+import LicitacionDetail from "./pages/LicitacionDetail";
 import MKT from "./pages/MKT";
 import RRSS from "./pages/RRSS";
 import NotFound from "./pages/NotFound";

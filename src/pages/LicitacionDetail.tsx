@@ -119,6 +119,8 @@ const LicitacionDetail = () => {
             <LicitacionCalendarioTab 
               eventos={licitacion.eventos || []} 
               fechaCreacion={licitacion.created_at}
+              onUpdateEvento={updateEvento}
+              onCompleteEvento={completeEvento}
             />
           </TabsContent>
 

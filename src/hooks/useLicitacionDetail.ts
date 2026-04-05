@@ -193,6 +193,28 @@ export const useLicitacionDetail = (licitacionId: number | null) => {
     }
   };
 
+  const updateEvento = async (eventoId: number, updates: { titulo?: string; fecha?: string; descripcion?: string }) => {
+    const { error } = await supabase.from('LicitacionEventos')
+      .update(updates)
+      .eq('id', eventoId);
+    if (!error) {
+      toast({ title: "Evento actualizado" });
+      fetchLicitacion();
+    } else {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const completeEvento = async (eventoId: number) => {
+    const { error } = await supabase.from('LicitacionEventos')
+      .update({ estado: 'completado' })
+      .eq('id', eventoId);
+    if (!error) {
+      toast({ title: "Evento finalizado" });
+      fetchLicitacion();
+    }
+  };
+
   useEffect(() => {
     fetchLicitacion();
   }, [fetchLicitacion]);
@@ -208,6 +230,8 @@ export const useLicitacionDetail = (licitacionId: number | null) => {
     closeRonda,
     openRonda,
     answerPregunta,
-    publishPreguntas
+    publishPreguntas,
+    updateEvento,
+    completeEvento
   };
 };

@@ -59,12 +59,26 @@ export interface OfertaItem {
   orden: number;
 }
 
+export interface OferenteDetail {
+  id: number;
+  email: string;
+  aceptada: boolean;
+  aceptada_at: string | null;
+  aceptada_por_nombre: string | null;
+  archivo_aceptacion_url: string | null;
+  archivo_aceptacion_nombre: string | null;
+  nombre_empresa: string | null;
+  itemizado_enviado: boolean;
+  itemizado_enviado_at: string | null;
+}
+
 export const useLicitacionDetail = (licitacionId: number | null) => {
   const { toast } = useToast();
   const [licitacion, setLicitacion] = useState<Licitacion | null>(null);
   const [rondas, setRondas] = useState<Ronda[]>([]);
   const [preguntas, setPreguntas] = useState<Pregunta[]>([]);
   const [ofertas, setOfertas] = useState<Oferta[]>([]);
+  const [oferentesDetail, setOferentesDetail] = useState<OferenteDetail[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchLicitacion = useCallback(async () => {
@@ -75,15 +89,18 @@ export const useLicitacionDetail = (licitacionId: number | null) => {
         .from('Licitaciones')
         .select(`
           *,
-          LicitacionOferentes(id, email),
+          LicitacionOferentes(id, email, aceptada, aceptada_at, aceptada_por_nombre, archivo_aceptacion_url, archivo_aceptacion_nombre, nombre_empresa, itemizado_enviado, itemizado_enviado_at),
           LicitacionEventos(id, fecha, titulo, descripcion, requiere_archivos, estado, es_ronda_preguntas),
           LicitacionDocumentos(id, nombre, size, tipo, url),
-          LicitacionItems(id, descripcion, unidad, cantidad, precio_unitario, precio_total, orden)
+          LicitacionItems(id, descripcion, unidad, cantidad, precio_unitario, precio_total, orden, agregado_por_oferente, oferente_email)
         `)
         .eq('id', licitacionId)
         .single();
 
       if (error) throw error;
+
+      const oferentesData = (data.LicitacionOferentes || []) as any[];
+      setOferentesDetail(oferentesData);
 
       setLicitacion({
         id: data.id,
@@ -97,7 +114,7 @@ export const useLicitacionDetail = (licitacionId: number | null) => {
         updated_at: data.updated_at,
         gastos_generales: data.gastos_generales,
         iva_porcentaje: data.iva_porcentaje,
-        oferentes: (data.LicitacionOferentes || []).map((o: any) => ({ id: o.id, email: o.email })),
+        oferentes: oferentesData.map((o: any) => ({ id: o.id, email: o.email })),
         eventos: (data.LicitacionEventos || []).map((e: any) => ({
           id: e.id, fecha: e.fecha, titulo: e.titulo,
           descripcion: e.descripcion, requiereArchivos: e.requiere_archivos,
@@ -109,7 +126,9 @@ export const useLicitacionDetail = (licitacionId: number | null) => {
         items: (data.LicitacionItems || []).map((i: any) => ({
           id: i.id, descripcion: i.descripcion, unidad: i.unidad,
           cantidad: i.cantidad, precio_unitario: i.precio_unitario,
-          precio_total: i.precio_total, orden: i.orden
+          precio_total: i.precio_total, orden: i.orden,
+          agregado_por_oferente: i.agregado_por_oferente,
+          oferente_email: i.oferente_email
         }))
       });
 
@@ -121,7 +140,7 @@ export const useLicitacionDetail = (licitacionId: number | null) => {
         .order('numero');
       setRondas(rondasData || []);
 
-      // Fetch preguntas
+      // Fetch preguntas (only sent ones for mandante view)
       const { data: preguntasData } = await supabase
         .from('LicitacionPreguntas')
         .select('*')
@@ -225,6 +244,7 @@ export const useLicitacionDetail = (licitacionId: number | null) => {
     rondas,
     preguntas,
     ofertas,
+    oferentesDetail,
     loading,
     refetch: fetchLicitacion,
     createRonda,

@@ -26,10 +26,6 @@ const LicitacionPreguntasTab: React.FC<Props> = ({
   const [answeringId, setAnsweringId] = useState<number | null>(null);
   const [respuesta, setRespuesta] = useState('');
   const [showIASource, setShowIASource] = useState<Pregunta | null>(null);
-  const [selectedForPublish, setSelectedForPublish] = useState<Set<number>>(new Set());
-
-  const preguntasByRonda = (rondaId: number) =>
-    preguntas.filter(p => p.ronda_id === rondaId);
 
   const sentPreguntasByRonda = (rondaId: number) =>
     preguntas.filter(p => p.ronda_id === rondaId && p.enviada);
@@ -44,21 +40,14 @@ const LicitacionPreguntasTab: React.FC<Props> = ({
     setRespuesta('');
   };
 
-  const handlePublishSelected = (rondaId: number) => {
+  const handlePublishAll = (rondaId: number) => {
     const rondaPreguntas = sentPreguntasByRonda(rondaId);
     const toPublish = rondaPreguntas
-      .filter(p => p.respondida && selectedForPublish.has(p.id))
+      .filter(p => p.respondida && !p.publicada)
       .map(p => p.id);
     if (toPublish.length > 0) {
       onPublishPreguntas(toPublish);
-      setSelectedForPublish(new Set());
     }
-  };
-
-  const togglePublishSelect = (id: number) => {
-    const next = new Set(selectedForPublish);
-    if (next.has(id)) next.delete(id); else next.add(id);
-    setSelectedForPublish(next);
   };
 
   const renderPreguntaCard = (p: Pregunta) => (
@@ -78,18 +67,15 @@ const LicitacionPreguntasTab: React.FC<Props> = ({
             )}
           </div>
           <p className="text-sm font-medium">{p.pregunta}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {format(new Date(p.created_at), "d MMM yyyy HH:mm", { locale: es })}
-          </p>
-        </div>
-        <div className="flex items-center gap-1 shrink-0">
-          {p.respondida && !p.publicada && (
-            <input
-              type="checkbox"
-              checked={selectedForPublish.has(p.id)}
-              onChange={() => togglePublishSelect(p.id)}
-            />
-          )}
+          <div className="flex items-center gap-2 mt-0.5">
+            <p className="text-xs text-muted-foreground">
+              {format(new Date(p.created_at), "d MMM yyyy HH:mm", { locale: es })}
+            </p>
+            {/* Show oferente email to mandante */}
+            <Badge variant="outline" className="text-[9px] font-normal">
+              {p.oferente_email}
+            </Badge>
+          </div>
         </div>
       </div>
 
@@ -177,6 +163,8 @@ const LicitacionPreguntasTab: React.FC<Props> = ({
           const sent = sentPreguntasByRonda(ronda.id);
           const drafts = draftPreguntasByRonda(ronda.id);
           const respondidas = sent.filter(p => p.respondida).length;
+          const allAnswered = sent.length > 0 && respondidas === sent.length;
+          const unpublished = sent.filter(p => p.respondida && !p.publicada).length;
 
           return (
             <Card key={ronda.id}>
@@ -203,10 +191,11 @@ const LicitacionPreguntasTab: React.FC<Props> = ({
                     )}
                     <Button
                       size="sm"
-                      onClick={() => handlePublishSelected(ronda.id)}
-                      disabled={selectedForPublish.size === 0}
+                      onClick={() => handlePublishAll(ronda.id)}
+                      disabled={!allAnswered || unpublished === 0}
                     >
-                      <Eye className="h-3.5 w-3.5 mr-1" /> Publicar Selección
+                      <Eye className="h-3.5 w-3.5 mr-1" /> Publicar Respuestas
+                      {unpublished > 0 && ` (${unpublished})`}
                     </Button>
                   </div>
                 </div>
@@ -218,14 +207,12 @@ const LicitacionPreguntasTab: React.FC<Props> = ({
                   </p>
                 ) : (
                   <div className="space-y-4">
-                    {/* Sent questions - these are what mandante works with */}
                     {sent.length > 0 && (
                       <div className="space-y-3">
                         {sent.map(p => renderPreguntaCard(p))}
                       </div>
                     )}
 
-                    {/* Draft indicator */}
                     {drafts.length > 0 && (
                       <div className="border rounded-lg p-3 bg-muted/30">
                         <div className="flex items-center gap-2 text-muted-foreground">

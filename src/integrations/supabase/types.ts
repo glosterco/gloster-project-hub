@@ -683,7 +683,10 @@ export type Database = {
           created_at: string
           email: string
           id: number
+          itemizado_enviado: boolean
+          itemizado_enviado_at: string | null
           licitacion_id: number
+          nombre_empresa: string | null
         }
         Insert: {
           aceptada?: boolean
@@ -694,7 +697,10 @@ export type Database = {
           created_at?: string
           email: string
           id?: never
+          itemizado_enviado?: boolean
+          itemizado_enviado_at?: string | null
           licitacion_id: number
+          nombre_empresa?: string | null
         }
         Update: {
           aceptada?: boolean
@@ -705,7 +711,10 @@ export type Database = {
           created_at?: string
           email?: string
           id?: never
+          itemizado_enviado?: boolean
+          itemizado_enviado_at?: string | null
           licitacion_id?: number
+          nombre_empresa?: string | null
         }
         Relationships: [
           {

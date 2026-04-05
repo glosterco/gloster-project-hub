@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Calendar, FileText, MessageSquare, ListOrdered, BarChart3, Send } from 'lucide-react';
+import { ArrowLeft, Calendar, FileText, MessageSquare, ListOrdered, BarChart3, Mail } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 import { useLicitacionDetail } from '@/hooks/useLicitacionDetail';
 import LicitacionCalendarioTab from '@/components/licitacion/LicitacionCalendarioTab';
@@ -11,6 +11,7 @@ import LicitacionDocumentosTab from '@/components/licitacion/LicitacionDocumento
 import LicitacionPreguntasTab from '@/components/licitacion/LicitacionPreguntasTab';
 import LicitacionItemizadoTab from '@/components/licitacion/LicitacionItemizadoTab';
 import LicitacionOfertasTab from '@/components/licitacion/LicitacionOfertasTab';
+import LicitacionInvitacionTab from '@/components/licitacion/LicitacionInvitacionTab';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const LicitacionDetail = () => {
@@ -19,7 +20,7 @@ const LicitacionDetail = () => {
   const licitacionId = id ? parseInt(id) : null;
 
   const {
-    licitacion, rondas, preguntas, ofertas, loading, refetch,
+    licitacion, rondas, preguntas, ofertas, oferentesDetail, loading, refetch,
     createRonda, closeRonda, openRonda, answerPregunta, publishPreguntas,
     updateEvento, completeEvento
   } = useLicitacionDetail(licitacionId);
@@ -60,6 +61,9 @@ const LicitacionDetail = () => {
     );
   }
 
+  // Filter items to only show mandante's base items (not oferente-added)
+  const baseItems = (licitacion.items || []).filter((i: any) => !i.agregado_por_oferente);
+
   return (
     <div className="min-h-screen bg-background">
       <PageHeader />
@@ -78,7 +82,7 @@ const LicitacionDetail = () => {
           </div>
           <p className="text-muted-foreground mt-1">{licitacion.descripcion}</p>
           <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-            <span>{licitacion.oferentes?.length || 0} oferentes</span>
+            <span>{oferentesDetail.length} oferentes</span>
             <span>{licitacion.eventos?.length || 0} eventos</span>
             <span>{licitacion.documentos?.length || 0} documentos</span>
             <span>{ofertas.length} ofertas recibidas</span>
@@ -86,8 +90,11 @@ const LicitacionDetail = () => {
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="calendario" className="space-y-4">
+        <Tabs defaultValue="invitacion" className="space-y-4">
           <TabsList className="w-full justify-start overflow-x-auto">
+            <TabsTrigger value="invitacion" className="flex items-center gap-1.5">
+              <Mail className="h-4 w-4" /> Invitación
+            </TabsTrigger>
             <TabsTrigger value="calendario" className="flex items-center gap-1.5">
               <Calendar className="h-4 w-4" /> Calendario
             </TabsTrigger>
@@ -96,9 +103,9 @@ const LicitacionDetail = () => {
             </TabsTrigger>
             <TabsTrigger value="preguntas" className="flex items-center gap-1.5">
               <MessageSquare className="h-4 w-4" /> Consultas
-              {preguntas.filter(p => !p.respondida).length > 0 && (
+              {preguntas.filter(p => !p.respondida && p.enviada).length > 0 && (
                 <Badge variant="destructive" className="text-[10px] h-4 px-1">
-                  {preguntas.filter(p => !p.respondida).length}
+                  {preguntas.filter(p => !p.respondida && p.enviada).length}
                 </Badge>
               )}
             </TabsTrigger>
@@ -114,6 +121,15 @@ const LicitacionDetail = () => {
               )}
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="invitacion">
+            <LicitacionInvitacionTab
+              licitacionId={licitacion.id}
+              mensajeOferentes={licitacion.mensaje_oferentes}
+              oferentes={oferentesDetail}
+              onRefresh={refetch}
+            />
+          </TabsContent>
 
           <TabsContent value="calendario">
             <LicitacionCalendarioTab 
@@ -146,7 +162,7 @@ const LicitacionDetail = () => {
 
           <TabsContent value="itemizado">
             <LicitacionItemizadoTab 
-              items={licitacion.items || []}
+              items={baseItems}
               gastosGenerales={licitacion.gastos_generales}
               ivaPorcentaje={licitacion.iva_porcentaje}
             />
@@ -155,7 +171,7 @@ const LicitacionDetail = () => {
           <TabsContent value="ofertas">
             <LicitacionOfertasTab 
               ofertas={ofertas}
-              itemsReferencia={licitacion.items || []}
+              itemsReferencia={baseItems}
             />
           </TabsContent>
         </Tabs>

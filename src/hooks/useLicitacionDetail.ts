@@ -75,7 +75,7 @@ export const useLicitacionDetail = (licitacionId: number | null) => {
         .select(`
           *,
           LicitacionOferentes(id, email),
-          LicitacionEventos(id, fecha, titulo, descripcion, requiere_archivos),
+          LicitacionEventos(id, fecha, titulo, descripcion, requiere_archivos, estado, es_ronda_preguntas),
           LicitacionDocumentos(id, nombre, size, tipo, url),
           LicitacionItems(id, descripcion, unidad, cantidad, precio_unitario, precio_total, orden)
         `)

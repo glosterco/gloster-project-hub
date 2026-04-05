@@ -120,7 +120,8 @@ Deno.serve(async (req) => {
 
     const mandante = (licitacion as any).Mandantes;
     const oferentes = (licitacion as any).LicitacionOferentes || [];
-    const accessUrl = licitacion.url_acceso || '';
+    const siteUrl = Deno.env.get('SITE_URL') || 'https://gloster-project-hub.lovable.app';
+    const portalUrl = `${siteUrl}/licitacion-acceso/${licitacionId}`;
 
     const results: any[] = [];
 

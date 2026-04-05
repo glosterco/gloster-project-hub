@@ -571,6 +571,8 @@ export type Database = {
         Row: {
           created_at: string
           descripcion: string | null
+          es_ronda_preguntas: boolean
+          estado: string
           fecha: string
           id: number
           licitacion_id: number
@@ -580,6 +582,8 @@ export type Database = {
         Insert: {
           created_at?: string
           descripcion?: string | null
+          es_ronda_preguntas?: boolean
+          estado?: string
           fecha: string
           id?: never
           licitacion_id: number
@@ -589,6 +593,8 @@ export type Database = {
         Update: {
           created_at?: string
           descripcion?: string | null
+          es_ronda_preguntas?: boolean
+          estado?: string
           fecha?: string
           id?: never
           licitacion_id?: number

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, FileText, Calendar, Mail } from 'lucide-react';
@@ -8,6 +9,7 @@ import { useLicitaciones, Licitacion } from '@/hooks/useLicitaciones';
 import { format } from 'date-fns';
 
 const Licitaciones = () => {
+  const navigate = useNavigate();
   const [showForm, setShowForm] = useState(false);
   const { licitaciones, loading, refetch } = useLicitaciones();
 
@@ -82,7 +84,7 @@ const Licitaciones = () => {
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {licitaciones.map((licitacion) => (
-              <Card key={licitacion.id} className="hover:shadow-lg transition-shadow">
+              <Card key={licitacion.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate(`/licitacion/${licitacion.id}`)}>
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <CardTitle className="font-rubik">{licitacion.nombre}</CardTitle>
@@ -107,12 +109,9 @@ const Licitaciones = () => {
                       <span>Creada: {format(new Date(licitacion.created_at), 'dd/MM/yyyy')}</span>
                     </div>
                   </div>
-                  <div className="mt-4 flex gap-2">
-                    <Button variant="outline" size="sm" className="flex-1">
-                      Ver Detalles
-                    </Button>
-                    <Button variant="outline" size="sm" className="flex-1">
-                      Gestionar
+                  <div className="mt-4">
+                    <Button variant="outline" size="sm" className="w-full" onClick={(e) => { e.stopPropagation(); navigate(`/licitacion/${licitacion.id}`); }}>
+                      Ver Detalles y Gestionar
                     </Button>
                   </div>
                 </CardContent>

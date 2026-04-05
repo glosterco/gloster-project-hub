@@ -24,6 +24,7 @@ import Pricing from "./pages/Pricing";
 import ExecutiveSummary from "./pages/ExecutiveSummary";
 import ExecutiveSummaryMandante from "./pages/ExecutiveSummaryMandante";
 import Licitaciones from "./pages/Licitaciones";
+import LicitacionDetail from "./pages/LicitacionDetail";
 import MKT from "./pages/MKT";
 import RRSS from "./pages/RRSS";
 import NotFound from "./pages/NotFound";
@@ -68,6 +69,7 @@ const App = () => (
             <Route path="/executive-summary" element={<RouteProtection><ExecutiveSummary /></RouteProtection>} />
             <Route path="/executive-summary-mandante" element={<RouteProtection><ExecutiveSummaryMandante /></RouteProtection>} />
             <Route path="/licitaciones" element={<RouteProtection><Licitaciones /></RouteProtection>} />
+            <Route path="/licitacion/:id" element={<RouteProtection><LicitacionDetail /></RouteProtection>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </TooltipProvider>

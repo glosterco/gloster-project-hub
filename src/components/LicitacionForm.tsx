@@ -186,6 +186,7 @@ const LicitacionForm = ({ open, onOpenChange, onSuccess }: LicitacionFormProps) 
         calendario_eventos: eventosFormateados,
         especificaciones,
         documentos: documentos.map(f => ({ nombre: f.name, size: f.size, tipo: f.type })),
+        documentFiles: documentos,
         items: itemsFormateados.length > 0 ? itemsFormateados : undefined,
         gastos_generales: gastosGenerales > 0 ? gastosGenerales : undefined,
         iva_porcentaje: ivaPorcentaje

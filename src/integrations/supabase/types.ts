@@ -527,6 +527,7 @@ export type Database = {
           mensaje_oferentes: string | null
           nombre: string
           updated_at: string | null
+          url_acceso: string | null
         }
         Insert: {
           created_at?: string | null
@@ -540,6 +541,7 @@ export type Database = {
           mensaje_oferentes?: string | null
           nombre: string
           updated_at?: string | null
+          url_acceso?: string | null
         }
         Update: {
           created_at?: string | null
@@ -553,6 +555,7 @@ export type Database = {
           mensaje_oferentes?: string | null
           nombre?: string
           updated_at?: string | null
+          url_acceso?: string | null
         }
         Relationships: [
           {
@@ -668,6 +671,223 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "LicitacionOferentes_licitacion_id_fkey"
+            columns: ["licitacion_id"]
+            isOneToOne: false
+            referencedRelation: "Licitaciones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      LicitacionOfertaItems: {
+        Row: {
+          cantidad: number | null
+          created_at: string
+          descripcion: string
+          id: number
+          item_referencia_id: number | null
+          oferta_id: number
+          orden: number
+          precio_total: number | null
+          precio_unitario: number | null
+          unidad: string | null
+        }
+        Insert: {
+          cantidad?: number | null
+          created_at?: string
+          descripcion: string
+          id?: never
+          item_referencia_id?: number | null
+          oferta_id: number
+          orden?: number
+          precio_total?: number | null
+          precio_unitario?: number | null
+          unidad?: string | null
+        }
+        Update: {
+          cantidad?: number | null
+          created_at?: string
+          descripcion?: string
+          id?: never
+          item_referencia_id?: number | null
+          oferta_id?: number
+          orden?: number
+          precio_total?: number | null
+          precio_unitario?: number | null
+          unidad?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "LicitacionOfertaItems_item_referencia_id_fkey"
+            columns: ["item_referencia_id"]
+            isOneToOne: false
+            referencedRelation: "LicitacionItems"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "LicitacionOfertaItems_oferta_id_fkey"
+            columns: ["oferta_id"]
+            isOneToOne: false
+            referencedRelation: "LicitacionOfertas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      LicitacionOfertas: {
+        Row: {
+          created_at: string
+          estado: string
+          gastos_generales: number | null
+          id: number
+          licitacion_id: number
+          notas: string | null
+          oferente_email: string
+          oferente_empresa: string | null
+          oferente_nombre: string | null
+          total: number | null
+          updated_at: string
+          utilidades: number | null
+        }
+        Insert: {
+          created_at?: string
+          estado?: string
+          gastos_generales?: number | null
+          id?: never
+          licitacion_id: number
+          notas?: string | null
+          oferente_email: string
+          oferente_empresa?: string | null
+          oferente_nombre?: string | null
+          total?: number | null
+          updated_at?: string
+          utilidades?: number | null
+        }
+        Update: {
+          created_at?: string
+          estado?: string
+          gastos_generales?: number | null
+          id?: never
+          licitacion_id?: number
+          notas?: string | null
+          oferente_email?: string
+          oferente_empresa?: string | null
+          oferente_nombre?: string | null
+          total?: number | null
+          updated_at?: string
+          utilidades?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "LicitacionOfertas_licitacion_id_fkey"
+            columns: ["licitacion_id"]
+            isOneToOne: false
+            referencedRelation: "Licitaciones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      LicitacionPreguntas: {
+        Row: {
+          created_at: string
+          especialidad: string | null
+          grupo_similar_id: number | null
+          id: number
+          licitacion_id: number
+          oferente_email: string
+          pregunta: string
+          publicada: boolean
+          respondida: boolean
+          respondida_por: string | null
+          respuesta: string | null
+          respuesta_ia: string | null
+          respuesta_ia_fuentes: Json | null
+          ronda_id: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          especialidad?: string | null
+          grupo_similar_id?: number | null
+          id?: never
+          licitacion_id: number
+          oferente_email: string
+          pregunta: string
+          publicada?: boolean
+          respondida?: boolean
+          respondida_por?: string | null
+          respuesta?: string | null
+          respuesta_ia?: string | null
+          respuesta_ia_fuentes?: Json | null
+          ronda_id: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          especialidad?: string | null
+          grupo_similar_id?: number | null
+          id?: never
+          licitacion_id?: number
+          oferente_email?: string
+          pregunta?: string
+          publicada?: boolean
+          respondida?: boolean
+          respondida_por?: string | null
+          respuesta?: string | null
+          respuesta_ia?: string | null
+          respuesta_ia_fuentes?: Json | null
+          ronda_id?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "LicitacionPreguntas_licitacion_id_fkey"
+            columns: ["licitacion_id"]
+            isOneToOne: false
+            referencedRelation: "Licitaciones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "LicitacionPreguntas_ronda_id_fkey"
+            columns: ["ronda_id"]
+            isOneToOne: false
+            referencedRelation: "LicitacionRondas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      LicitacionRondas: {
+        Row: {
+          created_at: string
+          estado: string
+          fecha_apertura: string
+          fecha_cierre: string | null
+          id: number
+          licitacion_id: number
+          numero: number
+          titulo: string
+        }
+        Insert: {
+          created_at?: string
+          estado?: string
+          fecha_apertura?: string
+          fecha_cierre?: string | null
+          id?: never
+          licitacion_id: number
+          numero?: number
+          titulo?: string
+        }
+        Update: {
+          created_at?: string
+          estado?: string
+          fecha_apertura?: string
+          fecha_cierre?: string | null
+          id?: never
+          licitacion_id?: number
+          numero?: number
+          titulo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "LicitacionRondas_licitacion_id_fkey"
             columns: ["licitacion_id"]
             isOneToOne: false
             referencedRelation: "Licitaciones"

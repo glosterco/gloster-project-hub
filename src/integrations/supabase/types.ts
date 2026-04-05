@@ -476,6 +476,44 @@ export type Database = {
           },
         ]
       }
+      licitacion_otp_codes: {
+        Row: {
+          code: string
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          licitacion_id: number
+          used: boolean
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          licitacion_id: number
+          used?: boolean
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          licitacion_id?: number
+          used?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "licitacion_otp_codes_licitacion_id_fkey"
+            columns: ["licitacion_id"]
+            isOneToOne: false
+            referencedRelation: "Licitaciones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       LicitacionDocumentos: {
         Row: {
           created_at: string

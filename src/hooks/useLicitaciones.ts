@@ -313,8 +313,8 @@ export const useLicitaciones = () => {
         }
       }
 
-      // Insertar documentos
-      if (newLicitacion.documentos.length > 0) {
+      // Insertar documentos metadata (sin URL por ahora, se actualizará con Drive)
+      if (newLicitacion.documentos.length > 0 && (!newLicitacion.documentFiles || newLicitacion.documentFiles.length === 0)) {
         const documentosData = newLicitacion.documentos.map(doc => ({
           licitacion_id: licitacionId,
           nombre: doc.nombre,
@@ -329,6 +329,41 @@ export const useLicitaciones = () => {
 
         if (documentosError) {
           console.error('Error creating documentos:', documentosError);
+        }
+      }
+
+      // Upload documents to Google Drive if file objects are provided
+      if (newLicitacion.documentFiles && newLicitacion.documentFiles.length > 0) {
+        try {
+          console.log('📤 Uploading documents to Google Drive...');
+          const fileData = [];
+          
+          for (const file of newLicitacion.documentFiles) {
+            const base64Content = await convertFileToBase64(file);
+            fileData.push({
+              name: file.name,
+              content: base64Content,
+              mimeType: file.type,
+              size: file.size,
+            });
+          }
+
+          const { data: uploadResult, error: uploadError } = await supabase.functions.invoke('upload-licitacion-documents', {
+            body: {
+              licitacionId,
+              licitacionName: newLicitacion.nombre,
+              documents: fileData,
+              notifyOferentes: false,
+            },
+          });
+
+          if (uploadError) {
+            console.error('Error uploading documents to Drive:', uploadError);
+          } else {
+            console.log('✅ Documents uploaded to Drive:', uploadResult);
+          }
+        } catch (uploadErr) {
+          console.error('Error in Drive upload:', uploadErr);
         }
       }
 

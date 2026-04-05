@@ -9,6 +9,7 @@ import { useLicitaciones, Licitacion } from '@/hooks/useLicitaciones';
 import { format } from 'date-fns';
 
 const Licitaciones = () => {
+  const navigate = useNavigate();
   const [showForm, setShowForm] = useState(false);
   const { licitaciones, loading, refetch } = useLicitaciones();
 

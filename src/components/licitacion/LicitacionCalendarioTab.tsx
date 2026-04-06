@@ -272,7 +272,7 @@ const LicitacionCalendarioTab: React.FC<Props> = ({ eventos, fechaCreacion, onUp
                       width: 0,
                     }}
                   >
-                    <div className={`h-full border-l-2 ${isTodayOutsideRange ? 'border-dashed opacity-50' : ''} border-destructive`} />
+                    <div className="h-full border-l-2 border-destructive" />
                     <div className="absolute -top-0 -translate-x-1/2 bg-destructive text-destructive-foreground text-[9px] font-bold px-1.5 py-0.5 rounded-b whitespace-nowrap">
                       Hoy
                     </div>

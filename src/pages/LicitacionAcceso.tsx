@@ -485,15 +485,25 @@ const LicitacionAcceso = () => {
         .maybeSingle();
       
       if (ofertaData) {
-        // Populate LicitacionOfertaItems from the bidder's items
-        // First delete existing oferta items
+        // Build combined items from allItems state
+        const mItems = allItems.filter(i => !i.agregado_por_oferente).sort((a: any, b: any) => a.orden - b.orden);
+        const bItems = allItems.filter(i => i.agregado_por_oferente && i.oferente_email === oferenteEmail.toLowerCase().trim()).sort((a: any, b: any) => a.orden - b.orden);
+        const combined = [...mItems, ...bItems];
+        
+        const sub = combined.reduce((sum: number, i: any) => sum + (i.precio_total || 0), 0);
+        const ggVal = licitacion?.gastos_generales ? sub * (licitacion.gastos_generales / 100) : 0;
+        const utVal = licitacion?.utilidades ? (sub + ggVal) * (licitacion.utilidades / 100) : 0;
+        const netoVal = sub + ggVal + utVal;
+        const ivaVal = licitacion?.iva_porcentaje ? netoVal * (licitacion.iva_porcentaje / 100) : 0;
+        const total = netoVal + ivaVal;
+
+        // Delete existing oferta items and re-populate
         await supabase
           .from('LicitacionOfertaItems')
           .delete()
           .eq('oferta_id', ofertaData.id);
 
-        // Insert all combined items as oferta items
-        const ofertaItems = combinedItems.map((item, idx) => ({
+        const ofertaItems = combined.map((item: any, idx: number) => ({
           oferta_id: ofertaData.id,
           item_referencia_id: item.agregado_por_oferente ? null : item.id,
           descripcion: item.descripcion,
@@ -511,14 +521,13 @@ const LicitacionAcceso = () => {
           if (itemsError) console.error('Error inserting oferta items:', itemsError);
         }
 
-        // Update GG/Utilidades on the offer
         const { error } = await supabase
           .from('LicitacionOfertas')
           .update({ 
             estado: 'enviada',
             gastos_generales: licitacion?.gastos_generales || null,
             utilidades: licitacion?.utilidades || null,
-            total: totalOferta,
+            total,
           })
           .eq('id', ofertaData.id);
         if (error) throw error;

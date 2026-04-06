@@ -30,6 +30,10 @@ export interface Pregunta {
   respondida_por: string | null;
   enviada: boolean;
   created_at: string;
+  adjunto_url: string | null;
+  adjunto_nombre: string | null;
+  respuesta_adjunto_url: string | null;
+  respuesta_adjunto_nombre: string | null;
 }
 
 export interface Oferta {

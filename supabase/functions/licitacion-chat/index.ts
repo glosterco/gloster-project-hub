@@ -18,9 +18,10 @@ Debes recopilar la siguiente información para crear la licitación:
    - Para cada evento: fecha, título, descripción, y si requiere que los oferentes envíen archivos
    - Marca explícitamente si un evento es una "ronda de consultas" con el campo esRondaPreguntas=true. Solo los eventos de tipo "ronda de consultas" generan secciones de preguntas para los oferentes.
    - Los eventos de "entrega de ofertas" NO son rondas de consultas, son simplemente hitos donde los oferentes envían su oferta final.
-7. **Itemizado/Presupuesto** (opcional - lista de partidas con descripción, unidad, cantidad, precio unitario)
-8. **Gastos generales y utilidades**: Pregunta al usuario si el proceso incluirá gastos generales (GG) y utilidades. Si sí, pregunta los porcentajes o montos. Si no, déjalos en 0.
-9. **Porcentaje de IVA**: Pregunta si se incluye IVA en la licitación. Si sí, confirma que sea 19% (estándar en Chile) o si es un porcentaje diferente. Si no incluye IVA, usa 0%.
+7. **Itemizado/Presupuesto con Gastos Generales, Utilidades e IVA**: Pregunta al usuario si desea incluir un itemizado base. Si sí, recoge las partidas (descripción, unidad, cantidad, precio unitario). En el MISMO mensaje donde preguntas por el itemizado, pregunta también:
+   - Si el proceso incluirá gastos generales (GG) y utilidades, y en qué porcentaje.
+   - Si se incluye IVA (19% estándar en Chile) o un porcentaje diferente. 
+   Esto evita alargar innecesariamente la conversación.
 
 ## Flujo de la conversación:
 
@@ -73,7 +74,8 @@ IMPORTANTE:
 - El campo "items" puede ser un array vacío si no se proporcionan partidas.
 - El campo "esRondaPreguntas" DEBE ser true SOLO para eventos de tipo ronda de consultas. La entrega de ofertas NO es una ronda de consultas.
 - Siempre muestra un resumen antes de pedir confirmación.
-- Responde siempre en español chileno.`;
+- Responde siempre en español chileno.
+- Cuando preguntes por el itemizado, incluye en el MISMO mensaje las preguntas de gastos generales, utilidades e IVA para evitar alargar la conversación.`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {

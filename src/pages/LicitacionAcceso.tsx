@@ -977,8 +977,8 @@ const LicitacionAcceso = () => {
                         <CardTitle className="text-base font-rubik flex items-center gap-2">
                           <MessageSquare className="h-5 w-5" />
                           {ronda.titulo}
-                          <Badge variant={isOpen ? 'default' : 'secondary'}>
-                            {isOpen ? 'Abierta' : 'Cerrada'}
+                          <Badge variant={isOpen ? 'default' : isClosedExplicitly ? 'secondary' : 'outline'}>
+                            {isClosedExplicitly ? 'Cerrada' : isOpen ? 'Activa' : 'Próxima'}
                           </Badge>
                         </CardTitle>
                         {deadline && (

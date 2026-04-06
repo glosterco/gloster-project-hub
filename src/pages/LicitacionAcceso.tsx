@@ -54,9 +54,8 @@ const LicitacionAcceso = () => {
   const [otpError, setOtpError] = useState<string | null>(null);
   const [otpCountdown, setOtpCountdown] = useState(0);
 
-  // Draft question state
-  const [newPregunta, setNewPregunta] = useState('');
-  const [newEspecialidad, setNewEspecialidad] = useState('');
+  // Per-ronda draft question state (independent inputs)
+  const [rondaInputs, setRondaInputs] = useState<Record<number, { pregunta: string; especialidad: string }>>({});
   const [savingDraft, setSavingDraft] = useState(false);
   const [sendingAll, setSendingAll] = useState(false);
   const [showSendConfirm, setShowSendConfirm] = useState(false);
@@ -265,21 +264,26 @@ const LicitacionAcceso = () => {
   };
 
   // === DRAFT QUESTIONS ===
+  const getRondaInput = (rondaId: number) => rondaInputs[rondaId] || { pregunta: '', especialidad: '' };
+  const setRondaInput = (rondaId: number, field: 'pregunta' | 'especialidad', value: string) => {
+    setRondaInputs(prev => ({ ...prev, [rondaId]: { ...getRondaInput(rondaId), [field]: value } }));
+  };
+
   const saveDraftQuestion = async (rondaId: number) => {
-    if (!newPregunta.trim() || !licitacionId || !oferenteEmail) return;
+    const input = getRondaInput(rondaId);
+    if (!input.pregunta.trim() || !licitacionId || !oferenteEmail) return;
     setSavingDraft(true);
     try {
       const { error } = await supabase.from('LicitacionPreguntas').insert({
         licitacion_id: licitacionId,
         ronda_id: rondaId,
         oferente_email: oferenteEmail.toLowerCase().trim(),
-        pregunta: newPregunta.trim(),
-        especialidad: newEspecialidad.trim() || null,
+        pregunta: input.pregunta.trim(),
+        especialidad: input.especialidad.trim() || null,
         enviada: false,
       });
       if (error) throw error;
-      setNewPregunta('');
-      setNewEspecialidad('');
+      setRondaInputs(prev => ({ ...prev, [rondaId]: { pregunta: '', especialidad: '' } }));
       toast({ title: "Consulta guardada como borrador" });
       fetchData();
     } catch (err: any) {
@@ -471,7 +475,6 @@ const LicitacionAcceso = () => {
   const submitOferta = async () => {
     if (!miOferta) {
       await saveOferta();
-      // Need to re-fetch to get the oferta id, then submit
     }
     try {
       const { data: ofertaData } = await supabase
@@ -482,9 +485,50 @@ const LicitacionAcceso = () => {
         .maybeSingle();
       
       if (ofertaData) {
+        // Build combined items from allItems state
+        const mItems = allItems.filter(i => !i.agregado_por_oferente).sort((a: any, b: any) => a.orden - b.orden);
+        const bItems = allItems.filter(i => i.agregado_por_oferente && i.oferente_email === oferenteEmail.toLowerCase().trim()).sort((a: any, b: any) => a.orden - b.orden);
+        const combined = [...mItems, ...bItems];
+        
+        const sub = combined.reduce((sum: number, i: any) => sum + (i.precio_total || 0), 0);
+        const ggVal = licitacion?.gastos_generales ? sub * (licitacion.gastos_generales / 100) : 0;
+        const utVal = licitacion?.utilidades ? (sub + ggVal) * (licitacion.utilidades / 100) : 0;
+        const netoVal = sub + ggVal + utVal;
+        const ivaVal = licitacion?.iva_porcentaje ? netoVal * (licitacion.iva_porcentaje / 100) : 0;
+        const total = netoVal + ivaVal;
+
+        // Delete existing oferta items and re-populate
+        await supabase
+          .from('LicitacionOfertaItems')
+          .delete()
+          .eq('oferta_id', ofertaData.id);
+
+        const ofertaItems = combined.map((item: any, idx: number) => ({
+          oferta_id: ofertaData.id,
+          item_referencia_id: item.agregado_por_oferente ? null : item.id,
+          descripcion: item.descripcion,
+          unidad: item.unidad || null,
+          cantidad: item.cantidad || null,
+          precio_unitario: item.precio_unitario || null,
+          precio_total: item.precio_total || null,
+          orden: idx,
+        }));
+
+        if (ofertaItems.length > 0) {
+          const { error: itemsError } = await supabase
+            .from('LicitacionOfertaItems')
+            .insert(ofertaItems);
+          if (itemsError) console.error('Error inserting oferta items:', itemsError);
+        }
+
         const { error } = await supabase
           .from('LicitacionOfertas')
-          .update({ estado: 'enviada' })
+          .update({ 
+            estado: 'enviada',
+            gastos_generales: licitacion?.gastos_generales || null,
+            utilidades: licitacion?.utilidades || null,
+            total,
+          })
           .eq('id', ofertaData.id);
         if (error) throw error;
         toast({ title: "Oferta enviada", description: "Tu oferta ha sido enviada al mandante" });
@@ -953,8 +997,12 @@ const LicitacionAcceso = () => {
               )}
 
               {/* My questions per ronda */}
-              {rondas.map(ronda => {
-                const isOpen = ronda.estado !== 'cerrada';
+              {rondas.map((ronda, rondaIndex) => {
+                // Sequential activation: only the first non-cerrada ronda is active/open for input
+                const isClosedExplicitly = ronda.estado === 'cerrada';
+                const firstActiveIndex = rondas.findIndex(r => r.estado !== 'cerrada');
+                const isActiveRonda = !isClosedExplicitly && rondaIndex === firstActiveIndex;
+                const isOpen = isActiveRonda;
                 const drafts = getDraftsForRonda(ronda.id);
                 const sent = getSentForRonda(ronda.id);
                 const deadline = ronda.fecha_cierre
@@ -969,8 +1017,8 @@ const LicitacionAcceso = () => {
                         <CardTitle className="text-base font-rubik flex items-center gap-2">
                           <MessageSquare className="h-5 w-5" />
                           {ronda.titulo}
-                          <Badge variant={isOpen ? 'default' : 'secondary'}>
-                            {isOpen ? 'Abierta' : 'Cerrada'}
+                          <Badge variant={isOpen ? 'default' : isClosedExplicitly ? 'secondary' : 'outline'}>
+                            {isClosedExplicitly ? 'Cerrada' : isOpen ? 'Activa' : 'Próxima'}
                           </Badge>
                         </CardTitle>
                         {deadline && (
@@ -1101,21 +1149,21 @@ const LicitacionAcceso = () => {
                           <p className="text-sm font-medium">Nueva consulta</p>
                           <Input
                             placeholder="Especialidad (opcional)"
-                            value={newEspecialidad}
-                            onChange={e => setNewEspecialidad(e.target.value)}
+                            value={getRondaInput(ronda.id).especialidad}
+                            onChange={e => setRondaInput(ronda.id, 'especialidad', e.target.value)}
                             className="text-sm"
                           />
                           <Textarea
                             placeholder="Escribe tu consulta aquí..."
-                            value={newPregunta}
-                            onChange={e => setNewPregunta(e.target.value)}
+                            value={getRondaInput(ronda.id).pregunta}
+                            onChange={e => setRondaInput(ronda.id, 'pregunta', e.target.value)}
                             className="text-sm"
                           />
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => saveDraftQuestion(ronda.id)}
-                            disabled={savingDraft || !newPregunta.trim()}
+                            disabled={savingDraft || !getRondaInput(ronda.id).pregunta.trim()}
                           >
                             {savingDraft ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Plus className="h-4 w-4 mr-1" />}
                             Guardar borrador
@@ -1124,10 +1172,15 @@ const LicitacionAcceso = () => {
                             Las consultas se guardan como borrador. Envíalas todas juntas cuando estés listo.
                           </p>
                         </div>
-                      ) : (
+                      ) : isClosedExplicitly ? (
                         <div className="text-center py-4 text-muted-foreground">
                           <Lock className="h-8 w-8 mx-auto mb-2 opacity-50" />
                           <p className="text-sm">Esta ronda de consultas está cerrada</p>
+                        </div>
+                      ) : (
+                        <div className="text-center py-4 text-muted-foreground">
+                          <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                          <p className="text-sm">Esta ronda se activará una vez que finalice la ronda anterior</p>
                         </div>
                       )}
                     </CardContent>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ const LicitacionDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const licitacionId = id ? parseInt(id) : null;
+  const [activeTab, setActiveTab] = useState('invitacion');
 
   const {
     licitacion, rondas, preguntas, ofertas, oferentesDetail, loading, refetch,
@@ -90,7 +91,7 @@ const LicitacionDetail = () => {
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="invitacion" className="space-y-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList className="w-full justify-start overflow-x-auto">
             <TabsTrigger value="invitacion" className="flex items-center gap-1.5">
               <Mail className="h-4 w-4" /> Invitación

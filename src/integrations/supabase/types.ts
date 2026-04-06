@@ -885,6 +885,8 @@ export type Database = {
       }
       LicitacionPreguntas: {
         Row: {
+          adjunto_nombre: string | null
+          adjunto_url: string | null
           created_at: string
           enviada: boolean
           especialidad: string | null
@@ -897,12 +899,16 @@ export type Database = {
           respondida: boolean
           respondida_por: string | null
           respuesta: string | null
+          respuesta_adjunto_nombre: string | null
+          respuesta_adjunto_url: string | null
           respuesta_ia: string | null
           respuesta_ia_fuentes: Json | null
           ronda_id: number
           updated_at: string
         }
         Insert: {
+          adjunto_nombre?: string | null
+          adjunto_url?: string | null
           created_at?: string
           enviada?: boolean
           especialidad?: string | null
@@ -915,12 +921,16 @@ export type Database = {
           respondida?: boolean
           respondida_por?: string | null
           respuesta?: string | null
+          respuesta_adjunto_nombre?: string | null
+          respuesta_adjunto_url?: string | null
           respuesta_ia?: string | null
           respuesta_ia_fuentes?: Json | null
           ronda_id: number
           updated_at?: string
         }
         Update: {
+          adjunto_nombre?: string | null
+          adjunto_url?: string | null
           created_at?: string
           enviada?: boolean
           especialidad?: string | null
@@ -933,6 +943,8 @@ export type Database = {
           respondida?: boolean
           respondida_por?: string | null
           respuesta?: string | null
+          respuesta_adjunto_nombre?: string | null
+          respuesta_adjunto_url?: string | null
           respuesta_ia?: string | null
           respuesta_ia_fuentes?: Json | null
           ronda_id?: number

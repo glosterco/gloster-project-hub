@@ -13,8 +13,8 @@ import { Calendar, FileText, Pencil, CheckCircle2, MessageSquare } from 'lucide-
 interface Props {
   eventos: CalendarEvent[];
   fechaCreacion: string;
-  onUpdateEvento: (eventoId: number, updates: { titulo?: string; fecha?: string; descripcion?: string }) => Promise<void>;
-  onCompleteEvento: (eventoId: number) => Promise<void>;
+  onUpdateEvento?: (eventoId: number, updates: { titulo?: string; fecha?: string; descripcion?: string }) => Promise<void>;
+  onCompleteEvento?: (eventoId: number) => Promise<void>;
 }
 
 const ROW_HEIGHT = 36;
@@ -334,22 +334,26 @@ const LicitacionCalendarioTab: React.FC<Props> = ({ eventos, fechaCreacion, onUp
                     {badge.label}
                   </Badge>
                 </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(evento)} title="Editar evento">
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
-                  {status !== 'completado' && evento.id && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-                      onClick={() => onCompleteEvento(evento.id!)}
-                      title="Finalizar evento"
-                    >
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
-                </div>
+                {(onUpdateEvento || onCompleteEvento) && (
+                  <div className="flex items-center gap-1 shrink-0">
+                    {onUpdateEvento && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(evento)} title="Editar evento">
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                    {onCompleteEvento && status !== 'completado' && evento.id && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                        onClick={() => onCompleteEvento(evento.id!)}
+                        title="Finalizar evento"
+                      >
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -357,31 +361,33 @@ const LicitacionCalendarioTab: React.FC<Props> = ({ eventos, fechaCreacion, onUp
       </Card>
 
       {/* Edit event dialog */}
-      <Dialog open={!!editingEvento} onOpenChange={(open) => !open && setEditingEvento(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="font-rubik">Editar Evento</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 pt-2">
-            <div className="space-y-2">
-              <Label>Título</Label>
-              <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
+      {onUpdateEvento && (
+        <Dialog open={!!editingEvento} onOpenChange={(open) => !open && setEditingEvento(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="font-rubik">Editar Evento</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 pt-2">
+              <div className="space-y-2">
+                <Label>Título</Label>
+                <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Fecha</Label>
+                <Input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Descripción</Label>
+                <Input value={editDesc} onChange={(e) => setEditDesc(e.target.value)} />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setEditingEvento(null)}>Cancelar</Button>
+                <Button onClick={handleSaveEdit}>Guardar</Button>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label>Fecha</Label>
-              <Input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label>Descripción</Label>
-              <Input value={editDesc} onChange={(e) => setEditDesc(e.target.value)} />
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setEditingEvento(null)}>Cancelar</Button>
-              <Button onClick={handleSaveEdit}>Guardar</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };

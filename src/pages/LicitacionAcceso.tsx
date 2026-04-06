@@ -17,12 +17,14 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from '@/components/ui/table';
 import {
-  FileText, Calendar, MessageSquare, ExternalLink, Plus, Send, Trash2,
+  FileText, Calendar, MessageSquare, Plus, Send, Trash2,
   Clock, CheckCircle, Lock, Loader2, ListOrdered, BarChart3, Mail,
-  Edit2, Save, X, Upload
+  Edit2, Save, X, Upload, Download, Eye
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import LicitacionCalendarioTab from '@/components/licitacion/LicitacionCalendarioTab';
+import { DocumentPreviewModal } from '@/components/DocumentPreviewModal';
 
 const LicitacionAcceso = () => {
   const { id } = useParams<{ id: string }>();
@@ -83,6 +85,10 @@ const LicitacionAcceso = () => {
   const [savingOferta, setSavingOferta] = useState(false);
   const [sendingItemizado, setSendingItemizado] = useState(false);
 
+  // Document preview state
+  const [previewDoc, setPreviewDoc] = useState<{ name: string; url: string; mimeType: string } | null>(null);
+  const [loadingDoc, setLoadingDoc] = useState<string | null>(null);
+
   const licitacionId = id ? parseInt(id) : null;
 
   const fetchData = useCallback(async () => {
@@ -92,7 +98,7 @@ const LicitacionAcceso = () => {
       const { data, error } = await supabase
         .from('Licitaciones')
         .select(`
-          id, nombre, descripcion, mensaje_oferentes, estado, url_acceso, gastos_generales, iva_porcentaje,
+          id, nombre, descripcion, mensaje_oferentes, estado, url_acceso, gastos_generales, utilidades, iva_porcentaje, created_at,
           LicitacionEventos(id, fecha, titulo, descripcion, estado, es_ronda_preguntas),
           LicitacionDocumentos(id, nombre, size, tipo, url),
           LicitacionItems(id, descripcion, unidad, cantidad, precio_unitario, precio_total, orden, agregado_por_oferente, oferente_email)
@@ -497,15 +503,89 @@ const LicitacionAcceso = () => {
 
   const fmt = (n: number) => n.toLocaleString('es-CL', { minimumFractionDigits: 0 });
 
-  // Compute if send button should be enabled for a ronda
+  // Send button enabled 1 week before deadline
   const canSendForRonda = (ronda: any) => {
+    if (ronda.estado === 'cerrada') return false;
     const now = new Date();
-    const apertura = new Date(ronda.fecha_apertura);
-    return (ronda.estado === 'abierta' || (ronda.estado === 'programada' && now >= apertura)) && now >= apertura;
+    const deadline = new Date(ronda.fecha_apertura);
+    const oneWeekBefore = new Date(deadline.getTime() - 7 * 24 * 60 * 60 * 1000);
+    return now >= oneWeekBefore;
   };
 
   const getRondaAperturaText = (ronda: any) => {
-    return format(new Date(ronda.fecha_apertura), "d MMM yyyy", { locale: es });
+    const deadline = new Date(ronda.fecha_apertura);
+    const oneWeekBefore = new Date(deadline.getTime() - 7 * 24 * 60 * 60 * 1000);
+    return format(oneWeekBefore, "d MMM yyyy", { locale: es });
+  };
+
+  // Document helpers
+  const extractDriveId = (url: string): string | null => {
+    const match = url.match(/\/d\/([^\/]+)/);
+    if (match) return match[1];
+    const match2 = url.match(/[?&]id=([^&]+)/);
+    if (match2) return match2[1];
+    return null;
+  };
+
+  const downloadLicitacionDoc = async (doc: any) => {
+    const driveId = doc.url ? extractDriveId(doc.url) : null;
+    if (!driveId) {
+      toast({ title: 'Error', description: 'No se pudo obtener el archivo', variant: 'destructive' });
+      return;
+    }
+    setLoadingDoc(doc.nombre);
+    try {
+      const { data, error } = await supabase.functions.invoke('download-project-document', {
+        body: { fileName: doc.nombre, driveId, mode: 'content' }
+      });
+      if (error) throw new Error(error.message);
+      if (!data?.success || !data.content) throw new Error(data?.error || 'No se pudo descargar');
+
+      const byteCharacters = atob(data.content);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) byteNumbers[i] = byteCharacters.charCodeAt(i);
+      const blob = new Blob([new Uint8Array(byteNumbers)], { type: data.mimeType });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = doc.nombre;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast({ title: 'Descarga completada', description: `Se ha descargado ${doc.nombre}` });
+    } catch (err: any) {
+      toast({ title: 'Error en la descarga', description: err.message, variant: 'destructive' });
+    } finally {
+      setLoadingDoc(null);
+    }
+  };
+
+  const previewLicitacionDoc = async (doc: any) => {
+    const driveId = doc.url ? extractDriveId(doc.url) : null;
+    if (!driveId) {
+      toast({ title: 'Error', description: 'No se pudo obtener el archivo', variant: 'destructive' });
+      return;
+    }
+    setLoadingDoc(doc.nombre);
+    try {
+      const { data, error } = await supabase.functions.invoke('download-project-document', {
+        body: { fileName: doc.nombre, driveId, mode: 'content' }
+      });
+      if (error) throw new Error(error.message);
+      if (!data?.success || !data.content) throw new Error(data?.error || 'No se pudo obtener vista previa');
+
+      const byteCharacters = atob(data.content);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) byteNumbers[i] = byteCharacters.charCodeAt(i);
+      const blob = new Blob([new Uint8Array(byteNumbers)], { type: data.mimeType });
+      const url = URL.createObjectURL(blob);
+      setPreviewDoc({ name: doc.nombre, url, mimeType: data.mimeType });
+    } catch (err: any) {
+      toast({ title: 'Error en vista previa', description: err.message, variant: 'destructive' });
+    } finally {
+      setLoadingDoc(null);
+    }
   };
 
   // === RENDER ===
@@ -760,48 +840,18 @@ const LicitacionAcceso = () => {
 
           {/* ===== CALENDARIO TAB ===== */}
           <TabsContent value="calendario">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 font-rubik">
-                  <Calendar className="h-5 w-5" />
-                  Calendario de Eventos
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {(!licitacion.LicitacionEventos || licitacion.LicitacionEventos.length === 0) ? (
-                  <p className="text-center text-muted-foreground py-8">No hay eventos programados.</p>
-                ) : (
-                  <div className="space-y-3">
-                    {licitacion.LicitacionEventos
-                      .sort((a: any, b: any) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
-                      .map((evento: any) => (
-                        <div key={evento.id} className="flex items-start gap-3 p-3 rounded-lg border">
-                          <div className="flex-shrink-0 w-16 text-center">
-                            <div className="text-lg font-bold">{format(new Date(evento.fecha), 'd')}</div>
-                            <div className="text-xs text-muted-foreground uppercase">
-                              {format(new Date(evento.fecha), 'MMM yyyy', { locale: es })}
-                            </div>
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <p className="font-medium text-sm">{evento.titulo}</p>
-                              {evento.es_ronda_preguntas && (
-                                <Badge variant="outline" className="text-[10px]">Ronda de consultas</Badge>
-                              )}
-                              <Badge variant={evento.estado === 'completado' ? 'secondary' : 'default'} className="text-[10px]">
-                                {evento.estado === 'completado' ? 'Finalizado' : 'Pendiente'}
-                              </Badge>
-                            </div>
-                            {evento.descripcion && (
-                              <p className="text-xs text-muted-foreground mt-1">{evento.descripcion}</p>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <LicitacionCalendarioTab
+              eventos={(licitacion.LicitacionEventos || []).map((e: any) => ({
+                id: e.id,
+                titulo: e.titulo,
+                fecha: e.fecha,
+                descripcion: e.descripcion,
+                estado: e.estado,
+                esRondaPreguntas: e.es_ronda_preguntas,
+                requiereArchivos: e.requiere_archivos,
+              }))}
+              fechaCreacion={licitacion.created_at || new Date().toISOString()}
+            />
           </TabsContent>
 
           {/* ===== DOCUMENTOS TAB ===== */}
@@ -829,19 +879,48 @@ const LicitacionAcceso = () => {
                             </p>
                           )}
                         </div>
-                        {doc.url && (
-                          <Button variant="ghost" size="sm" asChild>
-                            <a href={doc.url} target="_blank" rel="noopener noreferrer">
-                              <ExternalLink className="h-4 w-4" />
-                            </a>
-                          </Button>
-                        )}
+                        <div className="flex items-center gap-1">
+                          {doc.url && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => previewLicitacionDoc(doc)}
+                                disabled={loadingDoc === doc.nombre}
+                                title="Vista previa"
+                              >
+                                {loadingDoc === doc.nombre ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => downloadLicitacionDoc(doc)}
+                                disabled={loadingDoc === doc.nombre}
+                                title="Descargar"
+                              >
+                                <Download className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
                 )}
               </CardContent>
             </Card>
+
+            {/* Document Preview Modal */}
+            <DocumentPreviewModal
+              isOpen={!!previewDoc}
+              onClose={() => {
+                if (previewDoc?.url) URL.revokeObjectURL(previewDoc.url);
+                setPreviewDoc(null);
+              }}
+              documentName={previewDoc?.name || null}
+              previewUrl={previewDoc?.url || null}
+              mimeType={previewDoc?.mimeType || null}
+            />
           </TabsContent>
 
           {/* ===== CONSULTAS TAB ===== */}
@@ -874,7 +953,7 @@ const LicitacionAcceso = () => {
               )}
 
               {/* My questions per ronda */}
-              {rondas.filter(ronda => ronda.estado !== 'programada' || new Date() >= new Date(ronda.fecha_apertura)).map(ronda => {
+              {rondas.map(ronda => {
                 const isOpen = ronda.estado !== 'cerrada';
                 const drafts = getDraftsForRonda(ronda.id);
                 const sent = getSentForRonda(ronda.id);

@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, Bot, User, Loader2, CheckCircle2 } from 'lucide-react';
+import { Send, Bot, User, Loader2, CheckCircle2, Paperclip, X, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useLicitaciones, NewLicitacion } from '@/hooks/useLicitaciones';
 import ReactMarkdown from 'react-markdown';
@@ -30,6 +30,40 @@ const LicitacionChat = ({ open, onOpenChange, onSuccess }: LicitacionChatProps) 
   const [isCreating, setIsCreating] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+
+  const ALLOWED_EXTENSIONS = [
+    '.pdf', '.xls', '.xlsx', '.xlsm', '.csv',
+    '.doc', '.docx',
+    '.dwg', '.rvt', '.nwd', '.nwf', '.nwc',
+    '.jpg', '.jpeg', '.png',
+    '.zip', '.rar', '.7z',
+    '.ppt', '.pptx',
+    '.ifc',
+  ];
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const valid = files.filter(f => {
+      const ext = '.' + f.name.split('.').pop()?.toLowerCase();
+      if (!ALLOWED_EXTENSIONS.includes(ext)) {
+        toast({ title: "Formato no válido", description: `${f.name} no tiene un formato aceptado.`, variant: "destructive" });
+        return false;
+      }
+      if (f.size > 12 * 1024 * 1024) {
+        toast({ title: "Archivo muy grande", description: `${f.name} excede 12MB.`, variant: "destructive" });
+        return false;
+      }
+      return true;
+    });
+    setAttachedFiles(prev => [...prev, ...valid]);
+    if (e.target) e.target.value = '';
+  };
+
+  const removeFile = (idx: number) => {
+    setAttachedFiles(prev => prev.filter((_, i) => i !== idx));
+  };
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -62,12 +96,14 @@ const LicitacionChat = ({ open, onOpenChange, onSuccess }: LicitacionChatProps) 
           titulo: e.titulo,
           descripcion: e.descripcion,
           requiereArchivos: e.requiereArchivos || false,
+          esRondaPreguntas: e.esRondaPreguntas || false,
         })),
         items: data.items || [],
         gastos_generales: data.gastos_generales || 0,
         utilidades: data.utilidades || 0,
         iva_porcentaje: data.iva_porcentaje ?? 19,
-        documentos: [],
+        documentos: attachedFiles.map(f => ({ nombre: f.name, size: f.size, tipo: f.type })),
+        documentFiles: attachedFiles.length > 0 ? attachedFiles : undefined,
       };
     } catch (e) {
       console.error('Error parsing licitacion JSON:', e);
@@ -233,6 +269,7 @@ const LicitacionChat = ({ open, onOpenChange, onSuccess }: LicitacionChatProps) 
   const handleClose = (value: boolean) => {
     if (!value) {
       setMessages([]);
+      setAttachedFiles([]);
     }
     onOpenChange(value);
   };
@@ -303,7 +340,38 @@ const LicitacionChat = ({ open, onOpenChange, onSuccess }: LicitacionChatProps) 
 
         {/* Input area */}
         <div className="border-t px-4 py-3 bg-background">
+          {attachedFiles.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-2">
+              {attachedFiles.map((f, i) => (
+                <div key={i} className="flex items-center gap-1 bg-muted rounded-lg px-2 py-1 text-xs">
+                  <FileText className="h-3 w-3 text-muted-foreground" />
+                  <span className="max-w-[120px] truncate">{f.name}</span>
+                  <button onClick={() => removeFile(i)} className="ml-1 text-muted-foreground hover:text-destructive">
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept={ALLOWED_EXTENSIONS.join(',')}
+            onChange={handleFileSelect}
+            className="hidden"
+          />
           <div className="flex gap-2 items-end">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-xl h-[44px] w-[44px] flex-shrink-0"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isLoading || isCreating}
+              title="Adjuntar documentos"
+            >
+              <Paperclip className="h-4 w-4" />
+            </Button>
             <Textarea
               ref={textareaRef}
               value={input}

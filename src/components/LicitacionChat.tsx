@@ -96,6 +96,7 @@ const LicitacionChat = ({ open, onOpenChange, onSuccess }: LicitacionChatProps) 
           titulo: e.titulo,
           descripcion: e.descripcion,
           requiereArchivos: e.requiereArchivos || false,
+          esRondaPreguntas: e.esRondaPreguntas || false,
         })),
         items: data.items || [],
         gastos_generales: data.gastos_generales || 0,

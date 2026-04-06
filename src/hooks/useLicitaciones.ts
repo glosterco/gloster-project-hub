@@ -322,7 +322,8 @@ export const useLicitaciones = () => {
           fecha: evento.fecha,
           titulo: evento.titulo,
           descripcion: evento.descripcion,
-          requiere_archivos: evento.requiereArchivos
+          requiere_archivos: evento.requiereArchivos,
+          es_ronda_preguntas: evento.esRondaPreguntas || false
         }));
 
         const { error: eventosError } = await supabase

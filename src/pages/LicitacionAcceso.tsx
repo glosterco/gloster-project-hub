@@ -475,7 +475,6 @@ const LicitacionAcceso = () => {
   const submitOferta = async () => {
     if (!miOferta) {
       await saveOferta();
-      // Need to re-fetch to get the oferta id, then submit
     }
     try {
       const { data: ofertaData } = await supabase
@@ -486,9 +485,41 @@ const LicitacionAcceso = () => {
         .maybeSingle();
       
       if (ofertaData) {
+        // Populate LicitacionOfertaItems from the bidder's items
+        // First delete existing oferta items
+        await supabase
+          .from('LicitacionOfertaItems')
+          .delete()
+          .eq('oferta_id', ofertaData.id);
+
+        // Insert all combined items as oferta items
+        const ofertaItems = combinedItems.map((item, idx) => ({
+          oferta_id: ofertaData.id,
+          item_referencia_id: item.agregado_por_oferente ? null : item.id,
+          descripcion: item.descripcion,
+          unidad: item.unidad || null,
+          cantidad: item.cantidad || null,
+          precio_unitario: item.precio_unitario || null,
+          precio_total: item.precio_total || null,
+          orden: idx,
+        }));
+
+        if (ofertaItems.length > 0) {
+          const { error: itemsError } = await supabase
+            .from('LicitacionOfertaItems')
+            .insert(ofertaItems);
+          if (itemsError) console.error('Error inserting oferta items:', itemsError);
+        }
+
+        // Update GG/Utilidades on the offer
         const { error } = await supabase
           .from('LicitacionOfertas')
-          .update({ estado: 'enviada' })
+          .update({ 
+            estado: 'enviada',
+            gastos_generales: licitacion?.gastos_generales || null,
+            utilidades: licitacion?.utilidades || null,
+            total: totalOferta,
+          })
           .eq('id', ofertaData.id);
         if (error) throw error;
         toast({ title: "Oferta enviada", description: "Tu oferta ha sido enviada al mandante" });

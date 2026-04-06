@@ -54,9 +54,8 @@ const LicitacionAcceso = () => {
   const [otpError, setOtpError] = useState<string | null>(null);
   const [otpCountdown, setOtpCountdown] = useState(0);
 
-  // Draft question state
-  const [newPregunta, setNewPregunta] = useState('');
-  const [newEspecialidad, setNewEspecialidad] = useState('');
+  // Per-ronda draft question state (independent inputs)
+  const [rondaInputs, setRondaInputs] = useState<Record<number, { pregunta: string; especialidad: string }>>({});
   const [savingDraft, setSavingDraft] = useState(false);
   const [sendingAll, setSendingAll] = useState(false);
   const [showSendConfirm, setShowSendConfirm] = useState(false);

@@ -1132,10 +1132,15 @@ const LicitacionAcceso = () => {
                             Las consultas se guardan como borrador. Envíalas todas juntas cuando estés listo.
                           </p>
                         </div>
-                      ) : (
+                      ) : isClosedExplicitly ? (
                         <div className="text-center py-4 text-muted-foreground">
                           <Lock className="h-8 w-8 mx-auto mb-2 opacity-50" />
                           <p className="text-sm">Esta ronda de consultas está cerrada</p>
+                        </div>
+                      ) : (
+                        <div className="text-center py-4 text-muted-foreground">
+                          <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                          <p className="text-sm">Esta ronda se activará una vez que finalice la ronda anterior</p>
                         </div>
                       )}
                     </CardContent>

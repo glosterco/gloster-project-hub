@@ -1155,6 +1155,13 @@ const LicitacionAcceso = () => {
                               <TableCell />
                             </TableRow>
                           )}
+                          {licitacion.utilidades > 0 && (
+                            <TableRow>
+                              <TableCell colSpan={5} className="text-right font-medium">Utilidades ({licitacion.utilidades}%)</TableCell>
+                              <TableCell className="text-right">${fmt(utilidad)}</TableCell>
+                              <TableCell />
+                            </TableRow>
+                          )}
                           {licitacion.iva_porcentaje > 0 && (
                             <TableRow>
                               <TableCell colSpan={5} className="text-right font-medium">IVA ({licitacion.iva_porcentaje}%)</TableCell>

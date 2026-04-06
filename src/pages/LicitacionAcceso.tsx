@@ -1262,6 +1262,7 @@ const LicitacionAcceso = () => {
                   <p className="text-xs text-muted-foreground mt-1">
                     Subtotal: ${fmt(subtotal)}
                     {licitacion.gastos_generales > 0 && ` + GG ${licitacion.gastos_generales}%: $${fmt(gg)}`}
+                    {licitacion.utilidades > 0 && ` + Util. ${licitacion.utilidades}%: $${fmt(utilidad)}`}
                     {licitacion.iva_porcentaje > 0 && ` + IVA ${licitacion.iva_porcentaje}%: $${fmt(iva)}`}
                   </p>
                 </div>

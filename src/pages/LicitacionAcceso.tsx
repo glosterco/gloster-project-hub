@@ -264,21 +264,26 @@ const LicitacionAcceso = () => {
   };
 
   // === DRAFT QUESTIONS ===
+  const getRondaInput = (rondaId: number) => rondaInputs[rondaId] || { pregunta: '', especialidad: '' };
+  const setRondaInput = (rondaId: number, field: 'pregunta' | 'especialidad', value: string) => {
+    setRondaInputs(prev => ({ ...prev, [rondaId]: { ...getRondaInput(rondaId), [field]: value } }));
+  };
+
   const saveDraftQuestion = async (rondaId: number) => {
-    if (!newPregunta.trim() || !licitacionId || !oferenteEmail) return;
+    const input = getRondaInput(rondaId);
+    if (!input.pregunta.trim() || !licitacionId || !oferenteEmail) return;
     setSavingDraft(true);
     try {
       const { error } = await supabase.from('LicitacionPreguntas').insert({
         licitacion_id: licitacionId,
         ronda_id: rondaId,
         oferente_email: oferenteEmail.toLowerCase().trim(),
-        pregunta: newPregunta.trim(),
-        especialidad: newEspecialidad.trim() || null,
+        pregunta: input.pregunta.trim(),
+        especialidad: input.especialidad.trim() || null,
         enviada: false,
       });
       if (error) throw error;
-      setNewPregunta('');
-      setNewEspecialidad('');
+      setRondaInputs(prev => ({ ...prev, [rondaId]: { pregunta: '', especialidad: '' } }));
       toast({ title: "Consulta guardada como borrador" });
       fetchData();
     } catch (err: any) {

@@ -500,7 +500,7 @@ const LicitacionAcceso = () => {
   const canSendForRonda = (ronda: any) => {
     const now = new Date();
     const apertura = new Date(ronda.fecha_apertura);
-    return ronda.estado === 'abierta' && now >= apertura;
+    return (ronda.estado === 'abierta' || (ronda.estado === 'programada' && now >= apertura)) && now >= apertura;
   };
 
   const getRondaAperturaText = (ronda: any) => {
@@ -872,7 +872,7 @@ const LicitacionAcceso = () => {
               )}
 
               {/* My questions per ronda */}
-              {rondas.map(ronda => {
+              {rondas.filter(ronda => ronda.estado !== 'programada' || new Date() >= new Date(ronda.fecha_apertura)).map(ronda => {
                 const isOpen = ronda.estado === 'abierta';
                 const drafts = getDraftsForRonda(ronda.id);
                 const sent = getSentForRonda(ronda.id);

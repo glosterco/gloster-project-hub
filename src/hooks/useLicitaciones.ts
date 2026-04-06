@@ -414,6 +414,26 @@ export const useLicitaciones = () => {
         description: "La licitación se ha creado exitosamente"
       });
 
+      // Send invitation emails to all oferentes
+      if (newLicitacion.oferentes_emails.length > 0) {
+        try {
+          console.log('📧 Sending invitation emails to oferentes...');
+          const { data: invResult, error: invError } = await supabase.functions.invoke('send-licitacion-invitation', {
+            body: {
+              licitacionId,
+              type: 'invitacion',
+            },
+          });
+          if (invError) {
+            console.error('Error sending invitations:', invError);
+          } else {
+            console.log('✅ Invitations sent:', invResult);
+          }
+        } catch (invErr) {
+          console.error('Error invoking send-licitacion-invitation:', invErr);
+        }
+      }
+
       return licitacionData;
     } catch (error) {
       console.error('Error in createLicitacion:', error);

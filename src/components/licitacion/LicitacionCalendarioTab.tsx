@@ -43,12 +43,14 @@ const LicitacionCalendarioTab: React.FC<Props> = ({ eventos, fechaCreacion, onUp
       ? startOfDay(new Date(sortedEventos[sortedEventos.length - 1].fecha))
       : addDays(creation, 30);
 
-    const start = addDays(new Date(Math.min(creation.getTime(), firstEvt.getTime())), -2);
-    const end = addDays(lastEvt, 5);
+    const rangeStart = new Date(Math.min(creation.getTime(), firstEvt.getTime(), now.getTime()));
+    const rangeEnd = new Date(Math.max(lastEvt.getTime(), now.getTime()));
+    const start = addDays(rangeStart, -2);
+    const end = addDays(rangeEnd, 5);
     const days = eachDayOfInterval({ start, end });
 
     return { timelineDays: days };
-  }, [fechaCreacion, sortedEventos]);
+  }, [fechaCreacion, sortedEventos, now]);
 
   const totalDays = timelineDays.length;
   const timelineWidth = totalDays * DAY_COL_WIDTH;
@@ -76,8 +78,7 @@ const LicitacionCalendarioTab: React.FC<Props> = ({ eventos, fechaCreacion, onUp
   const dayIndex = (date: Date) => differenceInDays(startOfDay(date), timelineDays[0]);
   const creationIdx = Math.min(Math.max(dayIndex(new Date(fechaCreacion)), 0), Math.max(totalDays - 1, 0));
   const todayIdxRaw = dayIndex(now);
-  const todayIdx = Math.min(Math.max(todayIdxRaw, 0), Math.max(totalDays - 1, 0));
-  const isTodayOutsideRange = todayIdxRaw < 0 || todayIdxRaw > totalDays - 1;
+  const todayIdx = todayIdxRaw;
 
   const getEventStatus = (evento: CalendarEvent) => {
     if (evento.estado === 'completado') return 'completado';

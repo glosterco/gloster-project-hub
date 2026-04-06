@@ -959,6 +959,7 @@ export type Database = {
         Row: {
           created_at: string
           estado: string
+          evento_id: number | null
           fecha_apertura: string
           fecha_cierre: string | null
           id: number
@@ -969,6 +970,7 @@ export type Database = {
         Insert: {
           created_at?: string
           estado?: string
+          evento_id?: number | null
           fecha_apertura?: string
           fecha_cierre?: string | null
           id?: never
@@ -979,6 +981,7 @@ export type Database = {
         Update: {
           created_at?: string
           estado?: string
+          evento_id?: number | null
           fecha_apertura?: string
           fecha_cierre?: string | null
           id?: never
@@ -987,6 +990,13 @@ export type Database = {
           titulo?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "LicitacionRondas_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "LicitacionEventos"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "LicitacionRondas_licitacion_id_fkey"
             columns: ["licitacion_id"]
@@ -1673,6 +1683,10 @@ export type Database = {
       is_project_related: {
         Args: { _project_id: number; _user_id: string }
         Returns: boolean
+      }
+      renumber_licitacion_rondas: {
+        Args: { _licitacion_id: number }
+        Returns: undefined
       }
       send_contractor_payment_reminders: { Args: never; Returns: undefined }
       set_config: {

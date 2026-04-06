@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,7 @@ interface Props {
 }
 
 const ROW_HEIGHT = 36;
-const LABEL_COL_WIDTH = 180;
+const LABEL_COL_WIDTH = 200;
 const DAY_COL_WIDTH = 32;
 
 const LicitacionCalendarioTab: React.FC<Props> = ({ eventos, fechaCreacion, onUpdateEvento, onCompleteEvento }) => {
@@ -26,6 +26,7 @@ const LicitacionCalendarioTab: React.FC<Props> = ({ eventos, fechaCreacion, onUp
   const [editTitle, setEditTitle] = useState('');
   const [editDate, setEditDate] = useState('');
   const [editDesc, setEditDesc] = useState('');
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const sortedEventos = useMemo(
     () => [...eventos].sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime()),
@@ -35,22 +36,22 @@ const LicitacionCalendarioTab: React.FC<Props> = ({ eventos, fechaCreacion, onUp
   const now = startOfDay(new Date());
 
   const { timelineDays } = useMemo(() => {
-    const creation = startOfDay(new Date(fechaCreacion));
-    const firstEvt = sortedEventos.length
-      ? startOfDay(new Date(sortedEventos[0].fecha))
-      : creation;
-    const lastEvt = sortedEventos.length
-      ? startOfDay(new Date(sortedEventos[sortedEventos.length - 1].fecha))
-      : addDays(creation, 30);
+    if (sortedEventos.length === 0) {
+      const creation = startOfDay(new Date(fechaCreacion));
+      const days = eachDayOfInterval({ start: addDays(creation, -2), end: addDays(creation, 30) });
+      return { timelineDays: days };
+    }
 
-    const rangeStart = new Date(Math.min(creation.getTime(), firstEvt.getTime(), now.getTime()));
-    const rangeEnd = new Date(Math.max(lastEvt.getTime(), now.getTime()));
-    const start = addDays(rangeStart, -2);
-    const end = addDays(rangeEnd, 5);
-    const days = eachDayOfInterval({ start, end });
+    const firstEvt = startOfDay(new Date(sortedEventos[0].fecha));
+    const lastEvt = startOfDay(new Date(sortedEventos[sortedEventos.length - 1].fecha));
+
+    // Timeline range: from first event - 3 days to last event + 5 days
+    const rangeStart = addDays(firstEvt, -3);
+    const rangeEnd = addDays(lastEvt, 5);
+    const days = eachDayOfInterval({ start: rangeStart, end: rangeEnd });
 
     return { timelineDays: days };
-  }, [fechaCreacion, sortedEventos, now]);
+  }, [fechaCreacion, sortedEventos]);
 
   const totalDays = timelineDays.length;
   const timelineWidth = totalDays * DAY_COL_WIDTH;
@@ -77,8 +78,8 @@ const LicitacionCalendarioTab: React.FC<Props> = ({ eventos, fechaCreacion, onUp
 
   const dayIndex = (date: Date) => differenceInDays(startOfDay(date), timelineDays[0]);
   const creationIdx = Math.min(Math.max(dayIndex(new Date(fechaCreacion)), 0), Math.max(totalDays - 1, 0));
-  const todayIdxRaw = dayIndex(now);
-  const todayIdx = todayIdxRaw;
+  const todayIdx = dayIndex(now);
+  const isTodayInRange = todayIdx >= 0 && todayIdx < totalDays;
 
   const getEventStatus = (evento: CalendarEvent) => {
     if (evento.estado === 'completado') return 'completado';
@@ -119,6 +120,9 @@ const LicitacionCalendarioTab: React.FC<Props> = ({ eventos, fechaCreacion, onUp
     setEditingEvento(null);
   };
 
+  // Header height for months + days
+  const HEADER_HEIGHT = 52; // 24 + 28
+
   return (
     <div className="space-y-6">
       <Card>
@@ -128,14 +132,18 @@ const LicitacionCalendarioTab: React.FC<Props> = ({ eventos, fechaCreacion, onUp
             Carta Gantt del Proceso
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-0 overflow-x-auto">
+        <CardContent className="p-0">
           {sortedEventos.length === 0 ? (
             <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
               No hay eventos programados
             </div>
           ) : (
-            <div className="flex min-w-max">
-              <div className="shrink-0 border-r border-muted z-10 bg-background" style={{ width: LABEL_COL_WIDTH }}>
+            <div className="relative flex" style={{ minHeight: HEADER_HEIGHT + sortedEventos.length * ROW_HEIGHT }}>
+              {/* Fixed activity labels column */}
+              <div
+                className="shrink-0 border-r border-muted bg-background z-20 sticky left-0"
+                style={{ width: LABEL_COL_WIDTH }}
+              >
                 <div className="border-b border-muted" style={{ height: 24 }} />
                 <div className="border-b border-muted flex items-end px-2 text-[10px] font-medium text-muted-foreground" style={{ height: 28 }}>
                   Actividad
@@ -156,134 +164,148 @@ const LicitacionCalendarioTab: React.FC<Props> = ({ eventos, fechaCreacion, onUp
                 })}
               </div>
 
-              <div style={{ width: timelineWidth }} className="relative">
-                <div className="flex border-b border-muted" style={{ height: 24 }}>
-                  {monthGroups.map((mg, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center justify-center text-[10px] font-semibold text-foreground border-r border-muted/60 capitalize"
-                      style={{ width: mg.span * DAY_COL_WIDTH }}
-                    >
-                      {mg.label}
-                    </div>
-                  ))}
-                </div>
-
-                <div className="flex border-b border-muted" style={{ height: 28 }}>
-                  {timelineDays.map((day, i) => {
-                    const isWeekend = day.getDay() === 0 || day.getDay() === 6;
-                    return (
+              {/* Scrollable timeline */}
+              <div className="overflow-x-auto flex-1" ref={scrollContainerRef}>
+                <div style={{ width: timelineWidth }} className="relative">
+                  {/* Month headers */}
+                  <div className="flex border-b border-muted" style={{ height: 24 }}>
+                    {monthGroups.map((mg, i) => (
                       <div
                         key={i}
-                        className={`flex flex-col items-center justify-end pb-0.5 text-center border-r border-muted/30 ${
-                          isWeekend ? 'bg-muted/20' : ''
-                        }`}
-                        style={{ width: DAY_COL_WIDTH }}
+                        className="flex items-center justify-center text-[10px] font-semibold text-foreground border-r border-muted/60 capitalize"
+                        style={{ width: mg.span * DAY_COL_WIDTH }}
                       >
-                        <span className="text-[8px] uppercase text-muted-foreground">
-                          {format(day, 'EEE', { locale: es }).slice(0, 2)}
-                        </span>
-                        <span className="text-[10px] leading-none text-foreground">
-                          {format(day, 'd')}
-                        </span>
+                        {mg.label}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Day headers */}
+                  <div className="flex border-b border-muted" style={{ height: 28 }}>
+                    {timelineDays.map((day, i) => {
+                      const isWeekend = day.getDay() === 0 || day.getDay() === 6;
+                      const isToday = differenceInDays(day, now) === 0;
+                      return (
+                        <div
+                          key={i}
+                          className={`flex flex-col items-center justify-end pb-0.5 text-center border-r border-muted/30 ${
+                            isWeekend ? 'bg-muted/20' : ''
+                          } ${isToday ? 'bg-destructive/10' : ''}`}
+                          style={{ width: DAY_COL_WIDTH }}
+                        >
+                          <span className="text-[8px] uppercase text-muted-foreground">
+                            {format(day, 'EEE', { locale: es }).slice(0, 2)}
+                          </span>
+                          <span className={`text-[10px] leading-none ${isToday ? 'text-destructive font-bold' : 'text-foreground'}`}>
+                            {format(day, 'd')}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Event rows */}
+                  {sortedEventos.map((evento, idx) => {
+                    const status = getEventStatus(evento);
+                    const colors = statusColors[status];
+                    const evtIdx = Math.min(Math.max(dayIndex(new Date(evento.fecha)), 0), totalDays - 1);
+                    const barStartIdx = Math.max(creationIdx, 0);
+                    const barEndIdx = Math.max(evtIdx, barStartIdx);
+                    const barLeft = barStartIdx * DAY_COL_WIDTH;
+                    const barWidth = Math.max((barEndIdx - barStartIdx + 1) * DAY_COL_WIDTH - 4, 8);
+
+                    return (
+                      <div
+                        key={idx}
+                        className="relative flex items-center border-b border-muted/30"
+                        style={{ height: ROW_HEIGHT }}
+                      >
+                        {/* Weekend shading */}
+                        {timelineDays.map((day, di) => {
+                          const isWeekend = day.getDay() === 0 || day.getDay() === 6;
+                          return isWeekend ? (
+                            <div
+                              key={di}
+                              className="absolute top-0 bottom-0 bg-muted/10"
+                              style={{ left: di * DAY_COL_WIDTH, width: DAY_COL_WIDTH }}
+                            />
+                          ) : null;
+                        })}
+
+                        {/* Bar background */}
+                        <div
+                          className={`absolute rounded-sm ${colors.bar} opacity-25`}
+                          style={{
+                            left: barLeft + 2,
+                            width: barWidth,
+                            top: ROW_HEIGHT / 2 - 5,
+                            height: 10,
+                          }}
+                        />
+
+                        {/* Bar foreground (last 3 days) */}
+                        <div
+                          className={`absolute rounded-sm ${colors.bar} opacity-60`}
+                          style={{
+                            left: Math.max(barLeft + barWidth - 3 * DAY_COL_WIDTH, barLeft + 2),
+                            width: Math.min(3 * DAY_COL_WIDTH, barWidth),
+                            top: ROW_HEIGHT / 2 - 5,
+                            height: 10,
+                          }}
+                        />
+
+                        {/* Diamond milestone marker */}
+                        <div
+                          className={`absolute z-10 w-3 h-3 ${colors.dot} border border-background shadow-sm`}
+                          style={{
+                            left: evtIdx * DAY_COL_WIDTH + DAY_COL_WIDTH / 2 - 6,
+                            top: ROW_HEIGHT / 2 - 6,
+                            transform: 'rotate(45deg)',
+                          }}
+                        />
+
+                        {/* Icons for special events */}
+                        {(evento.requiereArchivos || evento.esRondaPreguntas) && (
+                          <div
+                            className="absolute z-10 flex items-center gap-0.5"
+                            style={{
+                              left: evtIdx * DAY_COL_WIDTH + DAY_COL_WIDTH / 2 + 8,
+                              top: ROW_HEIGHT / 2 - 6,
+                            }}
+                          >
+                            {evento.requiereArchivos && <FileText className="h-3 w-3 text-muted-foreground" />}
+                            {evento.esRondaPreguntas && <MessageSquare className="h-3 w-3 text-muted-foreground" />}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
-                </div>
 
-                {sortedEventos.map((evento, idx) => {
-                  const status = getEventStatus(evento);
-                  const colors = statusColors[status];
-                  const evtIdx = Math.min(Math.max(dayIndex(new Date(evento.fecha)), 0), totalDays - 1);
-                  const barStartIdx = Math.max(creationIdx, 0);
-                  const barEndIdx = Math.max(evtIdx, barStartIdx);
-                  const barLeft = barStartIdx * DAY_COL_WIDTH;
-                  const barWidth = Math.max((barEndIdx - barStartIdx + 1) * DAY_COL_WIDTH - 4, 8);
-
-                  return (
+                  {/* TODAY vertical red line */}
+                  {isTodayInRange && (
                     <div
-                      key={idx}
-                      className="relative flex items-center border-b border-muted/30"
-                      style={{ height: ROW_HEIGHT }}
+                      className="absolute z-30 pointer-events-none"
+                      style={{
+                        left: todayIdx * DAY_COL_WIDTH + DAY_COL_WIDTH / 2,
+                        top: 0,
+                        bottom: 0,
+                        width: 0,
+                      }}
                     >
-                      {timelineDays.map((day, di) => {
-                        const isWeekend = day.getDay() === 0 || day.getDay() === 6;
-                        return (
-                          <div
-                            key={di}
-                            className={`absolute top-0 bottom-0 border-r border-muted/15 ${isWeekend ? 'bg-muted/10' : ''}`}
-                            style={{ left: di * DAY_COL_WIDTH, width: DAY_COL_WIDTH }}
-                          />
-                        );
-                      })}
-
-                      <div
-                        className={`absolute rounded-sm ${colors.bar} opacity-25`}
-                        style={{
-                          left: barLeft + 2,
-                          width: barWidth,
-                          top: ROW_HEIGHT / 2 - 5,
-                          height: 10,
-                        }}
-                      />
-
-                      <div
-                        className={`absolute rounded-sm ${colors.bar} opacity-60`}
-                        style={{
-                          left: Math.max(barLeft + barWidth - 3 * DAY_COL_WIDTH, barLeft + 2),
-                          width: Math.min(3 * DAY_COL_WIDTH, barWidth),
-                          top: ROW_HEIGHT / 2 - 5,
-                          height: 10,
-                        }}
-                      />
-
-                      <div
-                        className={`absolute z-10 w-3 h-3 ${colors.dot} border border-background shadow-sm`}
-                        style={{
-                          left: evtIdx * DAY_COL_WIDTH + DAY_COL_WIDTH / 2 - 6,
-                          top: ROW_HEIGHT / 2 - 6,
-                          transform: 'rotate(45deg)',
-                        }}
-                      />
-
-                      {(evento.requiereArchivos || evento.esRondaPreguntas) && (
-                        <div
-                          className="absolute z-10 flex items-center gap-0.5"
-                          style={{
-                            left: evtIdx * DAY_COL_WIDTH + DAY_COL_WIDTH / 2 + 8,
-                            top: ROW_HEIGHT / 2 - 6,
-                          }}
-                        >
-                          {evento.requiereArchivos && <FileText className="h-3 w-3 text-muted-foreground" />}
-                          {evento.esRondaPreguntas && <MessageSquare className="h-3 w-3 text-muted-foreground" />}
-                        </div>
-                      )}
+                      <div className="absolute top-0 bottom-0 w-0 border-l-2 border-destructive" />
+                      <div className="absolute top-0 -translate-x-1/2 bg-destructive text-destructive-foreground text-[9px] font-bold px-1.5 py-0.5 rounded-b whitespace-nowrap">
+                        Hoy
+                      </div>
                     </div>
-                  );
-                })}
-
-                {totalDays > 0 && (
-                  <div
-                    className="absolute z-20 pointer-events-none"
-                    style={{
-                      left: todayIdx * DAY_COL_WIDTH + DAY_COL_WIDTH / 2,
-                      top: 0,
-                      bottom: 0,
-                      width: 0,
-                    }}
-                  >
-                    <div className="h-full border-l-2 border-destructive" />
-                    <div className="absolute -top-0 -translate-x-1/2 bg-destructive text-destructive-foreground text-[9px] font-bold px-1.5 py-0.5 rounded-b whitespace-nowrap">
-                      Hoy
-                    </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           )}
         </CardContent>
       </Card>
 
+      {/* Event details list */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base font-rubik">Detalle de Eventos</CardTitle>
@@ -338,6 +360,7 @@ const LicitacionCalendarioTab: React.FC<Props> = ({ eventos, fechaCreacion, onUp
         </CardContent>
       </Card>
 
+      {/* Edit event dialog */}
       <Dialog open={!!editingEvento} onOpenChange={(open) => !open && setEditingEvento(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>

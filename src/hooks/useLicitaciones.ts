@@ -279,6 +279,7 @@ export const useLicitaciones = () => {
           mensaje_oferentes: newLicitacion.mensaje_oferentes,
           especificaciones: newLicitacion.especificaciones,
           gastos_generales: newLicitacion.gastos_generales,
+          utilidades: newLicitacion.utilidades,
           iva_porcentaje: newLicitacion.iva_porcentaje,
           mandante_id: mandanteId,
           estado: 'abierta'

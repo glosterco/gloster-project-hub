@@ -153,11 +153,13 @@ const LicitacionDetail = () => {
             <LicitacionPreguntasTab
               rondas={rondas}
               preguntas={preguntas}
+              licitacionId={licitacion.id}
               onCreateRonda={createRonda}
               onCloseRonda={closeRonda}
               onOpenRonda={openRonda}
               onAnswerPregunta={answerPregunta}
               onPublishPreguntas={publishPreguntas}
+              onRefetch={refetch}
             />
           </TabsContent>
 

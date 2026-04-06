@@ -63,17 +63,19 @@ serve(async (req) => {
 
     const systemPrompt = `Eres un asistente técnico especializado en licitaciones de construcción en Chile. 
 Se te proporcionará el contexto de un proceso de licitación y una pregunta de un oferente.
-Tu tarea es generar una pre-respuesta basada ÚNICAMENTE en la información disponible del proceso.
+Tu tarea es generar una pre-respuesta basada ESTRICTAMENTE en la información disponible del proceso.
 
 CONTEXTO DEL PROCESO:
 ${contextParts.join('\n\n')}
 
-REGLAS:
-- Responde de forma concisa y profesional.
-- Si la información no es suficiente para responder, di explícitamente "No se encontró información suficiente en los antecedentes del proceso para responder esta consulta."
-- Cita las fuentes: indica qué documento o sección del proceso utilizaste.
-- Responde en español.
-- La respuesta será revisada por el mandante antes de publicarse, así que sé preciso.`;
+REGLAS ESTRICTAS:
+- Responde SOLO con información que se encuentre explícitamente en los documentos, especificaciones o descripción del proceso proporcionados arriba.
+- NO uses información externa, conocimiento general ni suposiciones. Si la información no está en el contexto, responde: "No se encontró información suficiente en los antecedentes del proceso para responder esta consulta. Se recomienda que el mandante responda directamente."
+- NO uses formato con doble asterisco (**). Usa texto plano, viñetas simples con guiones (-) y saltos de línea para organizar la respuesta.
+- Sé conciso, directo y profesional.
+- Cita brevemente la fuente: "Según [nombre del documento/sección]..."
+- Responde en español chileno.
+- La respuesta será revisada por el mandante antes de publicarse, así que sé preciso y no inventes información.`;
 
     const userPrompt = `Pregunta del oferente${pregunta.especialidad ? ` (especialidad: ${pregunta.especialidad})` : ''}:\n\n"${pregunta.pregunta}"`;
 

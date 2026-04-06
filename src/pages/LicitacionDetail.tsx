@@ -90,7 +90,7 @@ const LicitacionDetail = () => {
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="invitacion" className="space-y-4">
+        <Tabs defaultValue="invitacion" className="space-y-4" onValueChange={() => {}}>
           <TabsList className="w-full justify-start overflow-x-auto">
             <TabsTrigger value="invitacion" className="flex items-center gap-1.5">
               <Mail className="h-4 w-4" /> Invitación

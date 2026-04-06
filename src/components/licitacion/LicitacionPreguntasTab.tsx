@@ -102,11 +102,11 @@ const LicitacionPreguntasTab: React.FC<Props> = ({
             </Badge>
           </div>
           {/* Oferente attachment */}
-          {(p as any).adjunto_url && (
-            <a href={(p as any).adjunto_url} target="_blank" rel="noopener noreferrer"
+          {p.adjunto_url && (
+            <a href={p.adjunto_url} target="_blank" rel="noopener noreferrer"
               className="inline-flex items-center gap-1 mt-1 text-xs text-primary hover:underline">
               <Paperclip className="h-3 w-3" />
-              {(p as any).adjunto_nombre || 'Archivo adjunto'}
+              {p.adjunto_nombre || 'Archivo adjunto'}
               <ExternalLink className="h-2.5 w-2.5" />
             </a>
           )}
@@ -158,11 +158,11 @@ const LicitacionPreguntasTab: React.FC<Props> = ({
         <div className="bg-muted/50 rounded-md p-2">
           <p className="text-xs font-medium text-muted-foreground mb-0.5">Respuesta:</p>
           <p className="text-sm">{p.respuesta}</p>
-          {(p as any).respuesta_adjunto_url && (
-            <a href={(p as any).respuesta_adjunto_url} target="_blank" rel="noopener noreferrer"
+          {p.respuesta_adjunto_url && (
+            <a href={p.respuesta_adjunto_url} target="_blank" rel="noopener noreferrer"
               className="inline-flex items-center gap-1 mt-1 text-xs text-primary hover:underline">
               <FileText className="h-3 w-3" />
-              {(p as any).respuesta_adjunto_nombre || 'Archivo adjunto'}
+              {p.respuesta_adjunto_nombre || 'Archivo adjunto'}
               <ExternalLink className="h-2.5 w-2.5" />
             </a>
           )}

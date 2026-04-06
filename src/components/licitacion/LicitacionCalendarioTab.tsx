@@ -52,8 +52,8 @@ const LicitacionCalendarioTab: React.FC<Props> = ({ eventos, fechaCreacion, onUp
       : creation;
     // Start from the earliest of creation or first event
     const start = addDays(new Date(Math.min(creation.getTime(), firstEvt.getTime())), -2);
-    // End at last event + padding (don't extend to "now" if events are old)
-    const end = addDays(lastEvt, 5);
+    // End at the latest of last event or today, plus padding
+    const end = addDays(new Date(Math.max(lastEvt.getTime(), now.getTime())), 3);
     const days = eachDayOfInterval({ start, end });
     return { timelineStart: start, timelineDays: days };
   }, [fechaCreacion, sortedEventos]);

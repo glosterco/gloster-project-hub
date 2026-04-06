@@ -3,6 +3,24 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import type { Licitacion } from '@/hooks/useLicitaciones';
 
+const getCurrentMandanteId = async (userId: string) => {
+  const { data: mandanteData } = await supabase
+    .from('Mandantes')
+    .select('id')
+    .eq('auth_user_id', userId)
+    .maybeSingle();
+
+  if (mandanteData?.id) return mandanteData.id;
+
+  const { data: mandanteUserData } = await supabase
+    .from('mandante_users')
+    .select('mandante_id')
+    .eq('auth_user_id', userId)
+    .maybeSingle();
+
+  return mandanteUserData?.mandante_id ?? null;
+};
+
 export interface Ronda {
   id: number;
   licitacion_id: number;
@@ -92,6 +110,9 @@ export const useLicitacionDetail = (licitacionId: number | null) => {
     if (!licitacionId) return;
     setLoading(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const mandanteId = user ? await getCurrentMandanteId(user.id) : null;
+
       const { data, error } = await supabase
         .from('Licitaciones')
         .select(`
@@ -102,6 +123,7 @@ export const useLicitacionDetail = (licitacionId: number | null) => {
           LicitacionItems(id, descripcion, unidad, cantidad, precio_unitario, precio_total, orden, agregado_por_oferente, oferente_email)
         `)
         .eq('id', licitacionId)
+        .eq('mandante_id', mandanteId ?? -1)
         .single();
 
       if (error) throw error;
@@ -120,6 +142,7 @@ export const useLicitacionDetail = (licitacionId: number | null) => {
         created_at: data.created_at,
         updated_at: data.updated_at,
         gastos_generales: data.gastos_generales,
+        utilidades: data.utilidades,
         iva_porcentaje: data.iva_porcentaje,
         oferentes: oferentesData.map((o: any) => ({ id: o.id, email: o.email })),
         eventos: (data.LicitacionEventos || []).map((e: any) => ({

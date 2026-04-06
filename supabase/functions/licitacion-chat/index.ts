@@ -12,16 +12,13 @@ Debes recopilar la siguiente información para crear la licitación:
 1. **Nombre de la licitación** (obligatorio)
 2. **Descripción del alcance** (obligatorio)
 3. **Especificaciones técnicas** (opcional pero recomendado)
-4. **Emails de oferentes** a invitar (lista de correos)
+4. **Emails de oferentes** a invitar (lista de correos; si el usuario incluye empresa + correo, conserva ambos usando el formato "Empresa <correo@dominio.com>")
 5. **Mensaje para los oferentes** (texto que recibirán los oferentes invitados)
 6. **Calendario de eventos** (fechas importantes como visita a terreno, ronda de consultas, entrega de ofertas, etc.)
    - Para cada evento: fecha, título, descripción, y si requiere que los oferentes envíen archivos
    - Marca explícitamente si un evento es una "ronda de consultas" con el campo esRondaPreguntas=true. Solo los eventos de tipo "ronda de consultas" generan secciones de preguntas para los oferentes.
    - Los eventos de "entrega de ofertas" NO son rondas de consultas, son simplemente hitos donde los oferentes envían su oferta final.
-7. **Itemizado/Presupuesto con Gastos Generales, Utilidades e IVA**: Pregunta al usuario si desea incluir un itemizado base. Si sí, recoge las partidas (descripción, unidad, cantidad, precio unitario). En el MISMO mensaje donde preguntas por el itemizado, pregunta también:
-   - Si el proceso incluirá gastos generales (GG) y utilidades, y en qué porcentaje.
-   - Si se incluye IVA (19% estándar en Chile) o un porcentaje diferente. 
-   Esto evita alargar innecesariamente la conversación.
+7. **Itemizado/Presupuesto con Gastos Generales, Utilidades e IVA**: Pregunta al usuario si desea incluir un itemizado base. Si sí, recoge las partidas (descripción, unidad, cantidad, precio unitario). NO preguntes proactivamente por GG, utilidades o IVA. Solo incorpóralos si el mandante los menciona explícitamente.
 
 ## Flujo de la conversación:
 
@@ -40,7 +37,7 @@ Cuando el usuario confirme que quiere crear la licitación, responde con EXACTAM
   "descripcion": "string",
   "especificaciones": "string o vacío",
   "mensaje_oferentes": "string o vacío",
-  "oferentes_emails": ["email1@example.com"],
+  "oferentes_emails": ["Empresa Ejemplo <email1@example.com>"],
   "calendario_eventos": [
     {
       "fecha": "2024-01-15T00:00:00.000Z",
@@ -75,7 +72,9 @@ IMPORTANTE:
 - El campo "esRondaPreguntas" DEBE ser true SOLO para eventos de tipo ronda de consultas. La entrega de ofertas NO es una ronda de consultas.
 - Siempre muestra un resumen antes de pedir confirmación.
 - Responde siempre en español chileno.
-- Cuando preguntes por el itemizado, incluye en el MISMO mensaje las preguntas de gastos generales, utilidades e IVA para evitar alargar la conversación.`;
+- Si el usuario menciona empresa junto al correo del oferente, consérvala en cada elemento de "oferentes_emails".
+- No vuelvas a preguntar por GG, utilidades o IVA salvo que el usuario los haya mencionado explícitamente.
+- Si el usuario sí los menciona, incorpóralos directamente al JSON final.`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {

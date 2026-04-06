@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { normalizeChatCalendarEvents, normalizeChatItems, normalizePercentNumber, parseOferenteEntries } from '@/utils/licitacionCreation';
 
 const convertFileToBase64 = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -32,6 +33,7 @@ export interface CalendarEvent {
 export interface Oferente {
   id?: number;
   email: string;
+  nombre_empresa?: string | null;
 }
 
 export interface Documento {
@@ -65,6 +67,7 @@ export interface Licitacion {
   created_at: string;
   updated_at: string;
   gastos_generales?: number;
+  utilidades?: number;
   iva_porcentaje?: number;
   oferentes?: Oferente[];
   eventos?: CalendarEvent[];
@@ -87,6 +90,24 @@ export interface NewLicitacion {
   iva_porcentaje?: number;
 }
 
+const getCurrentMandanteId = async (userId: string) => {
+  const { data: mandanteData } = await supabase
+    .from('Mandantes')
+    .select('id')
+    .eq('auth_user_id', userId)
+    .maybeSingle();
+
+  if (mandanteData?.id) return mandanteData.id;
+
+  const { data: mandanteUserData } = await supabase
+    .from('mandante_users')
+    .select('mandante_id')
+    .eq('auth_user_id', userId)
+    .maybeSingle();
+
+  return mandanteUserData?.mandante_id ?? null;
+};
+
 export const useLicitaciones = () => {
   const { toast } = useToast();
   const [licitaciones, setLicitaciones] = useState<Licitacion[]>([]);
@@ -103,25 +124,10 @@ export const useLicitaciones = () => {
         return;
       }
 
-      // Buscar el mandante asociado al usuario
-      const { data: mandanteData } = await supabase
-        .from('Mandantes')
-        .select('id')
-        .eq('auth_user_id', user.id)
-        .maybeSingle();
-
-      if (!mandanteData) {
-        // Intentar buscar en mandante_users
-        const { data: mandanteUserData } = await supabase
-          .from('mandante_users')
-          .select('mandante_id')
-          .eq('auth_user_id', user.id)
-          .maybeSingle();
-
-        if (!mandanteUserData) {
-          setLicitaciones([]);
-          return;
-        }
+      const mandanteId = await getCurrentMandanteId(user.id);
+      if (!mandanteId) {
+        setLicitaciones([]);
+        return;
       }
 
       // Obtener las licitaciones con sus relaciones
@@ -131,7 +137,8 @@ export const useLicitaciones = () => {
           *,
           LicitacionOferentes (
             id,
-            email
+            email,
+            nombre_empresa
           ),
           LicitacionEventos (
             id,
@@ -159,6 +166,7 @@ export const useLicitaciones = () => {
             orden
           )
         `)
+        .eq('mandante_id', mandanteId)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -183,10 +191,12 @@ export const useLicitaciones = () => {
         created_at: item.created_at,
         updated_at: item.updated_at,
         gastos_generales: item.gastos_generales,
+        utilidades: item.utilidades,
         iva_porcentaje: item.iva_porcentaje,
         oferentes: (item.LicitacionOferentes || []).map((o: any) => ({
           id: o.id,
-          email: o.email
+          email: o.email,
+          nombre_empresa: o.nombre_empresa,
         })),
         eventos: (item.LicitacionEventos || []).map((e: any) => ({
           id: e.id,
@@ -241,25 +251,7 @@ export const useLicitaciones = () => {
         return null;
       }
 
-      // Buscar el mandante asociado al usuario
-      const { data: mandanteData } = await supabase
-        .from('Mandantes')
-        .select('id')
-        .eq('auth_user_id', user.id)
-        .maybeSingle();
-
-      let mandanteId = mandanteData?.id;
-
-      if (!mandanteId) {
-        // Intentar buscar en mandante_users
-        const { data: mandanteUserData } = await supabase
-          .from('mandante_users')
-          .select('mandante_id')
-          .eq('auth_user_id', user.id)
-          .maybeSingle();
-
-        mandanteId = mandanteUserData?.mandante_id;
-      }
+      const mandanteId = await getCurrentMandanteId(user.id);
 
       if (!mandanteId) {
         toast({
@@ -270,6 +262,13 @@ export const useLicitaciones = () => {
         return null;
       }
 
+      const parsedOferentes = parseOferenteEntries(newLicitacion.oferentes_emails);
+      const normalizedEventos = normalizeChatCalendarEvents(newLicitacion.calendario_eventos);
+      const normalizedItems = normalizeChatItems(newLicitacion.items || []);
+      const gastosGenerales = normalizePercentNumber(newLicitacion.gastos_generales, 0);
+      const utilidades = normalizePercentNumber(newLicitacion.utilidades, 0);
+      const ivaPorcentaje = normalizePercentNumber(newLicitacion.iva_porcentaje, 19);
+
       // Crear la licitación principal
       const { data: licitacionData, error: licitacionError } = await supabase
         .from('Licitaciones')
@@ -278,9 +277,9 @@ export const useLicitaciones = () => {
           descripcion: newLicitacion.descripcion,
           mensaje_oferentes: newLicitacion.mensaje_oferentes,
           especificaciones: newLicitacion.especificaciones,
-          gastos_generales: newLicitacion.gastos_generales,
-          utilidades: newLicitacion.utilidades,
-          iva_porcentaje: newLicitacion.iva_porcentaje,
+          gastos_generales: gastosGenerales,
+          utilidades,
+          iva_porcentaje: ivaPorcentaje,
           mandante_id: mandanteId,
           estado: 'abierta'
         }])
@@ -300,10 +299,11 @@ export const useLicitaciones = () => {
       const licitacionId = licitacionData.id;
 
       // Insertar oferentes
-      if (newLicitacion.oferentes_emails.length > 0) {
-        const oferentesData = newLicitacion.oferentes_emails.map(email => ({
+      if (parsedOferentes.length > 0) {
+        const oferentesData = parsedOferentes.map(({ email, nombreEmpresa }) => ({
           licitacion_id: licitacionId,
-          email
+          email,
+          nombre_empresa: nombreEmpresa,
         }));
 
         const { error: oferentesError } = await supabase
@@ -316,8 +316,8 @@ export const useLicitaciones = () => {
       }
 
       // Insertar eventos del calendario
-      if (newLicitacion.calendario_eventos.length > 0) {
-        const eventosData = newLicitacion.calendario_eventos.map(evento => ({
+      if (normalizedEventos.length > 0) {
+        const eventosData = normalizedEventos.map(evento => ({
           licitacion_id: licitacionId,
           fecha: evento.fecha,
           titulo: evento.titulo,
@@ -326,12 +326,35 @@ export const useLicitaciones = () => {
           es_ronda_preguntas: evento.esRondaPreguntas || false
         }));
 
-        const { error: eventosError } = await supabase
+        const { data: insertedEventos, error: eventosError } = await supabase
           .from('LicitacionEventos')
-          .insert(eventosData);
+          .insert(eventosData)
+          .select('id, titulo, fecha, es_ronda_preguntas');
 
         if (eventosError) {
           console.error('Error creating eventos:', eventosError);
+        } else {
+          const rondasData = (insertedEventos || [])
+            .filter((evento: any) => evento.es_ronda_preguntas)
+            .map((evento: any, index: number) => ({
+              licitacion_id: licitacionId,
+              evento_id: evento.id,
+              numero: index + 1,
+              titulo: evento.titulo,
+              estado: 'programada',
+              fecha_apertura: evento.fecha,
+              fecha_cierre: null,
+            }));
+
+          if (rondasData.length > 0) {
+            const { error: rondasError } = await supabase
+              .from('LicitacionRondas')
+              .insert(rondasData);
+
+            if (rondasError) {
+              console.error('Error creating rondas:', rondasError);
+            }
+          }
         }
       }
 
@@ -390,8 +413,8 @@ export const useLicitaciones = () => {
       }
 
       // Insertar items
-      if (newLicitacion.items && newLicitacion.items.length > 0) {
-        const itemsData = newLicitacion.items.map(item => ({
+      if (normalizedItems.length > 0) {
+        const itemsData = normalizedItems.map(item => ({
           licitacion_id: licitacionId,
           descripcion: item.descripcion,
           unidad: item.unidad,
@@ -416,7 +439,7 @@ export const useLicitaciones = () => {
       });
 
       // Send invitation emails to all oferentes
-      if (newLicitacion.oferentes_emails.length > 0) {
+      if (parsedOferentes.length > 0) {
         try {
           console.log('📧 Sending invitation emails to oferentes...');
           const { data: invResult, error: invError } = await supabase.functions.invoke('send-licitacion-invitation', {

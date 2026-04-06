@@ -167,6 +167,7 @@ const LicitacionDetail = () => {
             <LicitacionItemizadoTab 
               items={baseItems}
               gastosGenerales={licitacion.gastos_generales}
+              utilidades={licitacion.utilidades}
               ivaPorcentaje={licitacion.iva_porcentaje}
             />
           </TabsContent>

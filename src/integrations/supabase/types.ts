@@ -570,6 +570,7 @@ export type Database = {
           nombre: string
           updated_at: string | null
           url_acceso: string | null
+          utilidades: number | null
         }
         Insert: {
           created_at?: string | null
@@ -588,6 +589,7 @@ export type Database = {
           nombre: string
           updated_at?: string | null
           url_acceso?: string | null
+          utilidades?: number | null
         }
         Update: {
           created_at?: string | null
@@ -606,6 +608,7 @@ export type Database = {
           nombre?: string
           updated_at?: string | null
           url_acceso?: string | null
+          utilidades?: number | null
         }
         Relationships: [
           {

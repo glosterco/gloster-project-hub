@@ -1,0 +1,1 @@
+ALTER TABLE public."Licitaciones" ADD COLUMN IF NOT EXISTS utilidades numeric DEFAULT 0;

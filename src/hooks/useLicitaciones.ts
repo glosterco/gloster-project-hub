@@ -83,6 +83,7 @@ export interface NewLicitacion {
   documentFiles?: File[];
   items?: LicitacionItem[];
   gastos_generales?: number;
+  utilidades?: number;
   iva_porcentaje?: number;
 }
 

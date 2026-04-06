@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { CalendarEvent } from '@/hooks/useLicitaciones';
-import { format, differenceInDays, isBefore } from 'date-fns';
+import { format, differenceInDays, isBefore, addDays, startOfWeek, endOfWeek, eachWeekOfInterval, eachDayOfInterval } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Calendar, FileText, Pencil, CheckCircle2, MessageSquare } from 'lucide-react';
 
@@ -23,26 +23,79 @@ const LicitacionCalendarioTab: React.FC<Props> = ({ eventos, fechaCreacion, onUp
   const [editDate, setEditDate] = useState('');
   const [editDesc, setEditDesc] = useState('');
 
-  const sortedEventos = [...eventos].sort((a, b) =>
-    new Date(a.fecha).getTime() - new Date(b.fecha).getTime()
+  const sortedEventos = useMemo(() =>
+    [...eventos].sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime()),
+    [eventos]
   );
 
   const now = new Date();
-  const startDate = new Date(fechaCreacion);
-  const endDate = sortedEventos.length > 0
-    ? new Date(Math.max(
-        new Date(sortedEventos[sortedEventos.length - 1].fecha).getTime(),
-        now.getTime() + 7 * 24 * 60 * 60 * 1000
-      ))
-    : new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-  const totalDays = Math.max(differenceInDays(endDate, startDate), 1);
 
-  const getBarPosition = (fecha: string) => {
-    const days = differenceInDays(new Date(fecha), startDate);
-    return Math.min(Math.max((days / totalDays) * 100, 2), 98);
+  // Calculate timeline range
+  const timelineRange = useMemo(() => {
+    const start = new Date(fechaCreacion);
+    start.setDate(start.getDate() - 2); // small padding
+    const lastEvent = sortedEventos.length > 0
+      ? new Date(sortedEventos[sortedEventos.length - 1].fecha)
+      : addDays(now, 30);
+    const end = addDays(new Date(Math.max(lastEvent.getTime(), now.getTime())), 7);
+    return { start, end };
+  }, [fechaCreacion, sortedEventos, now]);
+
+  const totalDays = Math.max(differenceInDays(timelineRange.end, timelineRange.start), 1);
+
+  // Generate week columns for the header
+  const weeks = useMemo(() => {
+    return eachWeekOfInterval(
+      { start: timelineRange.start, end: timelineRange.end },
+      { weekStartsOn: 1 }
+    );
+  }, [timelineRange]);
+
+  // Generate month spans for the top header
+  const monthSpans = useMemo(() => {
+    const months: { label: string; startPct: number; widthPct: number }[] = [];
+    let currentMonth = -1;
+    let currentYear = -1;
+    let monthStart = 0;
+
+    const days = eachDayOfInterval({ start: timelineRange.start, end: timelineRange.end });
+    days.forEach((day, idx) => {
+      const m = day.getMonth();
+      const y = day.getFullYear();
+      if (m !== currentMonth || y !== currentYear) {
+        if (currentMonth !== -1) {
+          const pctStart = (monthStart / totalDays) * 100;
+          const pctWidth = ((idx - monthStart) / totalDays) * 100;
+          months.push({
+            label: format(new Date(currentYear, currentMonth, 1), 'MMMM yyyy', { locale: es }),
+            startPct: pctStart,
+            widthPct: pctWidth,
+          });
+        }
+        currentMonth = m;
+        currentYear = y;
+        monthStart = idx;
+      }
+    });
+    // Last month
+    if (currentMonth !== -1) {
+      const pctStart = (monthStart / totalDays) * 100;
+      const pctWidth = ((days.length - monthStart) / totalDays) * 100;
+      months.push({
+        label: format(new Date(currentYear, currentMonth, 1), 'MMMM yyyy', { locale: es }),
+        startPct: pctStart,
+        widthPct: pctWidth,
+      });
+    }
+    return months;
+  }, [timelineRange, totalDays]);
+
+  const getPositionPct = (date: Date) => {
+    const days = differenceInDays(date, timelineRange.start);
+    return Math.min(Math.max((days / totalDays) * 100, 0), 100);
   };
 
-  const todayPosition = Math.min(Math.max((differenceInDays(now, startDate) / totalDays) * 100, 0), 100);
+  const todayPct = getPositionPct(now);
 
   const getEventStatus = (evento: CalendarEvent) => {
     if (evento.estado === 'completado') return 'completado';
@@ -76,20 +129,8 @@ const LicitacionCalendarioTab: React.FC<Props> = ({ eventos, fechaCreacion, onUp
     setEditingEvento(null);
   };
 
-  // Generate month markers for Gantt
-  const monthMarkers: { label: string; position: number }[] = [];
-  const currentMonth = new Date(startDate);
-  currentMonth.setDate(1);
-  while (currentMonth <= endDate) {
-    const pos = (differenceInDays(currentMonth, startDate) / totalDays) * 100;
-    if (pos >= 0 && pos <= 100) {
-      monthMarkers.push({
-        label: format(currentMonth, 'MMM yy', { locale: es }),
-        position: pos,
-      });
-    }
-    currentMonth.setMonth(currentMonth.getMonth() + 1);
-  }
+  // Label column width
+  const LABEL_WIDTH = 200;
 
   return (
     <div className="space-y-6">
@@ -101,93 +142,141 @@ const LicitacionCalendarioTab: React.FC<Props> = ({ eventos, fechaCreacion, onUp
             Carta Gantt del Proceso
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          {/* Month labels */}
-          <div className="relative h-6 mb-1">
-            {monthMarkers.map((m, i) => (
-              <span
-                key={i}
-                className="absolute text-[10px] text-muted-foreground font-medium"
-                style={{ left: `${m.position}%`, transform: 'translateX(-50%)' }}
-              >
-                {m.label}
-              </span>
-            ))}
-          </div>
+        <CardContent className="overflow-x-auto">
+          <div className="min-w-[700px]">
+            {/* Header: Months row */}
+            <div className="flex">
+              <div className="shrink-0" style={{ width: LABEL_WIDTH }} />
+              <div className="flex-1 relative h-7 border-b border-muted">
+                {monthSpans.map((m, i) => (
+                  <div
+                    key={i}
+                    className="absolute top-0 h-full flex items-center justify-center text-xs font-semibold text-foreground border-l border-muted first:border-l-0 capitalize"
+                    style={{ left: `${m.startPct}%`, width: `${m.widthPct}%` }}
+                  >
+                    {m.label}
+                  </div>
+                ))}
+              </div>
+            </div>
 
-          {/* Gantt bars per event */}
-          <div className="relative border-l border-r border-muted rounded">
-            {/* Background grid lines for months */}
-            {monthMarkers.map((m, i) => (
-              <div
-                key={i}
-                className="absolute top-0 bottom-0 w-px bg-muted"
-                style={{ left: `${m.position}%` }}
-              />
-            ))}
-
-            {/* Today marker */}
-            <div
-              className="absolute top-0 bottom-0 w-0.5 bg-destructive z-10"
-              style={{ left: `${todayPosition}%` }}
-            >
-              <span className="absolute -top-5 -translate-x-1/2 text-[9px] text-destructive font-bold whitespace-nowrap">
-                Hoy
-              </span>
+            {/* Header: Weeks row */}
+            <div className="flex">
+              <div className="shrink-0 flex items-center px-3 text-xs font-medium text-muted-foreground border-b border-r border-muted bg-muted/30" style={{ width: LABEL_WIDTH }}>
+                Actividad
+              </div>
+              <div className="flex-1 relative h-6 border-b border-muted">
+                {weeks.map((weekStart, i) => {
+                  const pct = getPositionPct(weekStart);
+                  const nextWeek = i < weeks.length - 1 ? getPositionPct(weeks[i + 1]) : 100;
+                  const width = nextWeek - pct;
+                  return (
+                    <div
+                      key={i}
+                      className="absolute top-0 h-full flex items-center justify-center text-[10px] text-muted-foreground border-l border-muted/60"
+                      style={{ left: `${pct}%`, width: `${width}%` }}
+                    >
+                      {format(weekStart, 'd MMM', { locale: es })}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Event rows */}
-            {sortedEventos.map((evento, idx) => {
-              const status = getEventStatus(evento);
-              const config = statusConfig[status];
-              const eventPos = getBarPosition(evento.fecha);
-              const barStart = Math.max(0, eventPos - 3);
-              const barWidth = Math.min(6, 100 - barStart);
+            <div className="relative">
+              {sortedEventos.map((evento, idx) => {
+                const status = getEventStatus(evento);
+                const config = statusConfig[status];
+                const eventDate = new Date(evento.fecha);
+                const eventPct = getPositionPct(eventDate);
 
-              return (
-                <div
-                  key={idx}
-                  className="relative flex items-center h-10 group border-b border-muted/50 last:border-b-0"
-                >
-                  {/* Bar background representing duration to event */}
-                  <div
-                    className={`absolute h-6 rounded-md ${config.color} opacity-20`}
-                    style={{ left: '0%', width: `${eventPos}%` }}
-                  />
-                  {/* Event marker bar */}
-                  <div
-                    className={`absolute h-6 rounded-md ${config.color} opacity-70`}
-                    style={{ left: `${barStart}%`, width: `${barWidth}%` }}
-                  />
-                  {/* Diamond marker */}
-                  <div
-                    className={`absolute w-3 h-3 ${config.color} rotate-45 z-10 border border-background`}
-                    style={{ left: `${eventPos}%`, transform: `translateX(-50%) rotate(45deg)` }}
-                  />
-                  {/* Label */}
-                  <div className="relative z-10 flex items-center gap-2 px-2 w-full">
-                    <span className="text-xs font-medium truncate max-w-[40%] bg-background/80 px-1 rounded">
-                      {evento.titulo}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground ml-auto bg-background/80 px-1 rounded">
-                      {format(new Date(evento.fecha), 'd MMM', { locale: es })}
-                    </span>
-                    {evento.esRondaPreguntas && (
-                      <MessageSquare className="h-3 w-3 text-muted-foreground shrink-0" />
-                    )}
-                    {evento.requiereArchivos && (
-                      <FileText className="h-3 w-3 text-muted-foreground shrink-0" />
-                    )}
+                // Bar from creation to event date
+                const creationPct = getPositionPct(new Date(fechaCreacion));
+                const barLeft = Math.max(creationPct, 0);
+                const barWidth = Math.max(eventPct - barLeft, 1);
+
+                return (
+                  <div key={idx} className="flex group">
+                    {/* Activity label */}
+                    <div
+                      className="shrink-0 flex items-center gap-2 px-3 border-b border-r border-muted bg-card hover:bg-muted/20 transition-colors"
+                      style={{ width: LABEL_WIDTH, height: 40 }}
+                    >
+                      <div className={`w-2.5 h-2.5 rounded-full ${config.color} shrink-0`} />
+                      <span className="text-xs font-medium truncate flex-1">{evento.titulo}</span>
+                      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                        {evento.esRondaPreguntas && <MessageSquare className="h-3 w-3 text-muted-foreground" />}
+                        {evento.requiereArchivos && <FileText className="h-3 w-3 text-muted-foreground" />}
+                      </div>
+                    </div>
+
+                    {/* Timeline bar area */}
+                    <div className="flex-1 relative border-b border-muted" style={{ height: 40 }}>
+                      {/* Week grid lines */}
+                      {weeks.map((weekStart, i) => (
+                        <div
+                          key={i}
+                          className="absolute top-0 bottom-0 w-px bg-muted/40"
+                          style={{ left: `${getPositionPct(weekStart)}%` }}
+                        />
+                      ))}
+
+                      {/* Horizontal bar */}
+                      <div
+                        className={`absolute top-2 h-4 rounded ${config.color} opacity-30`}
+                        style={{ left: `${barLeft}%`, width: `${barWidth}%` }}
+                      />
+                      {/* Solid end portion */}
+                      <div
+                        className={`absolute top-2 h-4 rounded-r ${config.color} opacity-70`}
+                        style={{ left: `${Math.max(eventPct - 2, barLeft)}%`, width: `${Math.min(2, barWidth)}%` }}
+                      />
+
+                      {/* Diamond marker at event date */}
+                      <div
+                        className={`absolute top-1/2 w-3 h-3 ${config.color} rotate-45 z-10 border border-background`}
+                        style={{ left: `${eventPct}%`, transform: 'translateX(-50%) translateY(-50%) rotate(45deg)' }}
+                      />
+
+                      {/* Date label */}
+                      <div
+                        className="absolute top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground whitespace-nowrap bg-background/80 px-1 rounded z-10"
+                        style={{ left: `${Math.min(eventPct + 1.5, 85)}%` }}
+                      >
+                        {format(eventDate, 'd MMM', { locale: es })}
+                      </div>
+
+                      {/* Today marker */}
+                      {idx === 0 && (
+                        <div
+                          className="absolute top-0 bottom-0 w-0.5 bg-destructive z-20"
+                          style={{ left: `${todayPct}%` }}
+                        />
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
 
-            {sortedEventos.length === 0 && (
-              <div className="h-20 flex items-center justify-center text-sm text-muted-foreground">
-                No hay eventos programados
-              </div>
-            )}
+              {/* Today marker spanning all rows (overlay) */}
+              {sortedEventos.length > 0 && (
+                <div
+                  className="absolute top-0 bottom-0 w-0.5 bg-destructive z-20 pointer-events-none"
+                  style={{ left: `calc(${LABEL_WIDTH}px + (100% - ${LABEL_WIDTH}px) * ${todayPct / 100})` }}
+                >
+                  <span className="absolute -top-5 -translate-x-1/2 text-[9px] text-destructive font-bold whitespace-nowrap">
+                    Hoy
+                  </span>
+                </div>
+              )}
+
+              {sortedEventos.length === 0 && (
+                <div className="h-20 flex items-center justify-center text-sm text-muted-foreground">
+                  No hay eventos programados
+                </div>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -226,21 +315,13 @@ const LicitacionCalendarioTab: React.FC<Props> = ({ eventos, fechaCreacion, onUp
                     {config.label}
                   </Badge>
                 </div>
-                {/* Action buttons */}
                 <div className="flex items-center gap-1 shrink-0">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={() => openEdit(evento)}
-                    title="Editar evento"
-                  >
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(evento)} title="Editar evento">
                     <Pencil className="h-3.5 w-3.5" />
                   </Button>
                   {status !== 'completado' && evento.id && (
                     <Button
-                      variant="ghost"
-                      size="icon"
+                      variant="ghost" size="icon"
                       className="h-7 w-7 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
                       onClick={() => onCompleteEvento(evento.id!)}
                       title="Finalizar evento"

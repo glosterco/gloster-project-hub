@@ -17,8 +17,8 @@ Debes recopilar la siguiente información para crear la licitación:
 6. **Calendario de eventos** (fechas importantes como visita a terreno, ronda de consultas, entrega de ofertas, etc.)
    - Para cada evento: fecha, título, descripción, y si requiere que los oferentes envíen archivos
 7. **Itemizado/Presupuesto** (opcional - lista de partidas con descripción, unidad, cantidad, precio unitario)
-8. **Gastos generales** (monto en pesos, opcional)
-9. **Porcentaje de IVA** (por defecto 19%)
+8. **Gastos generales y utilidades**: Pregunta al usuario si el proceso incluirá gastos generales (GG) y utilidades. Si sí, pregunta los porcentajes o montos. Si no, déjalos en 0.
+9. **Porcentaje de IVA**: Pregunta si se incluye IVA en la licitación. Si sí, confirma que sea 19% (estándar en Chile) o si es un porcentaje diferente. Si no incluye IVA, usa 0%.
 
 ## Flujo de la conversación:
 
@@ -57,6 +57,7 @@ Cuando el usuario confirme que quiere crear la licitación, responde con EXACTAM
     }
   ],
   "gastos_generales": 0,
+  "utilidades": 0,
   "iva_porcentaje": 19
 }
 \`\`\`

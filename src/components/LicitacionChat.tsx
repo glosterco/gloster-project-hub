@@ -65,7 +65,8 @@ const LicitacionChat = ({ open, onOpenChange, onSuccess }: LicitacionChatProps) 
         })),
         items: data.items || [],
         gastos_generales: data.gastos_generales || 0,
-        iva_porcentaje: data.iva_porcentaje || 19,
+        utilidades: data.utilidades || 0,
+        iva_porcentaje: data.iva_porcentaje ?? 19,
         documentos: [],
       };
     } catch (e) {

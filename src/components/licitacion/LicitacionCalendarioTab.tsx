@@ -220,10 +220,6 @@ const LicitacionCalendarioTab: React.FC<Props> = ({ eventos, fechaCreacion, onUp
                     const status = getEventStatus(evento);
                     const colors = statusColors[status];
                     const evtIdx = Math.min(Math.max(dayIndex(new Date(evento.fecha)), 0), totalDays - 1);
-                    const barStartIdx = Math.max(creationIdx, 0);
-                    const barEndIdx = Math.max(evtIdx, barStartIdx);
-                    const barLeft = barStartIdx * DAY_COL_WIDTH;
-                    const barWidth = Math.max((barEndIdx - barStartIdx + 1) * DAY_COL_WIDTH - 4, 8);
 
                     return (
                       <div
@@ -243,34 +239,23 @@ const LicitacionCalendarioTab: React.FC<Props> = ({ eventos, fechaCreacion, onUp
                           ) : null;
                         })}
 
-                        {/* Bar background */}
+                        {/* Horizontal track line from start to event */}
                         <div
-                          className={`absolute rounded-sm ${colors.bar} opacity-25`}
+                          className="absolute bg-muted/40"
                           style={{
-                            left: barLeft + 2,
-                            width: barWidth,
-                            top: ROW_HEIGHT / 2 - 5,
-                            height: 10,
-                          }}
-                        />
-
-                        {/* Bar foreground (last 3 days) */}
-                        <div
-                          className={`absolute rounded-sm ${colors.bar} opacity-60`}
-                          style={{
-                            left: Math.max(barLeft + barWidth - 3 * DAY_COL_WIDTH, barLeft + 2),
-                            width: Math.min(3 * DAY_COL_WIDTH, barWidth),
-                            top: ROW_HEIGHT / 2 - 5,
-                            height: 10,
+                            left: 0,
+                            width: evtIdx * DAY_COL_WIDTH + DAY_COL_WIDTH / 2,
+                            top: ROW_HEIGHT / 2 - 1,
+                            height: 2,
                           }}
                         />
 
                         {/* Diamond milestone marker */}
                         <div
-                          className={`absolute z-10 w-3 h-3 ${colors.dot} border border-background shadow-sm`}
+                          className={`absolute z-10 w-3.5 h-3.5 ${colors.dot} border-2 border-background shadow-sm`}
                           style={{
-                            left: evtIdx * DAY_COL_WIDTH + DAY_COL_WIDTH / 2 - 6,
-                            top: ROW_HEIGHT / 2 - 6,
+                            left: evtIdx * DAY_COL_WIDTH + DAY_COL_WIDTH / 2 - 7,
+                            top: ROW_HEIGHT / 2 - 7,
                             transform: 'rotate(45deg)',
                           }}
                         />
@@ -280,7 +265,7 @@ const LicitacionCalendarioTab: React.FC<Props> = ({ eventos, fechaCreacion, onUp
                           <div
                             className="absolute z-10 flex items-center gap-0.5"
                             style={{
-                              left: evtIdx * DAY_COL_WIDTH + DAY_COL_WIDTH / 2 + 8,
+                              left: evtIdx * DAY_COL_WIDTH + DAY_COL_WIDTH / 2 + 10,
                               top: ROW_HEIGHT / 2 - 6,
                             }}
                           >

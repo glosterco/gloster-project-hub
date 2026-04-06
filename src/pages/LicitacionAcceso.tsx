@@ -423,7 +423,8 @@ const LicitacionAcceso = () => {
       // Calculate total from items
       const itemsTotal = allItems.reduce((sum, i) => sum + (i.precio_total || 0), 0);
       const gg = licitacion?.gastos_generales ? itemsTotal * (licitacion.gastos_generales / 100) : 0;
-      const neto = itemsTotal + gg;
+      const ut = licitacion?.utilidades ? (itemsTotal + gg) * (licitacion.utilidades / 100) : 0;
+      const neto = itemsTotal + gg + ut;
       const iva = licitacion?.iva_porcentaje ? neto * (licitacion.iva_porcentaje / 100) : 0;
       const total = neto + iva;
 
@@ -628,7 +629,8 @@ const LicitacionAcceso = () => {
   const combinedItems = [...mandanteItems, ...bidderItems];
   const subtotal = combinedItems.reduce((sum, i) => sum + (i.precio_total || 0), 0);
   const gg = licitacion.gastos_generales ? subtotal * (licitacion.gastos_generales / 100) : 0;
-  const neto = subtotal + gg;
+  const utilidad = licitacion.utilidades ? (subtotal + gg) * (licitacion.utilidades / 100) : 0;
+  const neto = subtotal + gg + utilidad;
   const iva = licitacion.iva_porcentaje ? neto * (licitacion.iva_porcentaje / 100) : 0;
   const totalOferta = neto + iva;
 
@@ -873,7 +875,7 @@ const LicitacionAcceso = () => {
 
               {/* My questions per ronda */}
               {rondas.filter(ronda => ronda.estado !== 'programada' || new Date() >= new Date(ronda.fecha_apertura)).map(ronda => {
-                const isOpen = ronda.estado === 'abierta';
+                const isOpen = ronda.estado !== 'cerrada';
                 const drafts = getDraftsForRonda(ronda.id);
                 const sent = getSentForRonda(ronda.id);
                 const deadline = ronda.fecha_cierre
@@ -1153,6 +1155,13 @@ const LicitacionAcceso = () => {
                               <TableCell />
                             </TableRow>
                           )}
+                          {licitacion.utilidades > 0 && (
+                            <TableRow>
+                              <TableCell colSpan={5} className="text-right font-medium">Utilidades ({licitacion.utilidades}%)</TableCell>
+                              <TableCell className="text-right">${fmt(utilidad)}</TableCell>
+                              <TableCell />
+                            </TableRow>
+                          )}
                           {licitacion.iva_porcentaje > 0 && (
                             <TableRow>
                               <TableCell colSpan={5} className="text-right font-medium">IVA ({licitacion.iva_porcentaje}%)</TableCell>
@@ -1253,6 +1262,7 @@ const LicitacionAcceso = () => {
                   <p className="text-xs text-muted-foreground mt-1">
                     Subtotal: ${fmt(subtotal)}
                     {licitacion.gastos_generales > 0 && ` + GG ${licitacion.gastos_generales}%: $${fmt(gg)}`}
+                    {licitacion.utilidades > 0 && ` + Util. ${licitacion.utilidades}%: $${fmt(utilidad)}`}
                     {licitacion.iva_porcentaje > 0 && ` + IVA ${licitacion.iva_porcentaje}%: $${fmt(iva)}`}
                   </p>
                 </div>

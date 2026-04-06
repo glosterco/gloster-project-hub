@@ -6,7 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { CalendarEvent } from '@/hooks/useLicitaciones';
-import { format, differenceInDays, isBefore, addDays, startOfWeek, endOfWeek, eachWeekOfInterval, eachDayOfInterval } from 'date-fns';
+import {
+  format,
+  differenceInDays,
+  isBefore,
+  addDays,
+  startOfDay,
+  eachDayOfInterval,
+} from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Calendar, FileText, Pencil, CheckCircle2, MessageSquare } from 'lucide-react';
 
@@ -17,85 +24,59 @@ interface Props {
   onCompleteEvento: (eventoId: number) => Promise<void>;
 }
 
+const ROW_HEIGHT = 36;
+const LABEL_COL_WIDTH = 180;
+const DAY_COL_WIDTH = 32;
+
 const LicitacionCalendarioTab: React.FC<Props> = ({ eventos, fechaCreacion, onUpdateEvento, onCompleteEvento }) => {
   const [editingEvento, setEditingEvento] = useState<CalendarEvent | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editDate, setEditDate] = useState('');
   const [editDesc, setEditDesc] = useState('');
 
-  const sortedEventos = useMemo(() =>
-    [...eventos].sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime()),
-    [eventos]
+  const sortedEventos = useMemo(
+    () => [...eventos].sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime()),
+    [eventos],
   );
 
-  const now = new Date();
+  const now = startOfDay(new Date());
 
-  // Calculate timeline range
-  const timelineRange = useMemo(() => {
-    const start = new Date(fechaCreacion);
-    start.setDate(start.getDate() - 2); // small padding
-    const lastEvent = sortedEventos.length > 0
-      ? new Date(sortedEventos[sortedEventos.length - 1].fecha)
-      : addDays(now, 30);
-    const end = addDays(new Date(Math.max(lastEvent.getTime(), now.getTime())), 7);
-    return { start, end };
+  // Timeline range: from creation date to last event + padding
+  const { timelineStart, timelineDays } = useMemo(() => {
+    const creation = startOfDay(new Date(fechaCreacion));
+    const start = addDays(creation, -1);
+    const lastEvt = sortedEventos.length
+      ? startOfDay(new Date(sortedEventos[sortedEventos.length - 1].fecha))
+      : now;
+    const end = addDays(new Date(Math.max(lastEvt.getTime(), now.getTime())), 5);
+    const days = eachDayOfInterval({ start, end });
+    return { timelineStart: start, timelineDays: days };
   }, [fechaCreacion, sortedEventos, now]);
 
-  const totalDays = Math.max(differenceInDays(timelineRange.end, timelineRange.start), 1);
+  const totalDays = timelineDays.length;
+  const timelineWidth = totalDays * DAY_COL_WIDTH;
 
-  // Generate week columns for the header
-  const weeks = useMemo(() => {
-    return eachWeekOfInterval(
-      { start: timelineRange.start, end: timelineRange.end },
-      { weekStartsOn: 1 }
-    );
-  }, [timelineRange]);
-
-  // Generate month spans for the top header
-  const monthSpans = useMemo(() => {
-    const months: { label: string; startPct: number; widthPct: number }[] = [];
-    let currentMonth = -1;
-    let currentYear = -1;
-    let monthStart = 0;
-
-    const days = eachDayOfInterval({ start: timelineRange.start, end: timelineRange.end });
-    days.forEach((day, idx) => {
-      const m = day.getMonth();
-      const y = day.getFullYear();
-      if (m !== currentMonth || y !== currentYear) {
-        if (currentMonth !== -1) {
-          const pctStart = (monthStart / totalDays) * 100;
-          const pctWidth = ((idx - monthStart) / totalDays) * 100;
-          months.push({
-            label: format(new Date(currentYear, currentMonth, 1), 'MMMM yyyy', { locale: es }),
-            startPct: pctStart,
-            widthPct: pctWidth,
-          });
-        }
-        currentMonth = m;
-        currentYear = y;
-        monthStart = idx;
+  // Group days by month for top header
+  const monthGroups = useMemo(() => {
+    const groups: { label: string; span: number }[] = [];
+    let current = '';
+    let count = 0;
+    timelineDays.forEach((day) => {
+      const key = format(day, 'MMM yyyy', { locale: es });
+      if (key !== current) {
+        if (current) groups.push({ label: current, span: count });
+        current = key;
+        count = 1;
+      } else {
+        count++;
       }
     });
-    // Last month
-    if (currentMonth !== -1) {
-      const pctStart = (monthStart / totalDays) * 100;
-      const pctWidth = ((days.length - monthStart) / totalDays) * 100;
-      months.push({
-        label: format(new Date(currentYear, currentMonth, 1), 'MMMM yyyy', { locale: es }),
-        startPct: pctStart,
-        widthPct: pctWidth,
-      });
-    }
-    return months;
-  }, [timelineRange, totalDays]);
+    if (current) groups.push({ label: current, span: count });
+    return groups;
+  }, [timelineDays]);
 
-  const getPositionPct = (date: Date) => {
-    const days = differenceInDays(date, timelineRange.start);
-    return Math.min(Math.max((days / totalDays) * 100, 0), 100);
-  };
-
-  const todayPct = getPositionPct(now);
+  const dayIndex = (date: Date) => differenceInDays(startOfDay(date), timelineDays[0]);
+  const todayIdx = dayIndex(now);
 
   const getEventStatus = (evento: CalendarEvent) => {
     if (evento.estado === 'completado') return 'completado';
@@ -105,11 +86,18 @@ const LicitacionCalendarioTab: React.FC<Props> = ({ eventos, fechaCreacion, onUp
     return 'pendiente';
   };
 
-  const statusConfig = {
-    completado: { color: 'bg-emerald-500', badge: 'default' as const, label: 'Completado', text: 'text-emerald-600' },
-    vencido: { color: 'bg-destructive', badge: 'destructive' as const, label: 'Vencido', text: 'text-destructive' },
-    proximo: { color: 'bg-amber-500', badge: 'secondary' as const, label: 'Próximo', text: 'text-amber-600' },
-    pendiente: { color: 'bg-primary', badge: 'outline' as const, label: 'Pendiente', text: 'text-primary' },
+  const statusColors: Record<string, { bar: string; dot: string }> = {
+    completado: { bar: 'bg-emerald-500', dot: 'bg-emerald-500' },
+    vencido: { bar: 'bg-destructive', dot: 'bg-destructive' },
+    proximo: { bar: 'bg-amber-500', dot: 'bg-amber-500' },
+    pendiente: { bar: 'bg-primary', dot: 'bg-primary' },
+  };
+
+  const statusBadge: Record<string, { variant: 'default' | 'destructive' | 'secondary' | 'outline'; label: string }> = {
+    completado: { variant: 'default', label: 'Completado' },
+    vencido: { variant: 'destructive', label: 'Vencido' },
+    proximo: { variant: 'secondary', label: 'Próximo' },
+    pendiente: { variant: 'outline', label: 'Pendiente' },
   };
 
   const openEdit = (evento: CalendarEvent) => {
@@ -129,159 +117,192 @@ const LicitacionCalendarioTab: React.FC<Props> = ({ eventos, fechaCreacion, onUp
     setEditingEvento(null);
   };
 
-  // Label column width
-  const LABEL_WIDTH = 200;
+  const creationIdx = dayIndex(startOfDay(new Date(fechaCreacion)));
 
   return (
     <div className="space-y-6">
-      {/* Gantt Timeline */}
+      {/* Gantt Chart */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-rubik">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 font-rubik text-base">
             <Calendar className="h-5 w-5" />
             Carta Gantt del Proceso
           </CardTitle>
         </CardHeader>
-        <CardContent className="overflow-x-auto">
-          <div className="min-w-[700px]">
-            {/* Header: Months row */}
-            <div className="flex">
-              <div className="shrink-0" style={{ width: LABEL_WIDTH }} />
-              <div className="flex-1 relative h-7 border-b border-muted">
-                {monthSpans.map((m, i) => (
-                  <div
-                    key={i}
-                    className="absolute top-0 h-full flex items-center justify-center text-xs font-semibold text-foreground border-l border-muted first:border-l-0 capitalize"
-                    style={{ left: `${m.startPct}%`, width: `${m.widthPct}%` }}
-                  >
-                    {m.label}
-                  </div>
-                ))}
-              </div>
+        <CardContent className="p-0 overflow-x-auto">
+          {sortedEventos.length === 0 ? (
+            <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
+              No hay eventos programados
             </div>
-
-            {/* Header: Weeks row */}
-            <div className="flex">
-              <div className="shrink-0 flex items-center px-3 text-xs font-medium text-muted-foreground border-b border-r border-muted bg-muted/30" style={{ width: LABEL_WIDTH }}>
-                Actividad
-              </div>
-              <div className="flex-1 relative h-6 border-b border-muted">
-                {weeks.map((weekStart, i) => {
-                  const pct = getPositionPct(weekStart);
-                  const nextWeek = i < weeks.length - 1 ? getPositionPct(weeks[i + 1]) : 100;
-                  const width = nextWeek - pct;
+          ) : (
+            <div className="flex min-w-max">
+              {/* Left column: activity labels */}
+              <div className="shrink-0 border-r border-muted z-10 bg-background" style={{ width: LABEL_COL_WIDTH }}>
+                {/* Month header spacer */}
+                <div className="border-b border-muted" style={{ height: 24 }} />
+                {/* Day header spacer */}
+                <div className="border-b border-muted flex items-end px-2 text-[10px] font-medium text-muted-foreground" style={{ height: 28 }}>
+                  Actividad
+                </div>
+                {/* Activity rows */}
+                {sortedEventos.map((evento, idx) => {
+                  const status = getEventStatus(evento);
+                  const colors = statusColors[status];
                   return (
                     <div
-                      key={i}
-                      className="absolute top-0 h-full flex items-center justify-center text-[10px] text-muted-foreground border-l border-muted/60"
-                      style={{ left: `${pct}%`, width: `${width}%` }}
+                      key={idx}
+                      className="flex items-center gap-1.5 px-2 border-b border-muted/50 hover:bg-muted/20 transition-colors"
+                      style={{ height: ROW_HEIGHT }}
                     >
-                      {format(weekStart, 'd MMM', { locale: es })}
+                      <div className={`w-2 h-2 rounded-full ${colors.dot} shrink-0`} />
+                      <span className="text-xs font-medium truncate">{evento.titulo}</span>
                     </div>
                   );
                 })}
               </div>
-            </div>
 
-            {/* Event rows */}
-            <div className="relative">
-              {sortedEventos.map((evento, idx) => {
-                const status = getEventStatus(evento);
-                const config = statusConfig[status];
-                const eventDate = new Date(evento.fecha);
-                const eventPct = getPositionPct(eventDate);
-
-                // Bar from creation to event date
-                const creationPct = getPositionPct(new Date(fechaCreacion));
-                const barLeft = Math.max(creationPct, 0);
-                const barWidth = Math.max(eventPct - barLeft, 1);
-
-                return (
-                  <div key={idx} className="flex group">
-                    {/* Activity label */}
+              {/* Right: timeline grid */}
+              <div style={{ width: timelineWidth }} className="relative">
+                {/* Month header row */}
+                <div className="flex border-b border-muted" style={{ height: 24 }}>
+                  {monthGroups.map((mg, i) => (
                     <div
-                      className="shrink-0 flex items-center gap-2 px-3 border-b border-r border-muted bg-card hover:bg-muted/20 transition-colors"
-                      style={{ width: LABEL_WIDTH, height: 40 }}
+                      key={i}
+                      className="flex items-center justify-center text-[10px] font-semibold text-foreground border-r border-muted/60 capitalize"
+                      style={{ width: mg.span * DAY_COL_WIDTH }}
                     >
-                      <div className={`w-2.5 h-2.5 rounded-full ${config.color} shrink-0`} />
-                      <span className="text-xs font-medium truncate flex-1">{evento.titulo}</span>
-                      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                        {evento.esRondaPreguntas && <MessageSquare className="h-3 w-3 text-muted-foreground" />}
-                        {evento.requiereArchivos && <FileText className="h-3 w-3 text-muted-foreground" />}
-                      </div>
+                      {mg.label}
                     </div>
+                  ))}
+                </div>
 
-                    {/* Timeline bar area */}
-                    <div className="flex-1 relative border-b border-muted" style={{ height: 40 }}>
-                      {/* Week grid lines */}
-                      {weeks.map((weekStart, i) => (
-                        <div
-                          key={i}
-                          className="absolute top-0 bottom-0 w-px bg-muted/40"
-                          style={{ left: `${getPositionPct(weekStart)}%` }}
-                        />
-                      ))}
+                {/* Day header row */}
+                <div className="flex border-b border-muted" style={{ height: 28 }}>
+                  {timelineDays.map((day, i) => {
+                    const isWeekend = day.getDay() === 0 || day.getDay() === 6;
+                    const isToday = differenceInDays(day, now) === 0;
+                    return (
+                      <div
+                        key={i}
+                        className={`flex flex-col items-center justify-end pb-0.5 text-center border-r border-muted/30 ${
+                          isToday ? 'bg-destructive/10 font-bold' : isWeekend ? 'bg-muted/20' : ''
+                        }`}
+                        style={{ width: DAY_COL_WIDTH }}
+                      >
+                        <span className={`text-[8px] uppercase ${isToday ? 'text-destructive' : 'text-muted-foreground'}`}>
+                          {format(day, 'EEE', { locale: es }).slice(0, 2)}
+                        </span>
+                        <span className={`text-[10px] leading-none ${isToday ? 'text-destructive' : 'text-foreground'}`}>
+                          {format(day, 'd')}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Event rows with bars */}
+                {sortedEventos.map((evento, idx) => {
+                  const status = getEventStatus(evento);
+                  const colors = statusColors[status];
+                  const evtDate = startOfDay(new Date(evento.fecha));
+                  const evtIdx = dayIndex(evtDate);
+
+                  // Bar goes from creation to event date
+                  const barStartIdx = Math.max(creationIdx, 0);
+                  const barEndIdx = Math.max(evtIdx, barStartIdx);
+                  const barLeft = barStartIdx * DAY_COL_WIDTH;
+                  const barWidth = Math.max((barEndIdx - barStartIdx + 1) * DAY_COL_WIDTH - 4, 8);
+
+                  return (
+                    <div
+                      key={idx}
+                      className="relative flex items-center border-b border-muted/30"
+                      style={{ height: ROW_HEIGHT }}
+                    >
+                      {/* Weekend/day background columns */}
+                      {timelineDays.map((day, di) => {
+                        const isWeekend = day.getDay() === 0 || day.getDay() === 6;
+                        const isToday = differenceInDays(day, now) === 0;
+                        return (
+                          <div
+                            key={di}
+                            className={`absolute top-0 bottom-0 border-r border-muted/15 ${
+                              isToday ? 'bg-destructive/5' : isWeekend ? 'bg-muted/10' : ''
+                            }`}
+                            style={{ left: di * DAY_COL_WIDTH, width: DAY_COL_WIDTH }}
+                          />
+                        );
+                      })}
 
                       {/* Horizontal bar */}
                       <div
-                        className={`absolute top-2 h-4 rounded ${config.color} opacity-30`}
-                        style={{ left: `${barLeft}%`, width: `${barWidth}%` }}
+                        className={`absolute rounded-sm ${colors.bar} opacity-25`}
+                        style={{
+                          left: barLeft + 2,
+                          width: barWidth,
+                          top: ROW_HEIGHT / 2 - 5,
+                          height: 10,
+                        }}
                       />
-                      {/* Solid end portion */}
+                      {/* Solid bar (last ~3 days portion or full if short) */}
                       <div
-                        className={`absolute top-2 h-4 rounded-r ${config.color} opacity-70`}
-                        style={{ left: `${Math.max(eventPct - 2, barLeft)}%`, width: `${Math.min(2, barWidth)}%` }}
+                        className={`absolute rounded-sm ${colors.bar} opacity-60`}
+                        style={{
+                          left: Math.max(barLeft + barWidth - 3 * DAY_COL_WIDTH, barLeft + 2),
+                          width: Math.min(3 * DAY_COL_WIDTH, barWidth),
+                          top: ROW_HEIGHT / 2 - 5,
+                          height: 10,
+                        }}
                       />
 
-                      {/* Diamond marker at event date */}
+                      {/* Diamond milestone marker at event date */}
                       <div
-                        className={`absolute top-1/2 w-3 h-3 ${config.color} rotate-45 z-10 border border-background`}
-                        style={{ left: `${eventPct}%`, transform: 'translateX(-50%) translateY(-50%) rotate(45deg)' }}
+                        className={`absolute z-10 w-3 h-3 ${colors.dot} border border-background shadow-sm`}
+                        style={{
+                          left: evtIdx * DAY_COL_WIDTH + DAY_COL_WIDTH / 2 - 6,
+                          top: ROW_HEIGHT / 2 - 6,
+                          transform: 'rotate(45deg)',
+                        }}
                       />
 
-                      {/* Date label */}
-                      <div
-                        className="absolute top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground whitespace-nowrap bg-background/80 px-1 rounded z-10"
-                        style={{ left: `${Math.min(eventPct + 1.5, 85)}%` }}
-                      >
-                        {format(eventDate, 'd MMM', { locale: es })}
-                      </div>
-
-                      {/* Today marker */}
-                      {idx === 0 && (
+                      {/* Icons for special events */}
+                      {(evento.requiereArchivos || evento.esRondaPreguntas) && (
                         <div
-                          className="absolute top-0 bottom-0 w-0.5 bg-destructive z-20"
-                          style={{ left: `${todayPct}%` }}
-                        />
+                          className="absolute z-10 flex items-center gap-0.5"
+                          style={{
+                            left: evtIdx * DAY_COL_WIDTH + DAY_COL_WIDTH / 2 + 8,
+                            top: ROW_HEIGHT / 2 - 6,
+                          }}
+                        >
+                          {evento.requiereArchivos && <FileText className="h-3 w-3 text-muted-foreground" />}
+                          {evento.esRondaPreguntas && <MessageSquare className="h-3 w-3 text-muted-foreground" />}
+                        </div>
                       )}
                     </div>
+                  );
+                })}
+
+                {/* Today vertical line spanning all rows */}
+                {todayIdx >= 0 && todayIdx < totalDays && (
+                  <div
+                    className="absolute z-20 pointer-events-none"
+                    style={{
+                      left: todayIdx * DAY_COL_WIDTH + DAY_COL_WIDTH / 2,
+                      top: 0,
+                      bottom: 0,
+                      width: 2,
+                    }}
+                  >
+                    <div className="w-full h-full bg-destructive opacity-50" />
                   </div>
-                );
-              })}
-
-              {/* Today marker spanning all rows (overlay) */}
-              {sortedEventos.length > 0 && (
-                <div
-                  className="absolute top-0 bottom-0 w-0.5 bg-destructive z-20 pointer-events-none"
-                  style={{ left: `calc(${LABEL_WIDTH}px + (100% - ${LABEL_WIDTH}px) * ${todayPct / 100})` }}
-                >
-                  <span className="absolute -top-5 -translate-x-1/2 text-[9px] text-destructive font-bold whitespace-nowrap">
-                    Hoy
-                  </span>
-                </div>
-              )}
-
-              {sortedEventos.length === 0 && (
-                <div className="h-20 flex items-center justify-center text-sm text-muted-foreground">
-                  No hay eventos programados
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Event list with action buttons */}
+      {/* Event detail list */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base font-rubik">Detalle de Eventos</CardTitle>
@@ -289,16 +310,15 @@ const LicitacionCalendarioTab: React.FC<Props> = ({ eventos, fechaCreacion, onUp
         <CardContent className="space-y-2">
           {sortedEventos.map((evento, idx) => {
             const status = getEventStatus(evento);
-            const config = statusConfig[status];
+            const badge = statusBadge[status];
+            const colors = statusColors[status];
             return (
               <div key={idx} className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:shadow-sm transition-shadow">
-                <div className={`w-3 h-3 rounded-full ${config.color} shrink-0`} />
+                <div className={`w-3 h-3 rounded-full ${colors.dot} shrink-0`} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="font-medium text-sm">{evento.titulo}</p>
-                    {evento.requiereArchivos && (
-                      <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-                    )}
+                    {evento.requiereArchivos && <FileText className="h-3.5 w-3.5 text-muted-foreground" />}
                     {evento.esRondaPreguntas && (
                       <Badge variant="outline" className="text-[9px] h-4 px-1">Ronda de consultas</Badge>
                     )}
@@ -311,8 +331,8 @@ const LicitacionCalendarioTab: React.FC<Props> = ({ eventos, fechaCreacion, onUp
                   <p className="text-sm font-medium">
                     {format(new Date(evento.fecha), 'd MMM yyyy', { locale: es })}
                   </p>
-                  <Badge variant={config.badge} className="text-[10px]">
-                    {config.label}
+                  <Badge variant={badge.variant} className="text-[10px]">
+                    {badge.label}
                   </Badge>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">

@@ -176,6 +176,8 @@ const LicitacionDetail = () => {
             <LicitacionOfertasTab 
               ofertas={ofertas}
               itemsReferencia={baseItems}
+              licitacionId={licitacion.id}
+              onRefresh={refetch}
             />
           </TabsContent>
         </Tabs>

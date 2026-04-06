@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -36,22 +36,24 @@ const LicitacionCalendarioTab: React.FC<Props> = ({ eventos, fechaCreacion, onUp
   const now = startOfDay(new Date());
 
   const { timelineDays } = useMemo(() => {
+    const creation = startOfDay(new Date(fechaCreacion));
+
     if (sortedEventos.length === 0) {
-      const creation = startOfDay(new Date(fechaCreacion));
-      const days = eachDayOfInterval({ start: addDays(creation, -2), end: addDays(creation, 30) });
+      const rangeStart = addDays(creation < now ? creation : now, -2);
+      const rangeEnd = addDays(creation > now ? creation : now, 30);
+      const days = eachDayOfInterval({ start: rangeStart, end: rangeEnd });
       return { timelineDays: days };
     }
 
     const firstEvt = startOfDay(new Date(sortedEventos[0].fecha));
     const lastEvt = startOfDay(new Date(sortedEventos[sortedEventos.length - 1].fecha));
 
-    // Timeline range: from first event - 3 days to last event + 5 days
-    const rangeStart = addDays(firstEvt, -3);
-    const rangeEnd = addDays(lastEvt, 5);
+    const rangeStart = addDays(firstEvt < now ? firstEvt : now, -3);
+    const rangeEnd = addDays(lastEvt > now ? lastEvt : now, 5);
     const days = eachDayOfInterval({ start: rangeStart, end: rangeEnd });
 
     return { timelineDays: days };
-  }, [fechaCreacion, sortedEventos]);
+  }, [fechaCreacion, now, sortedEventos]);
 
   const totalDays = timelineDays.length;
   const timelineWidth = totalDays * DAY_COL_WIDTH;
@@ -80,6 +82,15 @@ const LicitacionCalendarioTab: React.FC<Props> = ({ eventos, fechaCreacion, onUp
   const creationIdx = Math.min(Math.max(dayIndex(new Date(fechaCreacion)), 0), Math.max(totalDays - 1, 0));
   const todayIdx = dayIndex(now);
   const isTodayInRange = todayIdx >= 0 && todayIdx < totalDays;
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container || totalDays === 0) return;
+
+    const focusIndex = isTodayInRange ? todayIdx : creationIdx;
+    const left = Math.max(focusIndex * DAY_COL_WIDTH - container.clientWidth / 2, 0);
+    container.scrollTo({ left });
+  }, [creationIdx, isTodayInRange, todayIdx, totalDays]);
 
   const getEventStatus = (evento: CalendarEvent) => {
     if (evento.estado === 'completado') return 'completado';

@@ -7,6 +7,7 @@ import { Send, Bot, User, Loader2, CheckCircle2, Paperclip, X, FileText } from '
 import { useToast } from '@/hooks/use-toast';
 import { useLicitaciones, NewLicitacion } from '@/hooks/useLicitaciones';
 import ReactMarkdown from 'react-markdown';
+import { formatOferenteEntry, normalizeChatCalendarEvents, normalizeChatItems, normalizePercentNumber, parseOferenteEntries } from '@/utils/licitacionCreation';
 
 interface LicitacionChatProps {
   open: boolean;
@@ -85,23 +86,18 @@ const LicitacionChat = ({ open, onOpenChange, onSuccess }: LicitacionChatProps) 
 
     try {
       const data = JSON.parse(jsonMatch[1]);
+      const parsedOferentes = parseOferenteEntries(data.oferentes_emails || data.oferentes || []);
       return {
         nombre: data.nombre || '',
         descripcion: data.descripcion || '',
         mensaje_oferentes: data.mensaje_oferentes || '',
         especificaciones: data.especificaciones || '',
-        oferentes_emails: data.oferentes_emails || [],
-        calendario_eventos: (data.calendario_eventos || []).map((e: any) => ({
-          fecha: e.fecha,
-          titulo: e.titulo,
-          descripcion: e.descripcion,
-          requiereArchivos: e.requiereArchivos || false,
-          esRondaPreguntas: e.esRondaPreguntas || false,
-        })),
-        items: data.items || [],
-        gastos_generales: data.gastos_generales || 0,
-        utilidades: data.utilidades || 0,
-        iva_porcentaje: data.iva_porcentaje ?? 19,
+        oferentes_emails: parsedOferentes.map(formatOferenteEntry),
+        calendario_eventos: normalizeChatCalendarEvents(data.calendario_eventos || data.eventos || data.calendario || []),
+        items: normalizeChatItems(data.items || data.itemizado || data.presupuesto || []),
+        gastos_generales: normalizePercentNumber(data.gastos_generales ?? data.gg ?? data.gastosGenerales, 0),
+        utilidades: normalizePercentNumber(data.utilidades ?? data.utilidad, 0),
+        iva_porcentaje: normalizePercentNumber(data.iva_porcentaje ?? data.iva ?? data.ivaPorcentaje, 19),
         documentos: attachedFiles.map(f => ({ nombre: f.name, size: f.size, tipo: f.type })),
         documentFiles: attachedFiles.length > 0 ? attachedFiles : undefined,
       };

@@ -7,14 +7,16 @@ import { ListOrdered } from 'lucide-react';
 interface Props {
   items: LicitacionItem[];
   gastosGenerales?: number | null;
+  utilidades?: number | null;
   ivaPorcentaje?: number | null;
 }
 
-const LicitacionItemizadoTab: React.FC<Props> = ({ items, gastosGenerales, ivaPorcentaje }) => {
+const LicitacionItemizadoTab: React.FC<Props> = ({ items, gastosGenerales, utilidades, ivaPorcentaje }) => {
   const sortedItems = [...items].sort((a, b) => a.orden - b.orden);
   const subtotal = sortedItems.reduce((sum, i) => sum + (i.precio_total || 0), 0);
   const gg = gastosGenerales ? subtotal * (gastosGenerales / 100) : 0;
-  const neto = subtotal + gg;
+  const utilidad = utilidades ? (subtotal + gg) * (utilidades / 100) : 0;
+  const neto = subtotal + gg + utilidad;
   const iva = ivaPorcentaje ? neto * (ivaPorcentaje / 100) : 0;
   const total = neto + iva;
 
@@ -66,6 +68,12 @@ const LicitacionItemizadoTab: React.FC<Props> = ({ items, gastosGenerales, ivaPo
                   <TableRow>
                     <TableCell colSpan={5} className="text-right font-medium">GG ({gastosGenerales}%)</TableCell>
                     <TableCell className="text-right">${fmt(gg)}</TableCell>
+                  </TableRow>
+                )}
+                {utilidades && utilidades > 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-right font-medium">Utilidades ({utilidades}%)</TableCell>
+                    <TableCell className="text-right">${fmt(utilidad)}</TableCell>
                   </TableRow>
                 )}
                 {ivaPorcentaje && ivaPorcentaje > 0 && (

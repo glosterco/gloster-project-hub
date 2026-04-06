@@ -1105,21 +1105,21 @@ const LicitacionAcceso = () => {
                           <p className="text-sm font-medium">Nueva consulta</p>
                           <Input
                             placeholder="Especialidad (opcional)"
-                            value={newEspecialidad}
-                            onChange={e => setNewEspecialidad(e.target.value)}
+                            value={getRondaInput(ronda.id).especialidad}
+                            onChange={e => setRondaInput(ronda.id, 'especialidad', e.target.value)}
                             className="text-sm"
                           />
                           <Textarea
                             placeholder="Escribe tu consulta aquí..."
-                            value={newPregunta}
-                            onChange={e => setNewPregunta(e.target.value)}
+                            value={getRondaInput(ronda.id).pregunta}
+                            onChange={e => setRondaInput(ronda.id, 'pregunta', e.target.value)}
                             className="text-sm"
                           />
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => saveDraftQuestion(ronda.id)}
-                            disabled={savingDraft || !newPregunta.trim()}
+                            disabled={savingDraft || !getRondaInput(ronda.id).pregunta.trim()}
                           >
                             {savingDraft ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Plus className="h-4 w-4 mr-1" />}
                             Guardar borrador

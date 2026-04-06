@@ -957,8 +957,12 @@ const LicitacionAcceso = () => {
               )}
 
               {/* My questions per ronda */}
-              {rondas.map(ronda => {
-                const isOpen = ronda.estado !== 'cerrada';
+              {rondas.map((ronda, rondaIndex) => {
+                // Sequential activation: only the first non-cerrada ronda is active/open for input
+                const isClosedExplicitly = ronda.estado === 'cerrada';
+                const firstActiveIndex = rondas.findIndex(r => r.estado !== 'cerrada');
+                const isActiveRonda = !isClosedExplicitly && rondaIndex === firstActiveIndex;
+                const isOpen = isActiveRonda;
                 const drafts = getDraftsForRonda(ronda.id);
                 const sent = getSentForRonda(ronda.id);
                 const deadline = ronda.fecha_cierre

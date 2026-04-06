@@ -41,17 +41,22 @@ const LicitacionCalendarioTab: React.FC<Props> = ({ eventos, fechaCreacion, onUp
 
   const now = startOfDay(new Date());
 
-  // Timeline range: from creation date to last event + padding
-  const { timelineStart, timelineDays } = useMemo(() => {
+  // Timeline range: covers all events with padding
+  const { timelineStart: _timelineStart, timelineDays } = useMemo(() => {
     const creation = startOfDay(new Date(fechaCreacion));
-    const start = addDays(creation, -1);
+    const firstEvt = sortedEventos.length
+      ? startOfDay(new Date(sortedEventos[0].fecha))
+      : creation;
     const lastEvt = sortedEventos.length
       ? startOfDay(new Date(sortedEventos[sortedEventos.length - 1].fecha))
-      : now;
-    const end = addDays(new Date(Math.max(lastEvt.getTime(), now.getTime())), 5);
+      : creation;
+    // Start from the earliest of creation or first event
+    const start = addDays(new Date(Math.min(creation.getTime(), firstEvt.getTime())), -2);
+    // End at last event + padding (don't extend to "now" if events are old)
+    const end = addDays(lastEvt, 5);
     const days = eachDayOfInterval({ start, end });
     return { timelineStart: start, timelineDays: days };
-  }, [fechaCreacion, sortedEventos, now]);
+  }, [fechaCreacion, sortedEventos]);
 
   const totalDays = timelineDays.length;
   const timelineWidth = totalDays * DAY_COL_WIDTH;

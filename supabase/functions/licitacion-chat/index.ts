@@ -18,7 +18,9 @@ Debes recopilar la siguiente información para crear la licitación:
 5. **Emails de oferentes** a invitar (lista de correos; si el usuario incluye empresa + correo, conserva ambos usando el formato "Empresa <correo@dominio.com>")
 6. **Mensaje para los oferentes** (texto que recibirán los oferentes invitados). Al preguntar por esto, ofrécele al usuario la opción de escribir su propio mensaje o que tú lo generes por él. Ejemplo: "¿Te gustaría escribir un mensaje de invitación para los oferentes, o prefieres que yo redacte uno por ti?"
 7. **Calendario de eventos** (fechas importantes como visita a terreno, ronda de consultas, entrega de ofertas, etc.)
-   - Para cada evento: fecha, título, descripción, y si requiere que los oferentes envíen archivos
+   - Para cada evento: fecha de inicio, título, descripción, y si requiere que los oferentes envíen archivos
+   - Algunos eventos tienen duración (periodo), como las rondas de consultas. En ese caso incluye "fecha" (inicio) y "fecha_fin" (cierre). Ejemplo: "Ronda de consultas 1 del 5 al 15 de abril" → fecha: 5 de abril, fecha_fin: 15 de abril.
+   - Eventos puntuales (hitos) como "Entrega de ofertas" solo tienen "fecha", sin "fecha_fin".
    - Marca explícitamente si un evento es una "ronda de consultas" con el campo esRondaPreguntas=true. Solo los eventos de tipo "ronda de consultas" generan secciones de preguntas para los oferentes.
    - Los eventos de "entrega de ofertas" NO son rondas de consultas, son simplemente hitos donde los oferentes envían su oferta final.
 8. **Itemizado/Presupuesto**: Pregunta al usuario si desea incluir un itemizado base. Si sí, recoge las partidas (descripción, unidad, cantidad, precio unitario).
@@ -55,6 +57,7 @@ Cuando el usuario confirme que quiere crear la licitación, responde con EXACTAM
   "calendario_eventos": [
     {
       "fecha": "2026-01-15T00:00:00.000Z",
+      "fecha_fin": "2026-01-25T00:00:00.000Z o null si es evento puntual",
       "titulo": "string",
       "descripcion": "string",
       "requiereArchivos": false,

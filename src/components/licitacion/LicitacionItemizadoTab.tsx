@@ -77,7 +77,22 @@ const LicitacionItemizadoTab: React.FC<Props> = ({
         />
       )}
 
-      {saving && (
+      {/* AI Chatbot */}
+      {licitacionId && (
+        <ItemizadoChatbot
+          licitacionNombre={licitacionNombre}
+          licitacionDescripcion={licitacionDescripcion}
+          licitacionEspecificaciones={licitacionEspecificaciones}
+          existingItems={items.map(i => ({
+            descripcion: i.descripcion,
+            unidad: i.unidad || '',
+            cantidad: i.cantidad,
+            precio_unitario: i.precio_unitario,
+          }))}
+          onItemsGenerated={handleItemsAccepted}
+        />
+      )}
+
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
           Guardando partidas...

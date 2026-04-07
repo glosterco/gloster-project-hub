@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { LicitacionItem } from '@/hooks/useLicitaciones';
 import { ListOrdered } from 'lucide-react';
 import ItemizadoFileParser from '@/components/ItemizadoFileParser';
+import ItemizadoChatbot from '@/components/licitacion/ItemizadoChatbot';
 import { ParsedItem } from '@/hooks/useParseItemizado';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -16,11 +17,15 @@ interface Props {
   utilidades?: number | null;
   ivaPorcentaje?: number | null;
   licitacionId?: number;
+  licitacionNombre?: string;
+  licitacionDescripcion?: string;
+  licitacionEspecificaciones?: string;
   onRefresh?: () => void;
 }
 
 const LicitacionItemizadoTab: React.FC<Props> = ({
-  items, gastosGenerales, utilidades, ivaPorcentaje, licitacionId, onRefresh
+  items, gastosGenerales, utilidades, ivaPorcentaje, licitacionId,
+  licitacionNombre, licitacionDescripcion, licitacionEspecificaciones, onRefresh
 }) => {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
@@ -69,6 +74,22 @@ const LicitacionItemizadoTab: React.FC<Props> = ({
           onItemsAccepted={handleItemsAccepted}
           title="Importar Itemizado desde Archivo"
           description="Sube un Excel, PDF o Word con el presupuesto y se extraerán las partidas automáticamente."
+        />
+      )}
+
+      {/* AI Chatbot */}
+      {licitacionId && (
+        <ItemizadoChatbot
+          licitacionNombre={licitacionNombre}
+          licitacionDescripcion={licitacionDescripcion}
+          licitacionEspecificaciones={licitacionEspecificaciones}
+          existingItems={items.map(i => ({
+            descripcion: i.descripcion,
+            unidad: i.unidad || '',
+            cantidad: i.cantidad,
+            precio_unitario: i.precio_unitario,
+          }))}
+          onItemsGenerated={handleItemsAccepted}
         />
       )}
 

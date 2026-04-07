@@ -170,6 +170,8 @@ const LicitacionDetail = () => {
               gastosGenerales={licitacion.gastos_generales}
               utilidades={licitacion.utilidades}
               ivaPorcentaje={licitacion.iva_porcentaje}
+              licitacionId={licitacion.id}
+              onRefresh={refetch}
             />
           </TabsContent>
 

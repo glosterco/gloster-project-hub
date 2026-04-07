@@ -1050,9 +1050,10 @@ const LicitacionAcceso = () => {
                 const isOpen = isActiveRonda;
                 const drafts = getDraftsForRonda(ronda.id);
                 const sent = getSentForRonda(ronda.id);
-                const deadline = ronda.fecha_cierre
-                  ? format(new Date(ronda.fecha_cierre), "d MMM yyyy HH:mm", { locale: es })
-                  : null;
+                const { start: rondaStart, end: rondaEnd } = getRondaDateRange(ronda);
+                const deadlineText = rondaEnd
+                  ? `${format(rondaStart, "d MMM", { locale: es })} — ${format(rondaEnd, "d MMM yyyy", { locale: es })}`
+                  : format(rondaStart, "d MMM yyyy", { locale: es });
                 const canSend = canSendForRonda(ronda);
 
                 return (
@@ -1066,11 +1067,9 @@ const LicitacionAcceso = () => {
                             {isClosedExplicitly ? 'Cerrada' : isOpen ? 'Activa' : 'Próxima'}
                           </Badge>
                         </CardTitle>
-                        {deadline && (
-                          <span className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Clock className="h-3 w-3" /> Cierre: {deadline}
-                          </span>
-                        )}
+                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Clock className="h-3 w-3" /> {deadlineText}
+                        </span>
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -1179,9 +1178,9 @@ const LicitacionAcceso = () => {
                           >
                             <Send className="h-4 w-4 mr-2" />
                             Enviar {drafts.length} consulta(s) al mandante
-                            {!canSend && (
+                            {!canSend && rondaEnd && (
                               <span className="ml-1 text-xs opacity-75">
-                                (disponible el {getRondaAperturaText(ronda)})
+                                (abierta hasta {format(rondaEnd, "d MMM yyyy", { locale: es })})
                               </span>
                             )}
                           </Button>

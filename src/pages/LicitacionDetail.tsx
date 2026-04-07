@@ -161,6 +161,7 @@ const LicitacionDetail = () => {
               onAnswerPregunta={answerPregunta}
               onPublishPreguntas={publishPreguntas}
               onRefetch={refetch}
+              onDeleteAnswer={deleteAnswer}
             />
           </TabsContent>
 

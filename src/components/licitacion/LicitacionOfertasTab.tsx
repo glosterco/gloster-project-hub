@@ -53,10 +53,31 @@ const LicitacionOfertasTab: React.FC<Props> = ({
 
   const adjudicadaOferta = ofertas.find(o => o.estado === 'adjudicada');
 
-  const sortedItems = useMemo(() =>
-    [...itemsReferencia].filter(i => !i.agregado_por_oferente).sort((a, b) => a.orden - b.orden),
-    [itemsReferencia]
-  );
+  // Build comparison items: use reference items if available, otherwise build from all oferta items
+  const sortedItems = useMemo(() => {
+    const refItems = [...itemsReferencia].filter(i => !i.agregado_por_oferente).sort((a, b) => a.orden - b.orden);
+    if (refItems.length > 0) return refItems;
+    
+    // No reference items — build unique item list from all ofertas
+    const seen = new Map<string, LicitacionItem>();
+    ofertas.forEach(o => {
+      o.items.forEach(oi => {
+        const key = oi.descripcion?.toLowerCase().trim() || '';
+        if (!seen.has(key)) {
+          seen.set(key, {
+            id: oi.id,
+            descripcion: oi.descripcion,
+            unidad: oi.unidad || '',
+            cantidad: oi.cantidad || 0,
+            precio_unitario: oi.precio_unitario || 0,
+            precio_total: oi.precio_total || 0,
+            orden: oi.orden,
+          });
+        }
+      });
+    });
+    return Array.from(seen.values()).sort((a, b) => a.orden - b.orden);
+  }, [itemsReferencia, ofertas]);
 
   // Compute averages for deviation highlighting
   const mediaValues = useMemo(() => {

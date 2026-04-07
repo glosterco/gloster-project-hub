@@ -178,16 +178,50 @@ export const useLicitacionDetail = (licitacionId: number | null) => {
         .order('created_at');
       setPreguntas(preguntasData || []);
 
-      // Fetch ofertas with items
+      // Fetch ofertas with items from LicitacionOfertaItems
       const { data: ofertasData } = await supabase
         .from('LicitacionOfertas')
         .select(`*, LicitacionOfertaItems(*)`)
         .eq('licitacion_id', licitacionId);
 
-      setOfertas((ofertasData || []).map((o: any) => ({
-        ...o,
-        items: (o.LicitacionOfertaItems || []).sort((a: any, b: any) => a.orden - b.orden)
-      })));
+      // Also fetch bidder items from LicitacionItems (where they actually work)
+      const { data: bidderItems } = await supabase
+        .from('LicitacionItems')
+        .select('*')
+        .eq('licitacion_id', licitacionId)
+        .eq('agregado_por_oferente', true)
+        .order('orden');
+
+      const bidderItemsByEmail = new Map<string, any[]>();
+      (bidderItems || []).forEach((item: any) => {
+        if (!item.oferente_email) return;
+        const existing = bidderItemsByEmail.get(item.oferente_email) || [];
+        existing.push(item);
+        bidderItemsByEmail.set(item.oferente_email, existing);
+      });
+
+      setOfertas((ofertasData || []).map((o: any) => {
+        const ofertaItems = (o.LicitacionOfertaItems || []).sort((a: any, b: any) => a.orden - b.orden);
+        // If LicitacionOfertaItems is empty, fall back to LicitacionItems by email
+        if (ofertaItems.length === 0) {
+          const fallbackItems = bidderItemsByEmail.get(o.oferente_email) || [];
+          return {
+            ...o,
+            items: fallbackItems.map((fi: any) => ({
+              id: fi.id,
+              oferta_id: o.id,
+              item_referencia_id: null,
+              descripcion: fi.descripcion,
+              unidad: fi.unidad,
+              cantidad: fi.cantidad,
+              precio_unitario: fi.precio_unitario,
+              precio_total: fi.precio_total,
+              orden: fi.orden,
+            }))
+          };
+        }
+        return { ...o, items: ofertaItems };
+      }));
     } catch (error: any) {
       console.error('Error fetching licitacion detail:', error);
       toast({ title: "Error", description: error.message, variant: "destructive" });

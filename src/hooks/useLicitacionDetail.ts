@@ -302,6 +302,26 @@ export const useLicitacionDetail = (licitacionId: number | null) => {
     }
   };
 
+  // Optimistic delete answer (revert to unanswered)
+  const deleteAnswer = async (preguntaId: number) => {
+    const prev = preguntas.find(p => p.id === preguntaId);
+    setPreguntas(ps => ps.map(p =>
+      p.id === preguntaId
+        ? { ...p, respuesta: null, respondida: false }
+        : p
+    ));
+
+    const { error } = await supabase.from('LicitacionPreguntas')
+      .update({ respuesta: null, respondida: false, updated_at: new Date().toISOString() })
+      .eq('id', preguntaId);
+
+    if (error) {
+      // Revert
+      if (prev) setPreguntas(ps => ps.map(p => p.id === preguntaId ? prev : p));
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
   const updateEvento = async (eventoId: number, updates: { titulo?: string; fecha?: string; descripcion?: string }) => {
     const { error } = await supabase.from('LicitacionEventos')
       .update(updates)
@@ -340,6 +360,7 @@ export const useLicitacionDetail = (licitacionId: number | null) => {
     closeRonda,
     openRonda,
     answerPregunta,
+    deleteAnswer,
     publishPreguntas,
     updateEvento,
     completeEvento

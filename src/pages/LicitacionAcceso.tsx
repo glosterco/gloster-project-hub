@@ -428,6 +428,34 @@ const LicitacionAcceso = () => {
     }
   };
 
+  // === IMPORTAR ITEMIZADO DESDE ARCHIVO (oferente) ===
+  const handleImportedItems = async (parsedItems: ParsedItem[]) => {
+    if (!licitacion?.id) return;
+    setSavingItem(true);
+    try {
+      const maxOrden = allItems.length > 0 ? Math.max(...allItems.map((i: any) => i.orden || 0)) : 0;
+      const rows = parsedItems.map((item, idx) => ({
+        licitacion_id: licitacion.id,
+        descripcion: item.descripcion,
+        unidad: item.unidad,
+        cantidad: item.cantidad,
+        precio_unitario: item.precio_unitario,
+        precio_total: item.precio_total,
+        orden: maxOrden + idx + 1,
+        agregado_por_oferente: true,
+        oferente_email: oferenteEmail,
+      }));
+      const { error } = await supabase.from('LicitacionItems').insert(rows);
+      if (error) throw error;
+      toast({ title: 'Partidas importadas', description: `${rows.length} partidas agregadas` });
+      fetchData();
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setSavingItem(false);
+    }
+  };
+
   const saveOferta = async () => {
     if (!licitacionId) return;
     setSavingOferta(true);

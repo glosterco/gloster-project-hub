@@ -331,7 +331,7 @@ export const useLicitaciones = () => {
         const { data: insertedEventos, error: eventosError } = await supabase
           .from('LicitacionEventos')
           .insert(eventosData)
-          .select('id, titulo, fecha, es_ronda_preguntas');
+          .select('id, titulo, fecha, fecha_fin, es_ronda_preguntas');
 
         if (eventosError) {
           console.error('Error creating eventos:', eventosError);
@@ -345,7 +345,7 @@ export const useLicitaciones = () => {
               titulo: evento.titulo,
               estado: 'programada',
               fecha_apertura: evento.fecha,
-              fecha_cierre: null,
+              fecha_cierre: evento.fecha_fin || null,
             }));
 
           if (rondasData.length > 0) {

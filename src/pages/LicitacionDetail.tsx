@@ -178,6 +178,9 @@ const LicitacionDetail = () => {
               ofertas={ofertas}
               itemsReferencia={baseItems}
               licitacionId={licitacion.id}
+              licitacionGG={licitacion.gastos_generales}
+              licitacionUtil={licitacion.utilidades}
+              licitacionIVA={licitacion.iva_porcentaje}
               onRefresh={refetch}
             />
           </TabsContent>

@@ -23,6 +23,7 @@ const convertFileToBase64 = (file: File): Promise<string> => {
 export interface CalendarEvent {
   id?: number;
   fecha: string;
+  fechaFin?: string | null;
   titulo: string;
   descripcion: string;
   requiereArchivos: boolean;
@@ -320,6 +321,7 @@ export const useLicitaciones = () => {
         const eventosData = normalizedEventos.map(evento => ({
           licitacion_id: licitacionId,
           fecha: evento.fecha,
+          fecha_fin: evento.fechaFin || null,
           titulo: evento.titulo,
           descripcion: evento.descripcion,
           requiere_archivos: evento.requiereArchivos,

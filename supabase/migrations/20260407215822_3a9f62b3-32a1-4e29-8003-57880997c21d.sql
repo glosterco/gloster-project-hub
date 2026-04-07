@@ -1,0 +1,1 @@
+ALTER TABLE public."LicitacionEventos" ADD COLUMN fecha_fin timestamptz DEFAULT NULL;

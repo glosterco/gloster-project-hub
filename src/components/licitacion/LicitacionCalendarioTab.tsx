@@ -13,7 +13,7 @@ import { Calendar, FileText, Pencil, CheckCircle2, MessageSquare } from 'lucide-
 interface Props {
   eventos: CalendarEvent[];
   fechaCreacion: string;
-  onUpdateEvento?: (eventoId: number, updates: { titulo?: string; fecha?: string; descripcion?: string }) => Promise<void>;
+  onUpdateEvento?: (eventoId: number, updates: { titulo?: string; fecha?: string; fecha_fin?: string | null; descripcion?: string }) => Promise<void>;
   onCompleteEvento?: (eventoId: number) => Promise<void>;
 }
 
@@ -25,6 +25,7 @@ const LicitacionCalendarioTab: React.FC<Props> = ({ eventos, fechaCreacion, onUp
   const [editingEvento, setEditingEvento] = useState<CalendarEvent | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editDate, setEditDate] = useState('');
+  const [editDateFin, setEditDateFin] = useState('');
   const [editDesc, setEditDesc] = useState('');
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -45,11 +46,16 @@ const LicitacionCalendarioTab: React.FC<Props> = ({ eventos, fechaCreacion, onUp
       return { timelineDays: days };
     }
 
-    const firstEvt = startOfDay(new Date(sortedEventos[0].fecha));
-    const lastEvt = startOfDay(new Date(sortedEventos[sortedEventos.length - 1].fecha));
+    const allDates = sortedEventos.flatMap(e => {
+      const dates = [new Date(e.fecha)];
+      if (e.fechaFin) dates.push(new Date(e.fechaFin));
+      return dates;
+    });
+    const firstDate = startOfDay(new Date(Math.min(...allDates.map(d => d.getTime()))));
+    const lastDate = startOfDay(new Date(Math.max(...allDates.map(d => d.getTime()))));
 
-    const rangeStart = addDays(firstEvt < now ? firstEvt : now, -3);
-    const rangeEnd = addDays(lastEvt > now ? lastEvt : now, 5);
+    const rangeStart = addDays(firstDate < now ? firstDate : now, -3);
+    const rangeEnd = addDays(lastDate > now ? lastDate : now, 5);
     const days = eachDayOfInterval({ start: rangeStart, end: rangeEnd });
 
     return { timelineDays: days };
@@ -94,9 +100,9 @@ const LicitacionCalendarioTab: React.FC<Props> = ({ eventos, fechaCreacion, onUp
 
   const getEventStatus = (evento: CalendarEvent) => {
     if (evento.estado === 'completado') return 'completado';
-    const eventDate = new Date(evento.fecha);
-    if (isBefore(eventDate, now)) return 'vencido';
-    if (differenceInDays(eventDate, now) <= 3) return 'proximo';
+    const endDate = evento.fechaFin ? new Date(evento.fechaFin) : new Date(evento.fecha);
+    if (isBefore(endDate, now)) return 'vencido';
+    if (differenceInDays(endDate, now) <= 3) return 'proximo';
     return 'pendiente';
   };
 
@@ -118,21 +124,22 @@ const LicitacionCalendarioTab: React.FC<Props> = ({ eventos, fechaCreacion, onUp
     setEditingEvento(evento);
     setEditTitle(evento.titulo);
     setEditDate(evento.fecha ? format(new Date(evento.fecha), 'yyyy-MM-dd') : '');
+    setEditDateFin(evento.fechaFin ? format(new Date(evento.fechaFin), 'yyyy-MM-dd') : '');
     setEditDesc(evento.descripcion || '');
   };
 
   const handleSaveEdit = async () => {
-    if (!editingEvento?.id) return;
+    if (!editingEvento?.id || !onUpdateEvento) return;
     await onUpdateEvento(editingEvento.id, {
       titulo: editTitle,
       fecha: new Date(editDate).toISOString(),
+      fecha_fin: editDateFin ? new Date(editDateFin).toISOString() : null,
       descripcion: editDesc,
     });
     setEditingEvento(null);
   };
 
-  // Header height for months + days
-  const HEADER_HEIGHT = 52; // 24 + 28
+  const HEADER_HEIGHT = 52;
 
   return (
     <div className="space-y-6">
@@ -219,7 +226,11 @@ const LicitacionCalendarioTab: React.FC<Props> = ({ eventos, fechaCreacion, onUp
                   {sortedEventos.map((evento, idx) => {
                     const status = getEventStatus(evento);
                     const colors = statusColors[status];
-                    const evtIdx = Math.min(Math.max(dayIndex(new Date(evento.fecha)), 0), totalDays - 1);
+                    const hasDuration = !!evento.fechaFin;
+                    const startIdx = Math.min(Math.max(dayIndex(new Date(evento.fecha)), 0), totalDays - 1);
+                    const endIdx = hasDuration
+                      ? Math.min(Math.max(dayIndex(new Date(evento.fechaFin!)), 0), totalDays - 1)
+                      : startIdx;
 
                     return (
                       <div
@@ -239,33 +250,48 @@ const LicitacionCalendarioTab: React.FC<Props> = ({ eventos, fechaCreacion, onUp
                           ) : null;
                         })}
 
-                        {/* Horizontal track line from start to event */}
-                        <div
-                          className="absolute bg-muted/40"
-                          style={{
-                            left: 0,
-                            width: evtIdx * DAY_COL_WIDTH + DAY_COL_WIDTH / 2,
-                            top: ROW_HEIGHT / 2 - 1,
-                            height: 2,
-                          }}
-                        />
+                        {hasDuration ? (
+                          /* Duration bar */
+                          <div
+                            className={`absolute z-10 ${colors.bar} rounded-sm opacity-80`}
+                            style={{
+                              left: startIdx * DAY_COL_WIDTH + 4,
+                              width: (endIdx - startIdx + 1) * DAY_COL_WIDTH - 8,
+                              top: ROW_HEIGHT / 2 - 5,
+                              height: 10,
+                            }}
+                          />
+                        ) : (
+                          <>
+                            {/* Horizontal track line from start to event */}
+                            <div
+                              className="absolute bg-muted/40"
+                              style={{
+                                left: 0,
+                                width: startIdx * DAY_COL_WIDTH + DAY_COL_WIDTH / 2,
+                                top: ROW_HEIGHT / 2 - 1,
+                                height: 2,
+                              }}
+                            />
 
-                        {/* Diamond milestone marker */}
-                        <div
-                          className={`absolute z-10 w-3.5 h-3.5 ${colors.dot} border-2 border-background shadow-sm`}
-                          style={{
-                            left: evtIdx * DAY_COL_WIDTH + DAY_COL_WIDTH / 2 - 7,
-                            top: ROW_HEIGHT / 2 - 7,
-                            transform: 'rotate(45deg)',
-                          }}
-                        />
+                            {/* Diamond milestone marker */}
+                            <div
+                              className={`absolute z-10 w-3.5 h-3.5 ${colors.dot} border-2 border-background shadow-sm`}
+                              style={{
+                                left: startIdx * DAY_COL_WIDTH + DAY_COL_WIDTH / 2 - 7,
+                                top: ROW_HEIGHT / 2 - 7,
+                                transform: 'rotate(45deg)',
+                              }}
+                            />
+                          </>
+                        )}
 
                         {/* Icons for special events */}
                         {(evento.requiereArchivos || evento.esRondaPreguntas) && (
                           <div
                             className="absolute z-10 flex items-center gap-0.5"
                             style={{
-                              left: evtIdx * DAY_COL_WIDTH + DAY_COL_WIDTH / 2 + 10,
+                              left: (hasDuration ? (endIdx + 1) : startIdx) * DAY_COL_WIDTH + (hasDuration ? 2 : DAY_COL_WIDTH / 2 + 10),
                               top: ROW_HEIGHT / 2 - 6,
                             }}
                           >
@@ -311,6 +337,7 @@ const LicitacionCalendarioTab: React.FC<Props> = ({ eventos, fechaCreacion, onUp
             const status = getEventStatus(evento);
             const badge = statusBadge[status];
             const colors = statusColors[status];
+            const hasDuration = !!evento.fechaFin;
             return (
               <div key={idx} className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:shadow-sm transition-shadow">
                 <div className={`w-3 h-3 rounded-full ${colors.dot} shrink-0`} />
@@ -327,9 +354,15 @@ const LicitacionCalendarioTab: React.FC<Props> = ({ eventos, fechaCreacion, onUp
                   )}
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="text-sm font-medium">
-                    {format(new Date(evento.fecha), 'd MMM yyyy', { locale: es })}
-                  </p>
+                  {hasDuration ? (
+                    <p className="text-sm font-medium">
+                      {format(new Date(evento.fecha), 'd MMM', { locale: es })} — {format(new Date(evento.fechaFin!), 'd MMM yyyy', { locale: es })}
+                    </p>
+                  ) : (
+                    <p className="text-sm font-medium">
+                      {format(new Date(evento.fecha), 'd MMM yyyy', { locale: es })}
+                    </p>
+                  )}
                   <Badge variant={badge.variant} className="text-[10px]">
                     {badge.label}
                   </Badge>
@@ -372,9 +405,15 @@ const LicitacionCalendarioTab: React.FC<Props> = ({ eventos, fechaCreacion, onUp
                 <Label>Título</Label>
                 <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
               </div>
-              <div className="space-y-2">
-                <Label>Fecha</Label>
-                <Input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Fecha inicio</Label>
+                  <Input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Fecha fin <span className="text-muted-foreground text-xs">(opcional)</span></Label>
+                  <Input type="date" value={editDateFin} onChange={(e) => setEditDateFin(e.target.value)} />
+                </div>
               </div>
               <div className="space-y-2">
                 <Label>Descripción</Label>

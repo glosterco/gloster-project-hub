@@ -170,7 +170,7 @@ export const useLicitacionDetail = (licitacionId: number | null) => {
         .order('numero');
       setRondas(rondasData || []);
 
-      // Fetch preguntas (only sent ones for mandante view)
+      // Fetch preguntas
       const { data: preguntasData } = await supabase
         .from('LicitacionPreguntas')
         .select('*')
@@ -178,13 +178,12 @@ export const useLicitacionDetail = (licitacionId: number | null) => {
         .order('created_at');
       setPreguntas(preguntasData || []);
 
-      // Fetch ofertas with items from LicitacionOfertaItems
+      // Fetch ofertas with items
       const { data: ofertasData } = await supabase
         .from('LicitacionOfertas')
         .select(`*, LicitacionOfertaItems(*)`)
         .eq('licitacion_id', licitacionId);
 
-      // Also fetch bidder items from LicitacionItems (where they actually work)
       const { data: bidderItems } = await supabase
         .from('LicitacionItems')
         .select('*')
@@ -202,7 +201,6 @@ export const useLicitacionDetail = (licitacionId: number | null) => {
 
       setOfertas((ofertasData || []).map((o: any) => {
         const ofertaItems = (o.LicitacionOfertaItems || []).sort((a: any, b: any) => a.orden - b.orden);
-        // If LicitacionOfertaItems is empty, fall back to LicitacionItems by email
         if (ofertaItems.length === 0) {
           const fallbackItems = bidderItemsByEmail.get(o.oferente_email) || [];
           return {
@@ -260,20 +258,47 @@ export const useLicitacionDetail = (licitacionId: number | null) => {
     if (!error) fetchLicitacion();
   };
 
+  // Optimistic answer: update local state immediately, then persist to DB
   const answerPregunta = async (preguntaId: number, respuesta: string) => {
+    // Optimistic update
+    setPreguntas(prev => prev.map(p =>
+      p.id === preguntaId
+        ? { ...p, respuesta, respondida: true, updated_at: new Date().toISOString() }
+        : p
+    ));
+
     const { error } = await supabase.from('LicitacionPreguntas')
       .update({ respuesta, respondida: true, updated_at: new Date().toISOString() })
       .eq('id', preguntaId);
-    if (!error) fetchLicitacion();
+
+    if (error) {
+      // Revert on error
+      setPreguntas(prev => prev.map(p =>
+        p.id === preguntaId
+          ? { ...p, respuesta: null, respondida: false }
+          : p
+      ));
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
   };
 
   const publishPreguntas = async (preguntaIds: number[]) => {
+    // Optimistic
+    setPreguntas(prev => prev.map(p =>
+      preguntaIds.includes(p.id) ? { ...p, publicada: true } : p
+    ));
+
     const { error } = await supabase.from('LicitacionPreguntas')
       .update({ publicada: true })
       .in('id', preguntaIds);
     if (!error) {
       toast({ title: "Respuestas publicadas" });
-      fetchLicitacion();
+    } else {
+      // Revert
+      setPreguntas(prev => prev.map(p =>
+        preguntaIds.includes(p.id) ? { ...p, publicada: false } : p
+      ));
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     }
   };
 

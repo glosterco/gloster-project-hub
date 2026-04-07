@@ -488,13 +488,26 @@ serve(async (req) => {
       }
     }
 
+    // Add process context
+    if (oferentes && oferentes.length > 0) {
+      contextParts.push(`OFERENTES INVITADOS:\n${oferentes.map(o => `- ${o.email}${o.nombre_empresa ? ` (${o.nombre_empresa})` : ''} - ${o.aceptada ? 'Aceptó' : 'Pendiente'}`).join('\n')}`);
+    }
+    if (eventos && eventos.length > 0) {
+      contextParts.push(`CALENDARIO DEL PROCESO:\n${eventos.map(e => `- ${e.fecha}: ${e.titulo} [${e.estado}]${e.descripcion ? ` - ${e.descripcion}` : ''}`).join('\n')}`);
+    }
+    if (items && items.length > 0) {
+      contextParts.push(`ITEMIZADO BASE (primeros ${items.length} ítems):\n${items.map(i => `- ${i.descripcion} | ${i.unidad || '-'} | Cant: ${i.cantidad || '-'} | PU: ${i.precio_unitario || '-'}`).join('\n')}`);
+    }
+    if (otherPreguntas && otherPreguntas.length > 0) {
+      contextParts.push(`PREGUNTAS YA RESPONDIDAS EN ESTE PROCESO:\n${otherPreguntas.map(p => `P: ${p.pregunta}\nR: ${p.respuesta}`).join('\n\n')}`);
+    }
+
     // Add actual document content
     if (documentTexts.length > 0) {
       for (const dt of documentTexts) {
         contextParts.push(`--- CONTENIDO DEL DOCUMENTO: "${dt.nombre}" ---\n${dt.contenido}\n--- FIN DOCUMENTO ---`);
       }
     } else if (docs && docs.length > 0) {
-      // Fallback: at least list document names
       contextParts.push(
         `Documentos adjuntos (no se pudo extraer su contenido):\n${docs.map((d) => `- ${d.nombre} (${d.tipo || "documento"})`).join("\n")}`,
       );

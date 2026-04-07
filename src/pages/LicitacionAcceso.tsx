@@ -100,7 +100,7 @@ const LicitacionAcceso = () => {
         .from('Licitaciones')
         .select(`
           id, nombre, descripcion, mensaje_oferentes, estado, url_acceso, gastos_generales, utilidades, iva_porcentaje, created_at,
-          LicitacionEventos(id, fecha, titulo, descripcion, estado, es_ronda_preguntas),
+          LicitacionEventos(id, fecha, fecha_fin, titulo, descripcion, estado, es_ronda_preguntas),
           LicitacionDocumentos(id, nombre, size, tipo, url),
           LicitacionItems(id, descripcion, unidad, cantidad, precio_unitario, precio_total, orden, agregado_por_oferente, oferente_email)
         `)
@@ -577,19 +577,34 @@ const LicitacionAcceso = () => {
 
   const fmt = (n: number) => n.toLocaleString('es-CL', { minimumFractionDigits: 0 });
 
-  // Send button enabled 1 week before deadline
+  // Round is open if today is within the event's date range (fecha to fecha_cierre/fecha_fin)
   const canSendForRonda = (ronda: any) => {
     if (ronda.estado === 'cerrada') return false;
     const now = new Date();
+    // Use fecha_cierre if set, otherwise check if the linked event has fecha_fin
+    if (ronda.fecha_cierre) {
+      return now <= new Date(ronda.fecha_cierre);
+    }
+    // Fallback: find the linked event and use its fecha_fin
+    const linkedEvent = licitacion?.LicitacionEventos?.find((e: any) => e.es_ronda_preguntas && e.titulo === ronda.titulo);
+    if (linkedEvent?.fecha_fin) {
+      return now <= new Date(linkedEvent.fecha_fin);
+    }
+    // Legacy: allow sending from 1 week before deadline
     const deadline = new Date(ronda.fecha_apertura);
     const oneWeekBefore = new Date(deadline.getTime() - 7 * 24 * 60 * 60 * 1000);
     return now >= oneWeekBefore;
   };
 
-  const getRondaAperturaText = (ronda: any) => {
-    const deadline = new Date(ronda.fecha_apertura);
-    const oneWeekBefore = new Date(deadline.getTime() - 7 * 24 * 60 * 60 * 1000);
-    return format(oneWeekBefore, "d MMM yyyy", { locale: es });
+  const getRondaDateRange = (ronda: any) => {
+    const linkedEvent = licitacion?.LicitacionEventos?.find((e: any) => e.es_ronda_preguntas && e.titulo === ronda.titulo);
+    const start = new Date(ronda.fecha_apertura);
+    const end = ronda.fecha_cierre
+      ? new Date(ronda.fecha_cierre)
+      : linkedEvent?.fecha_fin
+        ? new Date(linkedEvent.fecha_fin)
+        : null;
+    return { start, end };
   };
 
   // Document helpers

@@ -24,7 +24,8 @@ interface Props {
 }
 
 const LicitacionItemizadoTab: React.FC<Props> = ({
-  items, gastosGenerales, utilidades, ivaPorcentaje, licitacionId, onRefresh
+  items, gastosGenerales, utilidades, ivaPorcentaje, licitacionId,
+  licitacionNombre, licitacionDescripcion, licitacionEspecificaciones, onRefresh
 }) => {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);

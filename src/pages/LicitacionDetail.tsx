@@ -176,7 +176,7 @@ const LicitacionDetail = () => {
           <TabsContent value="ofertas">
             <LicitacionOfertasTab 
               ofertas={ofertas}
-              itemsReferencia={baseItems}
+              itemsReferencia={licitacion.items || []}
               licitacionId={licitacion.id}
               licitacionGG={licitacion.gastos_generales}
               licitacionUtil={licitacion.utilidades}

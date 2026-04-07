@@ -627,6 +627,7 @@ export type Database = {
           es_ronda_preguntas: boolean
           estado: string
           fecha: string
+          fecha_fin: string | null
           id: number
           licitacion_id: number
           requiere_archivos: boolean
@@ -638,6 +639,7 @@ export type Database = {
           es_ronda_preguntas?: boolean
           estado?: string
           fecha: string
+          fecha_fin?: string | null
           id?: never
           licitacion_id: number
           requiere_archivos?: boolean
@@ -649,6 +651,7 @@ export type Database = {
           es_ronda_preguntas?: boolean
           estado?: string
           fecha?: string
+          fecha_fin?: string | null
           id?: never
           licitacion_id?: number
           requiere_archivos?: boolean

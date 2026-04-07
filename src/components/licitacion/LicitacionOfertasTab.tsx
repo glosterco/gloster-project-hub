@@ -36,11 +36,18 @@ const getDeviationClass = (value: number | null | undefined, avg: number) => {
   return '';
 };
 
+const normalizeDesc = (s: string | null | undefined) => (s || '').toLowerCase().trim();
+
 const findOfertaItem = (oferta: Oferta, item: LicitacionItem): OfertaItem | undefined => {
-  return oferta.items.find(oi =>
-    oi.item_referencia_id === item.id ||
-    oi.descripcion?.toLowerCase().trim() === item.descripcion?.toLowerCase().trim()
-  );
+  // First try by reference id
+  if (item.id) {
+    const byRef = oferta.items.find(oi => oi.item_referencia_id === item.id);
+    if (byRef) return byRef;
+  }
+  // Then match by normalized description
+  const norm = normalizeDesc(item.descripcion);
+  if (!norm) return undefined;
+  return oferta.items.find(oi => normalizeDesc(oi.descripcion) === norm);
 };
 
 const LicitacionOfertasTab: React.FC<Props> = ({
@@ -53,30 +60,38 @@ const LicitacionOfertasTab: React.FC<Props> = ({
 
   const adjudicadaOferta = ofertas.find(o => o.estado === 'adjudicada');
 
-  // Build comparison items: use reference items if available, otherwise build from all oferta items
+  // Build a unified list of items: start with reference items, then append any
+  // bidder items whose description doesn't already appear in the list.
   const sortedItems = useMemo(() => {
-    const refItems = [...itemsReferencia].filter(i => !i.agregado_por_oferente).sort((a, b) => a.orden - b.orden);
-    if (refItems.length > 0) return refItems;
-    
-    // No reference items — build unique item list from all ofertas
-    const seen = new Map<string, LicitacionItem>();
+    const refItems = [...itemsReferencia]
+      .filter(i => !i.agregado_por_oferente)
+      .sort((a, b) => a.orden - b.orden);
+
+    // Track descriptions we already have
+    const seenDescs = new Set<string>(refItems.map(i => normalizeDesc(i.descripcion)));
+    const combined: LicitacionItem[] = [...refItems];
+
+    // Gather ALL unique items from all ofertas that don't match any existing description
+    let extraOrder = refItems.length > 0 ? Math.max(...refItems.map(r => r.orden)) + 1 : 1;
     ofertas.forEach(o => {
       o.items.forEach(oi => {
-        const key = oi.descripcion?.toLowerCase().trim() || '';
-        if (!seen.has(key)) {
-          seen.set(key, {
+        const norm = normalizeDesc(oi.descripcion);
+        if (norm && !seenDescs.has(norm)) {
+          seenDescs.add(norm);
+          combined.push({
             id: oi.id,
             descripcion: oi.descripcion,
             unidad: oi.unidad || '',
             cantidad: oi.cantidad || 0,
             precio_unitario: oi.precio_unitario || 0,
             precio_total: oi.precio_total || 0,
-            orden: oi.orden,
+            orden: extraOrder++,
           });
         }
       });
     });
-    return Array.from(seen.values()).sort((a, b) => a.orden - b.orden);
+
+    return combined;
   }, [itemsReferencia, ofertas]);
 
   // Compute averages for deviation highlighting

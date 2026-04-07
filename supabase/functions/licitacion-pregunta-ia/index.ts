@@ -383,6 +383,34 @@ serve(async (req) => {
       .select("nombre, tipo, url")
       .eq("licitacion_id", licitacionId);
 
+    // Fetch process context: oferentes, eventos, items, other questions
+    const { data: oferentes } = await supabase
+      .from("LicitacionOferentes")
+      .select("email, nombre_empresa, aceptada")
+      .eq("licitacion_id", licitacionId);
+
+    const { data: eventos } = await supabase
+      .from("LicitacionEventos")
+      .select("titulo, fecha, estado, descripcion")
+      .eq("licitacion_id", licitacionId)
+      .order("fecha");
+
+    const { data: items } = await supabase
+      .from("LicitacionItems")
+      .select("descripcion, unidad, cantidad, precio_unitario")
+      .eq("licitacion_id", licitacionId)
+      .eq("agregado_por_oferente", false)
+      .order("orden")
+      .limit(50);
+
+    const { data: otherPreguntas } = await supabase
+      .from("LicitacionPreguntas")
+      .select("pregunta, respuesta, respondida, publicada")
+      .eq("licitacion_id", licitacionId)
+      .eq("respondida", true)
+      .neq("id", preguntaId)
+      .limit(20);
+
     // --- Extract actual document content from Drive ---
     const documentTexts: { nombre: string; contenido: string }[] = [];
 
@@ -460,13 +488,26 @@ serve(async (req) => {
       }
     }
 
+    // Add process context
+    if (oferentes && oferentes.length > 0) {
+      contextParts.push(`OFERENTES INVITADOS:\n${oferentes.map(o => `- ${o.email}${o.nombre_empresa ? ` (${o.nombre_empresa})` : ''} - ${o.aceptada ? 'Aceptó' : 'Pendiente'}`).join('\n')}`);
+    }
+    if (eventos && eventos.length > 0) {
+      contextParts.push(`CALENDARIO DEL PROCESO:\n${eventos.map(e => `- ${e.fecha}: ${e.titulo} [${e.estado}]${e.descripcion ? ` - ${e.descripcion}` : ''}`).join('\n')}`);
+    }
+    if (items && items.length > 0) {
+      contextParts.push(`ITEMIZADO BASE (primeros ${items.length} ítems):\n${items.map(i => `- ${i.descripcion} | ${i.unidad || '-'} | Cant: ${i.cantidad || '-'} | PU: ${i.precio_unitario || '-'}`).join('\n')}`);
+    }
+    if (otherPreguntas && otherPreguntas.length > 0) {
+      contextParts.push(`PREGUNTAS YA RESPONDIDAS EN ESTE PROCESO:\n${otherPreguntas.map(p => `P: ${p.pregunta}\nR: ${p.respuesta}`).join('\n\n')}`);
+    }
+
     // Add actual document content
     if (documentTexts.length > 0) {
       for (const dt of documentTexts) {
         contextParts.push(`--- CONTENIDO DEL DOCUMENTO: "${dt.nombre}" ---\n${dt.contenido}\n--- FIN DOCUMENTO ---`);
       }
     } else if (docs && docs.length > 0) {
-      // Fallback: at least list document names
       contextParts.push(
         `Documentos adjuntos (no se pudo extraer su contenido):\n${docs.map((d) => `- ${d.nombre} (${d.tipo || "documento"})`).join("\n")}`,
       );
@@ -480,13 +521,19 @@ CONTEXTO DEL PROCESO:
 ${contextParts.join("\n\n")}
 
 REGLAS ESTRICTAS:
-- Responde SOLO con información que se encuentre explícitamente en los documentos, especificaciones o descripción del proceso proporcionados arriba.
+- Responde SOLO con información que se encuentre explícitamente en los documentos, especificaciones, itemizado, calendario o descripción del proceso proporcionados arriba.
+- También puedes utilizar las respuestas previas ya dadas en este proceso para mantener coherencia.
 - NO uses información externa, conocimiento general ni suposiciones. Si la información no está en el contexto, responde: "No se encontró información suficiente en los antecedentes del proceso para responder esta consulta. Se recomienda que el mandante responda directamente."
 - NO uses formato con doble asterisco (**). Usa texto plano, viñetas simples con guiones (-) y saltos de línea para organizar la respuesta.
 - Sé conciso, directo y profesional.
 - Cita brevemente la fuente: "Según [nombre del documento/sección]..."
 - Responde en español chileno.
-- La respuesta será revisada por el mandante antes de publicarse, así que sé preciso y no inventes información.`;
+- La respuesta será revisada por el mandante antes de publicarse, así que sé preciso y no inventes información.
+
+IMPORTANTE SOBRE FUENTES:
+Al final de tu respuesta, agrega una línea con "---FUENTES---" seguida de las citas textuales relevantes del documento en formato:
+[DOCUMENTO: nombre_documento] extracto textual relevante que respalda la respuesta
+Incluye solo los pasajes específicos que fundamentan tu respuesta, no resúmenes generales.`;
 
     const userPrompt = `Pregunta del oferente${pregunta.especialidad ? ` (especialidad: ${pregunta.especialidad})` : ""}:\n\n"${pregunta.pregunta}"`;
 
@@ -514,33 +561,49 @@ REGLAS ESTRICTAS:
     }
 
     const aiData = await aiResp.json();
-    const aiAnswer = aiData.choices?.[0]?.message?.content || "";
+    let aiAnswer = aiData.choices?.[0]?.message?.content || "";
 
-    // Build sources
+    // Parse sources from AI response
     const fuentes: any[] = [];
-    if (documentTexts.length > 0) {
-      for (const dt of documentTexts) {
+    const fuentesSeparator = "---FUENTES---";
+    if (aiAnswer.includes(fuentesSeparator)) {
+      const parts = aiAnswer.split(fuentesSeparator);
+      aiAnswer = parts[0].trim();
+      const fuentesText = parts[1]?.trim() || "";
+      // Parse [DOCUMENTO: name] extract format
+      const fuenteRegex = /\[DOCUMENTO:\s*([^\]]+)\]\s*([\s\S]*?)(?=\[DOCUMENTO:|$)/g;
+      let fm;
+      while ((fm = fuenteRegex.exec(fuentesText)) !== null) {
         fuentes.push({
-          documento: dt.nombre,
-          extracto: dt.contenido.substring(0, 200) + (dt.contenido.length > 200 ? "..." : ""),
+          documento: fm[1].trim(),
+          extracto_relevante: fm[2].trim(),
+        });
+      }
+      // If no structured sources found, add raw text
+      if (fuentes.length === 0 && fuentesText.length > 10) {
+        fuentes.push({
+          documento: "Fuentes del proceso",
+          extracto_relevante: fuentesText,
         });
       }
     }
-    if (licitacion?.especificaciones) {
-      fuentes.push({
-        documento: "Especificaciones Técnicas",
-        extracto:
-          licitacion.especificaciones.substring(0, 200) +
-          (licitacion.especificaciones.length > 200 ? "..." : ""),
-      });
-    }
-    if (licitacion?.descripcion) {
-      fuentes.push({
-        documento: "Descripción del Proceso",
-        extracto:
-          licitacion.descripcion.substring(0, 200) +
-          (licitacion.descripcion.length > 200 ? "..." : ""),
-      });
+
+    // Fallback: add document names if no structured sources
+    if (fuentes.length === 0) {
+      if (documentTexts.length > 0) {
+        for (const dt of documentTexts) {
+          fuentes.push({
+            documento: dt.nombre,
+            extracto: dt.contenido.substring(0, 300) + (dt.contenido.length > 300 ? "..." : ""),
+          });
+        }
+      }
+      if (licitacion?.especificaciones) {
+        fuentes.push({
+          documento: "Especificaciones Técnicas",
+          extracto: licitacion.especificaciones.substring(0, 300) + (licitacion.especificaciones.length > 300 ? "..." : ""),
+        });
+      }
     }
 
     // Update the pregunta with AI answer

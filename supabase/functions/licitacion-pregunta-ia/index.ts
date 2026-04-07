@@ -402,17 +402,12 @@ serve(async (req) => {
 
           console.log(`📄 Extracting text from: ${doc.nombre} (${fileId})`);
 
-          // First try basic extraction
-          let text = await extractTextFromDriveFile(
-            accessToken,
-            fileId,
-            doc.tipo || "",
-            doc.nombre,
-          );
+          let text = "";
+          const isPdf = doc.tipo === "application/pdf" || doc.nombre.toLowerCase().endsWith(".pdf");
 
-          // If basic extraction got very little text, try AI-based extraction for PDFs
-          if (text.length < 50 && (doc.tipo === "application/pdf" || doc.nombre.toLowerCase().endsWith(".pdf"))) {
-            console.log(`🤖 Basic extraction insufficient for ${doc.nombre}, trying AI extraction...`);
+          // For PDFs, go directly to AI-based extraction (most reliable)
+          if (isPdf) {
+            console.log(`🤖 Using AI extraction for PDF: ${doc.nombre}`);
             try {
               const downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
               const resp = await fetch(downloadUrl, {
@@ -420,12 +415,27 @@ serve(async (req) => {
               });
               if (resp.ok) {
                 const buffer = await resp.arrayBuffer();
-                const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
-                text = await extractTextWithAI(base64, doc.nombre, doc.tipo || "application/pdf");
+                const bytes = new Uint8Array(buffer);
+                // btoa can fail on large files, use chunked approach
+                let binary = "";
+                const chunkSize = 8192;
+                for (let i = 0; i < bytes.length; i += chunkSize) {
+                  binary += String.fromCharCode(...bytes.slice(i, i + chunkSize));
+                }
+                const base64 = btoa(binary);
+                text = await extractTextWithAI(base64, doc.nombre, "application/pdf");
               }
             } catch (err) {
-              console.error(`AI extraction fallback failed for ${doc.nombre}:`, err);
+              console.error(`AI extraction failed for ${doc.nombre}:`, err);
             }
+          } else {
+            // For non-PDF files, try basic extraction
+            text = await extractTextFromDriveFile(
+              accessToken,
+              fileId,
+              doc.tipo || "",
+              doc.nombre,
+            );
           }
 
           if (text && text.length > 10) {

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +9,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   MessageSquare, Send, Eye, Lock, Unlock, Sparkles, BookOpen, Clock,
-  Paperclip, FileText, ExternalLink, Loader2, X, Wand2, Link2, CheckCircle2
+  Paperclip, FileText, ExternalLink, Loader2, X, Wand2, Link2, CheckCircle2,
+  Pencil, Trash2
 } from 'lucide-react';
 import { Ronda, Pregunta } from '@/hooks/useLicitacionDetail';
 import { format } from 'date-fns';
@@ -27,23 +28,26 @@ interface Props {
   onAnswerPregunta: (preguntaId: number, respuesta: string, adjuntoUrl?: string, adjuntoNombre?: string) => void;
   onPublishPreguntas: (preguntaIds: number[]) => void;
   onRefetch: () => void;
+  onDeleteAnswer: (preguntaId: number) => void;
 }
 
 const LicitacionPreguntasTab: React.FC<Props> = ({
   rondas, preguntas, licitacionId, onCloseRonda, onOpenRonda,
-  onAnswerPregunta, onPublishPreguntas, onRefetch
+  onAnswerPregunta, onPublishPreguntas, onRefetch, onDeleteAnswer
 }) => {
   const { toast } = useToast();
   const [answeringId, setAnsweringId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [respuesta, setRespuesta] = useState('');
   const [respuestaFile, setRespuestaFile] = useState<File | null>(null);
   const [showIASource, setShowIASource] = useState<Pregunta | null>(null);
   const [generatingIA, setGeneratingIA] = useState<number | null>(null);
-  const [bulkGenerating, setBulkGenerating] = useState<number | null>(null); // rondaId
+  const [bulkGenerating, setBulkGenerating] = useState<number | null>(null);
   const [dismissedIA, setDismissedIA] = useState<Set<number>>(new Set());
   const [showSimilar, setShowSimilar] = useState<{ rondaId: number; groupIdx: number } | null>(null);
   const [batchAnswer, setBatchAnswer] = useState('');
   const [selectedSimilar, setSelectedSimilar] = useState<Set<number>>(new Set());
+  const [batchGeneratingIA, setBatchGeneratingIA] = useState(false);
 
   const sentPreguntasByRonda = (rondaId: number) =>
     preguntas.filter(p => p.ronda_id === rondaId && p.enviada);
@@ -88,6 +92,7 @@ const LicitacionPreguntasTab: React.FC<Props> = ({
     if (!respuesta.trim()) return;
     onAnswerPregunta(preguntaId, respuesta);
     setAnsweringId(null);
+    setEditingId(null);
     setRespuesta('');
     setRespuestaFile(null);
   };
@@ -109,7 +114,7 @@ const LicitacionPreguntasTab: React.FC<Props> = ({
         body: { preguntaId, licitacionId },
       });
       if (error) throw error;
-      toast({ title: "Pre-respuesta generada", description: "La IA ha generado una sugerencia de respuesta" });
+      toast({ title: "Pre-respuesta generada" });
       onRefetch();
     } catch (err: any) {
       toast({ title: "Error", description: err.message || "No se pudo generar la pre-respuesta", variant: "destructive" });
@@ -120,7 +125,6 @@ const LicitacionPreguntasTab: React.FC<Props> = ({
 
   const handleDismissIA = async (preguntaId: number) => {
     setDismissedIA(prev => new Set(prev).add(preguntaId));
-    // Clear from DB too
     await supabase.from('LicitacionPreguntas')
       .update({ respuesta_ia: null, respuesta_ia_fuentes: null })
       .eq('id', preguntaId);
@@ -154,6 +158,36 @@ const LicitacionPreguntasTab: React.FC<Props> = ({
     setBulkGenerating(null);
   };
 
+  // AI pre-respond for batch (similar questions dialog)
+  const handleBatchGenerateIA = async () => {
+    if (selectedSimilar.size === 0) return;
+    setBatchGeneratingIA(true);
+    const ids = [...selectedSimilar];
+    let generated = '';
+    try {
+      // Generate AI for the first question as representative
+      const firstId = ids[0];
+      const { data, error } = await supabase.functions.invoke('licitacion-pregunta-ia', {
+        body: { preguntaId: firstId, licitacionId },
+      });
+      if (error) throw error;
+      // Get the generated response
+      const { data: updated } = await supabase.from('LicitacionPreguntas')
+        .select('respuesta_ia')
+        .eq('id', firstId)
+        .single();
+      generated = updated?.respuesta_ia || data?.respuesta_ia || '';
+      if (generated) {
+        setBatchAnswer(generated);
+        toast({ title: "Pre-respuesta IA generada para el lote" });
+      }
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setBatchGeneratingIA(false);
+    }
+  };
+
   const handleBatchAnswerSimilar = async () => {
     if (!batchAnswer.trim() || selectedSimilar.size === 0) return;
     for (const id of selectedSimilar) {
@@ -165,9 +199,22 @@ const LicitacionPreguntasTab: React.FC<Props> = ({
     setSelectedSimilar(new Set());
   };
 
+  const handleDeleteAnswer = (preguntaId: number) => {
+    onDeleteAnswer(preguntaId);
+    toast({ title: "Respuesta eliminada" });
+  };
+
+  const handleStartEdit = (p: Pregunta) => {
+    setEditingId(p.id);
+    setAnsweringId(p.id);
+    setRespuesta(p.respuesta || '');
+  };
+
   const renderPreguntaCard = (p: Pregunta) => {
     const isDismissed = dismissedIA.has(p.id);
     const showIA = p.respuesta_ia && !p.respondida && !isDismissed;
+    const canEditDelete = p.respondida && !p.publicada;
+    const isEditing = editingId === p.id;
 
     return (
       <div key={p.id} className="border rounded-lg p-3 space-y-2">
@@ -204,36 +251,16 @@ const LicitacionPreguntasTab: React.FC<Props> = ({
             )}
           </div>
 
-          {/* Generate AI button - show when no AI response and not dismissed */}
-          {!p.respondida && !p.respuesta_ia && !isDismissed && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="ml-2 shrink-0"
-              onClick={() => generateIAPreAnswer(p.id)}
-              disabled={generatingIA === p.id}
-            >
-              {generatingIA === p.id ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Sparkles className="h-3.5 w-3.5" />
-              )}
-              <span className="ml-1 text-xs">IA</span>
-            </Button>
-          )}
-
-          {/* Show AI button again after dismissing */}
-          {!p.respondida && isDismissed && (
+          {/* Generate AI button */}
+          {!p.respondida && (!p.respuesta_ia || isDismissed) && (
             <Button
               variant="outline"
               size="sm"
               className="ml-2 shrink-0"
               onClick={() => {
-                setDismissedIA(prev => {
-                  const n = new Set(prev);
-                  n.delete(p.id);
-                  return n;
-                });
+                if (isDismissed) {
+                  setDismissedIA(prev => { const n = new Set(prev); n.delete(p.id); return n; });
+                }
                 generateIAPreAnswer(p.id);
               }}
               disabled={generatingIA === p.id}
@@ -257,12 +284,7 @@ const LicitacionPreguntasTab: React.FC<Props> = ({
               </span>
               <div className="flex items-center gap-1">
                 {p.respuesta_ia_fuentes && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 text-xs"
-                    onClick={() => setShowIASource(p)}
-                  >
+                  <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => setShowIASource(p)}>
                     <BookOpen className="h-3 w-3 mr-1" /> Ver fuentes
                   </Button>
                 )}
@@ -287,24 +309,53 @@ const LicitacionPreguntasTab: React.FC<Props> = ({
           </div>
         )}
 
-        {/* Answer */}
-        {p.respuesta && (
+        {/* Answer display (not editing) */}
+        {p.respuesta && !isEditing && (
           <div className="bg-muted/50 rounded-md p-2">
-            <p className="text-xs font-medium text-muted-foreground mb-0.5">Respuesta:</p>
-            <p className="text-sm">{p.respuesta}</p>
-            {p.respuesta_adjunto_url && (
-              <a href={p.respuesta_adjunto_url} target="_blank" rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 mt-1 text-xs text-primary hover:underline">
-                <FileText className="h-3 w-3" />
-                {p.respuesta_adjunto_nombre || 'Archivo adjunto'}
-                <ExternalLink className="h-2.5 w-2.5" />
-              </a>
-            )}
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <p className="text-xs font-medium text-muted-foreground mb-0.5">Respuesta:</p>
+                <p className="text-sm">{p.respuesta}</p>
+                {p.respuesta_adjunto_url && (
+                  <a href={p.respuesta_adjunto_url} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 mt-1 text-xs text-primary hover:underline">
+                    <FileText className="h-3 w-3" />
+                    {p.respuesta_adjunto_nombre || 'Archivo adjunto'}
+                    <ExternalLink className="h-2.5 w-2.5" />
+                  </a>
+                )}
+              </div>
+              {/* Edit/Delete only if answered but NOT published */}
+              {canEditDelete && (
+                <div className="flex gap-1 ml-2 shrink-0">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleStartEdit(p)}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Editar respuesta</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => handleDeleteAnswer(p.id)}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Eliminar respuesta</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
-        {/* Answer form */}
-        {!p.respondida && answeringId === p.id ? (
+        {/* Answer/Edit form */}
+        {((!p.respondida && answeringId === p.id) || isEditing) ? (
           <div className="space-y-2">
             <Textarea
               value={respuesta}
@@ -322,9 +373,13 @@ const LicitacionPreguntasTab: React.FC<Props> = ({
             </div>
             <div className="flex gap-2">
               <Button size="sm" onClick={() => handleAnswer(p.id)}>
-                <Send className="h-3.5 w-3.5 mr-1" /> Responder
+                <Send className="h-3.5 w-3.5 mr-1" /> {isEditing ? 'Guardar' : 'Responder'}
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => { setAnsweringId(null); setRespuestaFile(null); }}>
+              <Button variant="ghost" size="sm" onClick={() => {
+                setAnsweringId(null);
+                setEditingId(null);
+                setRespuestaFile(null);
+              }}>
                 Cancelar
               </Button>
             </div>
@@ -335,6 +390,7 @@ const LicitacionPreguntasTab: React.FC<Props> = ({
             size="sm"
             onClick={() => {
               setAnsweringId(p.id);
+              setEditingId(null);
               setRespuesta(showIA ? (p.respuesta_ia || '') : '');
               setRespuestaFile(null);
             }}
@@ -369,7 +425,7 @@ const LicitacionPreguntasTab: React.FC<Props> = ({
           const respondidas = sent.filter(p => p.respondida).length;
           const allAnswered = sent.length > 0 && respondidas === sent.length;
           const unpublished = sent.filter(p => p.respondida && !p.publicada).length;
-          const unansweredNoIA = sent.filter(p => !p.respondida && !p.respuesta_ia).length;
+          const unansweredCount = sent.filter(p => !p.respondida).length;
           const similarGroups = getSimilarGroups(ronda.id);
 
           return (
@@ -386,8 +442,18 @@ const LicitacionPreguntasTab: React.FC<Props> = ({
                     </span>
                   </CardTitle>
                   <div className="flex gap-2 flex-wrap">
-                    {/* Bulk AI pre-respond */}
-                    {unansweredNoIA > 0 && (
+                    {ronda.estado === 'abierta' ? (
+                      <Button variant="outline" size="sm" onClick={() => onCloseRonda(ronda.id)}>
+                        <Lock className="h-3.5 w-3.5 mr-1" /> Cerrar
+                      </Button>
+                    ) : ronda.estado === 'cerrada' ? (
+                      <Button variant="outline" size="sm" onClick={() => onOpenRonda(ronda.id)}>
+                        <Unlock className="h-3.5 w-3.5 mr-1" /> Reabrir
+                      </Button>
+                    ) : null}
+
+                    {/* Bulk AI pre-respond - LEFT of publish */}
+                    {unansweredCount > 0 && (
                       <Button
                         variant="outline"
                         size="sm"
@@ -399,19 +465,11 @@ const LicitacionPreguntasTab: React.FC<Props> = ({
                         ) : (
                           <Wand2 className="h-3.5 w-3.5 mr-1" />
                         )}
-                        Pre-responder todo con IA ({unansweredNoIA})
+                        Pre-responder con IA ({unansweredCount})
                       </Button>
                     )}
 
-                    {ronda.estado === 'abierta' ? (
-                      <Button variant="outline" size="sm" onClick={() => onCloseRonda(ronda.id)}>
-                        <Lock className="h-3.5 w-3.5 mr-1" /> Cerrar
-                      </Button>
-                    ) : ronda.estado === 'cerrada' ? (
-                      <Button variant="outline" size="sm" onClick={() => onOpenRonda(ronda.id)}>
-                        <Unlock className="h-3.5 w-3.5 mr-1" /> Reabrir
-                      </Button>
-                    ) : null}
+                    {/* Publish button */}
                     <Button
                       size="sm"
                       onClick={() => handlePublishAll(ronda.id)}
@@ -514,6 +572,27 @@ const LicitacionPreguntasTab: React.FC<Props> = ({
                     </div>
                   ))}
                 </div>
+
+                {/* AI pre-respond for batch */}
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleBatchGenerateIA}
+                    disabled={batchGeneratingIA || selectedSimilar.size === 0}
+                  >
+                    {batchGeneratingIA ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+                    ) : (
+                      <Sparkles className="h-3.5 w-3.5 mr-1" />
+                    )}
+                    Pre-responder con IA
+                  </Button>
+                  {batchGeneratingIA && (
+                    <span className="text-xs text-muted-foreground">Generando sugerencia...</span>
+                  )}
+                </div>
+
                 <Textarea
                   value={batchAnswer}
                   onChange={e => setBatchAnswer(e.target.value)}
@@ -533,7 +612,7 @@ const LicitacionPreguntasTab: React.FC<Props> = ({
         </DialogContent>
       </Dialog>
 
-      {/* IA Source Dialog - improved with excerpts */}
+      {/* IA Source Dialog */}
       <Dialog open={!!showIASource} onOpenChange={() => setShowIASource(null)}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>

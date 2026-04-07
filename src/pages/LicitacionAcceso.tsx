@@ -25,6 +25,8 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import LicitacionCalendarioTab from '@/components/licitacion/LicitacionCalendarioTab';
 import { DocumentPreviewModal } from '@/components/DocumentPreviewModal';
+import ItemizadoFileParser from '@/components/ItemizadoFileParser';
+import { ParsedItem } from '@/hooks/useParseItemizado';
 
 const LicitacionAcceso = () => {
   const { id } = useParams<{ id: string }>();

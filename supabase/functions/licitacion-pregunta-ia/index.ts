@@ -383,6 +383,34 @@ serve(async (req) => {
       .select("nombre, tipo, url")
       .eq("licitacion_id", licitacionId);
 
+    // Fetch process context: oferentes, eventos, items, other questions
+    const { data: oferentes } = await supabase
+      .from("LicitacionOferentes")
+      .select("email, nombre_empresa, aceptada")
+      .eq("licitacion_id", licitacionId);
+
+    const { data: eventos } = await supabase
+      .from("LicitacionEventos")
+      .select("titulo, fecha, estado, descripcion")
+      .eq("licitacion_id", licitacionId)
+      .order("fecha");
+
+    const { data: items } = await supabase
+      .from("LicitacionItems")
+      .select("descripcion, unidad, cantidad, precio_unitario")
+      .eq("licitacion_id", licitacionId)
+      .eq("agregado_por_oferente", false)
+      .order("orden")
+      .limit(50);
+
+    const { data: otherPreguntas } = await supabase
+      .from("LicitacionPreguntas")
+      .select("pregunta, respuesta, respondida, publicada")
+      .eq("licitacion_id", licitacionId)
+      .eq("respondida", true)
+      .neq("id", preguntaId)
+      .limit(20);
+
     // --- Extract actual document content from Drive ---
     const documentTexts: { nombre: string; contenido: string }[] = [];
 

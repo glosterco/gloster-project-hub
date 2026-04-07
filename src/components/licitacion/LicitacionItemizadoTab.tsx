@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { LicitacionItem } from '@/hooks/useLicitaciones';
 import { ListOrdered } from 'lucide-react';
 import ItemizadoFileParser from '@/components/ItemizadoFileParser';
+import ItemizadoChatbot from '@/components/licitacion/ItemizadoChatbot';
 import { ParsedItem } from '@/hooks/useParseItemizado';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -16,6 +17,9 @@ interface Props {
   utilidades?: number | null;
   ivaPorcentaje?: number | null;
   licitacionId?: number;
+  licitacionNombre?: string;
+  licitacionDescripcion?: string;
+  licitacionEspecificaciones?: string;
   onRefresh?: () => void;
 }
 

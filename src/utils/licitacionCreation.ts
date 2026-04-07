@@ -106,8 +106,11 @@ export const normalizeChatCalendarEvents = (value: unknown) => {
       const titulo = asString(row.titulo) || asString(row.title) || asString(row.nombre) || asString(row.evento);
       if (!fecha || !titulo) return null;
 
+      const fechaFin = normalizeIsoDate(row.fecha_fin ?? row.fechaFin ?? row.fecha_cierre ?? row.end_date ?? row.endDate);
+
       return {
         fecha,
+        fechaFin: fechaFin || null,
         titulo,
         descripcion: asString(row.descripcion) || asString(row.description),
         requiereArchivos: normalizeBoolean(row.requiereArchivos ?? row.requiere_archivos ?? row.requiresFiles),

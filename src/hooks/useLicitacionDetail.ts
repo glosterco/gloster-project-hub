@@ -118,7 +118,7 @@ export const useLicitacionDetail = (licitacionId: number | null) => {
         .select(`
           *,
           LicitacionOferentes(id, email, aceptada, aceptada_at, aceptada_por_nombre, archivo_aceptacion_url, archivo_aceptacion_nombre, nombre_empresa, itemizado_enviado, itemizado_enviado_at),
-          LicitacionEventos(id, fecha, titulo, descripcion, requiere_archivos, estado, es_ronda_preguntas),
+          LicitacionEventos(id, fecha, fecha_fin, titulo, descripcion, requiere_archivos, estado, es_ronda_preguntas),
           LicitacionDocumentos(id, nombre, size, tipo, url),
           LicitacionItems(id, descripcion, unidad, cantidad, precio_unitario, precio_total, orden, agregado_por_oferente, oferente_email)
         `)
@@ -146,8 +146,9 @@ export const useLicitacionDetail = (licitacionId: number | null) => {
         iva_porcentaje: data.iva_porcentaje,
         oferentes: oferentesData.map((o: any) => ({ id: o.id, email: o.email })),
         eventos: (data.LicitacionEventos || []).map((e: any) => ({
-          id: e.id, fecha: e.fecha, titulo: e.titulo,
-          descripcion: e.descripcion, requiereArchivos: e.requiere_archivos,
+          id: e.id, fecha: e.fecha, fechaFin: e.fecha_fin,
+          titulo: e.titulo, descripcion: e.descripcion,
+          requiereArchivos: e.requiere_archivos,
           estado: e.estado, esRondaPreguntas: e.es_ronda_preguntas
         })),
         documentos: (data.LicitacionDocumentos || []).map((d: any) => ({
@@ -322,7 +323,7 @@ export const useLicitacionDetail = (licitacionId: number | null) => {
     }
   };
 
-  const updateEvento = async (eventoId: number, updates: { titulo?: string; fecha?: string; descripcion?: string }) => {
+  const updateEvento = async (eventoId: number, updates: { titulo?: string; fecha?: string; fecha_fin?: string | null; descripcion?: string }) => {
     const { error } = await supabase.from('LicitacionEventos')
       .update(updates)
       .eq('id', eventoId);

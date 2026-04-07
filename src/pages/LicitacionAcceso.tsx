@@ -1231,6 +1231,15 @@ const LicitacionAcceso = () => {
 
           {/* ===== ITEMIZADO TAB ===== */}
           <TabsContent value="itemizado">
+            {/* File import for oferente */}
+            <div className="mb-4">
+              <ItemizadoFileParser
+                onItemsAccepted={handleImportedItems}
+                title="Importar Itemizado desde Archivo"
+                description="Sube un Excel, PDF o Word y se extraerán las partidas automáticamente para tu oferta."
+              />
+            </div>
+
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 font-rubik">

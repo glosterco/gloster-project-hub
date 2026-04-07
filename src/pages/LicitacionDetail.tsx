@@ -22,7 +22,7 @@ const LicitacionDetail = () => {
 
   const {
     licitacion, rondas, preguntas, ofertas, oferentesDetail, loading, refetch,
-    createRonda, closeRonda, openRonda, answerPregunta, publishPreguntas,
+    createRonda, closeRonda, openRonda, answerPregunta, deleteAnswer, publishPreguntas,
     updateEvento, completeEvento
   } = useLicitacionDetail(licitacionId);
 

@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHead = {
   'Access-Control-Allow-Origin': '*',
@@ -46,9 +46,9 @@ Deno.serve(async (req) => {
     if (body.email && body.isDocumentNotification) {
       // Build the bidder portal URL
       const siteUrl = Deno.env.get('SITE_URL') || 'https://gloster-project-hub.lovable.app';
-      const portalUrl = body.licitacionId
+      const portalUrl = body.urlAcceso || (body.licitacionId
         ? `${siteUrl}/licitacion-acceso/${body.licitacionId}`
-        : body.urlAcceso || '';
+        : '');
 
       const subject = `Nuevos documentos disponibles - ${body.licitacionNombre}`;
       const htmlBody = `
@@ -192,7 +192,7 @@ Deno.serve(async (req) => {
     const mandante = (licitacion as any).Mandantes;
     const oferentes = (licitacion as any).LicitacionOferentes || [];
     const siteUrl = Deno.env.get('SITE_URL') || 'https://gloster-project-hub.lovable.app';
-    const portalUrl = `${siteUrl}/licitacion-acceso/${licitacionId}`;
+    const portalUrl = licitacion.url_acceso || `${siteUrl}/licitacion-acceso/${licitacionId}`;
 
     const results: any[] = [];
 

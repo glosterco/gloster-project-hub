@@ -80,6 +80,14 @@ const LicitacionAcceso = () => {
   const [newItemPU, setNewItemPU] = useState('');
   const [savingItem, setSavingItem] = useState(false);
 
+  // Inline edit item state
+  const [editingItemId, setEditingItemId] = useState<number | null>(null);
+  const [editItemValues, setEditItemValues] = useState<{ cantidad: string; pu: string }>({ cantidad: '', pu: '' });
+
+  // Per-bidder GG / Utilidades
+  const [bidderGG, setBidderGG] = useState('');
+  const [bidderUtil, setBidderUtil] = useState('');
+
   // Oferta final state
   const [ofertaDuracion, setOfertaDuracion] = useState('');
   const [ofertaNotas, setOfertaNotas] = useState('');

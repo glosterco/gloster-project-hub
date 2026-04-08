@@ -496,31 +496,33 @@ const LicitacionAcceso = () => {
     }
   };
 
+  const parsedBidderGG = parseFloat(bidderGG) || 0;
+  const parsedBidderUtil = parseFloat(bidderUtil) || 0;
+
   const saveOferta = async () => {
     if (!licitacionId) return;
     setSavingOferta(true);
     try {
-      // Calculate total from items
       const itemsTotal = allItems.reduce((sum, i) => sum + (i.precio_total || 0), 0);
-      const gg = licitacion?.gastos_generales ? itemsTotal * (licitacion.gastos_generales / 100) : 0;
-      const ut = licitacion?.utilidades ? (itemsTotal + gg) * (licitacion.utilidades / 100) : 0;
+      const gg = parsedBidderGG ? itemsTotal * (parsedBidderGG / 100) : 0;
+      const ut = parsedBidderUtil ? (itemsTotal + gg) * (parsedBidderUtil / 100) : 0;
       const neto = itemsTotal + gg + ut;
       const iva = licitacion?.iva_porcentaje ? neto * (licitacion.iva_porcentaje / 100) : 0;
       const total = neto + iva;
 
       if (miOferta) {
-        // Update existing
         const { error } = await supabase
           .from('LicitacionOfertas')
           .update({
             duracion_dias: parseInt(ofertaDuracion) || null,
             notas: ofertaNotas.trim() || null,
+            gastos_generales: parsedBidderGG || null,
+            utilidades: parsedBidderUtil || null,
             total,
           })
           .eq('id', miOferta.id);
         if (error) throw error;
       } else {
-        // Create new
         const { error } = await supabase
           .from('LicitacionOfertas')
           .insert({
@@ -529,6 +531,8 @@ const LicitacionAcceso = () => {
             estado: 'borrador',
             duracion_dias: parseInt(ofertaDuracion) || null,
             notas: ofertaNotas.trim() || null,
+            gastos_generales: parsedBidderGG || null,
+            utilidades: parsedBidderUtil || null,
             total,
           });
         if (error) throw error;
@@ -555,19 +559,17 @@ const LicitacionAcceso = () => {
         .maybeSingle();
       
       if (ofertaData) {
-        // Build combined items from allItems state
         const mItems = allItems.filter(i => !i.agregado_por_oferente).sort((a: any, b: any) => a.orden - b.orden);
         const bItems = allItems.filter(i => i.agregado_por_oferente && i.oferente_email === oferenteEmail.toLowerCase().trim()).sort((a: any, b: any) => a.orden - b.orden);
         const combined = [...mItems, ...bItems];
         
         const sub = combined.reduce((sum: number, i: any) => sum + (i.precio_total || 0), 0);
-        const ggVal = licitacion?.gastos_generales ? sub * (licitacion.gastos_generales / 100) : 0;
-        const utVal = licitacion?.utilidades ? (sub + ggVal) * (licitacion.utilidades / 100) : 0;
+        const ggVal = parsedBidderGG ? sub * (parsedBidderGG / 100) : 0;
+        const utVal = parsedBidderUtil ? (sub + ggVal) * (parsedBidderUtil / 100) : 0;
         const netoVal = sub + ggVal + utVal;
         const ivaVal = licitacion?.iva_porcentaje ? netoVal * (licitacion.iva_porcentaje / 100) : 0;
         const total = netoVal + ivaVal;
 
-        // Delete existing oferta items and re-populate
         await supabase
           .from('LicitacionOfertaItems')
           .delete()
@@ -595,8 +597,8 @@ const LicitacionAcceso = () => {
           .from('LicitacionOfertas')
           .update({ 
             estado: 'enviada',
-            gastos_generales: licitacion?.gastos_generales || null,
-            utilidades: licitacion?.utilidades || null,
+            gastos_generales: parsedBidderGG || null,
+            utilidades: parsedBidderUtil || null,
             total,
           })
           .eq('id', ofertaData.id);

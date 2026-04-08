@@ -260,8 +260,11 @@ serve(async (req) => {
       }
     }
 
+    const allSucceeded = uploadResults.length > 0 && uploadResults.every((result) => result.success);
+    const failedCount = uploadResults.filter((result) => !result.success).length;
+
     return new Response(
-      JSON.stringify({ success: true, uploadResults }),
+      JSON.stringify({ success: allSucceeded, failedCount, uploadResults }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );
   } catch (error) {

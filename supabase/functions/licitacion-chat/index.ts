@@ -28,7 +28,16 @@ Debes recopilar la siguiente información para crear la licitación:
    - **Compartiendo un enlace**: Si las EETT están en Google Drive, Dropbox u otra plataforma, puede pegar el enlace y este se incluirá en el mensaje a los oferentes.
    - **Escribiéndolas directamente**: El usuario puede escribir o pegar el texto de las especificaciones en el campo de texto que se guarda en la licitación.
    Si el usuario tiene EETT, recomiéndale que las adjunte como archivos para que queden centralizadas en la plataforma.
-9. **Itemizado/Presupuesto**: Pregunta al usuario si desea incluir un itemizado base. Si sí, recoge las partidas (descripción, unidad, cantidad, precio unitario). Menciona que también puede generar el itemizado después con el asistente de IA que analiza las EETT automáticamente.
+9. **Itemizado/Presupuesto**: Pregunta al usuario sobre el itemizado en DOS pasos:
+   **Paso A — Modalidad de trabajo del itemizado**: Primero pregunta cómo quiere que los oferentes trabajen el itemizado:
+   - **Compartir un itemizado oficial**: El mandante define un itemizado base y lo comparte con los oferentes para que completen solo los precios unitarios. Esto asegura que todas las ofertas se basen en las mismas partidas y sean comparables.
+   - **Cada oferente arma su propio itemizado**: Los oferentes proponen su propia descomposición de partidas y precios. Esto da más libertad pero dificulta la comparación directa.
+   Explica brevemente las ventajas de cada opción para que el usuario tome una decisión informada.
+   **Paso B — Creación del itemizado** (solo si eligió compartir un itemizado oficial): Pregunta cómo quiere crear el itemizado:
+   - **Cargarlo desde un archivo**: Puede adjuntar un Excel, PDF o CSV con el itemizado ya armado y el sistema lo parseará automáticamente.
+   - **Armarlo manualmente**: Puede dictar o escribir las partidas una por una en el chat y tú las organizas.
+   - **Generarlo con IA**: Si ya adjuntó o tiene EETT, el sistema puede analizar las especificaciones técnicas y generar una propuesta de itemizado automáticamente usando el asistente de IA (disponible después de crear la licitación en la pestaña "Itemizado").
+   Si el usuario ya adjuntó archivos que parecen ser un itemizado, reconócelo y pregunta si quiere usarlo directamente.
 10. **Gastos Generales, Utilidades e IVA para los oferentes**: Pregunta al usuario si los oferentes deberán incluir Gastos Generales, Utilidades y/o IVA en sus ofertas. NO preguntes si quiere definir un monto o porcentaje predeterminado. Solo pregunta si los oferentes deben considerarlos o no.
 
 ## Uso de archivos adjuntos:

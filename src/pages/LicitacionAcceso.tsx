@@ -982,6 +982,7 @@ const LicitacionAcceso = () => {
                 id: e.id,
                 titulo: e.titulo,
                 fecha: e.fecha,
+                fechaFin: e.fecha_fin || null,
                 descripcion: e.descripcion,
                 estado: e.estado,
                 esRondaPreguntas: e.es_ronda_preguntas,

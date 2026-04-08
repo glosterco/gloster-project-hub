@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Documento } from '@/hooks/useLicitaciones';
 import { FileText, ExternalLink, File, Upload, Loader2, AlertTriangle } from 'lucide-react';
+import CompactDropZone from '@/components/licitacion/CompactDropZone';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -150,15 +151,18 @@ const LicitacionDocumentosTab: React.FC<Props> = ({ documentos, licitacionId, on
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Upload section */}
-          <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 space-y-3">
-            <div className="flex items-center gap-3">
-              <input
-                ref={fileInputRef}
-                type="file"
-                onChange={handleFileSelect}
-                multiple
-                className="flex-1 text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 cursor-pointer"
-              />
+          <div className="space-y-2">
+            <CompactDropZone
+              onFilesSelected={(files) => setSelectedFiles(prev => [...prev, ...files])}
+              multiple
+              maxSizeMB={5}
+              disabled={uploading}
+              selectedFiles={selectedFiles}
+              onRemoveFile={(idx) => setSelectedFiles(prev => prev.filter((_, i) => i !== idx))}
+              placeholder="Arrastra documentos aquí o haz click para seleccionar"
+              compact={false}
+            />
+            {selectedFiles.length > 0 && (
               <Button 
                 onClick={handleUploadClick} 
                 disabled={uploading || selectedFiles.length === 0}
@@ -171,16 +175,6 @@ const LicitacionDocumentosTab: React.FC<Props> = ({ documentos, licitacionId, on
                 )}
                 {uploading ? 'Cargando...' : 'Cargar y Notificar'}
               </Button>
-            </div>
-            
-            {selectedFiles.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {selectedFiles.map((file, idx) => (
-                  <span key={idx} className="inline-flex items-center gap-1 bg-muted px-2 py-1 rounded text-xs">
-                    {getFileIcon(file.type)} {file.name} ({formatSize(file.size)})
-                  </span>
-                ))}
-              </div>
             )}
           </div>
 

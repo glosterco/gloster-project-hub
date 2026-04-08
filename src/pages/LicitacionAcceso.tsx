@@ -21,6 +21,7 @@ import {
   Clock, CheckCircle, Lock, Loader2, ListOrdered, BarChart3, Mail,
   Edit2, Save, X, Upload, Download, Eye
 } from 'lucide-react';
+import CompactDropZone from '@/components/licitacion/CompactDropZone';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import LicitacionCalendarioTab from '@/components/licitacion/LicitacionCalendarioTab';
@@ -971,7 +972,11 @@ const LicitacionAcceso = () => {
                       <div>
                         <label className="text-sm font-medium">Carta de aceptación (opcional)</label>
                         <p className="text-xs text-muted-foreground mb-1">Adjunta un archivo si deseas incluir una carta firmada</p>
-                        <Input type="file" className="text-sm" disabled />
+                        <CompactDropZone
+                          onFilesSelected={() => {}}
+                          disabled
+                          placeholder="Arrastra carta de aceptación aquí (próximamente)"
+                        />
                         <p className="text-[10px] text-muted-foreground mt-1">Funcionalidad de carga de archivos próximamente disponible</p>
                       </div>
                       <Button
@@ -1624,7 +1629,12 @@ const LicitacionAcceso = () => {
                   <div>
                     <label className="text-sm font-medium">Archivos adjuntos (opcional)</label>
                     <p className="text-xs text-muted-foreground mb-1">Adjunta documentación de respaldo para tu oferta</p>
-                    <Input type="file" className="text-sm" disabled />
+                    <CompactDropZone
+                      onFilesSelected={() => {}}
+                      disabled
+                      multiple
+                      placeholder="Arrastra archivos aquí (próximamente)"
+                    />
                     <p className="text-[10px] text-muted-foreground mt-1">Funcionalidad de carga de archivos próximamente disponible</p>
                   </div>
                 </div>

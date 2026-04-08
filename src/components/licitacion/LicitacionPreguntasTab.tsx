@@ -12,6 +12,7 @@ import {
   Paperclip, FileText, ExternalLink, Loader2, X, Wand2, Link2, CheckCircle2,
   Pencil, Trash2
 } from 'lucide-react';
+import CompactDropZone from '@/components/licitacion/CompactDropZone';
 import { Ronda, Pregunta } from '@/hooks/useLicitacionDetail';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -363,14 +364,12 @@ const LicitacionPreguntasTab: React.FC<Props> = ({
               placeholder="Escribir respuesta..."
               className="text-sm"
             />
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Input
-                type="file"
-                className="text-xs h-8"
-                onChange={(e) => setRespuestaFile(e.target.files?.[0] || null)}
-              />
-              {respuestaFile && <span className="truncate max-w-[150px]">{respuestaFile.name}</span>}
-            </div>
+            <CompactDropZone
+              onFilesSelected={(files) => setRespuestaFile(files[0] || null)}
+              selectedFiles={respuestaFile ? [respuestaFile] : []}
+              onRemoveFile={() => setRespuestaFile(null)}
+              placeholder="Adjuntar archivo (arrastra o click)"
+            />
             <div className="flex gap-2">
               <Button size="sm" onClick={() => handleAnswer(p.id)}>
                 <Send className="h-3.5 w-3.5 mr-1" /> {isEditing ? 'Guardar' : 'Responder'}

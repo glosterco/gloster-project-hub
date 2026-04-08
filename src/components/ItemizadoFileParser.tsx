@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -28,11 +28,9 @@ const ItemizadoFileParser: React.FC<Props> = ({
   const [editingItems, setEditingItems] = useState<ParsedItem[] | null>(null);
   const [editIdx, setEditIdx] = useState<number | null>(null);
   const [fileName, setFileName] = useState<string>('');
+  const [dragActive, setDragActive] = useState(false);
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const processFile = async (file: File) => {
     const validTypes = [
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'application/vnd.ms-excel',
@@ -43,13 +41,8 @@ const ItemizadoFileParser: React.FC<Props> = ({
     const ext = file.name.split('.').pop()?.toLowerCase();
     const validExts = ['xlsx', 'xls', 'pdf', 'docx', 'csv'];
 
-    if (!validTypes.includes(file.type) && !validExts.includes(ext || '')) {
-      return;
-    }
-
-    if (file.size > 10 * 1024 * 1024) {
-      return;
-    }
+    if (!validTypes.includes(file.type) && !validExts.includes(ext || '')) return;
+    if (file.size > 10 * 1024 * 1024) return;
 
     setFileName(file.name);
     const parsed = await parseFile(file);
@@ -57,6 +50,26 @@ const ItemizadoFileParser: React.FC<Props> = ({
       setEditingItems([...parsed.items]);
     }
   };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) await processFile(file);
+  };
+
+  const handleDrag = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === 'dragenter' || e.type === 'dragover') setDragActive(true);
+    else if (e.type === 'dragleave') setDragActive(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) processFile(file);
+  }, []);
 
   const handleAccept = () => {
     const items = editingItems || result?.items || [];
@@ -111,14 +124,18 @@ const ItemizadoFileParser: React.FC<Props> = ({
       <CardContent className="flex items-center gap-3 py-4">
         {!result && !parsing && (
           <div
-            className="flex items-center gap-3 w-full cursor-pointer"
+            className={`flex items-center gap-3 w-full cursor-pointer rounded-md transition-colors ${dragActive ? 'bg-primary/5 ring-2 ring-primary/30' : ''}`}
             onClick={() => inputRef.current?.click()}
+            onDragEnter={handleDrag}
+            onDragLeave={handleDrag}
+            onDragOver={handleDrag}
+            onDrop={handleDrop}
           >
             <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
               <FileSpreadsheet className="h-5 w-5 text-muted-foreground" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-medium text-sm">{title}</p>
+              <p className="font-medium text-sm">{dragActive ? 'Suelta el archivo aquí' : title}</p>
               <p className="text-xs text-muted-foreground">{description}</p>
             </div>
             <Upload className="h-5 w-5 text-muted-foreground flex-shrink-0" />

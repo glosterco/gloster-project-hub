@@ -22,6 +22,8 @@ const convertFileToBase64 = (file: File): Promise<string> => {
   });
 };
 
+const convertTextToBase64 = (text: string) => btoa(unescape(encodeURIComponent(text)));
+
 const getFileExtension = (file: File) => file.name.split('.').pop()?.toLowerCase() || '';
 
 const canAttemptParseItemizado = (file: File) => {
@@ -68,6 +70,26 @@ const autoExtractItemsFromDocuments = async (files: File[]) => {
   }
 
   return bestItems;
+};
+
+const autoGenerateItemsFromSpecifications = async (specifications: string) => {
+  if (!specifications.trim()) return [];
+
+  try {
+    const { data, error } = await supabase.functions.invoke('parse-itemizado', {
+      body: {
+        fileBase64: convertTextToBase64(specifications),
+        fileName: 'especificaciones-tecnicas.txt',
+        mimeType: 'text/plain',
+      },
+    });
+
+    if (error || data?.error || !Array.isArray(data?.items)) return [];
+    return normalizeChatItems(data.items);
+  } catch (error) {
+    console.error('Error auto-generating itemizado from specifications:', error);
+    return [];
+  }
 };
 
 export interface CalendarEvent {
@@ -137,6 +159,7 @@ export interface NewLicitacion {
   documentos: Documento[];
   documentFiles?: File[];
   items?: LicitacionItem[];
+  itemizado_compartido?: boolean;
   gastos_generales?: number;
   utilidades?: number;
   iva_porcentaje?: number;
@@ -321,17 +344,29 @@ export const useLicitaciones = () => {
       const parsedOferentes = parseOferenteEntries(newLicitacion.oferentes_emails);
       const normalizedEventos = normalizeChatCalendarEvents(newLicitacion.calendario_eventos);
       let normalizedItems = normalizeChatItems(newLicitacion.items || []);
+      const shouldCreateOfficialItemizado = newLicitacion.itemizado_compartido !== false;
       const gastosGenerales = normalizePercentNumber(newLicitacion.gastos_generales, 0);
       const utilidades = normalizePercentNumber(newLicitacion.utilidades, 0);
       const ivaPorcentaje = normalizePercentNumber(newLicitacion.iva_porcentaje, 19);
 
-      if (normalizedItems.length === 0 && newLicitacion.documentFiles && newLicitacion.documentFiles.length > 0) {
+      if (shouldCreateOfficialItemizado && normalizedItems.length === 0 && newLicitacion.documentFiles && newLicitacion.documentFiles.length > 0) {
         const autoExtractedItems = await autoExtractItemsFromDocuments(newLicitacion.documentFiles);
         if (autoExtractedItems.length > 0) {
           normalizedItems = autoExtractedItems;
           toast({
             title: 'Itemizado detectado automáticamente',
             description: `Se cargaron ${autoExtractedItems.length} partidas desde los documentos adjuntos.`,
+          });
+        }
+      }
+
+      if (shouldCreateOfficialItemizado && normalizedItems.length === 0 && newLicitacion.especificaciones.trim()) {
+        const generatedItems = await autoGenerateItemsFromSpecifications(newLicitacion.especificaciones);
+        if (generatedItems.length > 0) {
+          normalizedItems = generatedItems;
+          toast({
+            title: 'Itemizado generado con IA',
+            description: `Se generaron ${generatedItems.length} partidas a partir de las especificaciones técnicas.`,
           });
         }
       }
@@ -347,6 +382,7 @@ export const useLicitaciones = () => {
           gastos_generales: gastosGenerales,
           utilidades,
           iva_porcentaje: ivaPorcentaje,
+          itemizado_compartido: newLicitacion.itemizado_compartido ?? false,
           divisa: newLicitacion.divisa || 'CLP',
           mandante_id: mandanteId,
           estado: 'abierta'
@@ -451,13 +487,65 @@ export const useLicitaciones = () => {
             },
           });
 
-          if (uploadError) {
-            console.error('Error uploading documents to Drive:', uploadError);
+          if (uploadError) throw uploadError;
+
+          const uploadResults = Array.isArray(uploadResult?.uploadResults) ? uploadResult.uploadResults : [];
+          const failedUploads = uploadResults.filter((result: any) => !result.success);
+
+          if (!uploadResult?.success || failedUploads.length > 0) {
+            const failedNames = new Set(failedUploads.map((result: any) => result.name));
+            const fallbackDocs = newLicitacion.documentos
+              .filter((doc) => failedNames.size === 0 || failedNames.has(doc.nombre))
+              .map((doc) => ({
+                licitacion_id: licitacionId,
+                nombre: doc.nombre,
+                size: doc.size,
+                tipo: doc.tipo,
+                url: null,
+              }));
+
+            if (fallbackDocs.length > 0) {
+              const { error: fallbackError } = await supabase
+                .from('LicitacionDocumentos')
+                .insert(fallbackDocs);
+              if (fallbackError) {
+                console.error('Error creating fallback documentos:', fallbackError);
+              }
+            }
+
+            toast({
+              title: 'Documentos guardados sin sincronizar con Drive',
+              description: 'Hubo un problema con Google Drive, pero los archivos quedaron registrados en la licitación.',
+              variant: 'destructive',
+            });
           } else {
             console.log('✅ Documents uploaded to Drive:', uploadResult);
           }
-        } catch (uploadErr) {
+        } catch (uploadErr: any) {
           console.error('Error in Drive upload:', uploadErr);
+
+          const fallbackDocs = newLicitacion.documentos.map((doc) => ({
+            licitacion_id: licitacionId,
+            nombre: doc.nombre,
+            size: doc.size,
+            tipo: doc.tipo,
+            url: null,
+          }));
+
+          if (fallbackDocs.length > 0) {
+            const { error: fallbackError } = await supabase
+              .from('LicitacionDocumentos')
+              .insert(fallbackDocs);
+            if (fallbackError) {
+              console.error('Error creating fallback documentos after upload failure:', fallbackError);
+            }
+          }
+
+          toast({
+            title: 'Google Drive no disponible',
+            description: 'Los documentos quedaron visibles en la licitación, pero no se pudieron sincronizar a Drive.',
+            variant: 'destructive',
+          });
         }
       }
 

@@ -76,18 +76,22 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    const systemPrompt = `Eres un experto en presupuestos de construcción. 
-Tu tarea es extraer el itemizado/presupuesto de un documento.
+    const systemPrompt = `Eres un experto en presupuestos de construcción en Chile.
+Tu tarea es convertir un documento en un itemizado estructurado.
 
 REGLAS ESTRICTAS:
-- Extrae SOLO las partidas/ítems que encuentres en el documento
-- Cada ítem debe tener: descripcion, unidad, cantidad, precio_unitario, precio_total
-- Si un campo no está disponible, usa null
-- El precio_total debe ser cantidad * precio_unitario cuando ambos existan
-- Mantén el orden original del documento
-- NO inventes datos que no estén en el documento
-- Si hay subtotales, GG, utilidades o IVA, NO los incluyas como ítems
-- Responde SOLO con JSON válido, sin markdown ni explicaciones
+- Si el documento ya contiene un presupuesto, planilla o itemizado explícito, extráelo respetando su estructura y orden.
+- Si el documento corresponde a EETT, bases técnicas, memorias descriptivas o antecedentes de obra sin planilla explícita, genera un itemizado base PROVISIONAL a partir de los trabajos descritos.
+- En documentos tipo EETT debes desglosar partidas medibles y valorizables, evitando omitir obras preliminares, terminaciones, pruebas, protecciones, aseo y cierres si aplican.
+- Cada ítem debe tener: descripcion, unidad, cantidad, precio_unitario, precio_total.
+- Si un campo no está disponible, usa null.
+- Si la cantidad no está explícita pero la partida existe, usa 1 como cantidad provisional.
+- El precio_unitario debe ser null si el documento no trae precio.
+- El precio_total debe ser cantidad * precio_unitario cuando ambos existan; si no, usa null.
+- Mantén el orden lógico del documento.
+- NO inventes especialidades o partidas que no tengan sustento en el texto.
+- Si hay subtotales, GG, utilidades o IVA, NO los incluyas como ítems.
+- Responde SOLO con JSON válido, sin markdown ni explicaciones.
 
 Formato de respuesta:
 {

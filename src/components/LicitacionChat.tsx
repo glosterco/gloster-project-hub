@@ -254,6 +254,7 @@ const LicitacionChat = ({ open, onOpenChange, onSuccess }: LicitacionChatProps) 
         oferentes_emails: parsedOferentes.map(formatOferenteEntry),
         calendario_eventos: normalizeChatCalendarEvents(data.calendario_eventos || data.eventos || data.calendario || []),
         items: aiItems.length > 0 ? aiItems : attachmentItems,
+        itemizado_compartido: typeof data.itemizado_compartido === 'boolean' ? data.itemizado_compartido : undefined,
         gastos_generales: normalizePercentNumber(data.gastos_generales ?? data.gg ?? data.gastosGenerales, 0),
         utilidades: normalizePercentNumber(data.utilidades ?? data.utilidad, 0),
         iva_porcentaje: normalizePercentNumber(data.iva_porcentaje ?? data.iva ?? data.ivaPorcentaje, 19),

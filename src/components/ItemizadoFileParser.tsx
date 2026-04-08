@@ -108,25 +108,20 @@ const ItemizadoFileParser: React.FC<Props> = ({
 
   return (
     <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base font-rubik">
-          <FileSpreadsheet className="h-5 w-5" />
-          {title}
-        </CardTitle>
-        <p className="text-sm text-muted-foreground">{description}</p>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Upload area */}
+      <CardContent className="flex items-center gap-3 py-4">
         {!result && !parsing && (
           <div
-            className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-muted/30 transition-colors"
+            className="flex items-center gap-3 w-full cursor-pointer"
             onClick={() => inputRef.current?.click()}
           >
-            <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-            <p className="text-sm font-medium">Haz clic para seleccionar archivo</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Excel (.xlsx), PDF (.pdf), Word (.docx) o CSV
-            </p>
+            <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+              <FileSpreadsheet className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-sm">{title}</p>
+              <p className="text-xs text-muted-foreground">{description}</p>
+            </div>
+            <Upload className="h-5 w-5 text-muted-foreground flex-shrink-0" />
             <input
               ref={inputRef}
               type="file"

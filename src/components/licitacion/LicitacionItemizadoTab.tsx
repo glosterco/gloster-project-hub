@@ -241,21 +241,21 @@ const LicitacionItemizadoTab: React.FC<Props> = ({
               <div className="space-y-1 w-20">
                 <label className="text-xs text-muted-foreground">Cantidad</label>
                 <Input
-                  type="number"
+                  inputMode="decimal"
                   value={newQty}
                   onChange={(e) => setNewQty(e.target.value)}
                   placeholder="0"
-                  className="h-8 text-sm"
+                  className="h-8 text-sm [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
                 />
               </div>
               <div className="space-y-1 w-24">
                 <label className="text-xs text-muted-foreground">P. Unitario</label>
                 <Input
-                  type="number"
+                  inputMode="decimal"
                   value={newPU}
                   onChange={(e) => setNewPU(e.target.value)}
                   placeholder="0"
-                  className="h-8 text-sm"
+                  className="h-8 text-sm [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
                 />
               </div>
               <Button

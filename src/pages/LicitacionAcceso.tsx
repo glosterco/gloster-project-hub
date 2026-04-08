@@ -107,7 +107,7 @@ const LicitacionAcceso = () => {
       const { data, error } = await supabase
         .from('Licitaciones')
         .select(`
-          id, nombre, descripcion, mensaje_oferentes, estado, url_acceso, gastos_generales, utilidades, iva_porcentaje, created_at,
+          id, nombre, descripcion, mensaje_oferentes, estado, url_acceso, gastos_generales, utilidades, iva_porcentaje, divisa, created_at,
           LicitacionEventos(id, fecha, fecha_fin, titulo, descripcion, estado, es_ronda_preguntas),
           LicitacionDocumentos(id, nombre, size, tipo, url),
           LicitacionItems(id, descripcion, unidad, cantidad, precio_unitario, precio_total, orden, agregado_por_oferente, oferente_email)
@@ -169,6 +169,8 @@ const LicitacionAcceso = () => {
         setMiOfertaItems((ofertaData.LicitacionOfertaItems || []).sort((a: any, b: any) => a.orden - b.orden));
         setOfertaDuracion(ofertaData.duracion_dias?.toString() || '');
         setOfertaNotas(ofertaData.notas || '');
+        setBidderGG(ofertaData.gastos_generales?.toString() || '');
+        setBidderUtil(ofertaData.utilidades?.toString() || '');
       }
     } catch (err: any) {
       console.error('Error loading licitacion:', err);

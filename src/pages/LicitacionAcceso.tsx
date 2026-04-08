@@ -27,6 +27,7 @@ import LicitacionCalendarioTab from '@/components/licitacion/LicitacionCalendari
 import { DocumentPreviewModal } from '@/components/DocumentPreviewModal';
 import ItemizadoFileParser from '@/components/ItemizadoFileParser';
 import { ParsedItem } from '@/hooks/useParseItemizado';
+import { buildHierarchicalItems, getNextSubitemCode, prefixItemDescription } from '@/utils/licitacionItemHierarchy';
 
 const LicitacionAcceso = () => {
   const { id } = useParams<{ id: string }>();
@@ -78,6 +79,7 @@ const LicitacionAcceso = () => {
   const [newItemUnidad, setNewItemUnidad] = useState('');
   const [newItemCantidad, setNewItemCantidad] = useState('');
   const [newItemPU, setNewItemPU] = useState('');
+  const [newItemParentId, setNewItemParentId] = useState('');
   const [savingItem, setSavingItem] = useState(false);
 
   // Inline edit item state
@@ -374,10 +376,14 @@ const LicitacionAcceso = () => {
       const cantidad = parseFloat(newItemCantidad) || null;
       const pu = parseFloat(newItemPU) || null;
       const total = cantidad && pu ? cantidad * pu : null;
+      const visibleItems = allItems.filter((item) => !item.agregado_por_oferente || item.oferente_email === oferenteEmail.toLowerCase().trim());
+      const parentCode = newItemParentId
+        ? buildHierarchicalItems(visibleItems).find(({ item }) => String(item.id) === newItemParentId)?.displayCode || null
+        : null;
 
       const { error } = await supabase.from('LicitacionItems').insert({
         licitacion_id: licitacionId,
-        descripcion: newItemDesc.trim(),
+        descripcion: parentCode ? prefixItemDescription(getNextSubitemCode(visibleItems, parentCode), newItemDesc.trim()) : newItemDesc.trim(),
         unidad: newItemUnidad.trim() || null,
         cantidad,
         precio_unitario: pu,
@@ -391,6 +397,7 @@ const LicitacionAcceso = () => {
       setNewItemUnidad('');
       setNewItemCantidad('');
       setNewItemPU('');
+      setNewItemParentId('');
       setShowNewItemForm(false);
       toast({ title: "Partida agregada" });
       fetchData();
@@ -503,7 +510,7 @@ const LicitacionAcceso = () => {
     if (!licitacionId) return;
     setSavingOferta(true);
     try {
-      const itemsTotal = allItems.reduce((sum, i) => sum + (i.precio_total || 0), 0);
+      const itemsTotal = combinedItemNodes.reduce((sum, node) => sum + (node.item.precio_total || 0), 0);
       const gg = parsedBidderGG ? itemsTotal * (parsedBidderGG / 100) : 0;
       const ut = parsedBidderUtil ? (itemsTotal + gg) * (parsedBidderUtil / 100) : 0;
       const neto = itemsTotal + gg + ut;
@@ -559,9 +566,7 @@ const LicitacionAcceso = () => {
         .maybeSingle();
       
       if (ofertaData) {
-        const mItems = allItems.filter(i => !i.agregado_por_oferente).sort((a: any, b: any) => a.orden - b.orden);
-        const bItems = allItems.filter(i => i.agregado_por_oferente && i.oferente_email === oferenteEmail.toLowerCase().trim()).sort((a: any, b: any) => a.orden - b.orden);
-        const combined = [...mItems, ...bItems];
+        const combined = combinedItemNodes.map((node) => node.item);
         
         const sub = combined.reduce((sum: number, i: any) => sum + (i.precio_total || 0), 0);
         const ggVal = parsedBidderGG ? sub * (parsedBidderGG / 100) : 0;
@@ -841,9 +846,21 @@ const LicitacionAcceso = () => {
     );
   }
 
-  const mandanteItems = allItems.filter(i => !i.agregado_por_oferente).sort((a, b) => a.orden - b.orden);
-  const bidderItems = allItems.filter(i => i.agregado_por_oferente && i.oferente_email === oferenteEmail.toLowerCase().trim()).sort((a, b) => a.orden - b.orden);
-  const combinedItems = [...mandanteItems, ...bidderItems];
+  const visibleEmail = oferenteEmail.toLowerCase().trim();
+  const eventosConDuracion = (licitacion.LicitacionEventos || []).map((evento: any) => {
+    if (evento.fecha_fin || !evento.es_ronda_preguntas) return evento;
+
+    const ronda = rondas.find((item: any) => item.evento_id === evento.id || item.titulo === evento.titulo);
+    return {
+      ...evento,
+      fecha_fin: ronda?.fecha_cierre || null,
+    };
+  });
+  const combinedItemNodes = buildHierarchicalItems(allItems.filter(i => !i.agregado_por_oferente || i.oferente_email === visibleEmail));
+  const mandanteItemNodes = combinedItemNodes.filter(({ item }) => !item.agregado_por_oferente);
+  const bidderItemNodes = combinedItemNodes.filter(({ item }) => item.agregado_por_oferente && item.oferente_email === visibleEmail);
+  const combinedItems = combinedItemNodes.map(({ item }) => item);
+  const topLevelItemOptions = combinedItemNodes.filter(({ level }) => level === 0);
   const subtotal = combinedItems.reduce((sum, i) => sum + (i.precio_total || 0), 0);
   const gg = parsedBidderGG ? subtotal * (parsedBidderGG / 100) : 0;
   const utilidad = parsedBidderUtil ? (subtotal + gg) * (parsedBidderUtil / 100) : 0;
@@ -978,7 +995,7 @@ const LicitacionAcceso = () => {
           {/* ===== CALENDARIO TAB ===== */}
           <TabsContent value="calendario">
             <LicitacionCalendarioTab
-              eventos={(licitacion.LicitacionEventos || []).map((e: any) => ({
+              eventos={eventosConDuracion.map((e: any) => ({
                 id: e.id,
                 titulo: e.titulo,
                 fecha: e.fecha,
@@ -1314,7 +1331,7 @@ const LicitacionAcceso = () => {
                 {combinedItems.length === 0 && !showNewItemForm ? (
                   <div className="text-center py-8">
                     <p className="text-muted-foreground mb-4">
-                      {mandanteItems.length === 0
+                      {mandanteItemNodes.length === 0
                         ? 'No se definió un itemizado base. Puedes crear tus propias partidas.'
                         : 'No hay partidas definidas.'}
                     </p>
@@ -1328,7 +1345,7 @@ const LicitacionAcceso = () => {
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead className="w-12">#</TableHead>
+                            <TableHead className="w-16">Ítem</TableHead>
                             <TableHead>Descripción</TableHead>
                             <TableHead className="text-center w-20">Unidad</TableHead>
                             <TableHead className="text-right w-24">Cantidad</TableHead>
@@ -1338,10 +1355,10 @@ const LicitacionAcceso = () => {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {mandanteItems.map((item, idx) => (
+                          {mandanteItemNodes.map(({ item, displayCode, cleanDescription, level }) => (
                             <TableRow key={item.id}>
-                              <TableCell className="text-muted-foreground">{idx + 1}</TableCell>
-                              <TableCell className="font-medium">{item.descripcion}</TableCell>
+                              <TableCell className="text-muted-foreground">{displayCode}</TableCell>
+                              <TableCell className="font-medium" style={{ paddingLeft: `${level * 20 + 16}px` }}>{cleanDescription}</TableCell>
                               <TableCell className="text-center">{item.unidad || '-'}</TableCell>
                               {editingItemId === item.id ? (
                                 <>
@@ -1375,7 +1392,7 @@ const LicitacionAcceso = () => {
                               )}
                             </TableRow>
                           ))}
-                          {bidderItems.length > 0 && (
+                          {bidderItemNodes.length > 0 && (
                             <TableRow>
                               <TableCell colSpan={7} className="bg-blue-50 dark:bg-blue-950/20 text-center">
                                 <span className="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wider">
@@ -1384,11 +1401,11 @@ const LicitacionAcceso = () => {
                               </TableCell>
                             </TableRow>
                           )}
-                          {bidderItems.map((item, idx) => (
+                          {bidderItemNodes.map(({ item, displayCode, cleanDescription, level }) => (
                             <TableRow key={item.id} className="bg-blue-50/30 dark:bg-blue-950/10 border-l-2 border-l-blue-400">
-                              <TableCell className="text-muted-foreground">{mandanteItems.length + idx + 1}</TableCell>
+                              <TableCell className="text-muted-foreground">{displayCode}</TableCell>
                               <TableCell className="font-medium">
-                                {item.descripcion}
+                                <span style={{ paddingLeft: `${level * 20}px` }} className="inline-block">{cleanDescription}</span>
                                 <Badge variant="outline" className="ml-2 text-[9px] border-blue-400 text-blue-600">Nueva</Badge>
                               </TableCell>
                               <TableCell className="text-center">{item.unidad || '-'}</TableCell>
@@ -1486,6 +1503,20 @@ const LicitacionAcceso = () => {
                           <div className="col-span-2">
                             <Input placeholder="Descripción *" value={newItemDesc} onChange={e => setNewItemDesc(e.target.value)} />
                           </div>
+                          <div className="col-span-2">
+                            <select
+                              value={newItemParentId}
+                              onChange={e => setNewItemParentId(e.target.value)}
+                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+                            >
+                              <option value="">Nueva partida principal</option>
+                              {topLevelItemOptions.map(({ item, displayCode, cleanDescription }) => (
+                                <option key={item.id || displayCode} value={String(item.id)}>
+                                  Subitem de {displayCode} · {cleanDescription}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
                           <Input placeholder="Unidad" value={newItemUnidad} onChange={e => setNewItemUnidad(e.target.value)} />
                           <Input placeholder="Cantidad" type="number" value={newItemCantidad} onChange={e => setNewItemCantidad(e.target.value)} />
                           <Input placeholder="Precio Unitario" type="number" value={newItemPU} onChange={e => setNewItemPU(e.target.value)} />
@@ -1510,7 +1541,7 @@ const LicitacionAcceso = () => {
                     )}
 
                     {/* Enviar Itemizado button */}
-                    {(bidderItems.length > 0 || mandanteItems.length > 0) && (
+                    {(bidderItemNodes.length > 0 || mandanteItemNodes.length > 0) && (
                       <div className="border-t pt-4">
                         {oferenteRecord?.itemizado_enviado ? (
                           <div className="flex items-center gap-2 p-3 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 rounded-lg">

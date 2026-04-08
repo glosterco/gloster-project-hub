@@ -28,8 +28,6 @@ interface Props {
   ofertas: Oferta[];
   itemsReferencia: LicitacionItem[];
   licitacionId?: number;
-  licitacionGG?: number | null;
-  licitacionUtil?: number | null;
   licitacionIVA?: number | null;
   onRefresh?: () => void;
 }
@@ -100,7 +98,7 @@ const SortableOfertaHeader: React.FC<{
 };
 
 const LicitacionOfertasTab: React.FC<Props> = ({
-  ofertas: ofertasOriginal, itemsReferencia, licitacionId, licitacionGG, licitacionUtil, licitacionIVA, onRefresh
+  ofertas: ofertasOriginal, itemsReferencia, licitacionId, licitacionIVA, onRefresh
 }) => {
   const { toast } = useToast();
   const [collapsed, setCollapsed] = useState(false);
@@ -196,6 +194,25 @@ const LicitacionOfertasTab: React.FC<Props> = ({
     return map;
   }, [ofertas]);
 
+  const ofertaFinancials = useMemo(() => {
+    const map = new Map<number, { ggPct: number | null; ggAmount: number; utilPct: number | null; utilAmount: number; ivaAmount: number; total: number }>();
+
+    ofertas.forEach((oferta) => {
+      const subtotal = ofertaSubtotals.get(oferta.id) || 0;
+      const ggPct = oferta.gastos_generales ?? null;
+      const ggAmount = ggPct != null ? subtotal * (ggPct / 100) : 0;
+      const utilPct = oferta.utilidades ?? null;
+      const utilAmount = utilPct != null ? (subtotal + ggAmount) * (utilPct / 100) : 0;
+      const neto = subtotal + ggAmount + utilAmount;
+      const ivaAmount = licitacionIVA != null && licitacionIVA > 0 ? neto * (licitacionIVA / 100) : 0;
+      const total = oferta.total ?? neto + ivaAmount;
+
+      map.set(oferta.id, { ggPct, ggAmount, utilPct, utilAmount, ivaAmount, total });
+    });
+
+    return map;
+  }, [licitacionIVA, ofertaSubtotals, ofertas]);
+
   const colsPerOferta = collapsed ? 1 : 3;
 
   const sensors = useSensors(
@@ -274,8 +291,8 @@ const LicitacionOfertasTab: React.FC<Props> = ({
     );
   }
 
-  const hasGG = licitacionGG != null && licitacionGG > 0;
-  const hasUtil = licitacionUtil != null && licitacionUtil > 0;
+  const hasGG = ofertas.some(oferta => (oferta.gastos_generales ?? 0) > 0);
+  const hasUtil = ofertas.some(oferta => (oferta.utilidades ?? 0) > 0);
   const hasIVA = licitacionIVA != null && licitacionIVA > 0;
 
   // Sortable item row
@@ -438,16 +455,21 @@ const LicitacionOfertasTab: React.FC<Props> = ({
                 {hasGG && (
                   <TableRow className="bg-muted/10">
                     <TableCell className="sticky left-0 bg-muted/10 z-10 text-xs border-r">
-                      Gastos Generales ({licitacionGG}%)
+                      Gastos Generales
                     </TableCell>
                     {!collapsed && (<><TableCell className="border-r" /><TableCell className="border-r" /></>)}
                     {ofertas.map(oferta => {
-                      const sub = ofertaSubtotals.get(oferta.id) || 0;
-                      const gg = oferta.gastos_generales != null ? oferta.gastos_generales : sub * (licitacionGG! / 100);
+                      const financial = ofertaFinancials.get(oferta.id);
+                      const isAdj = oferta.estado === 'adjudicada';
                       return (
                         <React.Fragment key={oferta.id}>
                           {!collapsed && (<><TableCell className="border-l" /><TableCell /></>)}
-                          <TableCell className="text-right text-xs border-r">{fmt(gg)}</TableCell>
+                          <TableCell className={`text-right text-xs border-r ${isAdj ? 'bg-emerald-50 dark:bg-emerald-950/20' : ''}`}>
+                            <div className="flex flex-col items-end leading-tight">
+                              <span>{fmt(financial?.ggAmount)}</span>
+                              <span className="text-[10px] text-muted-foreground">{financial?.ggPct != null ? `${financial.ggPct}%` : '-'}</span>
+                            </div>
+                          </TableCell>
                         </React.Fragment>
                       );
                     })}
@@ -457,16 +479,21 @@ const LicitacionOfertasTab: React.FC<Props> = ({
                 {hasUtil && (
                   <TableRow className="bg-muted/10">
                     <TableCell className="sticky left-0 bg-muted/10 z-10 text-xs border-r">
-                      Utilidades ({licitacionUtil}%)
+                      Utilidades
                     </TableCell>
                     {!collapsed && (<><TableCell className="border-r" /><TableCell className="border-r" /></>)}
                     {ofertas.map(oferta => {
-                      const sub = ofertaSubtotals.get(oferta.id) || 0;
-                      const util = oferta.utilidades != null ? oferta.utilidades : sub * (licitacionUtil! / 100);
+                      const financial = ofertaFinancials.get(oferta.id);
+                      const isAdj = oferta.estado === 'adjudicada';
                       return (
                         <React.Fragment key={oferta.id}>
                           {!collapsed && (<><TableCell className="border-l" /><TableCell /></>)}
-                          <TableCell className="text-right text-xs border-r">{fmt(util)}</TableCell>
+                          <TableCell className={`text-right text-xs border-r ${isAdj ? 'bg-emerald-50 dark:bg-emerald-950/20' : ''}`}>
+                            <div className="flex flex-col items-end leading-tight">
+                              <span>{fmt(financial?.utilAmount)}</span>
+                              <span className="text-[10px] text-muted-foreground">{financial?.utilPct != null ? `${financial.utilPct}%` : '-'}</span>
+                            </div>
+                          </TableCell>
                         </React.Fragment>
                       );
                     })}
@@ -480,13 +507,11 @@ const LicitacionOfertasTab: React.FC<Props> = ({
                     </TableCell>
                     {!collapsed && (<><TableCell className="border-r" /><TableCell className="border-r" /></>)}
                     {ofertas.map(oferta => {
-                      const total = oferta.total || 0;
-                      const neto = total / (1 + licitacionIVA! / 100);
-                      const iva = total - neto;
+                      const financial = ofertaFinancials.get(oferta.id);
                       return (
                         <React.Fragment key={oferta.id}>
                           {!collapsed && (<><TableCell className="border-l" /><TableCell /></>)}
-                          <TableCell className="text-right text-xs border-r">{fmt(iva)}</TableCell>
+                          <TableCell className="text-right text-xs border-r">{fmt(financial?.ivaAmount)}</TableCell>
                         </React.Fragment>
                       );
                     })}
@@ -499,11 +524,12 @@ const LicitacionOfertasTab: React.FC<Props> = ({
                   {!collapsed && (<><TableCell className="border-r" /><TableCell className="border-r" /></>)}
                   {ofertas.map(oferta => {
                     const isAdj = oferta.estado === 'adjudicada';
+                    const financial = ofertaFinancials.get(oferta.id);
                     return (
                       <React.Fragment key={oferta.id}>
                         {!collapsed && (<><TableCell className="border-l" /><TableCell /></>)}
                         <TableCell className={`text-right font-bold text-sm border-r ${isAdj ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300' : ''}`}>
-                          {fmt(oferta.total)}
+                          {fmt(financial?.total ?? oferta.total)}
                         </TableCell>
                       </React.Fragment>
                     );

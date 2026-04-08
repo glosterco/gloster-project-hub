@@ -124,14 +124,18 @@ const ItemizadoFileParser: React.FC<Props> = ({
       <CardContent className="flex items-center gap-3 py-4">
         {!result && !parsing && (
           <div
-            className="flex items-center gap-3 w-full cursor-pointer"
+            className={`flex items-center gap-3 w-full cursor-pointer rounded-md transition-colors ${dragActive ? 'bg-primary/5 ring-2 ring-primary/30' : ''}`}
             onClick={() => inputRef.current?.click()}
+            onDragEnter={handleDrag}
+            onDragLeave={handleDrag}
+            onDragOver={handleDrag}
+            onDrop={handleDrop}
           >
             <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
               <FileSpreadsheet className="h-5 w-5 text-muted-foreground" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-medium text-sm">{title}</p>
+              <p className="font-medium text-sm">{dragActive ? 'Suelta el archivo aquí' : title}</p>
               <p className="text-xs text-muted-foreground">{description}</p>
             </div>
             <Upload className="h-5 w-5 text-muted-foreground flex-shrink-0" />

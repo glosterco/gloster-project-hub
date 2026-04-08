@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { LicitacionItem } from '@/hooks/useLicitaciones';
-import { ListOrdered } from 'lucide-react';
+import { ListOrdered, Plus, Loader2 } from 'lucide-react';
 import ItemizadoFileParser from '@/components/ItemizadoFileParser';
 import ItemizadoChatbot from '@/components/licitacion/ItemizadoChatbot';
 import { ParsedItem } from '@/hooks/useParseItemizado';
@@ -10,9 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Loader2 } from 'lucide-react';
-import { buildHierarchicalItems, getNextSubitemCode, prefixItemDescription } from '@/utils/licitacionItemHierarchy';
+import { buildHierarchicalItems, prefixItemDescription } from '@/utils/licitacionItemHierarchy';
 
 interface Props {
   items: LicitacionItem[];
@@ -32,14 +30,14 @@ const LicitacionItemizadoTab: React.FC<Props> = ({
 }) => {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
-  const [newItemDesc, setNewItemDesc] = useState('');
-  const [newItemUnidad, setNewItemUnidad] = useState('');
-  const [newItemCantidad, setNewItemCantidad] = useState('');
-  const [newItemPU, setNewItemPU] = useState('');
-  const [parentItemId, setParentItemId] = useState('');
+  const [newCode, setNewCode] = useState('');
+  const [newDesc, setNewDesc] = useState('');
+  const [newUnit, setNewUnit] = useState('');
+  const [newQty, setNewQty] = useState('');
+  const [newPU, setNewPU] = useState('');
+
   const sortedItems = [...items].sort((a, b) => a.orden - b.orden);
   const hierarchicalItems = useMemo(() => buildHierarchicalItems(sortedItems), [sortedItems]);
-  const topLevelItems = hierarchicalItems.filter(({ level }) => level === 0);
   const subtotal = sortedItems.reduce((sum, i) => sum + (i.precio_total || 0), 0);
   const iva = ivaPorcentaje ? subtotal * (ivaPorcentaje / 100) : 0;
   const total = subtotal + iva;
@@ -60,10 +58,8 @@ const LicitacionItemizadoTab: React.FC<Props> = ({
         orden: idx + 1,
         agregado_por_oferente: false,
       }));
-
       const { error } = await supabase.from('LicitacionItems').insert(rows);
       if (error) throw error;
-
       toast({ title: 'Itemizado importado', description: `${rows.length} partidas agregadas` });
       onRefresh?.();
     } catch (err: any) {
@@ -73,26 +69,28 @@ const LicitacionItemizadoTab: React.FC<Props> = ({
     }
   };
 
-  const handleCreateItem = async () => {
-    if (!licitacionId || !newItemDesc.trim()) return;
+  const normalizeCode = (raw: string): string => {
+    return raw.replace(/[,;-]/g, '.').replace(/\.{2,}/g, '.').replace(/^\.+|\.+$/g, '');
+  };
 
+  const handleCreateItem = async () => {
+    if (!licitacionId || !newDesc.trim()) return;
     setSaving(true);
     try {
-      const cantidad = Number.parseFloat(newItemCantidad) || null;
-      const precioUnitario = Number.parseFloat(newItemPU) || null;
+      const cantidad = Number.parseFloat(newQty) || null;
+      const precioUnitario = Number.parseFloat(newPU) || null;
       const precioTotal = cantidad != null && precioUnitario != null ? cantidad * precioUnitario : null;
       const maxOrden = sortedItems.length > 0 ? Math.max(...sortedItems.map((item) => item.orden || 0)) : 0;
-      const parentCode = parentItemId
-        ? topLevelItems.find(({ item }) => String(item.id) === parentItemId)?.displayCode || null
-        : null;
-      const descripcion = parentCode
-        ? prefixItemDescription(getNextSubitemCode(sortedItems, parentCode), newItemDesc.trim())
-        : newItemDesc.trim();
+
+      const code = normalizeCode(newCode.trim());
+      const descripcion = code
+        ? prefixItemDescription(code, newDesc.trim())
+        : newDesc.trim();
 
       const { error } = await supabase.from('LicitacionItems').insert({
         licitacion_id: licitacionId,
         descripcion,
-        unidad: newItemUnidad.trim() || null,
+        unidad: newUnit.trim() || null,
         cantidad,
         precio_unitario: precioUnitario,
         precio_total: precioTotal,
@@ -102,12 +100,12 @@ const LicitacionItemizadoTab: React.FC<Props> = ({
 
       if (error) throw error;
 
-      setNewItemDesc('');
-      setNewItemUnidad('');
-      setNewItemCantidad('');
-      setNewItemPU('');
-      setParentItemId('');
-      toast({ title: 'Partida agregada', description: parentCode ? 'Se creó como subitem del item seleccionado.' : 'Se agregó una nueva partida al itemizado.' });
+      setNewCode('');
+      setNewDesc('');
+      setNewUnit('');
+      setNewQty('');
+      setNewPU('');
+      toast({ title: 'Partida agregada' });
       onRefresh?.();
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
@@ -118,92 +116,7 @@ const LicitacionItemizadoTab: React.FC<Props> = ({
 
   return (
     <div className="space-y-4">
-      {/* Import section */}
-      {licitacionId && (
-        <ItemizadoFileParser
-          onItemsAccepted={handleItemsAccepted}
-          title="Importar Itemizado desde Archivo"
-          description="Sube un Excel, PDF o Word con el presupuesto y se extraerán las partidas automáticamente."
-        />
-      )}
-
-      {/* AI Chatbot */}
-      {licitacionId && (
-        <ItemizadoChatbot
-          licitacionNombre={licitacionNombre}
-          licitacionDescripcion={licitacionDescripcion}
-          licitacionEspecificaciones={licitacionEspecificaciones}
-          existingItems={items.map(i => ({
-            descripcion: i.descripcion,
-            unidad: i.unidad || '',
-            cantidad: i.cantidad,
-            precio_unitario: i.precio_unitario,
-          }))}
-          onItemsGenerated={handleItemsAccepted}
-        />
-      )}
-
-      {licitacionId && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-rubik text-base">Agregar partida o subitem</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="md:col-span-2 space-y-2">
-                <Label htmlFor="manual-item-desc">Descripción</Label>
-                <Input id="manual-item-desc" value={newItemDesc} onChange={(e) => setNewItemDesc(e.target.value)} placeholder="Ej. Estructura secundaria de tribunas" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="manual-item-parent">Agrupar dentro de</Label>
-                <select
-                  id="manual-item-parent"
-                  value={parentItemId}
-                  onChange={(e) => setParentItemId(e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
-                >
-                  <option value="">Nuevo item principal</option>
-                  {topLevelItems.map(({ item, displayCode, cleanDescription }) => (
-                    <option key={item.id || displayCode} value={String(item.id)}>
-                      {displayCode} · {cleanDescription}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="manual-item-unit">Unidad</Label>
-                <Input id="manual-item-unit" value={newItemUnidad} onChange={(e) => setNewItemUnidad(e.target.value)} placeholder="m2, gl, un" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="manual-item-qty">Cantidad</Label>
-                <Input id="manual-item-qty" type="number" value={newItemCantidad} onChange={(e) => setNewItemCantidad(e.target.value)} placeholder="0" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="manual-item-pu">Precio unitario</Label>
-                <Input id="manual-item-pu" type="number" value={newItemPU} onChange={(e) => setNewItemPU(e.target.value)} placeholder="0" />
-              </div>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm text-muted-foreground">
-                {parentItemId ? 'Se asignará automáticamente como subitem correlativo del item seleccionado.' : 'Si no seleccionas un item padre, se agregará como un nuevo item principal.'}
-              </p>
-              <Button onClick={handleCreateItem} disabled={saving || !newItemDesc.trim()}>
-                {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Agregar al itemizado
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {saving && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          Guardando partidas...
-        </div>
-      )}
-
-      {/* Existing items table */}
+      {/* 1. Itemizado Oficial — always first */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 font-rubik">
@@ -214,7 +127,7 @@ const LicitacionItemizadoTab: React.FC<Props> = ({
         <CardContent>
           {items.length === 0 ? (
             <p className="text-center py-8 text-muted-foreground">
-              No se definió un itemizado para esta licitación. Usa el importador de arriba para agregar uno.
+              No se definió un itemizado para esta licitación. Usa las herramientas de abajo para agregar uno.
             </p>
           ) : (
             <div className="overflow-x-auto">
@@ -260,6 +173,114 @@ const LicitacionItemizadoTab: React.FC<Props> = ({
           )}
         </CardContent>
       </Card>
+
+      {/* 2. Tools section — compact row */}
+      {licitacionId && (
+        <div className="grid gap-4 md:grid-cols-2">
+          {/* Importer — compact, same height as collapsed chatbot */}
+          <ItemizadoFileParser
+            onItemsAccepted={handleItemsAccepted}
+            title="Importar desde Archivo"
+            description="Sube un Excel, PDF o Word con el presupuesto."
+          />
+
+          {/* AI Chatbot */}
+          <ItemizadoChatbot
+            licitacionNombre={licitacionNombre}
+            licitacionDescripcion={licitacionDescripcion}
+            licitacionEspecificaciones={licitacionEspecificaciones}
+            existingItems={items.map(i => ({
+              descripcion: i.descripcion,
+              unidad: i.unidad || '',
+              cantidad: i.cantidad,
+              precio_unitario: i.precio_unitario,
+            }))}
+            onItemsGenerated={handleItemsAccepted}
+          />
+        </div>
+      )}
+
+      {/* 3. Manual add — compact inline row */}
+      {licitacionId && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="font-rubik text-base flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Agregar partida
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap items-end gap-2">
+              <div className="space-y-1 w-20">
+                <label className="text-xs text-muted-foreground">Ítem</label>
+                <Input
+                  value={newCode}
+                  onChange={(e) => setNewCode(e.target.value)}
+                  placeholder="2.1"
+                  className="h-8 text-sm"
+                />
+              </div>
+              <div className="space-y-1 flex-1 min-w-[180px]">
+                <label className="text-xs text-muted-foreground">Descripción</label>
+                <Input
+                  value={newDesc}
+                  onChange={(e) => setNewDesc(e.target.value)}
+                  placeholder="Estructura secundaria"
+                  className="h-8 text-sm"
+                />
+              </div>
+              <div className="space-y-1 w-16">
+                <label className="text-xs text-muted-foreground">Unidad</label>
+                <Input
+                  value={newUnit}
+                  onChange={(e) => setNewUnit(e.target.value)}
+                  placeholder="m2"
+                  className="h-8 text-sm"
+                />
+              </div>
+              <div className="space-y-1 w-20">
+                <label className="text-xs text-muted-foreground">Cantidad</label>
+                <Input
+                  type="number"
+                  value={newQty}
+                  onChange={(e) => setNewQty(e.target.value)}
+                  placeholder="0"
+                  className="h-8 text-sm"
+                />
+              </div>
+              <div className="space-y-1 w-24">
+                <label className="text-xs text-muted-foreground">P. Unitario</label>
+                <Input
+                  type="number"
+                  value={newPU}
+                  onChange={(e) => setNewPU(e.target.value)}
+                  placeholder="0"
+                  className="h-8 text-sm"
+                />
+              </div>
+              <Button
+                onClick={handleCreateItem}
+                disabled={saving || !newDesc.trim()}
+                size="sm"
+                className="h-8"
+              >
+                {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5 mr-1" />}
+                Agregar
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Escribe el código del ítem (ej: 1.1, 2.3.1) para agrupar automáticamente. Acepta formatos como 1,1 / 1;1 / 1-1.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {saving && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Guardando partidas...
+        </div>
+      )}
     </div>
   );
 };

@@ -416,7 +416,37 @@ const LicitacionAcceso = () => {
     }
   };
 
-  // === ENVIAR ITEMIZADO ===
+  // === INLINE EDIT ITEM ===
+  const startEditItem = (item: any) => {
+    setEditingItemId(item.id);
+    setEditItemValues({
+      cantidad: item.cantidad?.toString() || '',
+      pu: item.precio_unitario?.toString() || '',
+    });
+  };
+
+  const saveEditItem = async () => {
+    if (!editingItemId) return;
+    setSavingItem(true);
+    try {
+      const cantidad = parseFloat(editItemValues.cantidad) || null;
+      const pu = parseFloat(editItemValues.pu) || null;
+      const total = cantidad && pu ? cantidad * pu : null;
+      const { error } = await supabase
+        .from('LicitacionItems')
+        .update({ cantidad, precio_unitario: pu, precio_total: total })
+        .eq('id', editingItemId);
+      if (error) throw error;
+      setEditingItemId(null);
+      toast({ title: "Partida actualizada" });
+      fetchData();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setSavingItem(false);
+    }
+  };
+
   const sendItemizado = async () => {
     if (!oferenteRecord) return;
     setSendingItemizado(true);

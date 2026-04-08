@@ -1558,12 +1558,12 @@ const LicitacionAcceso = () => {
                 {/* Total from itemizado */}
                 <div className="p-4 bg-primary/5 border rounded-lg">
                   <p className="text-sm font-medium text-muted-foreground">Monto total (del itemizado)</p>
-                  <p className="text-3xl font-bold mt-1">${fmt(totalOferta)}</p>
+                  <p className="text-3xl font-bold mt-1">{fmtCurrency(totalOferta)}</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Subtotal: ${fmt(subtotal)}
-                    {licitacion.gastos_generales > 0 && ` + GG ${licitacion.gastos_generales}%: $${fmt(gg)}`}
-                    {licitacion.utilidades > 0 && ` + Util. ${licitacion.utilidades}%: $${fmt(utilidad)}`}
-                    {licitacion.iva_porcentaje > 0 && ` + IVA ${licitacion.iva_porcentaje}%: $${fmt(iva)}`}
+                    Subtotal: {fmtCurrency(subtotal)}
+                    {parsedBidderGG > 0 && ` + GG ${parsedBidderGG}%: ${fmtCurrency(gg)}`}
+                    {parsedBidderUtil > 0 && ` + Util. ${parsedBidderUtil}%: ${fmtCurrency(utilidad)}`}
+                    {licitacion.iva_porcentaje > 0 && ` + IVA ${licitacion.iva_porcentaje}%: ${fmtCurrency(iva)}`}
                   </p>
                 </div>
 

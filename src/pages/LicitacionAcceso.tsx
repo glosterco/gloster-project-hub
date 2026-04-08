@@ -80,6 +80,14 @@ const LicitacionAcceso = () => {
   const [newItemPU, setNewItemPU] = useState('');
   const [savingItem, setSavingItem] = useState(false);
 
+  // Inline edit item state
+  const [editingItemId, setEditingItemId] = useState<number | null>(null);
+  const [editItemValues, setEditItemValues] = useState<{ cantidad: string; pu: string }>({ cantidad: '', pu: '' });
+
+  // Per-bidder GG / Utilidades
+  const [bidderGG, setBidderGG] = useState('');
+  const [bidderUtil, setBidderUtil] = useState('');
+
   // Oferta final state
   const [ofertaDuracion, setOfertaDuracion] = useState('');
   const [ofertaNotas, setOfertaNotas] = useState('');
@@ -99,7 +107,7 @@ const LicitacionAcceso = () => {
       const { data, error } = await supabase
         .from('Licitaciones')
         .select(`
-          id, nombre, descripcion, mensaje_oferentes, estado, url_acceso, gastos_generales, utilidades, iva_porcentaje, created_at,
+          id, nombre, descripcion, mensaje_oferentes, estado, url_acceso, gastos_generales, utilidades, iva_porcentaje, divisa, created_at,
           LicitacionEventos(id, fecha, fecha_fin, titulo, descripcion, estado, es_ronda_preguntas),
           LicitacionDocumentos(id, nombre, size, tipo, url),
           LicitacionItems(id, descripcion, unidad, cantidad, precio_unitario, precio_total, orden, agregado_por_oferente, oferente_email)
@@ -161,6 +169,8 @@ const LicitacionAcceso = () => {
         setMiOfertaItems((ofertaData.LicitacionOfertaItems || []).sort((a: any, b: any) => a.orden - b.orden));
         setOfertaDuracion(ofertaData.duracion_dias?.toString() || '');
         setOfertaNotas(ofertaData.notas || '');
+        setBidderGG(ofertaData.gastos_generales?.toString() || '');
+        setBidderUtil(ofertaData.utilidades?.toString() || '');
       }
     } catch (err: any) {
       console.error('Error loading licitacion:', err);
@@ -406,7 +416,37 @@ const LicitacionAcceso = () => {
     }
   };
 
-  // === ENVIAR ITEMIZADO ===
+  // === INLINE EDIT ITEM ===
+  const startEditItem = (item: any) => {
+    setEditingItemId(item.id);
+    setEditItemValues({
+      cantidad: item.cantidad?.toString() || '',
+      pu: item.precio_unitario?.toString() || '',
+    });
+  };
+
+  const saveEditItem = async () => {
+    if (!editingItemId) return;
+    setSavingItem(true);
+    try {
+      const cantidad = parseFloat(editItemValues.cantidad) || null;
+      const pu = parseFloat(editItemValues.pu) || null;
+      const total = cantidad && pu ? cantidad * pu : null;
+      const { error } = await supabase
+        .from('LicitacionItems')
+        .update({ cantidad, precio_unitario: pu, precio_total: total })
+        .eq('id', editingItemId);
+      if (error) throw error;
+      setEditingItemId(null);
+      toast({ title: "Partida actualizada" });
+      fetchData();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setSavingItem(false);
+    }
+  };
+
   const sendItemizado = async () => {
     if (!oferenteRecord) return;
     setSendingItemizado(true);
@@ -456,31 +496,33 @@ const LicitacionAcceso = () => {
     }
   };
 
+  const parsedBidderGG = parseFloat(bidderGG) || 0;
+  const parsedBidderUtil = parseFloat(bidderUtil) || 0;
+
   const saveOferta = async () => {
     if (!licitacionId) return;
     setSavingOferta(true);
     try {
-      // Calculate total from items
       const itemsTotal = allItems.reduce((sum, i) => sum + (i.precio_total || 0), 0);
-      const gg = licitacion?.gastos_generales ? itemsTotal * (licitacion.gastos_generales / 100) : 0;
-      const ut = licitacion?.utilidades ? (itemsTotal + gg) * (licitacion.utilidades / 100) : 0;
+      const gg = parsedBidderGG ? itemsTotal * (parsedBidderGG / 100) : 0;
+      const ut = parsedBidderUtil ? (itemsTotal + gg) * (parsedBidderUtil / 100) : 0;
       const neto = itemsTotal + gg + ut;
       const iva = licitacion?.iva_porcentaje ? neto * (licitacion.iva_porcentaje / 100) : 0;
       const total = neto + iva;
 
       if (miOferta) {
-        // Update existing
         const { error } = await supabase
           .from('LicitacionOfertas')
           .update({
             duracion_dias: parseInt(ofertaDuracion) || null,
             notas: ofertaNotas.trim() || null,
+            gastos_generales: parsedBidderGG || null,
+            utilidades: parsedBidderUtil || null,
             total,
           })
           .eq('id', miOferta.id);
         if (error) throw error;
       } else {
-        // Create new
         const { error } = await supabase
           .from('LicitacionOfertas')
           .insert({
@@ -489,6 +531,8 @@ const LicitacionAcceso = () => {
             estado: 'borrador',
             duracion_dias: parseInt(ofertaDuracion) || null,
             notas: ofertaNotas.trim() || null,
+            gastos_generales: parsedBidderGG || null,
+            utilidades: parsedBidderUtil || null,
             total,
           });
         if (error) throw error;
@@ -515,19 +559,17 @@ const LicitacionAcceso = () => {
         .maybeSingle();
       
       if (ofertaData) {
-        // Build combined items from allItems state
         const mItems = allItems.filter(i => !i.agregado_por_oferente).sort((a: any, b: any) => a.orden - b.orden);
         const bItems = allItems.filter(i => i.agregado_por_oferente && i.oferente_email === oferenteEmail.toLowerCase().trim()).sort((a: any, b: any) => a.orden - b.orden);
         const combined = [...mItems, ...bItems];
         
         const sub = combined.reduce((sum: number, i: any) => sum + (i.precio_total || 0), 0);
-        const ggVal = licitacion?.gastos_generales ? sub * (licitacion.gastos_generales / 100) : 0;
-        const utVal = licitacion?.utilidades ? (sub + ggVal) * (licitacion.utilidades / 100) : 0;
+        const ggVal = parsedBidderGG ? sub * (parsedBidderGG / 100) : 0;
+        const utVal = parsedBidderUtil ? (sub + ggVal) * (parsedBidderUtil / 100) : 0;
         const netoVal = sub + ggVal + utVal;
         const ivaVal = licitacion?.iva_porcentaje ? netoVal * (licitacion.iva_porcentaje / 100) : 0;
         const total = netoVal + ivaVal;
 
-        // Delete existing oferta items and re-populate
         await supabase
           .from('LicitacionOfertaItems')
           .delete()
@@ -555,8 +597,8 @@ const LicitacionAcceso = () => {
           .from('LicitacionOfertas')
           .update({ 
             estado: 'enviada',
-            gastos_generales: licitacion?.gastos_generales || null,
-            utilidades: licitacion?.utilidades || null,
+            gastos_generales: parsedBidderGG || null,
+            utilidades: parsedBidderUtil || null,
             total,
           })
           .eq('id', ofertaData.id);
@@ -575,6 +617,12 @@ const LicitacionAcceso = () => {
   const getSentForRonda = (rondaId: number) =>
     misPreguntas.filter(p => p.ronda_id === rondaId && p.enviada);
 
+  const divisa = licitacion?.divisa || 'CLP';
+  const currencySymbol = divisa === 'UF' ? 'UF' : '$';
+  const fmtCurrency = (n: number) => {
+    if (divisa === 'UF') return `${n.toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} UF`;
+    return `$${n.toLocaleString('es-CL', { minimumFractionDigits: 0 })}`;
+  };
   const fmt = (n: number) => n.toLocaleString('es-CL', { minimumFractionDigits: 0 });
 
   // Round is open if today is within the event's date range (fecha to fecha_cierre/fecha_fin)
@@ -797,8 +845,8 @@ const LicitacionAcceso = () => {
   const bidderItems = allItems.filter(i => i.agregado_por_oferente && i.oferente_email === oferenteEmail.toLowerCase().trim()).sort((a, b) => a.orden - b.orden);
   const combinedItems = [...mandanteItems, ...bidderItems];
   const subtotal = combinedItems.reduce((sum, i) => sum + (i.precio_total || 0), 0);
-  const gg = licitacion.gastos_generales ? subtotal * (licitacion.gastos_generales / 100) : 0;
-  const utilidad = licitacion.utilidades ? (subtotal + gg) * (licitacion.utilidades / 100) : 0;
+  const gg = parsedBidderGG ? subtotal * (parsedBidderGG / 100) : 0;
+  const utilidad = parsedBidderUtil ? (subtotal + gg) * (parsedBidderUtil / 100) : 0;
   const neto = subtotal + gg + utilidad;
   const iva = licitacion.iva_porcentaje ? neto * (licitacion.iva_porcentaje / 100) : 0;
   const totalOferta = neto + iva;
@@ -934,6 +982,7 @@ const LicitacionAcceso = () => {
                 id: e.id,
                 titulo: e.titulo,
                 fecha: e.fecha,
+                fechaFin: e.fecha_fin || null,
                 descripcion: e.descripcion,
                 estado: e.estado,
                 esRondaPreguntas: e.es_ronda_preguntas,
@@ -1294,10 +1343,36 @@ const LicitacionAcceso = () => {
                               <TableCell className="text-muted-foreground">{idx + 1}</TableCell>
                               <TableCell className="font-medium">{item.descripcion}</TableCell>
                               <TableCell className="text-center">{item.unidad || '-'}</TableCell>
-                              <TableCell className="text-right">{item.cantidad || '-'}</TableCell>
-                              <TableCell className="text-right">{item.precio_unitario ? `$${fmt(item.precio_unitario)}` : '-'}</TableCell>
-                              <TableCell className="text-right font-medium">{item.precio_total ? `$${fmt(item.precio_total)}` : '-'}</TableCell>
-                              <TableCell />
+                              {editingItemId === item.id ? (
+                                <>
+                                  <TableCell className="text-right">
+                                    <Input type="number" className="w-20 h-7 text-xs text-right" value={editItemValues.cantidad} onChange={e => setEditItemValues(v => ({ ...v, cantidad: e.target.value }))} />
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <Input type="number" className="w-24 h-7 text-xs text-right" value={editItemValues.pu} onChange={e => setEditItemValues(v => ({ ...v, pu: e.target.value }))} />
+                                  </TableCell>
+                                  <TableCell className="text-right font-medium text-xs">
+                                    {fmtCurrency((parseFloat(editItemValues.cantidad) || 0) * (parseFloat(editItemValues.pu) || 0))}
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex gap-1">
+                                      <Button variant="ghost" size="sm" onClick={saveEditItem} disabled={savingItem}><Save className="h-3.5 w-3.5" /></Button>
+                                      <Button variant="ghost" size="sm" onClick={() => setEditingItemId(null)}><X className="h-3.5 w-3.5" /></Button>
+                                    </div>
+                                  </TableCell>
+                                </>
+                              ) : (
+                                <>
+                                  <TableCell className="text-right">{item.cantidad || '-'}</TableCell>
+                                  <TableCell className="text-right">{item.precio_unitario ? fmtCurrency(item.precio_unitario) : '-'}</TableCell>
+                                  <TableCell className="text-right font-medium">{item.precio_total ? fmtCurrency(item.precio_total) : '-'}</TableCell>
+                                  <TableCell>
+                                    <Button variant="ghost" size="sm" onClick={() => startEditItem(item)}>
+                                      <Edit2 className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </TableCell>
+                                </>
+                              )}
                             </TableRow>
                           ))}
                           {bidderItems.length > 0 && (
@@ -1317,46 +1392,86 @@ const LicitacionAcceso = () => {
                                 <Badge variant="outline" className="ml-2 text-[9px] border-blue-400 text-blue-600">Nueva</Badge>
                               </TableCell>
                               <TableCell className="text-center">{item.unidad || '-'}</TableCell>
-                              <TableCell className="text-right">{item.cantidad || '-'}</TableCell>
-                              <TableCell className="text-right">{item.precio_unitario ? `$${fmt(item.precio_unitario)}` : '-'}</TableCell>
-                              <TableCell className="text-right font-medium">{item.precio_total ? `$${fmt(item.precio_total)}` : '-'}</TableCell>
-                              <TableCell>
-                                <Button variant="ghost" size="sm" className="text-destructive" onClick={() => deleteBidderItem(item.id)}>
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                </Button>
-                              </TableCell>
+                              {editingItemId === item.id ? (
+                                <>
+                                  <TableCell className="text-right">
+                                    <Input type="number" className="w-20 h-7 text-xs text-right" value={editItemValues.cantidad} onChange={e => setEditItemValues(v => ({ ...v, cantidad: e.target.value }))} />
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <Input type="number" className="w-24 h-7 text-xs text-right" value={editItemValues.pu} onChange={e => setEditItemValues(v => ({ ...v, pu: e.target.value }))} />
+                                  </TableCell>
+                                  <TableCell className="text-right font-medium text-xs">
+                                    {fmtCurrency((parseFloat(editItemValues.cantidad) || 0) * (parseFloat(editItemValues.pu) || 0))}
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex gap-1">
+                                      <Button variant="ghost" size="sm" onClick={saveEditItem} disabled={savingItem}><Save className="h-3.5 w-3.5" /></Button>
+                                      <Button variant="ghost" size="sm" onClick={() => setEditingItemId(null)}><X className="h-3.5 w-3.5" /></Button>
+                                    </div>
+                                  </TableCell>
+                                </>
+                              ) : (
+                                <>
+                                  <TableCell className="text-right">{item.cantidad || '-'}</TableCell>
+                                  <TableCell className="text-right">{item.precio_unitario ? fmtCurrency(item.precio_unitario) : '-'}</TableCell>
+                                  <TableCell className="text-right font-medium">{item.precio_total ? fmtCurrency(item.precio_total) : '-'}</TableCell>
+                                  <TableCell>
+                                    <div className="flex gap-1">
+                                      <Button variant="ghost" size="sm" onClick={() => startEditItem(item)}>
+                                        <Edit2 className="h-3.5 w-3.5" />
+                                      </Button>
+                                      <Button variant="ghost" size="sm" className="text-destructive" onClick={() => deleteBidderItem(item.id)}>
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </>
+                              )}
                             </TableRow>
                           ))}
-                          {/* Totals */}
+
+                          {/* GG / Utilidades editable by bidder */}
                           <TableRow className="border-t-2">
                             <TableCell colSpan={5} className="text-right font-medium">Subtotal</TableCell>
-                            <TableCell className="text-right font-bold">${fmt(subtotal)}</TableCell>
+                            <TableCell className="text-right font-bold">{fmtCurrency(subtotal)}</TableCell>
                             <TableCell />
                           </TableRow>
-                          {licitacion.gastos_generales > 0 && (
-                            <TableRow>
-                              <TableCell colSpan={5} className="text-right font-medium">GG ({licitacion.gastos_generales}%)</TableCell>
-                              <TableCell className="text-right">${fmt(gg)}</TableCell>
-                              <TableCell />
-                            </TableRow>
-                          )}
-                          {licitacion.utilidades > 0 && (
-                            <TableRow>
-                              <TableCell colSpan={5} className="text-right font-medium">Utilidades ({licitacion.utilidades}%)</TableCell>
-                              <TableCell className="text-right">${fmt(utilidad)}</TableCell>
-                              <TableCell />
-                            </TableRow>
-                          )}
+                          <TableRow>
+                            <TableCell colSpan={4} className="text-right font-medium">
+                              Gastos Generales
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                <Input type="number" className="w-16 h-7 text-xs text-right" placeholder="%" value={bidderGG} onChange={e => setBidderGG(e.target.value)} />
+                                <span className="text-xs text-muted-foreground">%</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right">{fmtCurrency(gg)}</TableCell>
+                            <TableCell />
+                          </TableRow>
+                          <TableRow>
+                            <TableCell colSpan={4} className="text-right font-medium">
+                              Utilidades
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                <Input type="number" className="w-16 h-7 text-xs text-right" placeholder="%" value={bidderUtil} onChange={e => setBidderUtil(e.target.value)} />
+                                <span className="text-xs text-muted-foreground">%</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right">{fmtCurrency(utilidad)}</TableCell>
+                            <TableCell />
+                          </TableRow>
                           {licitacion.iva_porcentaje > 0 && (
                             <TableRow>
                               <TableCell colSpan={5} className="text-right font-medium">IVA ({licitacion.iva_porcentaje}%)</TableCell>
-                              <TableCell className="text-right">${fmt(iva)}</TableCell>
+                              <TableCell className="text-right">{fmtCurrency(iva)}</TableCell>
                               <TableCell />
                             </TableRow>
                           )}
                           <TableRow className="bg-primary/5">
                             <TableCell colSpan={5} className="text-right font-bold text-base">Total</TableCell>
-                            <TableCell className="text-right font-bold text-base">${fmt(totalOferta)}</TableCell>
+                            <TableCell className="text-right font-bold text-base">{fmtCurrency(totalOferta)}</TableCell>
                             <TableCell />
                           </TableRow>
                         </TableBody>
@@ -1443,12 +1558,12 @@ const LicitacionAcceso = () => {
                 {/* Total from itemizado */}
                 <div className="p-4 bg-primary/5 border rounded-lg">
                   <p className="text-sm font-medium text-muted-foreground">Monto total (del itemizado)</p>
-                  <p className="text-3xl font-bold mt-1">${fmt(totalOferta)}</p>
+                  <p className="text-3xl font-bold mt-1">{fmtCurrency(totalOferta)}</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Subtotal: ${fmt(subtotal)}
-                    {licitacion.gastos_generales > 0 && ` + GG ${licitacion.gastos_generales}%: $${fmt(gg)}`}
-                    {licitacion.utilidades > 0 && ` + Util. ${licitacion.utilidades}%: $${fmt(utilidad)}`}
-                    {licitacion.iva_porcentaje > 0 && ` + IVA ${licitacion.iva_porcentaje}%: $${fmt(iva)}`}
+                    Subtotal: {fmtCurrency(subtotal)}
+                    {parsedBidderGG > 0 && ` + GG ${parsedBidderGG}%: ${fmtCurrency(gg)}`}
+                    {parsedBidderUtil > 0 && ` + Util. ${parsedBidderUtil}%: ${fmtCurrency(utilidad)}`}
+                    {licitacion.iva_porcentaje > 0 && ` + IVA ${licitacion.iva_porcentaje}%: ${fmtCurrency(iva)}`}
                   </p>
                 </div>
 

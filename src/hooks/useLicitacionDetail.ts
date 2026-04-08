@@ -144,6 +144,7 @@ export const useLicitacionDetail = (licitacionId: number | null) => {
         gastos_generales: data.gastos_generales,
         utilidades: data.utilidades,
         iva_porcentaje: data.iva_porcentaje,
+        divisa: data.divisa || 'CLP',
         oferentes: oferentesData.map((o: any) => ({ id: o.id, email: o.email })),
         eventos: (data.LicitacionEventos || []).map((e: any) => ({
           id: e.id, fecha: e.fecha, fechaFin: e.fecha_fin,

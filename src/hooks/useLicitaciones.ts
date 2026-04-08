@@ -70,6 +70,7 @@ export interface Licitacion {
   gastos_generales?: number;
   utilidades?: number;
   iva_porcentaje?: number;
+  divisa?: string;
   oferentes?: Oferente[];
   eventos?: CalendarEvent[];
   documentos?: Documento[];
@@ -89,6 +90,7 @@ export interface NewLicitacion {
   gastos_generales?: number;
   utilidades?: number;
   iva_porcentaje?: number;
+  divisa?: string;
 }
 
 const getCurrentMandanteId = async (userId: string) => {
@@ -144,6 +146,7 @@ export const useLicitaciones = () => {
           LicitacionEventos (
             id,
             fecha,
+            fecha_fin,
             titulo,
             descripcion,
             requiere_archivos,
@@ -194,6 +197,7 @@ export const useLicitaciones = () => {
         gastos_generales: item.gastos_generales,
         utilidades: item.utilidades,
         iva_porcentaje: item.iva_porcentaje,
+        divisa: item.divisa || 'CLP',
         oferentes: (item.LicitacionOferentes || []).map((o: any) => ({
           id: o.id,
           email: o.email,
@@ -202,6 +206,7 @@ export const useLicitaciones = () => {
         eventos: (item.LicitacionEventos || []).map((e: any) => ({
           id: e.id,
           fecha: e.fecha,
+          fechaFin: e.fecha_fin || null,
           titulo: e.titulo,
           descripcion: e.descripcion,
           requiereArchivos: e.requiere_archivos,
@@ -281,6 +286,7 @@ export const useLicitaciones = () => {
           gastos_generales: gastosGenerales,
           utilidades,
           iva_porcentaje: ivaPorcentaje,
+          divisa: newLicitacion.divisa || 'CLP',
           mandante_id: mandanteId,
           estado: 'abierta'
         }])

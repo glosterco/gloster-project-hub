@@ -1,0 +1,1 @@
+ALTER TABLE public."Licitaciones" ADD COLUMN IF NOT EXISTS divisa text NOT NULL DEFAULT 'CLP';

@@ -87,6 +87,7 @@ const LicitacionDetail = () => {
             <span>{licitacion.eventos?.length || 0} eventos</span>
             <span>{licitacion.documentos?.length || 0} documentos</span>
             <span>{ofertas.length} ofertas recibidas</span>
+            {licitacion.divisa && <Badge variant="outline" className="text-[10px]">{licitacion.divisa === 'UF' ? 'UF' : licitacion.divisa === 'abierto' ? 'Divisa abierta' : 'CLP'}</Badge>}
           </div>
         </div>
 

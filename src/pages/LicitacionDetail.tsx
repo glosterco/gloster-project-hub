@@ -169,8 +169,6 @@ const LicitacionDetail = () => {
           <TabsContent value="itemizado">
             <LicitacionItemizadoTab 
               items={baseItems}
-              gastosGenerales={licitacion.gastos_generales}
-              utilidades={licitacion.utilidades}
               ivaPorcentaje={licitacion.iva_porcentaje}
               licitacionId={licitacion.id}
               licitacionNombre={licitacion.nombre}
@@ -185,8 +183,6 @@ const LicitacionDetail = () => {
               ofertas={ofertas}
               itemsReferencia={licitacion.items || []}
               licitacionId={licitacion.id}
-              licitacionGG={licitacion.gastos_generales}
-              licitacionUtil={licitacion.utilidades}
               licitacionIVA={licitacion.iva_porcentaje}
               onRefresh={refetch}
             />

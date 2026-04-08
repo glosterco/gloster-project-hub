@@ -102,11 +102,23 @@ export const normalizeChatCalendarEvents = (value: unknown) => {
     .map((item) => {
       if (typeof item !== 'object' || item === null) return null;
       const row = item as Record<string, unknown>;
-      const fecha = normalizeIsoDate(row.fecha ?? row.date ?? row.fecha_evento);
+      const fecha = normalizeIsoDate(
+        row.fecha ?? row.date ?? row.fecha_evento ?? row.fecha_inicio ?? row.fechaInicio ?? row.inicio ?? row.desde
+      );
       const titulo = asString(row.titulo) || asString(row.title) || asString(row.nombre) || asString(row.evento);
       if (!fecha || !titulo) return null;
 
-      const fechaFin = normalizeIsoDate(row.fecha_fin ?? row.fechaFin ?? row.fecha_cierre ?? row.end_date ?? row.endDate);
+      const fechaFin = normalizeIsoDate(
+        row.fecha_fin ??
+        row.fechaFin ??
+        row.fecha_cierre ??
+        row.fecha_termino ??
+        row.fechaTermino ??
+        row.end_date ??
+        row.endDate ??
+        row.fin ??
+        row.hasta
+      );
 
       return {
         fecha,

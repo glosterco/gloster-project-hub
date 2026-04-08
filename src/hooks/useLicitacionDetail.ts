@@ -147,7 +147,7 @@ export const useLicitacionDetail = (licitacionId: number | null) => {
         divisa: data.divisa || 'CLP',
         oferentes: oferentesData.map((o: any) => ({ id: o.id, email: o.email })),
         eventos: (data.LicitacionEventos || []).map((e: any) => ({
-          id: e.id, fecha: e.fecha, fechaFin: e.fecha_fin,
+          id: e.id, fecha: e.fecha, fechaFin: e.fecha_fin || null,
           titulo: e.titulo, descripcion: e.descripcion,
           requiereArchivos: e.requiere_archivos,
           estado: e.estado, esRondaPreguntas: e.es_ronda_preguntas

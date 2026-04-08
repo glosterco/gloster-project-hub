@@ -1343,10 +1343,36 @@ const LicitacionAcceso = () => {
                               <TableCell className="text-muted-foreground">{idx + 1}</TableCell>
                               <TableCell className="font-medium">{item.descripcion}</TableCell>
                               <TableCell className="text-center">{item.unidad || '-'}</TableCell>
-                              <TableCell className="text-right">{item.cantidad || '-'}</TableCell>
-                              <TableCell className="text-right">{item.precio_unitario ? `$${fmt(item.precio_unitario)}` : '-'}</TableCell>
-                              <TableCell className="text-right font-medium">{item.precio_total ? `$${fmt(item.precio_total)}` : '-'}</TableCell>
-                              <TableCell />
+                              {editingItemId === item.id ? (
+                                <>
+                                  <TableCell className="text-right">
+                                    <Input type="number" className="w-20 h-7 text-xs text-right" value={editItemValues.cantidad} onChange={e => setEditItemValues(v => ({ ...v, cantidad: e.target.value }))} />
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <Input type="number" className="w-24 h-7 text-xs text-right" value={editItemValues.pu} onChange={e => setEditItemValues(v => ({ ...v, pu: e.target.value }))} />
+                                  </TableCell>
+                                  <TableCell className="text-right font-medium text-xs">
+                                    {fmtCurrency((parseFloat(editItemValues.cantidad) || 0) * (parseFloat(editItemValues.pu) || 0))}
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex gap-1">
+                                      <Button variant="ghost" size="sm" onClick={saveEditItem} disabled={savingItem}><Save className="h-3.5 w-3.5" /></Button>
+                                      <Button variant="ghost" size="sm" onClick={() => setEditingItemId(null)}><X className="h-3.5 w-3.5" /></Button>
+                                    </div>
+                                  </TableCell>
+                                </>
+                              ) : (
+                                <>
+                                  <TableCell className="text-right">{item.cantidad || '-'}</TableCell>
+                                  <TableCell className="text-right">{item.precio_unitario ? fmtCurrency(item.precio_unitario) : '-'}</TableCell>
+                                  <TableCell className="text-right font-medium">{item.precio_total ? fmtCurrency(item.precio_total) : '-'}</TableCell>
+                                  <TableCell>
+                                    <Button variant="ghost" size="sm" onClick={() => startEditItem(item)}>
+                                      <Edit2 className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </TableCell>
+                                </>
+                              )}
                             </TableRow>
                           ))}
                           {bidderItems.length > 0 && (
@@ -1366,46 +1392,86 @@ const LicitacionAcceso = () => {
                                 <Badge variant="outline" className="ml-2 text-[9px] border-blue-400 text-blue-600">Nueva</Badge>
                               </TableCell>
                               <TableCell className="text-center">{item.unidad || '-'}</TableCell>
-                              <TableCell className="text-right">{item.cantidad || '-'}</TableCell>
-                              <TableCell className="text-right">{item.precio_unitario ? `$${fmt(item.precio_unitario)}` : '-'}</TableCell>
-                              <TableCell className="text-right font-medium">{item.precio_total ? `$${fmt(item.precio_total)}` : '-'}</TableCell>
-                              <TableCell>
-                                <Button variant="ghost" size="sm" className="text-destructive" onClick={() => deleteBidderItem(item.id)}>
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                </Button>
-                              </TableCell>
+                              {editingItemId === item.id ? (
+                                <>
+                                  <TableCell className="text-right">
+                                    <Input type="number" className="w-20 h-7 text-xs text-right" value={editItemValues.cantidad} onChange={e => setEditItemValues(v => ({ ...v, cantidad: e.target.value }))} />
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <Input type="number" className="w-24 h-7 text-xs text-right" value={editItemValues.pu} onChange={e => setEditItemValues(v => ({ ...v, pu: e.target.value }))} />
+                                  </TableCell>
+                                  <TableCell className="text-right font-medium text-xs">
+                                    {fmtCurrency((parseFloat(editItemValues.cantidad) || 0) * (parseFloat(editItemValues.pu) || 0))}
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex gap-1">
+                                      <Button variant="ghost" size="sm" onClick={saveEditItem} disabled={savingItem}><Save className="h-3.5 w-3.5" /></Button>
+                                      <Button variant="ghost" size="sm" onClick={() => setEditingItemId(null)}><X className="h-3.5 w-3.5" /></Button>
+                                    </div>
+                                  </TableCell>
+                                </>
+                              ) : (
+                                <>
+                                  <TableCell className="text-right">{item.cantidad || '-'}</TableCell>
+                                  <TableCell className="text-right">{item.precio_unitario ? fmtCurrency(item.precio_unitario) : '-'}</TableCell>
+                                  <TableCell className="text-right font-medium">{item.precio_total ? fmtCurrency(item.precio_total) : '-'}</TableCell>
+                                  <TableCell>
+                                    <div className="flex gap-1">
+                                      <Button variant="ghost" size="sm" onClick={() => startEditItem(item)}>
+                                        <Edit2 className="h-3.5 w-3.5" />
+                                      </Button>
+                                      <Button variant="ghost" size="sm" className="text-destructive" onClick={() => deleteBidderItem(item.id)}>
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </>
+                              )}
                             </TableRow>
                           ))}
-                          {/* Totals */}
+
+                          {/* GG / Utilidades editable by bidder */}
                           <TableRow className="border-t-2">
                             <TableCell colSpan={5} className="text-right font-medium">Subtotal</TableCell>
-                            <TableCell className="text-right font-bold">${fmt(subtotal)}</TableCell>
+                            <TableCell className="text-right font-bold">{fmtCurrency(subtotal)}</TableCell>
                             <TableCell />
                           </TableRow>
-                          {licitacion.gastos_generales > 0 && (
-                            <TableRow>
-                              <TableCell colSpan={5} className="text-right font-medium">GG ({licitacion.gastos_generales}%)</TableCell>
-                              <TableCell className="text-right">${fmt(gg)}</TableCell>
-                              <TableCell />
-                            </TableRow>
-                          )}
-                          {licitacion.utilidades > 0 && (
-                            <TableRow>
-                              <TableCell colSpan={5} className="text-right font-medium">Utilidades ({licitacion.utilidades}%)</TableCell>
-                              <TableCell className="text-right">${fmt(utilidad)}</TableCell>
-                              <TableCell />
-                            </TableRow>
-                          )}
+                          <TableRow>
+                            <TableCell colSpan={4} className="text-right font-medium">
+                              Gastos Generales
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                <Input type="number" className="w-16 h-7 text-xs text-right" placeholder="%" value={bidderGG} onChange={e => setBidderGG(e.target.value)} />
+                                <span className="text-xs text-muted-foreground">%</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right">{fmtCurrency(gg)}</TableCell>
+                            <TableCell />
+                          </TableRow>
+                          <TableRow>
+                            <TableCell colSpan={4} className="text-right font-medium">
+                              Utilidades
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                <Input type="number" className="w-16 h-7 text-xs text-right" placeholder="%" value={bidderUtil} onChange={e => setBidderUtil(e.target.value)} />
+                                <span className="text-xs text-muted-foreground">%</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right">{fmtCurrency(utilidad)}</TableCell>
+                            <TableCell />
+                          </TableRow>
                           {licitacion.iva_porcentaje > 0 && (
                             <TableRow>
                               <TableCell colSpan={5} className="text-right font-medium">IVA ({licitacion.iva_porcentaje}%)</TableCell>
-                              <TableCell className="text-right">${fmt(iva)}</TableCell>
+                              <TableCell className="text-right">{fmtCurrency(iva)}</TableCell>
                               <TableCell />
                             </TableRow>
                           )}
                           <TableRow className="bg-primary/5">
                             <TableCell colSpan={5} className="text-right font-bold text-base">Total</TableCell>
-                            <TableCell className="text-right font-bold text-base">${fmt(totalOferta)}</TableCell>
+                            <TableCell className="text-right font-bold text-base">{fmtCurrency(totalOferta)}</TableCell>
                             <TableCell />
                           </TableRow>
                         </TableBody>

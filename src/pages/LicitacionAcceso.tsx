@@ -617,6 +617,12 @@ const LicitacionAcceso = () => {
   const getSentForRonda = (rondaId: number) =>
     misPreguntas.filter(p => p.ronda_id === rondaId && p.enviada);
 
+  const divisa = licitacion?.divisa || 'CLP';
+  const currencySymbol = divisa === 'UF' ? 'UF' : '$';
+  const fmtCurrency = (n: number) => {
+    if (divisa === 'UF') return `${n.toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} UF`;
+    return `$${n.toLocaleString('es-CL', { minimumFractionDigits: 0 })}`;
+  };
   const fmt = (n: number) => n.toLocaleString('es-CL', { minimumFractionDigits: 0 });
 
   // Round is open if today is within the event's date range (fecha to fecha_cierre/fecha_fin)

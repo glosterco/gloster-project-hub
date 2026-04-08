@@ -24,6 +24,7 @@ const getCurrentMandanteId = async (userId: string) => {
 export interface Ronda {
   id: number;
   licitacion_id: number;
+  evento_id?: number | null;
   numero: number;
   titulo: string;
   estado: string;

@@ -231,7 +231,7 @@ const LicitacionItemizadoTab: React.FC<Props> = ({
                 </TableHeader>
                 <TableBody>
                   {hierarchicalItems.map(({ item, displayCode, cleanDescription, level }) => (
-                    <TableRow key={item.id || idx}>
+                    <TableRow key={item.id ?? displayCode}>
                       <TableCell className="text-muted-foreground">{displayCode}</TableCell>
                       <TableCell className="font-medium" style={{ paddingLeft: `${level * 20 + 16}px` }}>{cleanDescription}</TableCell>
                       <TableCell className="text-center">{item.unidad || '-'}</TableCell>

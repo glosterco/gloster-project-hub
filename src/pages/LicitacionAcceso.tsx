@@ -847,6 +847,15 @@ const LicitacionAcceso = () => {
   }
 
   const visibleEmail = oferenteEmail.toLowerCase().trim();
+  const eventosConDuracion = (licitacion.LicitacionEventos || []).map((evento: any) => {
+    if (evento.fecha_fin || !evento.es_ronda_preguntas) return evento;
+
+    const ronda = rondas.find((item: any) => item.evento_id === evento.id || item.titulo === evento.titulo);
+    return {
+      ...evento,
+      fecha_fin: ronda?.fecha_cierre || null,
+    };
+  });
   const combinedItemNodes = buildHierarchicalItems(allItems.filter(i => !i.agregado_por_oferente || i.oferente_email === visibleEmail));
   const mandanteItemNodes = combinedItemNodes.filter(({ item }) => !item.agregado_por_oferente);
   const bidderItemNodes = combinedItemNodes.filter(({ item }) => item.agregado_por_oferente && item.oferente_email === visibleEmail);
@@ -986,7 +995,7 @@ const LicitacionAcceso = () => {
           {/* ===== CALENDARIO TAB ===== */}
           <TabsContent value="calendario">
             <LicitacionCalendarioTab
-              eventos={(licitacion.LicitacionEventos || []).map((e: any) => ({
+              eventos={eventosConDuracion.map((e: any) => ({
                 id: e.id,
                 titulo: e.titulo,
                 fecha: e.fecha,
@@ -1322,7 +1331,7 @@ const LicitacionAcceso = () => {
                 {combinedItems.length === 0 && !showNewItemForm ? (
                   <div className="text-center py-8">
                     <p className="text-muted-foreground mb-4">
-                      {mandanteItems.length === 0
+                      {mandanteItemNodes.length === 0
                         ? 'No se definió un itemizado base. Puedes crear tus propias partidas.'
                         : 'No hay partidas definidas.'}
                     </p>
@@ -1383,7 +1392,7 @@ const LicitacionAcceso = () => {
                               )}
                             </TableRow>
                           ))}
-                          {bidderItems.length > 0 && (
+                          {bidderItemNodes.length > 0 && (
                             <TableRow>
                               <TableCell colSpan={7} className="bg-blue-50 dark:bg-blue-950/20 text-center">
                                 <span className="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wider">
@@ -1532,7 +1541,7 @@ const LicitacionAcceso = () => {
                     )}
 
                     {/* Enviar Itemizado button */}
-                    {(bidderItems.length > 0 || mandanteItems.length > 0) && (
+                    {(bidderItemNodes.length > 0 || mandanteItemNodes.length > 0) && (
                       <div className="border-t pt-4">
                         {oferenteRecord?.itemizado_enviado ? (
                           <div className="flex items-center gap-2 p-3 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 rounded-lg">

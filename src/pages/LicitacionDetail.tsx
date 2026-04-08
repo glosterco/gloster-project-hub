@@ -64,6 +64,15 @@ const LicitacionDetail = () => {
 
   // Filter items to only show mandante's base items (not oferente-added)
   const baseItems = (licitacion.items || []).filter((i: any) => !i.agregado_por_oferente);
+  const eventosConDuracion = (licitacion.eventos || []).map((evento) => {
+    if (evento.fechaFin || !evento.esRondaPreguntas) return evento;
+
+    const ronda = rondas.find((item) => item.evento_id === evento.id || item.titulo === evento.titulo);
+    return {
+      ...evento,
+      fechaFin: ronda?.fecha_cierre || null,
+    };
+  });
 
   return (
     <div className="min-h-screen bg-background">
@@ -136,7 +145,7 @@ const LicitacionDetail = () => {
 
           <TabsContent value="calendario">
             <LicitacionCalendarioTab 
-              eventos={licitacion.eventos || []} 
+              eventos={eventosConDuracion} 
               fechaCreacion={licitacion.created_at}
               onUpdateEvento={updateEvento}
               onCompleteEvento={completeEvento}

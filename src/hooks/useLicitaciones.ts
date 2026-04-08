@@ -286,6 +286,7 @@ export const useLicitaciones = () => {
           gastos_generales: gastosGenerales,
           utilidades,
           iva_porcentaje: ivaPorcentaje,
+          divisa: newLicitacion.divisa || 'CLP',
           mandante_id: mandanteId,
           estado: 'abierta'
         }])

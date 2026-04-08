@@ -7,25 +7,33 @@ const corsHeaders = {
 }
 
 async function getAccessToken(): Promise<string> {
-  const tokenManagerResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/google-drive-token-manager`, {
+  const clientId = Deno.env.get('GOOGLE_DRIVE_CLIENT_ID')?.replace(/[\r\n\t\s]+/g, '').trim();
+  const clientSecret = Deno.env.get('GOOGLE_DRIVE_CLIENT_SECRET')?.replace(/[\r\n\t\s]+/g, '').trim();
+  const refreshToken = Deno.env.get('GOOGLE_DRIVE_REFRESH_TOKEN')?.replace(/[\r\n\t\s]+/g, '').trim();
+
+  if (!clientId || !clientSecret || !refreshToken) {
+    throw new Error('Missing Google Drive credentials');
+  }
+
+  const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
     },
-    body: JSON.stringify({ action: 'validate' }),
+    body: new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: refreshToken,
+      grant_type: 'refresh_token',
+    }),
   });
 
-  if (!tokenManagerResponse.ok) {
-    throw new Error(`Token manager request failed: ${tokenManagerResponse.status}`);
+  const tokenResult = await tokenResponse.json();
+  if (!tokenResponse.ok || !tokenResult.access_token) {
+    throw new Error(`Google Drive authentication failed: ${tokenResult.error_description || tokenResult.error || tokenResponse.status}`);
   }
 
-  const tokenResult = await tokenManagerResponse.json();
-  if (!tokenResult.valid) {
-    throw new Error(`Google Drive authentication failed: ${tokenResult.error}`);
-  }
-
-  return tokenResult.access_token;
+  return tokenResult.access_token as string;
 }
 
 async function createGoogleDriveFolder(
@@ -183,7 +191,7 @@ serve(async (req) => {
           accessToken,
           doc.name,
           doc.content,
-          doc.mimeType,
+          doc.mimeType || 'application/octet-stream',
           docsFolderId!
         );
 
@@ -194,7 +202,7 @@ serve(async (req) => {
             licitacion_id: licitacionId,
             nombre: doc.name,
             size: doc.size || null,
-            tipo: doc.mimeType,
+            tipo: doc.mimeType || 'application/octet-stream',
             url: result.webViewLink,
           });
 

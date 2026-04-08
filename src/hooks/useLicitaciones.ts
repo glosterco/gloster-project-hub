@@ -3,6 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { normalizeChatCalendarEvents, normalizeChatItems, normalizePercentNumber, parseOferenteEntries } from '@/utils/licitacionCreation';
 
+const ITEMIZADO_FILE_KEYWORDS = /(itemizado|presupuesto|planilla|cubicaci(?:on|ó)n|metrado|metrados|oferta)/i;
+
 const convertFileToBase64 = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -18,6 +20,54 @@ const convertFileToBase64 = (file: File): Promise<string> => {
     reader.onerror = () => reject(new Error('Error reading file'));
     reader.readAsDataURL(file);
   });
+};
+
+const getFileExtension = (file: File) => file.name.split('.').pop()?.toLowerCase() || '';
+
+const canAttemptParseItemizado = (file: File) => {
+  const ext = getFileExtension(file);
+  return ['xlsx', 'xls', 'xlsm', 'csv', 'pdf', 'docx'].includes(ext);
+};
+
+const scoreItemizadoCandidate = (file: File) => {
+  const ext = getFileExtension(file);
+  let score = ITEMIZADO_FILE_KEYWORDS.test(file.name) ? 10 : 0;
+  if (['xlsx', 'xls', 'xlsm', 'csv'].includes(ext)) score += 5;
+  if (ext === 'pdf') score += 2;
+  return score;
+};
+
+const autoExtractItemsFromDocuments = async (files: File[]) => {
+  const candidates = files
+    .filter(canAttemptParseItemizado)
+    .sort((a, b) => scoreItemizadoCandidate(b) - scoreItemizadoCandidate(a))
+    .slice(0, 3);
+
+  let bestItems: any[] = [];
+
+  for (const file of candidates) {
+    try {
+      const fileBase64 = await convertFileToBase64(file);
+      const { data, error } = await supabase.functions.invoke('parse-itemizado', {
+        body: {
+          fileBase64,
+          fileName: file.name,
+          mimeType: file.type,
+        },
+      });
+
+      if (error || data?.error || !Array.isArray(data?.items)) continue;
+
+      const normalized = normalizeChatItems(data.items);
+      if (normalized.length > bestItems.length) {
+        bestItems = normalized;
+      }
+    } catch (error) {
+      console.error('Error auto-parsing itemizado file:', file.name, error);
+    }
+  }
+
+  return bestItems;
 };
 
 export interface CalendarEvent {
@@ -270,10 +320,21 @@ export const useLicitaciones = () => {
 
       const parsedOferentes = parseOferenteEntries(newLicitacion.oferentes_emails);
       const normalizedEventos = normalizeChatCalendarEvents(newLicitacion.calendario_eventos);
-      const normalizedItems = normalizeChatItems(newLicitacion.items || []);
+      let normalizedItems = normalizeChatItems(newLicitacion.items || []);
       const gastosGenerales = normalizePercentNumber(newLicitacion.gastos_generales, 0);
       const utilidades = normalizePercentNumber(newLicitacion.utilidades, 0);
       const ivaPorcentaje = normalizePercentNumber(newLicitacion.iva_porcentaje, 19);
+
+      if (normalizedItems.length === 0 && newLicitacion.documentFiles && newLicitacion.documentFiles.length > 0) {
+        const autoExtractedItems = await autoExtractItemsFromDocuments(newLicitacion.documentFiles);
+        if (autoExtractedItems.length > 0) {
+          normalizedItems = autoExtractedItems;
+          toast({
+            title: 'Itemizado detectado automáticamente',
+            description: `Se cargaron ${autoExtractedItems.length} partidas desde los documentos adjuntos.`,
+          });
+        }
+      }
 
       // Crear la licitación principal
       const { data: licitacionData, error: licitacionError } = await supabase
@@ -341,28 +402,8 @@ export const useLicitaciones = () => {
 
         if (eventosError) {
           console.error('Error creating eventos:', eventosError);
-        } else {
-          const rondasData = (insertedEventos || [])
-            .filter((evento: any) => evento.es_ronda_preguntas)
-            .map((evento: any, index: number) => ({
-              licitacion_id: licitacionId,
-              evento_id: evento.id,
-              numero: index + 1,
-              titulo: evento.titulo,
-              estado: 'programada',
-              fecha_apertura: evento.fecha,
-              fecha_cierre: evento.fecha_fin || null,
-            }));
-
-          if (rondasData.length > 0) {
-            const { error: rondasError } = await supabase
-              .from('LicitacionRondas')
-              .insert(rondasData);
-
-            if (rondasError) {
-              console.error('Error creating rondas:', rondasError);
-            }
-          }
+        } else if ((insertedEventos || []).some((evento: any) => evento.es_ronda_preguntas)) {
+          console.log('✅ Rondas de preguntas sincronizadas desde LicitacionEventos');
         }
       }
 

@@ -137,6 +137,7 @@ export interface NewLicitacion {
   documentos: Documento[];
   documentFiles?: File[];
   items?: LicitacionItem[];
+  itemizado_compartido?: boolean;
   gastos_generales?: number;
   utilidades?: number;
   iva_porcentaje?: number;

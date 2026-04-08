@@ -70,6 +70,7 @@ export interface Licitacion {
   gastos_generales?: number;
   utilidades?: number;
   iva_porcentaje?: number;
+  divisa?: string;
   oferentes?: Oferente[];
   eventos?: CalendarEvent[];
   documentos?: Documento[];
@@ -89,6 +90,7 @@ export interface NewLicitacion {
   gastos_generales?: number;
   utilidades?: number;
   iva_porcentaje?: number;
+  divisa?: string;
 }
 
 const getCurrentMandanteId = async (userId: string) => {

@@ -34,7 +34,6 @@ serve(async (req) => {
 
     // ── XLSX parsing ──
     if (ext === 'xlsx' || ext === 'xls' || mime.includes('spreadsheet') || mime.includes('excel')) {
-      // Use a simple approach: decode the shared strings and sheet data from the XLSX zip
       extractedText = await extractXLSXText(fileBytes);
     }
     // ── CSV / TSV ──
@@ -64,10 +63,10 @@ serve(async (req) => {
       });
     }
 
-    // Truncate to avoid token limits
-    const maxChars = 15000;
+    // Increase limit to capture full document structure
+    const maxChars = 60000;
     const truncatedText = extractedText.length > maxChars
-      ? extractedText.substring(0, maxChars) + '\n... [truncado]'
+      ? extractedText.substring(0, maxChars) + '\n... [documento truncado — se procesaron los primeros ' + maxChars + ' caracteres]'
       : extractedText;
 
     // ── AI extraction ──
@@ -76,28 +75,106 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    const systemPrompt = `Eres un experto en presupuestos de construcción en Chile.
-Tu tarea es convertir un documento en un itemizado estructurado.
+    const systemPrompt = `Eres un ingeniero civil experto en presupuestos de construcción en Chile con más de 20 años de experiencia. Tu ÚNICA tarea es analizar documentos técnicos y convertirlos en un itemizado estructurado con máximo rigor y fidelidad al documento original.
 
-REGLAS ESTRICTAS:
-- Si el documento ya contiene un presupuesto, planilla o itemizado explícito, extráelo respetando su estructura y orden.
-- Si el documento corresponde a EETT, bases técnicas, memorias descriptivas o antecedentes de obra sin planilla explícita, genera un itemizado base PROVISIONAL a partir de los trabajos descritos.
-- En documentos tipo EETT debes desglosar partidas medibles y valorizables, evitando omitir obras preliminares, terminaciones, pruebas, protecciones, aseo y cierres si aplican.
-- Cada ítem debe tener: descripcion, unidad, cantidad, precio_unitario, precio_total.
-- Si un campo no está disponible, usa null.
-- Si la cantidad no está explícita pero la partida existe, usa 1 como cantidad provisional.
-- El precio_unitario debe ser null si el documento no trae precio.
-- El precio_total debe ser cantidad * precio_unitario cuando ambos existan; si no, usa null.
-- Mantén el orden lógico del documento.
-- NO inventes especialidades o partidas que no tengan sustento en el texto.
-- Si hay subtotales, GG, utilidades o IVA, NO los incluyas como ítems.
-- Responde SOLO con JSON válido, sin markdown ni explicaciones.
+## REGLA FUNDAMENTAL: RESPETAR LA ESTRUCTURA ORIGINAL DEL DOCUMENTO
 
-Formato de respuesta:
+El documento puede usar CUALQUIER sistema de codificación. Tu trabajo es DETECTAR y RESPETAR ese sistema exacto. Ejemplos de sistemas comunes:
+
+- Numérico con puntos: 1, 1.1, 1.2, 2, 2.1
+- Alfanumérico: A, A.01, A.02, B, B.01, B.02
+- Romano: I, II, III con subsecciones 1, 2, 3
+- Capítulos con letras: Cap. A, Cap. B
+- Mixto: A.1, A.2, A.2.1, B.1
+- Con guiones: 01-01, 01-02, 02-01
+- Descriptivo por secciones/títulos sin código explícito
+
+### Procedimiento obligatorio:
+
+1. **PRIMERO**: Identifica el sistema de codificación que usa el documento (puede ser letras, números, alfanumérico, etc.)
+2. **SEGUNDO**: Identifica TODOS los capítulos/secciones principales (primer nivel de jerarquía)
+3. **TERCERO**: Dentro de CADA capítulo, identifica TODAS las subsecciones y partidas
+4. **CUARTO**: Dentro de CADA subsección, identifica sub-partidas si existen
+5. **QUINTO**: Genera el itemizado conservando EXACTAMENTE los códigos originales como prefijo de la descripción
+
+### Ejemplo con codificación alfanumérica:
+Si el documento dice:
+  "A. OBRAS PRELIMINARES
+   A.01 Instalación de faenas
+   A.02 Trazado y replanteo
+   B. MOVIMIENTO DE TIERRAS
+   B.01 Excavación general"
+
+Entonces el itemizado DEBE ser:
+  "A - Obras Preliminares" (ítem padre)
+  "A.01 - Instalación de faenas" (subítem)
+  "A.02 - Trazado y replanteo" (subítem)
+  "B - Movimiento de Tierras" (ítem padre)
+  "B.01 - Excavación general" (subítem)
+
+### Ejemplo con codificación numérica:
+Si el documento dice:
+  "1. OBRAS CIVILES
+   1.1 Hormigones
+   1.1.1 Hormigón de fundaciones
+   1.2 Enfierradura"
+
+Entonces:
+  "1 - Obras Civiles"
+  "1.1 - Hormigones"
+  "1.1.1 - Hormigón de fundaciones"
+  "1.2 - Enfierradura"
+
+## REGLAS DE EXTRACCIÓN EXHAUSTIVA
+
+1. **Recorre el documento COMPLETO de principio a fin**. No saltes secciones.
+2. **Cada párrafo que describa un trabajo, actividad, tarea o material es una partida potencial**. Analiza CADA uno.
+3. **Si una sección describe múltiples tareas en un mismo párrafo**, desglósalas como sub-partidas separadas.
+4. **NO omitas**:
+   - Obras preliminares, instalación y retiro de faenas
+   - Protecciones, sellos, impermeabilizaciones
+   - Terminaciones, pinturas, revestimientos
+   - Pruebas, ensayos, certificaciones
+   - Aseo permanente y final
+   - Conexiones provisionales (agua, electricidad)
+   - Cualquier trabajo mencionado aunque sea brevemente
+5. **Incluye materiales específicos en la descripción** si se mencionan (ej: "Hormigón H-30", "Acero A630-420H", "Cerámica 30x30").
+
+## UNIDADES DE MEDIDA
+
+Infiere la unidad según el tipo de trabajo:
+- Superficies → m²
+- Longitudes → ml
+- Volúmenes → m³
+- Peso → kg o ton
+- Unidades discretas → un
+- Trabajos globales → gl
+- Tiempo → mes, día, hr
+
+## CANTIDADES Y PRECIOS
+
+- Si el documento indica cantidades, úsalas exactas.
+- Si no hay cantidad explícita pero la partida existe, usa 1 como cantidad provisional.
+- precio_unitario: usa el valor del documento si existe, sino null.
+- precio_total: cantidad × precio_unitario si ambos existen, sino null.
+- NO incluyas subtotales, GG, utilidades ni IVA como ítems del itemizado.
+
+## VALIDACIÓN FINAL
+
+Antes de generar el JSON, verifica:
+- ¿Cubriste TODAS las secciones del documento?
+- ¿Los códigos en la descripción coinciden con los del documento original?
+- ¿Hay partidas que omitiste por parecer menores?
+- ¿La jerarquía refleja fielmente la estructura del documento?
+
+## FORMATO DE RESPUESTA
+
+Responde ÚNICAMENTE con JSON válido, sin markdown, sin explicaciones, sin texto adicional:
+
 {
   "items": [
     {
-      "descripcion": "string",
+      "descripcion": "CÓDIGO_ORIGINAL - Descripción exacta del trabajo",
       "unidad": "string o null",
       "cantidad": number o null,
       "precio_unitario": number o null,
@@ -110,7 +187,8 @@ Formato de respuesta:
     "iva_pct": number o null,
     "moneda": "string o null",
     "subtotal": number o null,
-    "total": number o null
+    "total": number o null,
+    "codificacion_detectada": "descripción breve del sistema de codificación detectado"
   }
 }`;
 
@@ -121,12 +199,14 @@ Formato de respuesta:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-3-flash-preview',
+        model: 'google/gemini-2.5-pro',
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Extrae el itemizado del siguiente documento (${fileName}):\n\n${truncatedText}` },
+          { role: 'user', content: `Analiza este documento técnico completo y genera el itemizado respetando EXACTAMENTE su estructura y codificación original.\n\nArchivo: ${fileName}\nCaracteres extraídos: ${truncatedText.length}\n\n--- INICIO DEL DOCUMENTO ---\n${truncatedText}\n--- FIN DEL DOCUMENTO ---` },
         ],
-        temperature: 0.1,
+        reasoning: {
+          effort: "high",
+        },
         response_format: { type: 'json_object' },
       }),
     });
@@ -185,10 +265,8 @@ Formato de respuesta:
 
 // ── XLSX text extraction using ZIP parsing ──
 async function extractXLSXText(bytes: Uint8Array): Promise<string> {
-  // Simple ZIP-based extraction for XLSX
   const zip = await parseZip(bytes);
   
-  // Extract shared strings
   const sharedStringsXml = zip['xl/sharedStrings.xml'] || '';
   const strings: string[] = [];
   const siRegex = /<si[^>]*>([\s\S]*?)<\/si>/g;
@@ -203,7 +281,6 @@ async function extractXLSXText(bytes: Uint8Array): Promise<string> {
     strings.push(decodeXMLEntities(cellText));
   }
 
-  // Extract sheet data
   const lines: string[] = [];
   for (const [path, content] of Object.entries(zip)) {
     if (!path.startsWith('xl/worksheets/sheet') || !path.endsWith('.xml')) continue;
@@ -232,7 +309,6 @@ async function extractXLSXText(bytes: Uint8Array): Promise<string> {
       if (cellMap.size > 0) rows.set(rowNum, cellMap);
     }
 
-    // Convert to tab-separated text
     const sortedRows = [...rows.entries()].sort((a, b) => a[0] - b[0]);
     for (const [, cellMap] of sortedRows) {
       const maxCol = Math.max(...cellMap.keys());
@@ -242,7 +318,7 @@ async function extractXLSXText(bytes: Uint8Array): Promise<string> {
       }
       lines.push(cells.join('\t'));
     }
-    lines.push(''); // separator between sheets
+    lines.push('');
   }
 
   return lines.join('\n');
@@ -266,7 +342,6 @@ async function extractDOCXText(bytes: Uint8Array): Promise<string> {
     if (paraText.trim()) lines.push(decodeXMLEntities(paraText));
   }
   
-  // Also extract tables for structured data
   const tableRegex = /<w:tbl[\s>][\s\S]*?<\/w:tbl>/g;
   let tableMatch;
   while ((tableMatch = tableRegex.exec(docXml)) !== null) {
@@ -294,16 +369,13 @@ async function extractDOCXText(bytes: Uint8Array): Promise<string> {
 
 // ── PDF text extraction (basic) ──
 function extractPDFText(bytes: Uint8Array): string {
-  // Simple PDF text extraction - find text between BT/ET blocks
   const text = new TextDecoder('latin1').decode(bytes);
   const lines: string[] = [];
   
-  // Try to extract from streams
   const streamRegex = /stream\r?\n([\s\S]*?)\r?\nendstream/g;
   let match;
   while ((match = streamRegex.exec(text)) !== null) {
     const streamContent = match[1];
-    // Extract text from Tj and TJ operators
     const tjRegex = /\(((?:[^()\\]|\\.)*)\)\s*Tj/g;
     let tjMatch;
     while ((tjMatch = tjRegex.exec(streamContent)) !== null) {
@@ -314,7 +386,6 @@ function extractPDFText(bytes: Uint8Array): string {
       if (decoded.trim()) lines.push(decoded.trim());
     }
     
-    // TJ array operator
     const tjArrayRegex = /\[((?:[^\]]*?))\]\s*TJ/g;
     let tjArrMatch;
     while ((tjArrMatch = tjArrayRegex.exec(streamContent)) !== null) {
@@ -332,7 +403,6 @@ function extractPDFText(bytes: Uint8Array): string {
     }
   }
   
-  // If no text extracted from streams, try raw content
   if (lines.length === 0) {
     const rawTjRegex = /\(((?:[^()\\]|\\.)*)\)\s*Tj/g;
     let rawMatch;
@@ -353,11 +423,10 @@ async function parseZip(bytes: Uint8Array): Promise<Record<string, string>> {
   let offset = 0;
   while (offset < bytes.length - 4) {
     const sig = view.getUint32(offset, true);
-    if (sig !== 0x04034b50) break; // Local file header
+    if (sig !== 0x04034b50) break;
     
     const compressionMethod = view.getUint16(offset + 8, true);
     const compressedSize = view.getUint32(offset + 18, true);
-    const uncompressedSize = view.getUint32(offset + 22, true);
     const fileNameLen = view.getUint16(offset + 26, true);
     const extraLen = view.getUint16(offset + 28, true);
     
@@ -367,10 +436,8 @@ async function parseZip(bytes: Uint8Array): Promise<Record<string, string>> {
     
     if (compressedSize > 0) {
       if (compressionMethod === 0) {
-        // Stored (no compression)
         files[fileName] = new TextDecoder().decode(dataBytes);
       } else if (compressionMethod === 8) {
-        // Deflate
         try {
           const ds = new DecompressionStream('deflate-raw');
           const writer = ds.writable.getWriter();

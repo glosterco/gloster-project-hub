@@ -99,6 +99,7 @@ Cuando el usuario confirme que quiere crear la licitación, responde con EXACTAM
       "orden": 0
     }
   ],
+  "itemizado_compartido": true,
   "gastos_generales": 0,
   "utilidades": 0,
   "iva_porcentaje": 19

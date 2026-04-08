@@ -99,6 +99,77 @@ Deno.serve(async (req) => {
       );
     }
 
+    // === Itemizado update notification ===
+    if (body.isItemizadoUpdate) {
+      const { licitacionId: itemLicId } = body;
+      const { data: lic } = await supabase
+        .from('Licitaciones')
+        .select('nombre, LicitacionOferentes(email)')
+        .eq('id', itemLicId)
+        .single();
+
+      if (!lic) {
+        return new Response(JSON.stringify({ error: 'Licitacion no encontrada' }), {
+          status: 404, headers: { ...corsHead, 'Content-Type': 'application/json' }
+        });
+      }
+
+      const siteUrl2 = Deno.env.get('SITE_URL') || 'https://gloster-project-hub.lovable.app';
+      const portalUrl2 = `${siteUrl2}/licitacion-acceso/${itemLicId}`;
+      const oferentes2 = (lic as any).LicitacionOferentes || [];
+      const results2: any[] = [];
+
+      for (const oferente of oferentes2) {
+        const subject = `Actualizacion de Itemizado - ${lic.nombre}`;
+        const htmlBody = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: #1a1a2e; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+              <h1 style="margin: 0; font-size: 20px;">Actualizacion del Itemizado</h1>
+            </div>
+            <div style="border: 1px solid #e0e0e0; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
+              <h2 style="color: #333; margin-top: 0;">${lic.nombre}</h2>
+              <p style="color: #666;">El mandante ha publicado una nueva version o actualizacion del itemizado para esta licitacion.</p>
+              <p style="color: #666;">Tu progreso existente <strong>no se vera afectado</strong>. Te invitamos a revisar los cambios.</p>
+              <div style="text-align: center; margin: 24px 0;">
+                <a href="${portalUrl2}" style="background: #1a1a2e; color: white; padding: 12px 32px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block;">
+                  Ver Itemizado
+                </a>
+              </div>
+              <p style="color: #999; font-size: 12px; text-align: center;">
+                Este enlace es exclusivo para su participacion en el proceso de licitacion.
+              </p>
+            </div>
+          </div>
+        `;
+
+        const rawEmail = [
+          `From: ${fromEmail}`,
+          `To: ${oferente.email}`,
+          `Subject: ${subject}`,
+          'MIME-Version: 1.0',
+          'Content-Type: text/html; charset=UTF-8',
+          '',
+          htmlBody,
+        ].join('\r\n');
+
+        const encodedEmail = btoa(unescape(encodeURIComponent(rawEmail)))
+          .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+        const sendRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ raw: encodedEmail }),
+        });
+
+        const sendData = await sendRes.json();
+        results2.push({ email: oferente.email, success: sendRes.ok, messageId: sendData.id });
+      }
+
+      return new Response(JSON.stringify({ success: true, results: results2 }), {
+        headers: { ...corsHead, 'Content-Type': 'application/json' }
+      });
+    }
+
     // === Batch invitation call ===
     const { licitacionId, type } = body;
 

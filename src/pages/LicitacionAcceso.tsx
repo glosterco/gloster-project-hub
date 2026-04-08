@@ -845,8 +845,8 @@ const LicitacionAcceso = () => {
   const bidderItems = allItems.filter(i => i.agregado_por_oferente && i.oferente_email === oferenteEmail.toLowerCase().trim()).sort((a, b) => a.orden - b.orden);
   const combinedItems = [...mandanteItems, ...bidderItems];
   const subtotal = combinedItems.reduce((sum, i) => sum + (i.precio_total || 0), 0);
-  const gg = licitacion.gastos_generales ? subtotal * (licitacion.gastos_generales / 100) : 0;
-  const utilidad = licitacion.utilidades ? (subtotal + gg) * (licitacion.utilidades / 100) : 0;
+  const gg = parsedBidderGG ? subtotal * (parsedBidderGG / 100) : 0;
+  const utilidad = parsedBidderUtil ? (subtotal + gg) * (parsedBidderUtil / 100) : 0;
   const neto = subtotal + gg + utilidad;
   const iva = licitacion.iva_porcentaje ? neto * (licitacion.iva_porcentaje / 100) : 0;
   const totalOferta = neto + iva;

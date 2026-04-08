@@ -23,8 +23,13 @@ Debes recopilar la siguiente información para crear la licitación:
    - Eventos puntuales (hitos) como "Entrega de ofertas" solo tienen "fecha", sin "fecha_fin".
    - Marca explícitamente si un evento es una "ronda de consultas" con el campo esRondaPreguntas=true. Solo los eventos de tipo "ronda de consultas" generan secciones de preguntas para los oferentes.
    - Los eventos de "entrega de ofertas" NO son rondas de consultas, son simplemente hitos donde los oferentes envían su oferta final.
-8. **Itemizado/Presupuesto**: Pregunta al usuario si desea incluir un itemizado base. Si sí, recoge las partidas (descripción, unidad, cantidad, precio unitario).
-9. **Gastos Generales, Utilidades e IVA para los oferentes**: Pregunta al usuario si los oferentes deberán incluir Gastos Generales, Utilidades y/o IVA en sus ofertas. NO preguntes si quiere definir un monto o porcentaje predeterminado. Solo pregunta si los oferentes deben considerarlos o no.
+8. **Especificaciones Técnicas (EETT)**: Pregunta al usuario si tiene especificaciones técnicas para esta licitación. Explica que las EETT son el documento que describe qué se debe hacer, cómo y con qué materiales, y que son fundamentales para que los oferentes puedan cotizar correctamente. Pregunta cómo quiere compartirlas:
+   - **Adjuntando archivos**: El usuario puede subir PDFs, Word u otros archivos con las EETT directamente a la plataforma (se pueden adjuntar al crear la licitación o después en la pestaña de Documentos).
+   - **Compartiendo un enlace**: Si las EETT están en Google Drive, Dropbox u otra plataforma, puede pegar el enlace y este se incluirá en el mensaje a los oferentes.
+   - **Escribiéndolas directamente**: El usuario puede escribir o pegar el texto de las especificaciones en el campo de texto que se guarda en la licitación.
+   Si el usuario tiene EETT, recomiéndale que las adjunte como archivos para que queden centralizadas en la plataforma.
+9. **Itemizado/Presupuesto**: Pregunta al usuario si desea incluir un itemizado base. Si sí, recoge las partidas (descripción, unidad, cantidad, precio unitario). Menciona que también puede generar el itemizado después con el asistente de IA que analiza las EETT automáticamente.
+10. **Gastos Generales, Utilidades e IVA para los oferentes**: Pregunta al usuario si los oferentes deberán incluir Gastos Generales, Utilidades y/o IVA en sus ofertas. NO preguntes si quiere definir un monto o porcentaje predeterminado. Solo pregunta si los oferentes deben considerarlos o no.
 
 ## Fechas:
 - IMPORTANTE: Cuando el usuario mencione fechas sin especificar el año, asume el año actual (${new Date().getFullYear()}).

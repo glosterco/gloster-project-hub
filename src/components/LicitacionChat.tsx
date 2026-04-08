@@ -98,6 +98,7 @@ const LicitacionChat = ({ open, onOpenChange, onSuccess }: LicitacionChatProps) 
         gastos_generales: normalizePercentNumber(data.gastos_generales ?? data.gg ?? data.gastosGenerales, 0),
         utilidades: normalizePercentNumber(data.utilidades ?? data.utilidad, 0),
         iva_porcentaje: normalizePercentNumber(data.iva_porcentaje ?? data.iva ?? data.ivaPorcentaje, 19),
+        divisa: data.divisa || 'CLP',
         documentos: attachedFiles.map(f => ({ nombre: f.name, size: f.size, tipo: f.type })),
         documentFiles: attachedFiles.length > 0 ? attachedFiles : undefined,
       };

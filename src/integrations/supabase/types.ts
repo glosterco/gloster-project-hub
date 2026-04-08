@@ -556,6 +556,7 @@ export type Database = {
         Row: {
           created_at: string | null
           descripcion: string
+          divisa: string
           drive_docs_folder_id: string | null
           drive_docs_folder_url: string | null
           drive_folder_id: string | null
@@ -575,6 +576,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           descripcion: string
+          divisa?: string
           drive_docs_folder_id?: string | null
           drive_docs_folder_url?: string | null
           drive_folder_id?: string | null
@@ -594,6 +596,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           descripcion?: string
+          divisa?: string
           drive_docs_folder_id?: string | null
           drive_docs_folder_url?: string | null
           drive_folder_id?: string | null

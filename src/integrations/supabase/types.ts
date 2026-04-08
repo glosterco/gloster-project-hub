@@ -565,6 +565,7 @@ export type Database = {
           estado: string | null
           gastos_generales: number | null
           id: number
+          itemizado_compartido: boolean
           iva_porcentaje: number | null
           mandante_id: number
           mensaje_oferentes: string | null
@@ -585,6 +586,7 @@ export type Database = {
           estado?: string | null
           gastos_generales?: number | null
           id?: never
+          itemizado_compartido?: boolean
           iva_porcentaje?: number | null
           mandante_id: number
           mensaje_oferentes?: string | null
@@ -605,6 +607,7 @@ export type Database = {
           estado?: string | null
           gastos_generales?: number | null
           id?: never
+          itemizado_compartido?: boolean
           iva_porcentaje?: number | null
           mandante_id?: number
           mensaje_oferentes?: string | null

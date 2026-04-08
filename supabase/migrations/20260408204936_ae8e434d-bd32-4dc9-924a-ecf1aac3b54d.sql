@@ -1,0 +1,1 @@
+ALTER TABLE public."Licitaciones" ADD COLUMN itemizado_compartido boolean NOT NULL DEFAULT false;

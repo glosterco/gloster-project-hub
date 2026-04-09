@@ -439,22 +439,11 @@ const LicitacionItemizadoTab: React.FC<Props> = ({
                         licitacionName: licitacionNombre,
                         documents: docs,
                         targetSubfolder: 'Itemizado',
+                        documentTipo: 'apu',
                       },
                     });
 
                     if (error) throw error;
-
-                    // Insert APU records with tipo='apu'
-                    for (const result of data?.uploadResults || []) {
-                      if (result.success) {
-                        await supabase.from('LicitacionDocumentos').insert({
-                          licitacion_id: licitacionId,
-                          nombre: result.name,
-                          tipo: 'apu',
-                          url: result.url,
-                        });
-                      }
-                    }
 
                     setApuFiles([]);
                     toast({ title: 'APU subido', description: `${docs.length} archivo(s) subido(s) correctamente.` });

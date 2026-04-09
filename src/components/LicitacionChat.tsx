@@ -383,6 +383,26 @@ const LicitacionChat = ({ open, onOpenChange, onSuccess }: LicitacionChatProps) 
         }
       }
 
+      // Extract live summary from json_resumen blocks
+      const resumenMatch = assistantContent.match(/```json_resumen\s*([\s\S]*?)```/);
+      if (resumenMatch) {
+        try {
+          const resumenData = JSON.parse(resumenMatch[1]);
+          setLiveSummary(prev => ({
+            ...prev,
+            ...(resumenData.nombre && { nombre: resumenData.nombre }),
+            ...(resumenData.descripcion && { descripcion: resumenData.descripcion }),
+            ...(resumenData.divisa && { divisa: resumenData.divisa }),
+            ...(resumenData.oferentes?.length > 0 && { oferentes: resumenData.oferentes }),
+            ...(resumenData.calendario?.length > 0 && { calendario: resumenData.calendario }),
+            ...(typeof resumenData.items_count === 'number' && { items_count: resumenData.items_count }),
+            ...(typeof resumenData.itemizado_compartido === 'boolean' && { itemizado_compartido: resumenData.itemizado_compartido }),
+          }));
+        } catch {
+          // Ignore parse errors for partial/malformed json_resumen
+        }
+      }
+
       // Check if assistant response contains licitacion data
       const licitacionData = extractLicitacionData(assistantContent);
       if (licitacionData) {

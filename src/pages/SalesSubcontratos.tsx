@@ -1,5 +1,6 @@
 import React from "react";
 import { BarChart3, FileText, Users, Shield, Clock, Camera, CheckCircle, FolderOpen, MessageSquare, AlertTriangle, TrendingUp, Mail } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import SalesPresentation, { Slide } from "@/components/sales/SalesPresentation";
 
 import dashboardImg from "@/assets/sales/subcontratos-dashboard.jpg";
@@ -71,5 +72,8 @@ const slides: Slide[] = [
   },
 ];
 
-const SalesSubcontratos = () => <SalesPresentation slides={slides} />;
+const SalesSubcontratos = () => {
+  const navigate = useNavigate();
+  return <SalesPresentation slides={slides} onPrevFromFirst={() => navigate("/sales?slide=last")} />;
+};
 export default SalesSubcontratos;

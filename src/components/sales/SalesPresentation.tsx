@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ContactModal from "@/components/ContactModal";
+import { useNavigate } from "react-router-dom";
 
 export interface Feature {
   icon: React.ReactNode;
@@ -136,9 +137,10 @@ const FeatureSlide: React.FC<{ slide: Slide; onImageClick: (src: string) => void
 
 interface SalesPresentationProps {
   slides: Slide[];
+  onPrevFromFirst?: () => void;
 }
 
-const SalesPresentation: React.FC<SalesPresentationProps> = ({ slides }) => {
+const SalesPresentation: React.FC<SalesPresentationProps> = ({ slides, onPrevFromFirst }) => {
   const [current, setCurrent] = useState(0);
   const [direction, setDirection] = useState(0);
   const [isContactOpen, setIsContactOpen] = useState(false);
@@ -152,7 +154,13 @@ const SalesPresentation: React.FC<SalesPresentationProps> = ({ slides }) => {
   }, [current, total]);
 
   const next = useCallback(() => go(current + 1), [go, current]);
-  const prev = useCallback(() => go(current - 1), [go, current]);
+  const prev = useCallback(() => {
+    if (current === 0 && onPrevFromFirst) {
+      onPrevFromFirst();
+    } else {
+      go(current - 1);
+    }
+  }, [go, current, onPrevFromFirst]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {

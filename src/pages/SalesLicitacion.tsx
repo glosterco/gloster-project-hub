@@ -1,5 +1,6 @@
 import React from "react";
 import { Brain, FileText, Zap, Users, Clock, Shield, BarChart3, Upload, MessageSquare, GitMerge, TrendingUp } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import SalesPresentation, { Slide } from "@/components/sales/SalesPresentation";
 
 import dashboardImg from "@/assets/sales/licitaciones-dashboard.jpg";
@@ -71,5 +72,8 @@ const slides: Slide[] = [
   },
 ];
 
-const SalesLicitacion = () => <SalesPresentation slides={slides} />;
+const SalesLicitacion = () => {
+  const navigate = useNavigate();
+  return <SalesPresentation slides={slides} onPrevFromFirst={() => navigate("/sales?slide=last")} />;
+};
 export default SalesLicitacion;

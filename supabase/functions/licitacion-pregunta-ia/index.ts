@@ -20,8 +20,7 @@ async function getDriveAccessToken(): Promise<string> {
 }
 
 function extractDriveFileId(url: string): string | null {
-  const patterns = [/\/file\/d\/([a-zA-Z0-9_-]+)/, /id=([a-zA-Z0-9_-]+)/, /\/d\/([a-zA-Z0-9_-]+)/];
-  for (const p of patterns) {
+  for (const p of [/\/file\/d\/([a-zA-Z0-9_-]+)/, /id=([a-zA-Z0-9_-]+)/, /\/d\/([a-zA-Z0-9_-]+)/]) {
     const m = url.match(p);
     if (m) return m[1];
   }
@@ -34,23 +33,15 @@ async function downloadDriveFile(accessToken: string, fileId: string, fileName: 
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     let fileMimeType = "";
-    if (metaResp.ok) {
-      const meta = await metaResp.json();
-      fileMimeType = meta.mimeType || "";
-    }
+    if (metaResp.ok) { const meta = await metaResp.json(); fileMimeType = meta.mimeType || ""; }
 
-    const googleDocTypes = [
-      "application/vnd.google-apps.document",
-      "application/vnd.google-apps.spreadsheet",
-      "application/vnd.google-apps.presentation",
-    ];
+    const googleDocTypes = ["application/vnd.google-apps.document", "application/vnd.google-apps.spreadsheet", "application/vnd.google-apps.presentation"];
     if (googleDocTypes.includes(fileMimeType)) {
       const resp = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=text/plain`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       if (!resp.ok) return null;
-      const text = await resp.text();
-      return { bytes: new TextEncoder().encode(text), mimeType: "text/plain" };
+      return { bytes: new TextEncoder().encode(await resp.text()), mimeType: "text/plain" };
     }
 
     const resp = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
@@ -58,13 +49,9 @@ async function downloadDriveFile(accessToken: string, fileId: string, fileName: 
     });
     if (!resp.ok) return null;
     return { bytes: new Uint8Array(await resp.arrayBuffer()), mimeType: fileMimeType };
-  } catch (err) {
-    console.error(`Error downloading ${fileName}:`, err);
-    return null;
-  }
+  } catch (err) { console.error(`Error downloading ${fileName}:`, err); return null; }
 }
 
-// Async ZIP parser for compressed entries
 async function parseZipAsync(data: Uint8Array): Promise<Record<string, Uint8Array>> {
   const files: Record<string, Uint8Array> = {};
   let offset = 0;
@@ -74,12 +61,12 @@ async function parseZipAsync(data: Uint8Array): Promise<Record<string, Uint8Arra
     if (sig !== 0x04034b50) break;
     const compressionMethod = view.getUint16(offset + 8, true);
     const compressedSize = view.getUint32(offset + 18, true);
-    const uncompressedSize = view.getUint32(offset + 22, true);
     const nameLength = view.getUint16(offset + 26, true);
     const extraLength = view.getUint16(offset + 28, true);
     const fileName = new TextDecoder().decode(data.slice(offset + 30, offset + 30 + nameLength));
     const fileDataStart = offset + 30 + nameLength + extraLength;
     if (compressionMethod === 0) {
+      const uncompressedSize = view.getUint32(offset + 22, true);
       files[fileName] = data.slice(fileDataStart, fileDataStart + uncompressedSize);
     } else if (compressionMethod === 8) {
       try {
@@ -87,14 +74,9 @@ async function parseZipAsync(data: Uint8Array): Promise<Record<string, Uint8Arra
         const ds = new DecompressionStream("raw-deflate" as any);
         const writer = ds.writable.getWriter();
         const reader = ds.readable.getReader();
-        writer.write(compressed);
-        writer.close();
+        writer.write(compressed); writer.close();
         const chunks: Uint8Array[] = [];
-        while (true) {
-          const { value, done } = await reader.read();
-          if (done) break;
-          if (value) chunks.push(value);
-        }
+        while (true) { const { value, done } = await reader.read(); if (done) break; if (value) chunks.push(value); }
         const total = chunks.reduce((s, c) => s + c.length, 0);
         const result = new Uint8Array(total);
         let pos = 0;
@@ -107,7 +89,7 @@ async function parseZipAsync(data: Uint8Array): Promise<Record<string, Uint8Arra
   return files;
 }
 
-async function extractTextFromDocx(bytes: Uint8Array, fileName: string): Promise<string> {
+async function extractTextFromDocx(bytes: Uint8Array): Promise<string> {
   try {
     const files = await parseZipAsync(bytes);
     const docXml = files["word/document.xml"];
@@ -115,13 +97,12 @@ async function extractTextFromDocx(bytes: Uint8Array, fileName: string): Promise
     const xml = new TextDecoder().decode(docXml);
     const texts: string[] = [];
     const tRegex = /<w:t[^>]*>([^<]*)<\/w:t>/g;
-    let m;
-    while ((m = tRegex.exec(xml)) !== null) texts.push(m[1]);
+    let m; while ((m = tRegex.exec(xml)) !== null) texts.push(m[1]);
     return texts.join(" ");
   } catch { return ""; }
 }
 
-async function extractTextFromXlsx(bytes: Uint8Array, fileName: string): Promise<string> {
+async function extractTextFromXlsx(bytes: Uint8Array): Promise<string> {
   try {
     const files = await parseZipAsync(bytes);
     const ss = files["xl/sharedStrings.xml"];
@@ -129,8 +110,7 @@ async function extractTextFromXlsx(bytes: Uint8Array, fileName: string): Promise
     const xml = new TextDecoder().decode(ss);
     const texts: string[] = [];
     const tRegex = /<t[^>]*>([^<]+)<\/t>/g;
-    let m;
-    while ((m = tRegex.exec(xml)) !== null) texts.push(m[1]);
+    let m; while ((m = tRegex.exec(xml)) !== null) texts.push(m[1]);
     return texts.join(" ");
   } catch { return ""; }
 }
@@ -138,9 +118,7 @@ async function extractTextFromXlsx(bytes: Uint8Array, fileName: string): Promise
 function bytesToBase64(bytes: Uint8Array): string {
   let binary = "";
   const chunkSize = 8192;
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    binary += String.fromCharCode(...bytes.slice(i, i + chunkSize));
-  }
+  for (let i = 0; i < bytes.length; i += chunkSize) binary += String.fromCharCode(...bytes.slice(i, i + chunkSize));
   return btoa(binary);
 }
 
@@ -152,6 +130,80 @@ function isNativeGeminiFormat(mimeType: string, fileName: string): boolean {
 
 const MAX_INLINE_FILE_SIZE = 15 * 1024 * 1024;
 const MAX_TEXT_PER_DOC = 40000;
+
+// --- Cross-validation: verify that cited excerpts actually exist in source texts ---
+function validateCitations(
+  fuentes: { documento: string; extracto_relevante: string }[],
+  sourceTexts: Map<string, string>
+): { documento: string; extracto_relevante: string; verificado: boolean; fragmento_encontrado: string }[] {
+  return fuentes.map(f => {
+    // Normalize for fuzzy matching
+    const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, " ").replace(/[""''«»]/g, '"').trim();
+
+    // Find the best matching source document
+    let bestMatch = false;
+    let foundFragment = "";
+
+    // Try exact document name first, then all documents
+    const docsToSearch = new Map<string, string>();
+    for (const [name, text] of sourceTexts) {
+      if (normalize(name).includes(normalize(f.documento)) || normalize(f.documento).includes(normalize(name))) {
+        docsToSearch.set(name, text);
+      }
+    }
+    // If no name match, search all
+    if (docsToSearch.size === 0) {
+      for (const [name, text] of sourceTexts) docsToSearch.set(name, text);
+    }
+
+    const citaNorm = normalize(f.extracto_relevante);
+    // Try progressively smaller fragments to find a match
+    for (const [, sourceText] of docsToSearch) {
+      const sourceNorm = normalize(sourceText);
+
+      // Try full citation
+      if (sourceNorm.includes(citaNorm)) {
+        bestMatch = true;
+        foundFragment = f.extracto_relevante;
+        break;
+      }
+
+      // Try first 100 chars
+      const partial = citaNorm.substring(0, 100);
+      if (partial.length > 20 && sourceNorm.includes(partial)) {
+        bestMatch = true;
+        // Extract surrounding context from source
+        const idx = sourceNorm.indexOf(partial);
+        const start = Math.max(0, idx - 20);
+        const end = Math.min(sourceText.length, idx + 200);
+        foundFragment = sourceText.substring(start, end);
+        break;
+      }
+
+      // Try key phrases (split by punctuation and check significant fragments)
+      const phrases = f.extracto_relevante.split(/[.;,\n]/).filter(p => p.trim().length > 15);
+      for (const phrase of phrases) {
+        const phraseNorm = normalize(phrase);
+        if (sourceNorm.includes(phraseNorm)) {
+          bestMatch = true;
+          const idx = sourceNorm.indexOf(phraseNorm);
+          const start = Math.max(0, idx - 30);
+          const end = Math.min(sourceText.length, idx + phraseNorm.length + 30);
+          foundFragment = sourceText.substring(start, end);
+          break;
+        }
+      }
+      if (bestMatch) break;
+    }
+
+    return {
+      documento: f.documento,
+      extracto_relevante: f.extracto_relevante,
+      verificado: bestMatch,
+      fragmento_encontrado: foundFragment,
+    };
+  });
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -191,11 +243,12 @@ serve(async (req) => {
       supabase.from("LicitacionPreguntas").select("pregunta, respuesta, respondida, publicada").eq("licitacion_id", licitacionId).eq("respondida", true).neq("id", preguntaId).limit(30),
     ]);
 
-    // --- Build message content parts for Gemini (single-model approach) ---
-    // Gemini 2.5 Flash handles PDFs and images natively via inline_data
+    // --- Download and prepare documents ---
     const userContentParts: any[] = [];
     const fileNames: string[] = [];
     const textDocuments: { nombre: string; contenido: string }[] = [];
+    // Store raw source text for cross-validation
+    const sourceTextsMap = new Map<string, string>();
 
     if (docs && docs.length > 0) {
       let accessToken: string | null = null;
@@ -227,6 +280,9 @@ serve(async (req) => {
             const inlineMime = effectiveMime.includes("pdf") ? "application/pdf" : effectiveMime;
             userContentParts.push({ type: "text", text: `\n--- DOCUMENTO ADJUNTO: "${doc.nombre}" ---` });
             userContentParts.push({ inline_data: { mime_type: inlineMime, data: base64 } });
+            // For PDFs we can't easily extract text for validation, but Gemini reads them natively
+            // Mark as PDF source
+            sourceTextsMap.set(doc.nombre, `[Documento PDF enviado como binario - ${bytes.length} bytes]`);
             console.log(`📎 ${doc.nombre}: sent as inline_data (${bytes.length} bytes)`);
             continue;
           }
@@ -234,9 +290,9 @@ serve(async (req) => {
           // DOCX/XLSX/Text: extract text
           let text = "";
           if (effectiveMime.includes("wordprocessingml") || doc.nombre.toLowerCase().endsWith(".docx")) {
-            text = await extractTextFromDocx(bytes, doc.nombre);
+            text = await extractTextFromDocx(bytes);
           } else if (effectiveMime.includes("spreadsheetml") || doc.nombre.toLowerCase().endsWith(".xlsx")) {
-            text = await extractTextFromXlsx(bytes, doc.nombre);
+            text = await extractTextFromXlsx(bytes);
           } else if (effectiveMime.includes("text/") || effectiveMime.includes("csv") || doc.nombre.endsWith(".txt") || doc.nombre.endsWith(".csv")) {
             text = new TextDecoder().decode(bytes);
           }
@@ -246,9 +302,8 @@ serve(async (req) => {
               ? text.substring(0, MAX_TEXT_PER_DOC) + "\n[... documento truncado ...]"
               : text;
             textDocuments.push({ nombre: doc.nombre, contenido: trimmed });
-            console.log(`✅ ${doc.nombre}: ${trimmed.length} chars extracted as text`);
-          } else {
-            console.log(`⚠️ ${doc.nombre}: no text extracted`);
+            sourceTextsMap.set(doc.nombre, trimmed);
+            console.log(`✅ ${doc.nombre}: ${trimmed.length} chars extracted`);
           }
         }
       }
@@ -259,56 +314,80 @@ serve(async (req) => {
     if (licitacion) {
       contextParts.push(`Nombre del proceso: ${licitacion.nombre}`);
       contextParts.push(`Descripción: ${licitacion.descripcion}`);
-      if (licitacion.especificaciones) contextParts.push(`Especificaciones técnicas:\n${licitacion.especificaciones}`);
+      if (licitacion.especificaciones) {
+        contextParts.push(`Especificaciones técnicas:\n${licitacion.especificaciones}`);
+        sourceTextsMap.set("Especificaciones técnicas", licitacion.especificaciones);
+      }
     }
     if (oferentes && oferentes.length > 0) {
       contextParts.push(`OFERENTES INVITADOS:\n${oferentes.map(o => `- ${o.email}${o.nombre_empresa ? ` (${o.nombre_empresa})` : ''} - ${o.aceptada ? 'Aceptó' : 'Pendiente'}`).join('\n')}`);
     }
     if (eventos && eventos.length > 0) {
-      contextParts.push(`CALENDARIO DEL PROCESO:\n${eventos.map(e => `- ${e.fecha}: ${e.titulo} [${e.estado}]${e.descripcion ? ` - ${e.descripcion}` : ''}`).join('\n')}`);
+      const calText = eventos.map(e => `- ${e.fecha}: ${e.titulo} [${e.estado}]${e.descripcion ? ` - ${e.descripcion}` : ''}`).join('\n');
+      contextParts.push(`CALENDARIO DEL PROCESO:\n${calText}`);
+      sourceTextsMap.set("Calendario del proceso", calText);
     }
     if (items && items.length > 0) {
-      contextParts.push(`ITEMIZADO BASE (${items.length} ítems):\n${items.map(i => `- ${i.descripcion} | ${i.unidad || '-'} | Cant: ${i.cantidad || '-'} | PU: ${i.precio_unitario || '-'}`).join('\n')}`);
+      const itemsText = items.map(i => `- ${i.descripcion} | ${i.unidad || '-'} | Cant: ${i.cantidad || '-'} | PU: ${i.precio_unitario || '-'}`).join('\n');
+      contextParts.push(`ITEMIZADO BASE (${items.length} ítems):\n${itemsText}`);
+      sourceTextsMap.set("Itemizado base", itemsText);
     }
     if (otherPreguntas && otherPreguntas.length > 0) {
       contextParts.push(`PREGUNTAS YA RESPONDIDAS:\n${otherPreguntas.map(p => `P: ${p.pregunta}\nR: ${p.respuesta}`).join('\n\n')}`);
     }
-    // Add text-extracted documents
     for (const dt of textDocuments) {
       contextParts.push(`--- CONTENIDO DEL DOCUMENTO: "${dt.nombre}" ---\n${dt.contenido}\n--- FIN DOCUMENTO ---`);
     }
 
     const systemPrompt = `Eres un asistente técnico experto en licitaciones de construcción en Chile.
-Se te proporciona el contexto completo de un proceso de licitación incluyendo documentos adjuntos (PDFs, imágenes, planillas) y una pregunta de un oferente.
-Tu tarea es buscar exhaustivamente en TODOS los antecedentes proporcionados para encontrar la respuesta.
+Tu tarea es buscar información en los antecedentes proporcionados para responder una pregunta de un oferente.
 
 CONTEXTO DEL PROCESO:
 ${contextParts.join("\n\n")}
 
-INSTRUCCIONES DE BÚSQUEDA (MUY IMPORTANTE):
-1. BUSCA EN TODOS LOS DOCUMENTOS ADJUNTOS: Lee cada documento completo incluyendo tablas, anexos, notas al pie, planos y especificaciones. La respuesta puede estar en cualquier parte.
-2. BUSCA SINÓNIMOS: Si la pregunta habla de "plazo", busca también "duración", "calendario", "tiempo", "días", "meses". Si habla de "pago", busca "facturación", "cobro", "estado de pago", etc.
-3. BUSCA EN TABLAS Y LISTAS: La información frecuentemente está en tablas o cuadros dentro de los documentos.
-4. CRUZA INFORMACIÓN entre documentos: Si un documento menciona un tema parcialmente, busca complementos en los demás.
-5. CITAS TEXTUALES OBLIGATORIAS: Cuando encuentres la información, incluye la cita textual exacta del documento.
+=== REGLAS ABSOLUTAS (NO NEGOCIABLES) ===
 
-REGLAS DE RESPUESTA:
-- Responde SOLO con información que se encuentre en los documentos, especificaciones, itemizado, calendario o descripción del proceso.
-- También puedes usar respuestas previas ya dadas en este proceso para mantener coherencia.
-- Si NO encuentras la información, responde: "No se encontró información suficiente en los antecedentes del proceso para responder esta consulta. Se recomienda que el mandante responda directamente."
-- NO uses formato con doble asterisco (**). Usa texto plano, viñetas con guiones (-) y saltos de línea.
-- Sé directo y profesional.
-- Cita la fuente: "Según [nombre del documento]: '[cita textual]'..."
-- Responde en español chileno.
+REGLA 1 - SOLO INFORMACIÓN VERIFICABLE:
+- SOLO puedes responder con información que aparezca TEXTUALMENTE en los documentos, especificaciones, itemizado, calendario o respuestas previas.
+- Si una frase, dato, número, plazo o condición NO aparece literalmente en ningún antecedente, NO LO INCLUYAS en tu respuesta.
+- NUNCA inventes, inferencias, supongas ni completes información que no esté explícita.
 
-FUENTES (OBLIGATORIO):
-Al final de tu respuesta, agrega una línea con "---FUENTES---" seguida de las citas textuales:
-[DOCUMENTO: nombre_documento] "cita textual exacta del documento que respalda la respuesta"`;
+REGLA 2 - CITAS TEXTUALES OBLIGATORIAS:
+- Cada afirmación en tu respuesta DEBE estar respaldada por una CITA TEXTUAL EXACTA copiada del documento fuente.
+- La cita debe ser una copia literal, no una paráfrasis.
+- Formato: Según [nombre del documento]: "[cita textual exacta]"
 
-    // Build user message with inline documents
-    const questionText = `Pregunta del oferente${pregunta.especialidad ? ` (especialidad: ${pregunta.especialidad})` : ""}:\n\n"${pregunta.pregunta}"\n\nBusca exhaustivamente en todos los antecedentes y documentos adjuntos la respuesta a esta pregunta.`;
+REGLA 3 - CUANDO NO HAY INFORMACIÓN:
+- Si NO encuentras la respuesta textual en los antecedentes, responde EXACTAMENTE:
+  "No se encontró información en los antecedentes del proceso para responder esta consulta. Se recomienda que el mandante responda directamente."
+- NO intentes dar una respuesta parcial, genérica o basada en conocimiento general.
+- Es PREFERIBLE decir "no encontré" que inventar una respuesta.
 
-    // If we have inline parts (PDFs/images), use multimodal content array
+REGLA 4 - BÚSQUEDA EXHAUSTIVA:
+- Lee CADA documento completo incluyendo tablas, anexos, notas al pie.
+- Busca sinónimos: "plazo" = "duración", "calendario", "tiempo", "días". "pago" = "facturación", "cobro", "estado de pago".
+- Cruza información entre documentos.
+
+REGLA 5 - FORMATO:
+- NO uses doble asterisco (**). Usa texto plano, viñetas con guiones (-) y saltos de línea.
+- Sé directo, breve y profesional. Responde en español chileno.
+
+=== FORMATO DE FUENTES (OBLIGATORIO) ===
+
+Al final de tu respuesta, agrega exactamente esto:
+
+---FUENTES---
+[DOCUMENTO: nombre_exacto_del_documento]
+CITA: "copia textual exacta del fragmento del documento que respalda la respuesta"
+UBICACIÓN: sección/tabla/párrafo donde se encuentra
+
+Repite el bloque para cada fuente citada. SOLO incluye citas que sean copias textuales reales.
+Si no encontraste información, escribe:
+---FUENTES---
+[SIN FUENTES] No se encontró información relevante en los antecedentes.`;
+
+    const questionText = `Pregunta del oferente${pregunta.especialidad ? ` (especialidad: ${pregunta.especialidad})` : ""}:\n\n"${pregunta.pregunta}"\n\nBusca la respuesta SOLO en los antecedentes proporcionados. Incluye citas textuales exactas obligatoriamente.`;
+
     const userMessage: any = userContentParts.length > 0
       ? { role: "user", content: [{ type: "text", text: questionText }, ...userContentParts] }
       : { role: "user", content: questionText };
@@ -334,12 +413,12 @@ Al final de tu respuesta, agrega una línea con "---FUENTES---" seguida de las c
       const t = await aiResp.text();
       console.error("AI error:", aiResp.status, t);
       if (aiResp.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit excedido. Intenta de nuevo en unos segundos." }), {
+        return new Response(JSON.stringify({ error: "Rate limit excedido." }), {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       if (aiResp.status === 402) {
-        return new Response(JSON.stringify({ error: "Créditos agotados. Agrega fondos en Settings > Workspace > Usage." }), {
+        return new Response(JSON.stringify({ error: "Créditos agotados." }), {
           status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
@@ -350,33 +429,73 @@ Al final de tu respuesta, agrega una línea con "---FUENTES---" seguida de las c
     let aiAnswer = aiData.choices?.[0]?.message?.content || "";
 
     // Parse sources
-    const fuentes: any[] = [];
+    const rawFuentes: { documento: string; extracto_relevante: string }[] = [];
     const fuentesSeparator = "---FUENTES---";
     if (aiAnswer.includes(fuentesSeparator)) {
       const parts = aiAnswer.split(fuentesSeparator);
       aiAnswer = parts[0].trim();
       const fuentesText = parts[1]?.trim() || "";
-      const fuenteRegex = /\[DOCUMENTO:\s*([^\]]+)\]\s*([\s\S]*?)(?=\[DOCUMENTO:|$)/g;
+
+      // Parse structured sources
+      const blockRegex = /\[DOCUMENTO:\s*([^\]]+)\]\s*([\s\S]*?)(?=\[DOCUMENTO:|\[SIN FUENTES\]|$)/g;
       let fm;
-      while ((fm = fuenteRegex.exec(fuentesText)) !== null) {
-        fuentes.push({ documento: fm[1].trim(), extracto_relevante: fm[2].trim() });
+      while ((fm = blockRegex.exec(fuentesText)) !== null) {
+        const docName = fm[1].trim();
+        const content = fm[2].trim();
+        // Extract CITA: lines
+        const citaMatch = content.match(/CITA:\s*"([^"]+)"/);
+        const extracto = citaMatch ? citaMatch[1] : content;
+        rawFuentes.push({ documento: docName, extracto_relevante: extracto });
       }
-      if (fuentes.length === 0 && fuentesText.length > 10) {
-        fuentes.push({ documento: "Fuentes del proceso", extracto_relevante: fuentesText });
+
+      if (rawFuentes.length === 0 && !fuentesText.includes("[SIN FUENTES]") && fuentesText.length > 10) {
+        // Fallback parsing
+        const oldRegex = /\[DOCUMENTO:\s*([^\]]+)\]\s*([\s\S]*?)(?=\[DOCUMENTO:|$)/g;
+        while ((fm = oldRegex.exec(fuentesText)) !== null) {
+          rawFuentes.push({ documento: fm[1].trim(), extracto_relevante: fm[2].trim() });
+        }
       }
     }
 
-    if (fuentes.length === 0 && fileNames.length > 0) {
-      fuentes.push({ documento: "Documentos analizados", extracto_relevante: `Se analizaron: ${fileNames.join(", ")}` });
+    // --- Cross-validate citations against source texts ---
+    let fuentes: any[];
+    if (rawFuentes.length > 0) {
+      fuentes = validateCitations(rawFuentes, sourceTextsMap);
+      const verified = fuentes.filter((f: any) => f.verificado).length;
+      const total = fuentes.length;
+      console.log(`🔍 Cross-validation: ${verified}/${total} citations verified in source texts`);
+
+      // If no citations were verified, add a warning
+      if (verified === 0 && total > 0) {
+        aiAnswer += "\n\n⚠️ Nota: Las citas proporcionadas no pudieron ser verificadas textualmente en los documentos fuente. Se recomienda revisar directamente los antecedentes.";
+      }
+    } else {
+      fuentes = fileNames.length > 0
+        ? [{ documento: "Documentos analizados", extracto_relevante: `Se analizaron: ${fileNames.join(", ")}`, verificado: false, fragmento_encontrado: "" }]
+        : [];
     }
+
+    // Store the source texts for preview (trimmed to save space)
+    const documentTextsForPreview: Record<string, string> = {};
+    for (const [name, text] of sourceTextsMap) {
+      if (!text.startsWith("[Documento PDF")) {
+        documentTextsForPreview[name] = text.substring(0, 8000);
+      }
+    }
+
+    // Build enriched fuentes with document previews
+    const enrichedFuentes = fuentes.map((f: any) => ({
+      ...f,
+      texto_documento: documentTextsForPreview[f.documento] || null,
+    }));
 
     const { error: uErr } = await supabase
       .from("LicitacionPreguntas")
-      .update({ respuesta_ia: aiAnswer, respuesta_ia_fuentes: fuentes })
+      .update({ respuesta_ia: aiAnswer, respuesta_ia_fuentes: enrichedFuentes })
       .eq("id", preguntaId);
     if (uErr) throw uErr;
 
-    return new Response(JSON.stringify({ success: true, respuesta_ia: aiAnswer, fuentes }), {
+    return new Response(JSON.stringify({ success: true, respuesta_ia: aiAnswer, fuentes: enrichedFuentes }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

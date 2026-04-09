@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, ArrowRight, Gavel, HardHat } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import teamAlvaro from "@/assets/sales/team-alvaro.png";
 import teamDaniel from "@/assets/sales/team-daniel.png";
 import teamRocio from "@/assets/sales/team-rocio.png";
@@ -32,17 +32,19 @@ const teamMembers = [
 ];
 
 const Sales = () => {
-  const [current, setCurrent] = useState(0);
+  const [searchParams] = useSearchParams();
+  const total = 3;
+  const initialSlide = searchParams.get("slide") === "last" ? total - 1 : 0;
+  const [current, setCurrent] = useState(initialSlide);
   const [direction, setDirection] = useState(0);
   const [lightbox, setLightbox] = useState<{
-    src: string;
+    photo: string;
     name: string;
     role: string;
     specialty: string;
     position: string;
   } | null>(null);
   const navigate = useNavigate();
-  const total = 3;
 
   const go = useCallback(
     (idx: number) => {

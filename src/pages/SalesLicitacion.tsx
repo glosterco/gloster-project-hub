@@ -71,5 +71,9 @@ const slides: Slide[] = [
   },
 ];
 
-const SalesLicitacion = () => <SalesPresentation slides={slides} />;
+const SalesLicitacion = () => {
+  const navigate = (await import("react-router-dom")).useNavigate ? undefined : undefined;
+  return <SalesPresentation slides={slides} onPrevFromFirst={() => window.location.href = "/sales?slide=last"} />;
+};
+
 export default SalesLicitacion;

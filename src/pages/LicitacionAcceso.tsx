@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -565,6 +565,11 @@ const LicitacionAcceso = () => {
   const parsedBidderGG = parseFloat(bidderGG) || 0;
   const parsedBidderUtil = parseFloat(bidderUtil) || 0;
 
+  const toNumericOrNull = (v: string) => {
+    const n = parseFloat(v);
+    return Number.isFinite(n) ? n : null;
+  };
+
   const saveOferta = async () => {
     if (!licitacionId) return;
     setSavingOferta(true);
@@ -576,16 +581,18 @@ const LicitacionAcceso = () => {
       const iva = licitacion?.iva_porcentaje ? neto * (licitacion.iva_porcentaje / 100) : 0;
       const total = neto + iva;
 
+      const payload = {
+        duracion_dias: parseInt(ofertaDuracion) || null,
+        notas: ofertaNotas.trim() || null,
+        gastos_generales: toNumericOrNull(bidderGG),
+        utilidades: toNumericOrNull(bidderUtil),
+        total,
+      };
+
       if (miOferta) {
         const { error } = await supabase
           .from('LicitacionOfertas')
-          .update({
-            duracion_dias: parseInt(ofertaDuracion) || null,
-            notas: ofertaNotas.trim() || null,
-            gastos_generales: parsedBidderGG || null,
-            utilidades: parsedBidderUtil || null,
-            total,
-          })
+          .update(payload)
           .eq('id', miOferta.id);
         if (error) throw error;
       } else {
@@ -595,11 +602,7 @@ const LicitacionAcceso = () => {
             licitacion_id: licitacionId,
             oferente_email: oferenteEmail.toLowerCase().trim(),
             estado: 'borrador',
-            duracion_dias: parseInt(ofertaDuracion) || null,
-            notas: ofertaNotas.trim() || null,
-            gastos_generales: parsedBidderGG || null,
-            utilidades: parsedBidderUtil || null,
-            total,
+            ...payload,
           });
         if (error) throw error;
       }
@@ -611,6 +614,24 @@ const LicitacionAcceso = () => {
       setSavingOferta(false);
     }
   };
+
+  // Auto-save GG and Utilidades when they change (debounced)
+  const ggUtilTimerRef = useRef<NodeJS.Timeout | null>(null);
+  useEffect(() => {
+    if (!miOferta) return;
+    if (ggUtilTimerRef.current) clearTimeout(ggUtilTimerRef.current);
+    ggUtilTimerRef.current = setTimeout(async () => {
+      const { error } = await supabase
+        .from('LicitacionOfertas')
+        .update({
+          gastos_generales: toNumericOrNull(bidderGG),
+          utilidades: toNumericOrNull(bidderUtil),
+        })
+        .eq('id', miOferta.id);
+      if (error) console.error('Auto-save GG/Util error:', error);
+    }, 1500);
+    return () => { if (ggUtilTimerRef.current) clearTimeout(ggUtilTimerRef.current); };
+  }, [bidderGG, bidderUtil, miOferta?.id]);
 
   const submitOferta = async () => {
     if (!miOferta) {
@@ -661,8 +682,8 @@ const LicitacionAcceso = () => {
           .from('LicitacionOfertas')
           .update({ 
             estado: 'enviada',
-            gastos_generales: parsedBidderGG || null,
-            utilidades: parsedBidderUtil || null,
+            gastos_generales: toNumericOrNull(bidderGG),
+            utilidades: toNumericOrNull(bidderUtil),
             total,
           })
           .eq('id', ofertaData.id);

@@ -131,69 +131,76 @@ function isNativeGeminiFormat(mimeType: string, fileName: string): boolean {
 const MAX_INLINE_FILE_SIZE = 15 * 1024 * 1024;
 const MAX_TEXT_PER_DOC = 40000;
 
-// --- Cross-validation: verify that cited excerpts actually exist in source texts ---
+// --- Cross-validation: verify that cited content relates to source texts ---
 function validateCitations(
   fuentes: { documento: string; extracto_relevante: string }[],
   sourceTexts: Map<string, string>
 ): { documento: string; extracto_relevante: string; verificado: boolean; fragmento_encontrado: string }[] {
   return fuentes.map(f => {
-    // Normalize for fuzzy matching
     const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, " ").replace(/[""''«»]/g, '"').trim();
 
-    // Find the best matching source document
     let bestMatch = false;
     let foundFragment = "";
 
-    // Try exact document name first, then all documents
+    // Find matching source documents by name
     const docsToSearch = new Map<string, string>();
     for (const [name, text] of sourceTexts) {
       if (normalize(name).includes(normalize(f.documento)) || normalize(f.documento).includes(normalize(name))) {
         docsToSearch.set(name, text);
       }
     }
-    // If no name match, search all
     if (docsToSearch.size === 0) {
       for (const [name, text] of sourceTexts) docsToSearch.set(name, text);
     }
 
     const citaNorm = normalize(f.extracto_relevante);
-    // Try progressively smaller fragments to find a match
+
     for (const [, sourceText] of docsToSearch) {
       const sourceNorm = normalize(sourceText);
 
-      // Try full citation
+      // 1. Full citation match
       if (sourceNorm.includes(citaNorm)) {
         bestMatch = true;
         foundFragment = f.extracto_relevante;
         break;
       }
 
-      // Try first 100 chars
-      const partial = citaNorm.substring(0, 100);
-      if (partial.length > 20 && sourceNorm.includes(partial)) {
-        bestMatch = true;
-        // Extract surrounding context from source
-        const idx = sourceNorm.indexOf(partial);
-        const start = Math.max(0, idx - 20);
-        const end = Math.min(sourceText.length, idx + 200);
-        foundFragment = sourceText.substring(start, end);
-        break;
-      }
-
-      // Try key phrases (split by punctuation and check significant fragments)
-      const phrases = f.extracto_relevante.split(/[.;,\n]/).filter(p => p.trim().length > 15);
+      // 2. Try meaningful sub-phrases (split by punctuation, >10 chars)
+      const phrases = f.extracto_relevante.split(/[.;,:\n]/).filter(p => p.trim().length > 10);
       for (const phrase of phrases) {
         const phraseNorm = normalize(phrase);
         if (sourceNorm.includes(phraseNorm)) {
           bestMatch = true;
           const idx = sourceNorm.indexOf(phraseNorm);
-          const start = Math.max(0, idx - 30);
-          const end = Math.min(sourceText.length, idx + phraseNorm.length + 30);
+          const start = Math.max(0, idx - 50);
+          const end = Math.min(sourceText.length, idx + phraseNorm.length + 50);
           foundFragment = sourceText.substring(start, end);
           break;
         }
       }
       if (bestMatch) break;
+
+      // 3. Keyword-based verification: extract significant words and check density
+      const stopWords = new Set(["de", "la", "el", "en", "los", "las", "del", "al", "un", "una", "que", "por", "con", "para", "se", "es", "no", "su", "más", "y", "o", "a"]);
+      const extractKeywords = (text: string) => normalize(text).split(/\s+/).filter(w => w.length > 3 && !stopWords.has(w));
+      const citaKeywords = extractKeywords(f.extracto_relevante);
+      if (citaKeywords.length > 0) {
+        const matchedCount = citaKeywords.filter(kw => sourceNorm.includes(kw)).length;
+        const matchRatio = matchedCount / citaKeywords.length;
+        // If >60% of significant keywords are found in the source, consider it verified
+        if (matchRatio >= 0.6 && matchedCount >= 3) {
+          bestMatch = true;
+          // Try to find a relevant fragment around the first matched keyword
+          const firstKw = citaKeywords.find(kw => sourceNorm.includes(kw));
+          if (firstKw) {
+            const idx = sourceNorm.indexOf(firstKw);
+            const start = Math.max(0, idx - 100);
+            const end = Math.min(sourceText.length, idx + 300);
+            foundFragment = sourceText.substring(start, end);
+          }
+          break;
+        }
+      }
     }
 
     return {

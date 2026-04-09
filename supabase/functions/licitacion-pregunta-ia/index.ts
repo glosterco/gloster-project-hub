@@ -376,9 +376,7 @@ serve(async (req) => {
     ]);
 
     // --- Download and prepare document content ---
-    // Strategy: PDFs are sent as native inline_data parts to Gemini (best accuracy)
-    // Other formats: extract text and include in context
-    const inlineFileParts: { inline_data: { mime_type: string; data: string } }[] = [];
+    // Strategy: All documents are converted to text for GPT-5 compatibility
     const textDocuments: { nombre: string; contenido: string }[] = [];
     const fileNames: string[] = [];
 

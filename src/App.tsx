@@ -29,6 +29,8 @@ import LicitacionAcceso from "./pages/LicitacionAcceso";
 import MKT from "./pages/MKT";
 import RRSS from "./pages/RRSS";
 import Sales from "./pages/Sales";
+import SalesLicitacion from "./pages/SalesLicitacion";
+import SalesSubcontratos from "./pages/SalesSubcontratos";
 import NotFound from "./pages/NotFound";
 import RFIDetail from "./pages/RFIDetail";
 import AdicionalDetail from "./pages/AdicionalDetail";
@@ -55,6 +57,8 @@ const App = () => (
             <Route path="/rrss" element={<RRSS />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/sales" element={<Sales />} />
+            <Route path="/sales/licitacion" element={<SalesLicitacion />} />
+            <Route path="/sales/subcontratos" element={<SalesSubcontratos />} />
             <Route path="/" element={<Index />} />
             <Route path="/register" element={<Register />} />
             

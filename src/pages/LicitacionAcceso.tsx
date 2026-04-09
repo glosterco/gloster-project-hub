@@ -915,7 +915,23 @@ const LicitacionAcceso = () => {
       fecha_fin: ronda?.fecha_cierre || null,
     };
   });
-  const combinedItemNodes = buildHierarchicalItems(allItems.filter(i => !i.agregado_por_oferente || i.oferente_email === visibleEmail));
+  // Merge bidder's oferta item overrides onto mandante items
+  const mergedItems = allItems.filter(i => !i.agregado_por_oferente || i.oferente_email === visibleEmail).map((item: any) => {
+    if (item.agregado_por_oferente) return item;
+    // Check if bidder has an override in LicitacionOfertaItems
+    const override = miOfertaItems.find((oi: any) => oi.item_referencia_id === item.id);
+    if (override) {
+      return {
+        ...item,
+        cantidad: override.cantidad ?? item.cantidad,
+        precio_unitario: override.precio_unitario ?? item.precio_unitario,
+        precio_total: override.precio_total ?? item.precio_total,
+        unidad: override.unidad ?? item.unidad,
+      };
+    }
+    return item;
+  });
+  const combinedItemNodes = buildHierarchicalItems(mergedItems);
   const mandanteItemNodes = combinedItemNodes.filter(({ item }) => !item.agregado_por_oferente);
   const bidderItemNodes = combinedItemNodes.filter(({ item }) => item.agregado_por_oferente && item.oferente_email === visibleEmail);
   const combinedItems = combinedItemNodes.map(({ item }) => item);

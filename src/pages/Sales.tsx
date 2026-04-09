@@ -38,7 +38,7 @@ const Sales = () => {
   const [current, setCurrent] = useState(initialSlide);
   const [direction, setDirection] = useState(0);
   const [lightbox, setLightbox] = useState<{
-    photo: string;
+    src: string;
     name: string;
     role: string;
     specialty: string;

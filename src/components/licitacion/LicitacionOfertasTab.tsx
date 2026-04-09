@@ -450,15 +450,7 @@ const LicitacionOfertasTab: React.FC<Props> = ({
                   {cheapest ? (() => {
                     if (cheapest.minOfertaId === -999) return 'Mandante';
                     const src = ofertas.find(o => o.id === cheapest.minOfertaId);
-                    return src?.oferente_empresa || src?.oferente_nombre || src?.oferente_email || '-';
-                  })() : '-'}
-                </TableCell>
-                <TableCell className="text-right text-xs bg-violet-50/50 dark:bg-violet-950/10">
-                  {cheapest ? (() => {
-                    if (cheapest.minOfertaId === -999) return item.precio_unitario ? fmt(item.precio_unitario) : '-';
-                    const src = ofertas.find(o => o.id === cheapest.minOfertaId);
-                    const oi = src ? findOfertaItem(src, item) : null;
-                    return oi?.precio_unitario != null ? fmt(oi.precio_unitario) : '-';
+                    return src?.oferente_empresa || src?.oferente_nombre || '-';
                   })() : '-'}
                 </TableCell>
                 <TableCell className="text-right text-xs font-medium border-r bg-violet-50/50 dark:bg-violet-950/10">
@@ -473,7 +465,7 @@ const LicitacionOfertasTab: React.FC<Props> = ({
                     <span className="text-[9px] text-muted-foreground truncate max-w-[90px]">
                       {cheapest.minOfertaId === -999 ? 'Mandante' : (() => {
                         const src = ofertas.find(o => o.id === cheapest.minOfertaId);
-                        return src?.oferente_empresa || src?.oferente_nombre || '?';
+                        return src?.oferente_empresa || src?.oferente_nombre || '-';
                       })()}
                     </span>
                   </div>
@@ -573,7 +565,7 @@ const LicitacionOfertasTab: React.FC<Props> = ({
 
                   {/* Cherry Pick header */}
                   {showCherryPick && (
-                    <TableHead colSpan={colsPerOferta} className="text-center border-l border-r bg-violet-50 dark:bg-violet-950/20">
+                    <TableHead colSpan={collapsed ? 1 : 2} className="text-center border-l border-r bg-violet-50 dark:bg-violet-950/20">
                       <div className="flex flex-col items-center gap-0.5">
                         <p className="text-xs font-bold">🍒 Cherry Pick</p>
                         <Badge className="text-[9px] bg-violet-600">Óptimo</Badge>
@@ -601,7 +593,6 @@ const LicitacionOfertasTab: React.FC<Props> = ({
                     {showCherryPick && (
                       <>
                         <TableHead className="text-center text-[10px] min-w-[80px] border-l bg-violet-50/50 dark:bg-violet-950/10">Empresa</TableHead>
-                        <TableHead className="text-right text-[10px] min-w-[100px] bg-violet-50/50 dark:bg-violet-950/10">P.U.</TableHead>
                         <TableHead className="text-right text-[10px] min-w-[110px] border-r font-semibold bg-violet-50/50 dark:bg-violet-950/10">Total</TableHead>
                       </>
                     )}
@@ -645,7 +636,7 @@ const LicitacionOfertasTab: React.FC<Props> = ({
 
                   {showCherryPick && (
                     <>
-                      {!collapsed && (<><TableCell className="border-l bg-violet-50/30" /><TableCell className="bg-violet-50/30" /></>)}
+                      {!collapsed && <TableCell className="border-l bg-violet-50/30" />}
                       <TableCell className="text-right font-bold text-xs border-r bg-violet-50/30 dark:bg-violet-950/10">
                         {fmt(cherryPickTotals)}
                       </TableCell>
@@ -680,7 +671,7 @@ const LicitacionOfertasTab: React.FC<Props> = ({
                     })}
                     {showCherryPick && (
                       <>
-                        {!collapsed && (<><TableCell className="border-l" /><TableCell /></>)}
+                        {!collapsed && <TableCell className="border-l" />}
                         <TableCell className="border-r text-center text-xs">-</TableCell>
                       </>
                     )}
@@ -714,7 +705,7 @@ const LicitacionOfertasTab: React.FC<Props> = ({
                     })}
                     {showCherryPick && (
                       <>
-                        {!collapsed && (<><TableCell className="border-l" /><TableCell /></>)}
+                        {!collapsed && <TableCell className="border-l" />}
                         <TableCell className="border-r text-center text-xs">-</TableCell>
                       </>
                     )}
@@ -742,7 +733,7 @@ const LicitacionOfertasTab: React.FC<Props> = ({
                     })}
                     {showCherryPick && (
                       <>
-                        {!collapsed && (<><TableCell className="border-l" /><TableCell /></>)}
+                        {!collapsed && <TableCell className="border-l" />}
                         <TableCell className="border-r text-center text-xs">-</TableCell>
                       </>
                     )}
@@ -776,7 +767,7 @@ const LicitacionOfertasTab: React.FC<Props> = ({
 
                   {showCherryPick && (
                     <>
-                      {!collapsed && (<><TableCell className="border-l bg-violet-50/30" /><TableCell className="bg-violet-50/30" /></>)}
+                      {!collapsed && <TableCell className="border-l bg-violet-50/30" />}
                       <TableCell className="text-right font-bold text-sm border-r bg-violet-50/30 dark:bg-violet-950/10 text-violet-700 dark:text-violet-300">
                         {fmt(cherryPickTotals)}
                       </TableCell>
@@ -804,7 +795,7 @@ const LicitacionOfertasTab: React.FC<Props> = ({
                     ))}
                     {showCherryPick && (
                       <>
-                        {!collapsed && (<><TableCell className="border-l" /><TableCell /></>)}
+                        {!collapsed && <TableCell className="border-l" />}
                         <TableCell className="border-r text-center text-xs">-</TableCell>
                       </>
                     )}
@@ -843,7 +834,7 @@ const LicitacionOfertasTab: React.FC<Props> = ({
                     ))}
                     {showCherryPick && (
                       <>
-                        {!collapsed && (<><TableCell className="border-l" /><TableCell /></>)}
+                        {!collapsed && <TableCell className="border-l" />}
                         <TableCell className="border-r" />
                       </>
                     )}

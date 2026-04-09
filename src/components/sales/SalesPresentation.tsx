@@ -69,9 +69,9 @@ const HeroSlide: React.FC<{ slide: Slide; onCTA: () => void }> = ({ slide, onCTA
 );
 
 const CTASlide: React.FC<{ slide: Slide; onCTA: () => void }> = ({ slide, onCTA }) => (
-  <div className={`h-full w-full bg-gradient-to-br ${slide.accent} flex items-center justify-center px-6`}>
+  <div className={`h-full w-full bg-gradient-to-br ${slide.accent} flex items-center justify-center px-4 md:px-6 pb-8 md:pb-0`}>
     <div className="max-w-3xl w-full text-center flex flex-col items-center">
-      <motion.h1 initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2, duration: 0.6 }} className="text-3xl md:text-4xl font-bold text-primary-foreground leading-tight mb-3">
+      <motion.h1 initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2, duration: 0.6 }} className="text-2xl md:text-3xl lg:text-4xl font-bold text-primary-foreground leading-tight mb-3">
         {slide.title}
       </motion.h1>
       <motion.p initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3, duration: 0.6 }} className="text-base text-primary-foreground/80 mb-5">

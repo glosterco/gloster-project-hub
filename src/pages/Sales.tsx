@@ -357,7 +357,7 @@ const ToolsSlide: React.FC<{ onNavigate: (path: string) => void }> = ({ onNaviga
           </div>
           <h3 className="text-2xl font-bold text-brand-yellow-foreground mb-2">Subcontratos</h3>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Controla estados de pago, documentos, presupuesto, RFI y adicionales de todos tus subcontratos.
+            Controla EDP, documentos, presupuesto, RFI y adicionales de tus subcontratos.
           </p>
         </motion.button>
       </div>

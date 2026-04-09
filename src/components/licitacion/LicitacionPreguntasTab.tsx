@@ -34,6 +34,60 @@ interface Props {
   onDeleteAnswer: (preguntaId: number) => void;
 }
 
+// Component to render document text with highlighted excerpts
+const HighlightedDocumentText: React.FC<{ text: string; highlight: string }> = ({ text, highlight }) => {
+  if (!highlight || highlight.length < 10) return <>{text}</>;
+
+  const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
+  const textNorm = normalize(text);
+
+  // Try to find the highlight in the text using progressively smaller fragments
+  const highlightNorm = normalize(highlight);
+  let matchStart = textNorm.indexOf(highlightNorm);
+  let matchLength = highlight.length;
+
+  // If full match fails, try first 80 chars
+  if (matchStart === -1) {
+    const partial = highlightNorm.substring(0, 80);
+    if (partial.length > 15) {
+      matchStart = textNorm.indexOf(partial);
+      matchLength = Math.min(highlight.length, 200);
+    }
+  }
+
+  // Try individual sentences
+  if (matchStart === -1) {
+    const sentences = highlight.split(/[.;,\n]/).filter(s => s.trim().length > 15);
+    for (const sentence of sentences) {
+      const sentNorm = normalize(sentence);
+      matchStart = textNorm.indexOf(sentNorm);
+      if (matchStart !== -1) {
+        matchLength = sentence.length + 50;
+        break;
+      }
+    }
+  }
+
+  if (matchStart === -1) return <>{text}</>;
+
+  // Map back to original text positions (approximate)
+  const ratio = text.length / textNorm.length;
+  const origStart = Math.max(0, Math.floor(matchStart * ratio));
+  const origEnd = Math.min(text.length, Math.floor((matchStart + matchLength) * ratio));
+
+  const before = text.substring(0, origStart);
+  const matched = text.substring(origStart, origEnd);
+  const after = text.substring(origEnd);
+
+  return (
+    <>
+      {before}
+      <mark className="bg-yellow-200 dark:bg-yellow-800/60 text-foreground px-0.5 rounded">{matched}</mark>
+      {after}
+    </>
+  );
+};
+
 const LicitacionPreguntasTab: React.FC<Props> = ({
   rondas, preguntas, licitacionId, oferentesDetail = [], onCloseRonda, onOpenRonda,
   onAnswerPregunta, onPublishPreguntas, onRefetch, onDeleteAnswer

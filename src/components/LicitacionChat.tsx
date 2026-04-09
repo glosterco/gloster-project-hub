@@ -468,8 +468,8 @@ const LicitacionChat = ({ open, onOpenChange, onSuccess }: LicitacionChatProps) 
   };
 
   const renderMessageContent = (content: string) => {
-    // Remove the json_licitacion block from display
-    const cleanContent = content.replace(/```json_licitacion[\s\S]*?```/g, '');
+    // Remove the json_licitacion and json_resumen blocks from display
+    const cleanContent = content.replace(/```json_licitacion[\s\S]*?```/g, '').replace(/```json_resumen[\s\S]*?```/g, '').trim();
     return (
       <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:mb-2 [&>ul]:mb-2 [&>ol]:mb-2">
         <ReactMarkdown>{cleanContent}</ReactMarkdown>

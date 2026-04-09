@@ -211,7 +211,7 @@ const AboutSlide: React.FC<AboutSlideProps> = ({ onCTA, onPhotoClick }) => (
 const shakeAnimation = {
   hover: {
     x: [0, -3, 3, -3, 3, 0],
-    transition: { duration: 0.4, ease: "easeInOut" }
+    transition: { duration: 0.4, ease: "easeInOut" as const }
   }
 };
 

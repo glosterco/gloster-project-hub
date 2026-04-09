@@ -1,28 +1,43 @@
-import React, { useState, useMemo } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import React, { useState, useMemo } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Oferta, OfertaItem } from '@/hooks/useLicitacionDetail';
-import { LicitacionItem } from '@/hooks/useLicitaciones';
-import { BarChart3, Trophy, Loader2, GripVertical, Cherry } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Oferta, OfertaItem } from "@/hooks/useLicitacionDetail";
+import { LicitacionItem } from "@/hooks/useLicitaciones";
+import { BarChart3, Trophy, Loader2, GripVertical, Cherry } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import {
-  DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors,
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
   DragEndEvent,
-} from '@dnd-kit/core';
+} from "@dnd-kit/core";
 import {
-  arrayMove, SortableContext, sortableKeyboardCoordinates,
-  useSortable, verticalListSortingStrategy, horizontalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+  horizontalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface Props {
   ofertas: Oferta[];
@@ -32,27 +47,27 @@ interface Props {
   onRefresh?: () => void;
 }
 
-const fmt = (n: number | null | undefined) => n != null ? `$${n.toLocaleString('es-CL')}` : '-';
-const fmtNum = (n: number | null | undefined) => n != null ? n.toLocaleString('es-CL') : '-';
+const fmt = (n: number | null | undefined) => (n != null ? `$${n.toLocaleString("es-CL")}` : "-");
+const fmtNum = (n: number | null | undefined) => (n != null ? n.toLocaleString("es-CL") : "-");
 
 const getDeviationClass = (value: number | null | undefined, avg: number) => {
-  if (value == null || avg === 0) return '';
+  if (value == null || avg === 0) return "";
   const pct = Math.abs((value - avg) / avg);
-  if (pct > 0.3) return 'bg-destructive/10 text-destructive font-bold';
-  if (pct > 0.15) return 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400';
-  return '';
+  if (pct > 0.3) return "bg-destructive/10 text-destructive font-bold";
+  if (pct > 0.15) return "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400";
+  return "";
 };
 
-const normalizeDesc = (s: string | null | undefined) => (s || '').toLowerCase().trim();
+const normalizeDesc = (s: string | null | undefined) => (s || "").toLowerCase().trim();
 
 const findOfertaItem = (oferta: Oferta, item: LicitacionItem): OfertaItem | undefined => {
   if (item.id) {
-    const byRef = oferta.items.find(oi => oi.item_referencia_id === item.id);
+    const byRef = oferta.items.find((oi) => oi.item_referencia_id === item.id);
     if (byRef) return byRef;
   }
   const norm = normalizeDesc(item.descripcion);
   if (!norm) return undefined;
-  return oferta.items.find(oi => normalizeDesc(oi.descripcion) === norm);
+  return oferta.items.find((oi) => normalizeDesc(oi.descripcion) === norm);
 };
 
 // Sortable header cell for ofertas column reordering
@@ -76,7 +91,7 @@ const SortableOfertaHeader: React.FC<{
       ref={setNodeRef}
       style={style}
       colSpan={colsPerOferta}
-      className={`text-center border-l border-r ${isAdj ? 'bg-emerald-50 dark:bg-emerald-950/20' : ''} ${isCherryPick ? 'bg-violet-50 dark:bg-violet-950/20' : ''}`}
+      className={`text-center border-l border-r ${isAdj ? "bg-emerald-50 dark:bg-emerald-950/20" : ""} ${isCherryPick ? "bg-violet-50 dark:bg-violet-950/20" : ""}`}
     >
       <div className="flex flex-col items-center gap-0.5">
         <div className="flex items-center gap-1">
@@ -86,13 +101,18 @@ const SortableOfertaHeader: React.FC<{
             </span>
           )}
           <p className="text-xs font-bold truncate max-w-[140px]">
-            {isCherryPick ? '🍒 Cherry Pick' : (oferta.oferente_empresa || oferta.oferente_nombre || oferta.oferente_email)}
+            {isCherryPick
+              ? "🍒 Cherry Pick"
+              : oferta.oferente_empresa || oferta.oferente_nombre || oferta.oferente_email}
           </p>
         </div>
         <div className="flex items-center gap-1">
           {isAdj && <Trophy className="h-3 w-3 text-emerald-600" />}
-          <Badge variant={isAdj ? 'default' : 'outline'} className={`text-[9px] ${isAdj ? 'bg-emerald-600' : ''} ${isCherryPick ? 'bg-violet-600 text-white' : ''}`}>
-            {isCherryPick ? 'Óptimo' : isAdj ? 'Adjudicada' : oferta.estado}
+          <Badge
+            variant={isAdj ? "default" : "outline"}
+            className={`text-[9px] ${isAdj ? "bg-emerald-600" : ""} ${isCherryPick ? "bg-violet-600 text-white" : ""}`}
+          >
+            {isCherryPick ? "Óptimo" : isAdj ? "Adjudicada" : oferta.estado}
           </Badge>
         </div>
       </div>
@@ -101,7 +121,11 @@ const SortableOfertaHeader: React.FC<{
 };
 
 const LicitacionOfertasTab: React.FC<Props> = ({
-  ofertas: ofertasOriginal, itemsReferencia, licitacionId, licitacionIVA, onRefresh
+  ofertas: ofertasOriginal,
+  itemsReferencia,
+  licitacionId,
+  licitacionIVA,
+  onRefresh,
 }) => {
   const { toast } = useToast();
   const [collapsed, setCollapsed] = useState(false);
@@ -114,8 +138,8 @@ const LicitacionOfertasTab: React.FC<Props> = ({
   // Stable ordered ofertas
   const ofertas = useMemo(() => {
     if (ofertaOrder.length > 0) {
-      const map = new Map(ofertasOriginal.map(o => [o.id, o]));
-      return ofertaOrder.map(id => map.get(id)).filter(Boolean) as Oferta[];
+      const map = new Map(ofertasOriginal.map((o) => [o.id, o]));
+      return ofertaOrder.map((id) => map.get(id)).filter(Boolean) as Oferta[];
     }
     return ofertasOriginal;
   }, [ofertasOriginal, ofertaOrder]);
@@ -123,34 +147,32 @@ const LicitacionOfertasTab: React.FC<Props> = ({
   // Initialize order when ofertas change
   React.useEffect(() => {
     if (ofertaOrder.length === 0 && ofertasOriginal.length > 0) {
-      setOfertaOrder(ofertasOriginal.map(o => o.id));
+      setOfertaOrder(ofertasOriginal.map((o) => o.id));
     }
   }, [ofertasOriginal, ofertaOrder.length]);
 
-  const adjudicadaOferta = ofertas.find(o => o.estado === 'adjudicada');
+  const adjudicadaOferta = ofertas.find((o) => o.estado === "adjudicada");
 
   // Check if mandante items have prices
-  const mandanteBaseItems = itemsReferencia.filter(i => !i.agregado_por_oferente);
-  const mandanteHasPrices = mandanteBaseItems.some(i => (i.precio_total || 0) > 0);
+  const mandanteBaseItems = itemsReferencia.filter((i) => !i.agregado_por_oferente);
+  const mandanteHasPrices = mandanteBaseItems.some((i) => (i.precio_total || 0) > 0);
 
   const sortedItems = useMemo(() => {
-    const refItems = [...itemsReferencia]
-      .filter(i => !i.agregado_por_oferente)
-      .sort((a, b) => a.orden - b.orden);
+    const refItems = [...itemsReferencia].filter((i) => !i.agregado_por_oferente).sort((a, b) => a.orden - b.orden);
 
-    const seenDescs = new Set<string>(refItems.map(i => normalizeDesc(i.descripcion)));
+    const seenDescs = new Set<string>(refItems.map((i) => normalizeDesc(i.descripcion)));
     const combined: LicitacionItem[] = [...refItems];
 
-    let extraOrder = refItems.length > 0 ? Math.max(...refItems.map(r => r.orden)) + 1 : 1;
-    ofertas.forEach(o => {
-      o.items.forEach(oi => {
+    let extraOrder = refItems.length > 0 ? Math.max(...refItems.map((r) => r.orden)) + 1 : 1;
+    ofertas.forEach((o) => {
+      o.items.forEach((oi) => {
         const norm = normalizeDesc(oi.descripcion);
         if (norm && !seenDescs.has(norm)) {
           seenDescs.add(norm);
           combined.push({
             id: oi.id,
             descripcion: oi.descripcion,
-            unidad: oi.unidad || '',
+            unidad: oi.unidad || "",
             cantidad: oi.cantidad || 0,
             precio_unitario: oi.precio_unitario || 0,
             precio_total: oi.precio_total || 0,
@@ -162,9 +184,9 @@ const LicitacionOfertasTab: React.FC<Props> = ({
 
     // Apply custom item order
     if (itemOrder.length > 0) {
-      const map = new Map(combined.map(i => [i.id, i]));
-      const ordered = itemOrder.map(id => map.get(id)).filter(Boolean) as LicitacionItem[];
-      const remaining = combined.filter(i => !itemOrder.includes(i.id));
+      const map = new Map(combined.map((i) => [i.id, i]));
+      const ordered = itemOrder.map((id) => map.get(id)).filter(Boolean) as LicitacionItem[];
+      const remaining = combined.filter((i) => !itemOrder.includes(i.id));
       return [...ordered, ...remaining];
     }
 
@@ -174,14 +196,14 @@ const LicitacionOfertasTab: React.FC<Props> = ({
   // Initialize item order
   React.useEffect(() => {
     if (itemOrder.length === 0 && sortedItems.length > 0) {
-      setItemOrder(sortedItems.map(i => i.id));
+      setItemOrder(sortedItems.map((i) => i.id));
     }
   }, [sortedItems, itemOrder.length]);
 
   const mediaValues = useMemo(() => {
     const map = new Map<number, { cantidad: number; precio: number; total: number }>();
-    sortedItems.forEach(item => {
-      const values = ofertas.map(o => findOfertaItem(o, item)).filter(Boolean) as OfertaItem[];
+    sortedItems.forEach((item) => {
+      const values = ofertas.map((o) => findOfertaItem(o, item)).filter(Boolean) as OfertaItem[];
       if (values.length > 0) {
         map.set(item.id || 0, {
           cantidad: values.reduce((s, v) => s + (v.cantidad || 0), 0) / values.length,
@@ -196,7 +218,7 @@ const LicitacionOfertasTab: React.FC<Props> = ({
   // Per-item cheapest total & variation data
   const itemCheapest = useMemo(() => {
     const map = new Map<number, { minTotal: number; minOfertaId: number }>();
-    sortedItems.forEach(item => {
+    sortedItems.forEach((item) => {
       let minTotal = Infinity;
       let minOfertaId = -1;
 
@@ -206,7 +228,7 @@ const LicitacionOfertasTab: React.FC<Props> = ({
         minOfertaId = -999; // mandante marker
       }
 
-      ofertas.forEach(o => {
+      ofertas.forEach((o) => {
         const oi = findOfertaItem(o, item);
         if (oi?.precio_total != null && oi.precio_total > 0 && oi.precio_total < minTotal) {
           minTotal = oi.precio_total;
@@ -224,7 +246,7 @@ const LicitacionOfertasTab: React.FC<Props> = ({
   // Cherry pick: auto-select cheapest per item
   const cherryPickTotals = useMemo(() => {
     let subtotal = 0;
-    sortedItems.forEach(item => {
+    sortedItems.forEach((item) => {
       const cheapest = itemCheapest.get(item.id || 0);
       if (cheapest) subtotal += cheapest.minTotal;
     });
@@ -233,7 +255,7 @@ const LicitacionOfertasTab: React.FC<Props> = ({
 
   const ofertaSubtotals = useMemo(() => {
     const map = new Map<number, number>();
-    ofertas.forEach(o => {
+    ofertas.forEach((o) => {
       const subtotal = o.items.reduce((s, i) => s + (i.precio_total || 0), 0);
       map.set(o.id, subtotal);
     });
@@ -246,7 +268,17 @@ const LicitacionOfertasTab: React.FC<Props> = ({
   }, [mandanteBaseItems, mandanteHasPrices]);
 
   const ofertaFinancials = useMemo(() => {
-    const map = new Map<number, { ggPct: number | null; ggAmount: number; utilPct: number | null; utilAmount: number; ivaAmount: number; total: number }>();
+    const map = new Map<
+      number,
+      {
+        ggPct: number | null;
+        ggAmount: number;
+        utilPct: number | null;
+        utilAmount: number;
+        ivaAmount: number;
+        total: number;
+      }
+    >();
 
     ofertas.forEach((oferta) => {
       const subtotal = ofertaSubtotals.get(oferta.id) || 0;
@@ -268,14 +300,14 @@ const LicitacionOfertasTab: React.FC<Props> = ({
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
   const handleOfertaDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    const activeId = Number(String(active.id).replace('oferta-', ''));
-    const overId = Number(String(over.id).replace('oferta-', ''));
+    const activeId = Number(String(active.id).replace("oferta-", ""));
+    const overId = Number(String(over.id).replace("oferta-", ""));
     const oldIndex = ofertaOrder.indexOf(activeId);
     const newIndex = ofertaOrder.indexOf(overId);
     if (oldIndex !== -1 && newIndex !== -1) {
@@ -286,9 +318,9 @@ const LicitacionOfertasTab: React.FC<Props> = ({
   const handleItemDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    const activeId = Number(String(active.id).replace('item-', ''));
-    const overId = Number(String(over.id).replace('item-', ''));
-    const currentOrder = itemOrder.length > 0 ? itemOrder : sortedItems.map(i => i.id);
+    const activeId = Number(String(active.id).replace("item-", ""));
+    const overId = Number(String(over.id).replace("item-", ""));
+    const currentOrder = itemOrder.length > 0 ? itemOrder : sortedItems.map((i) => i.id);
     const oldIndex = currentOrder.indexOf(activeId);
     const newIndex = currentOrder.indexOf(overId);
     if (oldIndex !== -1 && newIndex !== -1) {
@@ -301,42 +333,46 @@ const LicitacionOfertasTab: React.FC<Props> = ({
     setAdjudicando(true);
     try {
       const { error: err1 } = await supabase
-        .from('LicitacionOfertas')
-        .update({ estado: 'adjudicada' })
-        .eq('id', oferta.id);
+        .from("LicitacionOfertas")
+        .update({ estado: "adjudicada" })
+        .eq("id", oferta.id);
       if (err1) throw err1;
 
-      const otherIds = ofertas.filter(o => o.id !== oferta.id).map(o => o.id);
+      const otherIds = ofertas.filter((o) => o.id !== oferta.id).map((o) => o.id);
       if (otherIds.length > 0) {
         const { error: err2 } = await supabase
-          .from('LicitacionOfertas')
-          .update({ estado: 'no_adjudicada' })
-          .in('id', otherIds);
+          .from("LicitacionOfertas")
+          .update({ estado: "no_adjudicada" })
+          .in("id", otherIds);
         if (err2) throw err2;
       }
 
       const { error: err3 } = await supabase
-        .from('Licitaciones')
-        .update({ estado: 'adjudicada' })
-        .eq('id', licitacionId);
+        .from("Licitaciones")
+        .update({ estado: "adjudicada" })
+        .eq("id", licitacionId);
       if (err3) throw err3;
 
-      toast({ title: 'Licitación adjudicada', description: `Adjudicada a ${oferta.oferente_empresa || oferta.oferente_email}` });
+      toast({
+        title: "Licitación adjudicada",
+        description: `Adjudicada a ${oferta.oferente_empresa || oferta.oferente_email}`,
+      });
       setConfirmAdjudicar(null);
       onRefresh?.();
     } catch (err: any) {
-      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+      toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setAdjudicando(false);
     }
   };
 
   const getVariationClass = (value: number | null | undefined, itemId: number) => {
-    if (!variationMode || value == null || value === 0) return '';
+    if (!variationMode || value == null || value === 0) return "";
     const cheapest = itemCheapest.get(itemId);
-    if (!cheapest) return '';
-    if (value === cheapest.minTotal) return 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 font-bold';
-    return '';
+    if (!cheapest) return "";
+    if (value === cheapest.minTotal)
+      return "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 font-bold";
+    return "";
   };
 
   const getVariationText = (value: number | null | undefined, itemId: number) => {
@@ -358,8 +394,8 @@ const LicitacionOfertasTab: React.FC<Props> = ({
     );
   }
 
-  const hasGG = ofertas.some(oferta => (oferta.gastos_generales ?? 0) > 0);
-  const hasUtil = ofertas.some(oferta => (oferta.utilidades ?? 0) > 0);
+  const hasGG = ofertas.some((oferta) => (oferta.gastos_generales ?? 0) > 0);
+  const hasUtil = ofertas.some((oferta) => (oferta.utilidades ?? 0) > 0);
   const hasIVA = licitacionIVA != null && licitacionIVA > 0;
 
   // All columns: mandante (if has prices) + ofertas + cherry pick
@@ -390,7 +426,7 @@ const LicitacionOfertasTab: React.FC<Props> = ({
         </TableCell>
         {!collapsed && (
           <>
-            <TableCell className="text-center text-xs border-r">{item.unidad || '-'}</TableCell>
+            <TableCell className="text-center text-xs border-r">{item.unidad || "-"}</TableCell>
             <TableCell className="text-right text-xs border-r">{fmtNum(item.cantidad)}</TableCell>
           </>
         )}
@@ -400,14 +436,18 @@ const LicitacionOfertasTab: React.FC<Props> = ({
           <>
             {!collapsed && (
               <>
-                <TableCell className="text-right text-xs border-l bg-blue-50/50 dark:bg-blue-950/10">{fmtNum(item.cantidad)}</TableCell>
+                <TableCell className="text-right text-xs border-l bg-blue-50/50 dark:bg-blue-950/10">
+                  {fmtNum(item.cantidad)}
+                </TableCell>
                 <TableCell className="text-right text-xs bg-blue-50/50 dark:bg-blue-950/10">
-                  {item.precio_unitario ? fmt(item.precio_unitario) : '-'}
+                  {item.precio_unitario ? fmt(item.precio_unitario) : "-"}
                 </TableCell>
               </>
             )}
-            <TableCell className={`text-right text-xs font-medium ${collapsed ? 'border-l' : ''} border-r bg-blue-50/50 dark:bg-blue-950/10 ${getVariationClass(item.precio_total, item.id || 0)}`}>
-              {item.precio_total ? fmt(item.precio_total) : '-'}
+            <TableCell
+              className={`text-right text-xs font-medium ${collapsed ? "border-l" : ""} border-r bg-blue-50/50 dark:bg-blue-950/10 ${getVariationClass(item.precio_total, item.id || 0)}`}
+            >
+              {item.precio_total ? fmt(item.precio_total) : "-"}
               {variationMode && getVariationText(item.precio_total, item.id || 0) && (
                 <div className="text-[9px] text-amber-600">{getVariationText(item.precio_total, item.id || 0)}</div>
               )}
@@ -415,24 +455,30 @@ const LicitacionOfertasTab: React.FC<Props> = ({
           </>
         )}
 
-        {ofertas.map(oferta => {
+        {ofertas.map((oferta) => {
           const oi = findOfertaItem(oferta, item);
-          const isAdj = oferta.estado === 'adjudicada';
-          const adjBg = isAdj ? 'bg-emerald-50/50 dark:bg-emerald-950/10' : '';
+          const isAdj = oferta.estado === "adjudicada";
+          const adjBg = isAdj ? "bg-emerald-50/50 dark:bg-emerald-950/10" : "";
           return (
             <React.Fragment key={oferta.id}>
               {!collapsed && (
                 <>
-                  <TableCell className={`text-right text-xs border-l ${adjBg} ${variationMode ? '' : getDeviationClass(oi?.cantidad, media?.cantidad || 0)}`}>
+                  <TableCell
+                    className={`text-right text-xs border-l ${adjBg} ${variationMode ? "" : getDeviationClass(oi?.cantidad, media?.cantidad || 0)}`}
+                  >
                     {fmtNum(oi?.cantidad)}
                   </TableCell>
-                  <TableCell className={`text-right text-xs ${adjBg} ${variationMode ? '' : getDeviationClass(oi?.precio_unitario, media?.precio || 0)}`}>
-                    {oi?.precio_unitario != null ? fmt(oi.precio_unitario) : '-'}
+                  <TableCell
+                    className={`text-right text-xs ${adjBg} ${variationMode ? "" : getDeviationClass(oi?.precio_unitario, media?.precio || 0)}`}
+                  >
+                    {oi?.precio_unitario != null ? fmt(oi.precio_unitario) : "-"}
                   </TableCell>
                 </>
               )}
-              <TableCell className={`text-right text-xs font-medium ${collapsed ? 'border-l' : ''} border-r ${adjBg} ${variationMode ? getVariationClass(oi?.precio_total, item.id || 0) : getDeviationClass(oi?.precio_total, media?.total || 0)}`}>
-                {oi?.precio_total != null ? fmt(oi.precio_total) : '-'}
+              <TableCell
+                className={`text-right text-xs font-medium ${collapsed ? "border-l" : ""} border-r ${adjBg} ${variationMode ? getVariationClass(oi?.precio_total, item.id || 0) : getDeviationClass(oi?.precio_total, media?.total || 0)}`}
+              >
+                {oi?.precio_total != null ? fmt(oi.precio_total) : "-"}
                 {variationMode && getVariationText(oi?.precio_total, item.id || 0) && (
                   <div className="text-[9px] text-amber-600">{getVariationText(oi?.precio_total, item.id || 0)}</div>
                 )}
@@ -447,29 +493,37 @@ const LicitacionOfertasTab: React.FC<Props> = ({
             {!collapsed ? (
               <>
                 <TableCell className="text-center text-[10px] border-l bg-violet-50/50 dark:bg-violet-950/10 truncate max-w-[100px]">
-                  {cheapest ? (() => {
-                    if (cheapest.minOfertaId === -999) return 'Mandante';
-                    const src = ofertas.find(o => o.id === cheapest.minOfertaId);
-                    return src?.oferente_empresa || src?.oferente_nombre || '-';
-                  })() : '-'}
+                  {cheapest
+                    ? (() => {
+                        if (cheapest.minOfertaId === -999) return "Mandante";
+                        const src = ofertas.find((o) => o.id === cheapest.minOfertaId);
+                        return src?.oferente_nombre || src?.oferente_empresa || "-";
+                      })()
+                    : "-"}
                 </TableCell>
                 <TableCell className="text-right text-xs font-medium border-r bg-violet-50/50 dark:bg-violet-950/10">
-                  {cheapest ? fmt(cheapest.minTotal) : '-'}
+                  {cheapest ? fmt(cheapest.minTotal) : "-"}
                 </TableCell>
               </>
             ) : (
-              <TableCell className={`text-right text-xs font-medium border-l border-r bg-violet-50/50 dark:bg-violet-950/10`}>
+              <TableCell
+                className={`text-right text-xs font-medium border-l border-r bg-violet-50/50 dark:bg-violet-950/10`}
+              >
                 {cheapest ? (
                   <div className="flex flex-col items-end leading-tight">
                     <span>{fmt(cheapest.minTotal)}</span>
                     <span className="text-[9px] text-muted-foreground truncate max-w-[90px]">
-                      {cheapest.minOfertaId === -999 ? 'Mandante' : (() => {
-                        const src = ofertas.find(o => o.id === cheapest.minOfertaId);
-                        return src?.oferente_empresa || src?.oferente_nombre || '-';
-                      })()}
+                      {cheapest.minOfertaId === -999
+                        ? "Mandante"
+                        : (() => {
+                            const src = ofertas.find((o) => o.id === cheapest.minOfertaId);
+                            return src?.oferente_empresa || src?.oferente_nombre || "-";
+                          })()}
                     </span>
                   </div>
-                ) : '-'}
+                ) : (
+                  "-"
+                )}
               </TableCell>
             )}
           </>
@@ -488,11 +542,15 @@ const LicitacionOfertasTab: React.FC<Props> = ({
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <Switch id="collapse" checked={collapsed} onCheckedChange={setCollapsed} />
-            <Label htmlFor="collapse" className="text-sm">Compacta</Label>
+            <Label htmlFor="collapse" className="text-sm">
+              Compacta
+            </Label>
           </div>
           <div className="flex items-center gap-2">
             <Switch id="variation" checked={variationMode} onCheckedChange={setVariationMode} />
-            <Label htmlFor="variation" className="text-sm">Variación</Label>
+            <Label htmlFor="variation" className="text-sm">
+              Variación
+            </Label>
           </div>
           {!variationMode && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -514,7 +572,10 @@ const LicitacionOfertasTab: React.FC<Props> = ({
             <Trophy className="h-6 w-6 text-emerald-600" />
             <div>
               <p className="font-medium text-emerald-800 dark:text-emerald-300">
-                Adjudicada a: {adjudicadaOferta.oferente_empresa || adjudicadaOferta.oferente_nombre || adjudicadaOferta.oferente_email}
+                Adjudicada a:{" "}
+                {adjudicadaOferta.oferente_empresa ||
+                  adjudicadaOferta.oferente_nombre ||
+                  adjudicadaOferta.oferente_email}
               </p>
               <p className="text-sm text-emerald-600 dark:text-emerald-400">
                 Monto total: {fmt(adjudicadaOferta.total)}
@@ -535,29 +596,41 @@ const LicitacionOfertasTab: React.FC<Props> = ({
                   </TableHead>
                   {!collapsed && (
                     <>
-                      <TableHead rowSpan={2} className="text-center w-16 border-r">Ud.</TableHead>
-                      <TableHead rowSpan={2} className="text-right w-20 border-r">Cant. Ref</TableHead>
+                      <TableHead rowSpan={2} className="text-center w-16 border-r">
+                        Ud.
+                      </TableHead>
+                      <TableHead rowSpan={2} className="text-right w-20 border-r">
+                        Cant. Ref
+                      </TableHead>
                     </>
                   )}
 
                   {/* Mandante header */}
                   {showMandante && (
-                    <TableHead colSpan={colsPerOferta} className="text-center border-l border-r bg-blue-50 dark:bg-blue-950/20">
+                    <TableHead
+                      colSpan={colsPerOferta}
+                      className="text-center border-l border-r bg-blue-50 dark:bg-blue-950/20"
+                    >
                       <div className="flex flex-col items-center gap-0.5">
                         <p className="text-xs font-bold">Referencia Mandante</p>
-                        <Badge variant="outline" className="text-[9px]">Base</Badge>
+                        <Badge variant="outline" className="text-[9px]">
+                          Base
+                        </Badge>
                       </div>
                     </TableHead>
                   )}
 
                   <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleOfertaDragEnd}>
-                    <SortableContext items={ofertas.map(o => `oferta-${o.id}`)} strategy={horizontalListSortingStrategy}>
-                      {ofertas.map(oferta => (
+                    <SortableContext
+                      items={ofertas.map((o) => `oferta-${o.id}`)}
+                      strategy={horizontalListSortingStrategy}
+                    >
+                      {ofertas.map((oferta) => (
                         <SortableOfertaHeader
                           key={oferta.id}
                           oferta={oferta}
                           colsPerOferta={colsPerOferta}
-                          isAdj={oferta.estado === 'adjudicada'}
+                          isAdj={oferta.estado === "adjudicada"}
                         />
                       ))}
                     </SortableContext>
@@ -565,7 +638,10 @@ const LicitacionOfertasTab: React.FC<Props> = ({
 
                   {/* Cherry Pick header */}
                   {showCherryPick && (
-                    <TableHead colSpan={collapsed ? 1 : 2} className="text-center border-l border-r bg-violet-50 dark:bg-violet-950/20">
+                    <TableHead
+                      colSpan={collapsed ? 1 : 2}
+                      className="text-center border-l border-r bg-violet-50 dark:bg-violet-950/20"
+                    >
                       <div className="flex flex-col items-center gap-0.5">
                         <p className="text-xs font-bold">🍒 Cherry Pick</p>
                         <Badge className="text-[9px] bg-violet-600">Óptimo</Badge>
@@ -578,22 +654,34 @@ const LicitacionOfertasTab: React.FC<Props> = ({
                   <TableRow>
                     {showMandante && (
                       <>
-                        <TableHead className="text-right text-[10px] min-w-[80px] border-l bg-blue-50/50 dark:bg-blue-950/10">Cant.</TableHead>
-                        <TableHead className="text-right text-[10px] min-w-[100px] bg-blue-50/50 dark:bg-blue-950/10">P.U.</TableHead>
-                        <TableHead className="text-right text-[10px] min-w-[110px] border-r font-semibold bg-blue-50/50 dark:bg-blue-950/10">Total</TableHead>
+                        <TableHead className="text-right text-[10px] min-w-[80px] border-l bg-blue-50/50 dark:bg-blue-950/10">
+                          Cant.
+                        </TableHead>
+                        <TableHead className="text-right text-[10px] min-w-[100px] bg-blue-50/50 dark:bg-blue-950/10">
+                          P.U.
+                        </TableHead>
+                        <TableHead className="text-right text-[10px] min-w-[110px] border-r font-semibold bg-blue-50/50 dark:bg-blue-950/10">
+                          Total
+                        </TableHead>
                       </>
                     )}
-                    {ofertas.map(oferta => (
+                    {ofertas.map((oferta) => (
                       <React.Fragment key={oferta.id}>
                         <TableHead className="text-right text-[10px] min-w-[80px] border-l">Cant.</TableHead>
                         <TableHead className="text-right text-[10px] min-w-[100px]">P.U.</TableHead>
-                        <TableHead className="text-right text-[10px] min-w-[110px] border-r font-semibold">Total</TableHead>
+                        <TableHead className="text-right text-[10px] min-w-[110px] border-r font-semibold">
+                          Total
+                        </TableHead>
                       </React.Fragment>
                     ))}
                     {showCherryPick && (
                       <>
-                        <TableHead className="text-center text-[10px] min-w-[80px] border-l bg-violet-50/50 dark:bg-violet-950/10">Empresa</TableHead>
-                        <TableHead className="text-right text-[10px] min-w-[110px] border-r font-semibold bg-violet-50/50 dark:bg-violet-950/10">Total</TableHead>
+                        <TableHead className="text-center text-[10px] min-w-[80px] border-l bg-violet-50/50 dark:bg-violet-950/10">
+                          Empresa
+                        </TableHead>
+                        <TableHead className="text-right text-[10px] min-w-[110px] border-r font-semibold bg-violet-50/50 dark:bg-violet-950/10">
+                          Total
+                        </TableHead>
                       </>
                     )}
                   </TableRow>
@@ -602,8 +690,11 @@ const LicitacionOfertasTab: React.FC<Props> = ({
 
               <TableBody>
                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleItemDragEnd}>
-                  <SortableContext items={sortedItems.map(i => `item-${i.id}`)} strategy={verticalListSortingStrategy}>
-                    {sortedItems.map(item => (
+                  <SortableContext
+                    items={sortedItems.map((i) => `item-${i.id}`)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    {sortedItems.map((item) => (
                       <SortableItemRow key={item.id} item={item} />
                     ))}
                   </SortableContext>
@@ -612,22 +703,41 @@ const LicitacionOfertasTab: React.FC<Props> = ({
                 {/* SUBTOTAL */}
                 <TableRow className="border-t-2 bg-muted/20">
                   <TableCell className="sticky left-0 bg-muted/20 z-10 font-bold text-xs border-r">SUBTOTAL</TableCell>
-                  {!collapsed && (<><TableCell className="border-r" /><TableCell className="border-r" /></>)}
-
-                  {showMandante && (
+                  {!collapsed && (
                     <>
-                      {!collapsed && (<><TableCell className="border-l bg-blue-50/30" /><TableCell className="bg-blue-50/30" /></>)}
-                      <TableCell className="text-right font-bold text-xs border-r bg-blue-50/30 dark:bg-blue-950/10">{fmt(mandanteSubtotal)}</TableCell>
+                      <TableCell className="border-r" />
+                      <TableCell className="border-r" />
                     </>
                   )}
 
-                  {ofertas.map(oferta => {
+                  {showMandante && (
+                    <>
+                      {!collapsed && (
+                        <>
+                          <TableCell className="border-l bg-blue-50/30" />
+                          <TableCell className="bg-blue-50/30" />
+                        </>
+                      )}
+                      <TableCell className="text-right font-bold text-xs border-r bg-blue-50/30 dark:bg-blue-950/10">
+                        {fmt(mandanteSubtotal)}
+                      </TableCell>
+                    </>
+                  )}
+
+                  {ofertas.map((oferta) => {
                     const sub = ofertaSubtotals.get(oferta.id) || 0;
-                    const isAdj = oferta.estado === 'adjudicada';
+                    const isAdj = oferta.estado === "adjudicada";
                     return (
                       <React.Fragment key={oferta.id}>
-                        {!collapsed && (<><TableCell className="border-l" /><TableCell /></>)}
-                        <TableCell className={`text-right font-bold text-xs border-r ${isAdj ? 'bg-emerald-50 dark:bg-emerald-950/20' : ''}`}>
+                        {!collapsed && (
+                          <>
+                            <TableCell className="border-l" />
+                            <TableCell />
+                          </>
+                        )}
+                        <TableCell
+                          className={`text-right font-bold text-xs border-r ${isAdj ? "bg-emerald-50 dark:bg-emerald-950/20" : ""}`}
+                        >
                           {fmt(sub)}
                         </TableCell>
                       </React.Fragment>
@@ -647,23 +757,42 @@ const LicitacionOfertasTab: React.FC<Props> = ({
                 {hasGG && (
                   <TableRow className="bg-muted/10">
                     <TableCell className="sticky left-0 bg-muted/10 z-10 text-xs border-r">Gastos Generales</TableCell>
-                    {!collapsed && (<><TableCell className="border-r" /><TableCell className="border-r" /></>)}
+                    {!collapsed && (
+                      <>
+                        <TableCell className="border-r" />
+                        <TableCell className="border-r" />
+                      </>
+                    )}
                     {showMandante && (
                       <>
-                        {!collapsed && (<><TableCell className="border-l" /><TableCell /></>)}
+                        {!collapsed && (
+                          <>
+                            <TableCell className="border-l" />
+                            <TableCell />
+                          </>
+                        )}
                         <TableCell className="text-right text-xs border-r">-</TableCell>
                       </>
                     )}
-                    {ofertas.map(oferta => {
+                    {ofertas.map((oferta) => {
                       const financial = ofertaFinancials.get(oferta.id);
-                      const isAdj = oferta.estado === 'adjudicada';
+                      const isAdj = oferta.estado === "adjudicada";
                       return (
                         <React.Fragment key={oferta.id}>
-                          {!collapsed && (<><TableCell className="border-l" /><TableCell /></>)}
-                          <TableCell className={`text-right text-xs border-r ${isAdj ? 'bg-emerald-50 dark:bg-emerald-950/20' : ''}`}>
+                          {!collapsed && (
+                            <>
+                              <TableCell className="border-l" />
+                              <TableCell />
+                            </>
+                          )}
+                          <TableCell
+                            className={`text-right text-xs border-r ${isAdj ? "bg-emerald-50 dark:bg-emerald-950/20" : ""}`}
+                          >
                             <div className="flex flex-col items-end leading-tight">
                               <span>{fmt(financial?.ggAmount)}</span>
-                              <span className="text-[10px] text-muted-foreground">{financial?.ggPct != null ? `${financial.ggPct}%` : '-'}</span>
+                              <span className="text-[10px] text-muted-foreground">
+                                {financial?.ggPct != null ? `${financial.ggPct}%` : "-"}
+                              </span>
                             </div>
                           </TableCell>
                         </React.Fragment>
@@ -681,23 +810,42 @@ const LicitacionOfertasTab: React.FC<Props> = ({
                 {hasUtil && (
                   <TableRow className="bg-muted/10">
                     <TableCell className="sticky left-0 bg-muted/10 z-10 text-xs border-r">Utilidades</TableCell>
-                    {!collapsed && (<><TableCell className="border-r" /><TableCell className="border-r" /></>)}
+                    {!collapsed && (
+                      <>
+                        <TableCell className="border-r" />
+                        <TableCell className="border-r" />
+                      </>
+                    )}
                     {showMandante && (
                       <>
-                        {!collapsed && (<><TableCell className="border-l" /><TableCell /></>)}
+                        {!collapsed && (
+                          <>
+                            <TableCell className="border-l" />
+                            <TableCell />
+                          </>
+                        )}
                         <TableCell className="text-right text-xs border-r">-</TableCell>
                       </>
                     )}
-                    {ofertas.map(oferta => {
+                    {ofertas.map((oferta) => {
                       const financial = ofertaFinancials.get(oferta.id);
-                      const isAdj = oferta.estado === 'adjudicada';
+                      const isAdj = oferta.estado === "adjudicada";
                       return (
                         <React.Fragment key={oferta.id}>
-                          {!collapsed && (<><TableCell className="border-l" /><TableCell /></>)}
-                          <TableCell className={`text-right text-xs border-r ${isAdj ? 'bg-emerald-50 dark:bg-emerald-950/20' : ''}`}>
+                          {!collapsed && (
+                            <>
+                              <TableCell className="border-l" />
+                              <TableCell />
+                            </>
+                          )}
+                          <TableCell
+                            className={`text-right text-xs border-r ${isAdj ? "bg-emerald-50 dark:bg-emerald-950/20" : ""}`}
+                          >
                             <div className="flex flex-col items-end leading-tight">
                               <span>{fmt(financial?.utilAmount)}</span>
-                              <span className="text-[10px] text-muted-foreground">{financial?.utilPct != null ? `${financial.utilPct}%` : '-'}</span>
+                              <span className="text-[10px] text-muted-foreground">
+                                {financial?.utilPct != null ? `${financial.utilPct}%` : "-"}
+                              </span>
                             </div>
                           </TableCell>
                         </React.Fragment>
@@ -714,19 +862,36 @@ const LicitacionOfertasTab: React.FC<Props> = ({
 
                 {hasIVA && (
                   <TableRow className="bg-muted/10">
-                    <TableCell className="sticky left-0 bg-muted/10 z-10 text-xs border-r">IVA ({licitacionIVA}%)</TableCell>
-                    {!collapsed && (<><TableCell className="border-r" /><TableCell className="border-r" /></>)}
+                    <TableCell className="sticky left-0 bg-muted/10 z-10 text-xs border-r">
+                      IVA ({licitacionIVA}%)
+                    </TableCell>
+                    {!collapsed && (
+                      <>
+                        <TableCell className="border-r" />
+                        <TableCell className="border-r" />
+                      </>
+                    )}
                     {showMandante && (
                       <>
-                        {!collapsed && (<><TableCell className="border-l" /><TableCell /></>)}
+                        {!collapsed && (
+                          <>
+                            <TableCell className="border-l" />
+                            <TableCell />
+                          </>
+                        )}
                         <TableCell className="text-right text-xs border-r">-</TableCell>
                       </>
                     )}
-                    {ofertas.map(oferta => {
+                    {ofertas.map((oferta) => {
                       const financial = ofertaFinancials.get(oferta.id);
                       return (
                         <React.Fragment key={oferta.id}>
-                          {!collapsed && (<><TableCell className="border-l" /><TableCell /></>)}
+                          {!collapsed && (
+                            <>
+                              <TableCell className="border-l" />
+                              <TableCell />
+                            </>
+                          )}
                           <TableCell className="text-right text-xs border-r">{fmt(financial?.ivaAmount)}</TableCell>
                         </React.Fragment>
                       );
@@ -743,22 +908,41 @@ const LicitacionOfertasTab: React.FC<Props> = ({
                 {/* TOTAL */}
                 <TableRow className="border-t-2 bg-muted/30">
                   <TableCell className="sticky left-0 bg-muted/30 z-10 font-bold border-r">TOTAL</TableCell>
-                  {!collapsed && (<><TableCell className="border-r" /><TableCell className="border-r" /></>)}
-
-                  {showMandante && (
+                  {!collapsed && (
                     <>
-                      {!collapsed && (<><TableCell className="border-l" /><TableCell /></>)}
-                      <TableCell className="text-right font-bold text-sm border-r bg-blue-50/30 dark:bg-blue-950/10">{fmt(mandanteSubtotal)}</TableCell>
+                      <TableCell className="border-r" />
+                      <TableCell className="border-r" />
                     </>
                   )}
 
-                  {ofertas.map(oferta => {
-                    const isAdj = oferta.estado === 'adjudicada';
+                  {showMandante && (
+                    <>
+                      {!collapsed && (
+                        <>
+                          <TableCell className="border-l" />
+                          <TableCell />
+                        </>
+                      )}
+                      <TableCell className="text-right font-bold text-sm border-r bg-blue-50/30 dark:bg-blue-950/10">
+                        {fmt(mandanteSubtotal)}
+                      </TableCell>
+                    </>
+                  )}
+
+                  {ofertas.map((oferta) => {
+                    const isAdj = oferta.estado === "adjudicada";
                     const financial = ofertaFinancials.get(oferta.id);
                     return (
                       <React.Fragment key={oferta.id}>
-                        {!collapsed && (<><TableCell className="border-l" /><TableCell /></>)}
-                        <TableCell className={`text-right font-bold text-sm border-r ${isAdj ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300' : ''}`}>
+                        {!collapsed && (
+                          <>
+                            <TableCell className="border-l" />
+                            <TableCell />
+                          </>
+                        )}
+                        <TableCell
+                          className={`text-right font-bold text-sm border-r ${isAdj ? "bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300" : ""}`}
+                        >
                           {fmt(financial?.total ?? oferta.total)}
                         </TableCell>
                       </React.Fragment>
@@ -775,21 +959,38 @@ const LicitacionOfertasTab: React.FC<Props> = ({
                   )}
                 </TableRow>
 
-                {ofertas.some(o => o.duracion_dias != null) && (
+                {ofertas.some((o) => o.duracion_dias != null) && (
                   <TableRow className="bg-muted/10">
-                    <TableCell className="sticky left-0 bg-muted/10 z-10 text-xs font-medium border-r">Plazo (días)</TableCell>
-                    {!collapsed && (<><TableCell className="border-r" /><TableCell className="border-r" /></>)}
+                    <TableCell className="sticky left-0 bg-muted/10 z-10 text-xs font-medium border-r">
+                      Plazo (días)
+                    </TableCell>
+                    {!collapsed && (
+                      <>
+                        <TableCell className="border-r" />
+                        <TableCell className="border-r" />
+                      </>
+                    )}
                     {showMandante && (
                       <>
-                        {!collapsed && (<><TableCell className="border-l" /><TableCell /></>)}
+                        {!collapsed && (
+                          <>
+                            <TableCell className="border-l" />
+                            <TableCell />
+                          </>
+                        )}
                         <TableCell className="text-right text-xs border-r">-</TableCell>
                       </>
                     )}
-                    {ofertas.map(oferta => (
+                    {ofertas.map((oferta) => (
                       <React.Fragment key={oferta.id}>
-                        {!collapsed && (<><TableCell className="border-l" /><TableCell /></>)}
+                        {!collapsed && (
+                          <>
+                            <TableCell className="border-l" />
+                            <TableCell />
+                          </>
+                        )}
                         <TableCell className="text-right text-xs border-r">
-                          {oferta.duracion_dias != null ? `${oferta.duracion_dias} días` : '-'}
+                          {oferta.duracion_dias != null ? `${oferta.duracion_dias} días` : "-"}
                         </TableCell>
                       </React.Fragment>
                     ))}
@@ -807,18 +1008,33 @@ const LicitacionOfertasTab: React.FC<Props> = ({
                     <TableCell className="sticky left-0 bg-muted/10 z-10 font-medium text-sm border-r">
                       Adjudicar
                     </TableCell>
-                    {!collapsed && (<><TableCell className="border-r" /><TableCell className="border-r" /></>)}
+                    {!collapsed && (
+                      <>
+                        <TableCell className="border-r" />
+                        <TableCell className="border-r" />
+                      </>
+                    )}
                     {showMandante && (
                       <>
-                        {!collapsed && (<><TableCell className="border-l" /><TableCell /></>)}
+                        {!collapsed && (
+                          <>
+                            <TableCell className="border-l" />
+                            <TableCell />
+                          </>
+                        )}
                         <TableCell className="text-center border-r text-xs text-muted-foreground">—</TableCell>
                       </>
                     )}
-                    {ofertas.map(oferta => (
+                    {ofertas.map((oferta) => (
                       <React.Fragment key={oferta.id}>
-                        {!collapsed && (<><TableCell className="border-l" /><TableCell /></>)}
+                        {!collapsed && (
+                          <>
+                            <TableCell className="border-l" />
+                            <TableCell />
+                          </>
+                        )}
                         <TableCell className="text-center border-r">
-                          {oferta.estado === 'enviada' && (
+                          {oferta.estado === "enviada" && (
                             <Button
                               size="sm"
                               variant="outline"
@@ -846,18 +1062,20 @@ const LicitacionOfertasTab: React.FC<Props> = ({
         </CardContent>
       </Card>
 
-      {ofertas.some(o => o.notas) && (
+      {ofertas.some((o) => o.notas) && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {ofertas.filter(o => o.notas).map(oferta => (
-            <Card key={oferta.id} className="text-sm">
-              <CardContent className="py-3">
-                <p className="font-semibold text-xs mb-1">
-                  {oferta.oferente_empresa || oferta.oferente_email} — Notas:
-                </p>
-                <p className="text-xs text-muted-foreground">{oferta.notas}</p>
-              </CardContent>
-            </Card>
-          ))}
+          {ofertas
+            .filter((o) => o.notas)
+            .map((oferta) => (
+              <Card key={oferta.id} className="text-sm">
+                <CardContent className="py-3">
+                  <p className="font-semibold text-xs mb-1">
+                    {oferta.oferente_empresa || oferta.oferente_email} — Notas:
+                  </p>
+                  <p className="text-xs text-muted-foreground">{oferta.notas}</p>
+                </CardContent>
+              </Card>
+            ))}
         </div>
       )}
 
@@ -871,8 +1089,15 @@ const LicitacionOfertasTab: React.FC<Props> = ({
             <AlertDialogDescription>
               {confirmAdjudicar && (
                 <>
-                  ¿Confirmas la adjudicación a <strong>{confirmAdjudicar.oferente_empresa || confirmAdjudicar.oferente_nombre || confirmAdjudicar.oferente_email}</strong> por un monto de <strong>{fmt(confirmAdjudicar.total)}</strong>?
-                  <br /><br />
+                  ¿Confirmas la adjudicación a{" "}
+                  <strong>
+                    {confirmAdjudicar.oferente_empresa ||
+                      confirmAdjudicar.oferente_nombre ||
+                      confirmAdjudicar.oferente_email}
+                  </strong>{" "}
+                  por un monto de <strong>{fmt(confirmAdjudicar.total)}</strong>?
+                  <br />
+                  <br />
                   Las demás ofertas serán marcadas como no adjudicadas.
                 </>
               )}

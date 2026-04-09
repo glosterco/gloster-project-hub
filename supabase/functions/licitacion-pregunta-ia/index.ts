@@ -131,69 +131,76 @@ function isNativeGeminiFormat(mimeType: string, fileName: string): boolean {
 const MAX_INLINE_FILE_SIZE = 15 * 1024 * 1024;
 const MAX_TEXT_PER_DOC = 40000;
 
-// --- Cross-validation: verify that cited excerpts actually exist in source texts ---
+// --- Cross-validation: verify that cited content relates to source texts ---
 function validateCitations(
   fuentes: { documento: string; extracto_relevante: string }[],
   sourceTexts: Map<string, string>
 ): { documento: string; extracto_relevante: string; verificado: boolean; fragmento_encontrado: string }[] {
   return fuentes.map(f => {
-    // Normalize for fuzzy matching
     const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, " ").replace(/[""''«»]/g, '"').trim();
 
-    // Find the best matching source document
     let bestMatch = false;
     let foundFragment = "";
 
-    // Try exact document name first, then all documents
+    // Find matching source documents by name
     const docsToSearch = new Map<string, string>();
     for (const [name, text] of sourceTexts) {
       if (normalize(name).includes(normalize(f.documento)) || normalize(f.documento).includes(normalize(name))) {
         docsToSearch.set(name, text);
       }
     }
-    // If no name match, search all
     if (docsToSearch.size === 0) {
       for (const [name, text] of sourceTexts) docsToSearch.set(name, text);
     }
 
     const citaNorm = normalize(f.extracto_relevante);
-    // Try progressively smaller fragments to find a match
+
     for (const [, sourceText] of docsToSearch) {
       const sourceNorm = normalize(sourceText);
 
-      // Try full citation
+      // 1. Full citation match
       if (sourceNorm.includes(citaNorm)) {
         bestMatch = true;
         foundFragment = f.extracto_relevante;
         break;
       }
 
-      // Try first 100 chars
-      const partial = citaNorm.substring(0, 100);
-      if (partial.length > 20 && sourceNorm.includes(partial)) {
-        bestMatch = true;
-        // Extract surrounding context from source
-        const idx = sourceNorm.indexOf(partial);
-        const start = Math.max(0, idx - 20);
-        const end = Math.min(sourceText.length, idx + 200);
-        foundFragment = sourceText.substring(start, end);
-        break;
-      }
-
-      // Try key phrases (split by punctuation and check significant fragments)
-      const phrases = f.extracto_relevante.split(/[.;,\n]/).filter(p => p.trim().length > 15);
+      // 2. Try meaningful sub-phrases (split by punctuation, >10 chars)
+      const phrases = f.extracto_relevante.split(/[.;,:\n]/).filter(p => p.trim().length > 10);
       for (const phrase of phrases) {
         const phraseNorm = normalize(phrase);
         if (sourceNorm.includes(phraseNorm)) {
           bestMatch = true;
           const idx = sourceNorm.indexOf(phraseNorm);
-          const start = Math.max(0, idx - 30);
-          const end = Math.min(sourceText.length, idx + phraseNorm.length + 30);
+          const start = Math.max(0, idx - 50);
+          const end = Math.min(sourceText.length, idx + phraseNorm.length + 50);
           foundFragment = sourceText.substring(start, end);
           break;
         }
       }
       if (bestMatch) break;
+
+      // 3. Keyword-based verification: extract significant words and check density
+      const stopWords = new Set(["de", "la", "el", "en", "los", "las", "del", "al", "un", "una", "que", "por", "con", "para", "se", "es", "no", "su", "más", "y", "o", "a"]);
+      const extractKeywords = (text: string) => normalize(text).split(/\s+/).filter(w => w.length > 3 && !stopWords.has(w));
+      const citaKeywords = extractKeywords(f.extracto_relevante);
+      if (citaKeywords.length > 0) {
+        const matchedCount = citaKeywords.filter(kw => sourceNorm.includes(kw)).length;
+        const matchRatio = matchedCount / citaKeywords.length;
+        // If >60% of significant keywords are found in the source, consider it verified
+        if (matchRatio >= 0.6 && matchedCount >= 3) {
+          bestMatch = true;
+          // Try to find a relevant fragment around the first matched keyword
+          const firstKw = citaKeywords.find(kw => sourceNorm.includes(kw));
+          if (firstKw) {
+            const idx = sourceNorm.indexOf(firstKw);
+            const start = Math.max(0, idx - 100);
+            const end = Math.min(sourceText.length, idx + 300);
+            foundFragment = sourceText.substring(start, end);
+          }
+          break;
+        }
+      }
     }
 
     return {
@@ -345,22 +352,22 @@ Tu tarea es buscar información en los antecedentes proporcionados para responde
 CONTEXTO DEL PROCESO:
 ${contextParts.join("\n\n")}
 
-=== REGLAS ABSOLUTAS (NO NEGOCIABLES) ===
+=== REGLAS ===
 
-REGLA 1 - SOLO INFORMACIÓN VERIFICABLE:
-- SOLO puedes responder con información que aparezca TEXTUALMENTE en los documentos, especificaciones, itemizado, calendario o respuestas previas.
-- Si una frase, dato, número, plazo o condición NO aparece literalmente en ningún antecedente, NO LO INCLUYAS en tu respuesta.
-- NUNCA inventes, inferencias, supongas ni completes información que no esté explícita.
+REGLA 1 - BASARSE EN LOS DOCUMENTOS:
+- Responde usando la información contenida en los documentos, especificaciones, itemizado, calendario o respuestas previas.
+- Puedes parafrasear, resumir y sintetizar la información, pero el contenido de tu respuesta debe ser verificable en los antecedentes.
+- NO inventes datos, cifras, plazos o condiciones que no estén en los documentos.
+- Si necesitas interpretar información, déjalo claro con frases como "De acuerdo a lo indicado en..."
 
-REGLA 2 - CITAS TEXTUALES OBLIGATORIAS:
-- Cada afirmación en tu respuesta DEBE estar respaldada por una CITA TEXTUAL EXACTA copiada del documento fuente.
-- La cita debe ser una copia literal, no una paráfrasis.
-- Formato: Según [nombre del documento]: "[cita textual exacta]"
+REGLA 2 - REFERENCIAS A FUENTES:
+- Indica de qué documento o sección proviene la información.
+- Incluye el fragmento o sección relevante del documento que sustenta tu respuesta. No necesita ser una cita textual exacta, pero debe ser verificable.
+- Formato: Según [nombre del documento]: [resumen o referencia al contenido relevante]
 
 REGLA 3 - CUANDO NO HAY INFORMACIÓN:
-- Si NO encuentras la respuesta textual en los antecedentes, responde EXACTAMENTE:
+- Si NO encuentras información relevante en los antecedentes, responde:
   "No se encontró información en los antecedentes del proceso para responder esta consulta. Se recomienda que el mandante responda directamente."
-- NO intentes dar una respuesta parcial, genérica o basada en conocimiento general.
 - Es PREFERIBLE decir "no encontré" que inventar una respuesta.
 
 REGLA 4 - BÚSQUEDA EXHAUSTIVA:
@@ -378,15 +385,15 @@ Al final de tu respuesta, agrega exactamente esto:
 
 ---FUENTES---
 [DOCUMENTO: nombre_exacto_del_documento]
-CITA: "copia textual exacta del fragmento del documento que respalda la respuesta"
+CITA: "fragmento relevante del documento que respalda la respuesta"
 UBICACIÓN: sección/tabla/párrafo donde se encuentra
 
-Repite el bloque para cada fuente citada. SOLO incluye citas que sean copias textuales reales.
+Repite el bloque para cada fuente. El fragmento debe ser contenido real del documento, aunque puede ser un extracto resumido.
 Si no encontraste información, escribe:
 ---FUENTES---
 [SIN FUENTES] No se encontró información relevante en los antecedentes.`;
 
-    const questionText = `Pregunta del oferente${pregunta.especialidad ? ` (especialidad: ${pregunta.especialidad})` : ""}:\n\n"${pregunta.pregunta}"\n\nBusca la respuesta SOLO en los antecedentes proporcionados. Incluye citas textuales exactas obligatoriamente.`;
+    const questionText = `Pregunta del oferente${pregunta.especialidad ? ` (especialidad: ${pregunta.especialidad})` : ""}:\n\n"${pregunta.pregunta}"\n\nBusca la respuesta en los antecedentes proporcionados. Incluye referencias a los documentos fuente.`;
 
     const userMessage: any = userContentParts.length > 0
       ? { role: "user", content: [{ type: "text", text: questionText }, ...userContentParts] }

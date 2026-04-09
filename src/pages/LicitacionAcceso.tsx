@@ -682,8 +682,8 @@ const LicitacionAcceso = () => {
           .from('LicitacionOfertas')
           .update({ 
             estado: 'enviada',
-            gastos_generales: parsedBidderGG || null,
-            utilidades: parsedBidderUtil || null,
+            gastos_generales: toNumericOrNull(bidderGG),
+            utilidades: toNumericOrNull(bidderUtil),
             total,
           })
           .eq('id', ofertaData.id);

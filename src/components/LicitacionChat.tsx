@@ -484,13 +484,27 @@ const LicitacionChat = ({ open, onOpenChange, onSuccess }: LicitacionChatProps) 
       setConversationFiles([]);
       conversationFilesRef.current = [];
       attachmentAnalysisRef.current = {};
+      setLiveSummary({});
     }
     onOpenChange(value);
   };
 
+  const attachedFileNames = useMemo(
+    () => conversationFiles.map(f => f.name),
+    [conversationFiles]
+  );
+
+  const hasSummaryData = !!(
+    liveSummary.nombre ||
+    liveSummary.descripcion ||
+    liveSummary.oferentes?.length ||
+    liveSummary.calendario?.length ||
+    conversationFiles.length > 0
+  );
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl h-[80vh] flex flex-col p-0 gap-0">
+      <DialogContent className={`${hasSummaryData ? 'max-w-5xl' : 'max-w-2xl'} h-[85vh] flex flex-col p-0 gap-0 transition-all duration-300`}>
         <DialogHeader className="px-6 py-4 border-b bg-primary/5">
           <DialogTitle className="text-lg font-rubik flex items-center gap-2">
             <Bot className="h-5 w-5 text-primary" />
@@ -501,118 +515,133 @@ const LicitacionChat = ({ open, onOpenChange, onSuccess }: LicitacionChatProps) 
           </DialogDescription>
         </DialogHeader>
 
-        {/* Messages area */}
-        <ScrollArea className="flex-1 px-6" ref={scrollRef}>
-          <div className="py-4 space-y-4">
-            {messages.map((msg, i) => (
-              <div
-                key={i}
-                className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                {msg.role === 'assistant' && (
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Bot className="h-4 w-4 text-primary" />
-                  </div>
-                )}
-                <div
-                  className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                    msg.role === 'user'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted'
-                  }`}
-                >
-                  {msg.role === 'user' ? (
-                    <div className="space-y-2">
-                      <p className="text-sm whitespace-pre-wrap">{msg.displayContent || msg.content}</p>
-                      {msg.attachments && msg.attachments.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                          {msg.attachments.map((file) => (
-                            <span key={file.name} className="inline-flex items-center gap-1 rounded-lg bg-primary-foreground/10 px-2 py-1 text-xs">
-                              <FileText className="h-3 w-3" />
-                              <span className="max-w-[180px] truncate">{file.name}</span>
-                            </span>
-                          ))}
+        <div className="flex-1 flex min-h-0">
+          {/* Chat column */}
+          <div className={`${hasSummaryData ? 'w-3/5' : 'w-full'} flex flex-col min-h-0 transition-all duration-300`}>
+            {/* Messages area */}
+            <ScrollArea className="flex-1 px-6" ref={scrollRef}>
+              <div className="py-4 space-y-4">
+                {messages.map((msg, i) => (
+                  <div
+                    key={i}
+                    className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    {msg.role === 'assistant' && (
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Bot className="h-4 w-4 text-primary" />
+                      </div>
+                    )}
+                    <div
+                      className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                        msg.role === 'user'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted'
+                      }`}
+                    >
+                      {msg.role === 'user' ? (
+                        <div className="space-y-2">
+                          <p className="text-sm whitespace-pre-wrap">{msg.displayContent || msg.content}</p>
+                          {msg.attachments && msg.attachments.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                              {msg.attachments.map((file) => (
+                                <span key={file.name} className="inline-flex items-center gap-1 rounded-lg bg-primary-foreground/10 px-2 py-1 text-xs">
+                                  <FileText className="h-3 w-3" />
+                                  <span className="max-w-[180px] truncate">{file.name}</span>
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
+                      ) : (
+                        renderMessageContent(msg.content)
                       )}
                     </div>
-                  ) : (
-                    renderMessageContent(msg.content)
-                  )}
-                </div>
-                {msg.role === 'user' && (
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                    <User className="h-4 w-4 text-primary-foreground" />
+                    {msg.role === 'user' && (
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                        <User className="h-4 w-4 text-primary-foreground" />
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+                {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
+                  <div className="flex gap-3">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Bot className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="bg-muted rounded-2xl px-4 py-3">
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    </div>
+                  </div>
+                )}
+
+                {isCreating && (
+                  <div className="flex gap-3 items-center justify-center py-4">
+                    <CheckCircle2 className="h-5 w-5 text-emerald-500 animate-pulse" />
+                    <span className="text-sm text-muted-foreground">Creando licitación...</span>
                   </div>
                 )}
               </div>
-            ))}
+            </ScrollArea>
 
-            {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
-              <div className="flex gap-3">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Bot className="h-4 w-4 text-primary" />
+            {/* Input area */}
+            <div className="border-t px-4 py-3 bg-background">
+              {attachedFiles.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {attachedFiles.map((f, i) => (
+                    <div key={i} className="flex items-center gap-1 bg-muted rounded-lg px-2 py-1 text-xs">
+                      <FileText className="h-3 w-3 text-muted-foreground" />
+                      <span className="max-w-[120px] truncate">{f.name}</span>
+                      <button onClick={() => removeFile(i)} className="ml-1 text-muted-foreground hover:text-destructive">
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
                 </div>
-                <div className="bg-muted rounded-2xl px-4 py-3">
-                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                </div>
+              )}
+              <CompactDropZone
+                onFilesSelected={addFiles}
+                accept={ALLOWED_EXTENSIONS.join(',')}
+                multiple
+                maxSizeMB={12}
+                disabled={isLoading || isCreating}
+                selectedFiles={attachedFiles}
+                onRemoveFile={removeFile}
+                placeholder="Arrastra antecedentes aquí o haz click para adjuntarlos"
+                className="mb-3"
+              />
+              <div className="flex gap-2 items-end">
+                <Textarea
+                  ref={textareaRef}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Escribe tu mensaje o envía solo los archivos..."
+                  className="min-h-[44px] max-h-[120px] resize-none rounded-xl"
+                  rows={1}
+                  disabled={isLoading || isCreating}
+                />
+                <Button
+                  onClick={handleSend}
+                  disabled={(input.trim().length === 0 && attachedFiles.length === 0) || isLoading || isCreating}
+                  size="icon"
+                  className="rounded-xl h-[44px] w-[44px] flex-shrink-0"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
               </div>
-            )}
-
-            {isCreating && (
-              <div className="flex gap-3 items-center justify-center py-4">
-                <CheckCircle2 className="h-5 w-5 text-emerald-500 animate-pulse" />
-                <span className="text-sm text-muted-foreground">Creando licitación...</span>
-              </div>
-            )}
+            </div>
           </div>
-        </ScrollArea>
 
-        {/* Input area */}
-        <div className="border-t px-4 py-3 bg-background">
-          {attachedFiles.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-2">
-              {attachedFiles.map((f, i) => (
-                <div key={i} className="flex items-center gap-1 bg-muted rounded-lg px-2 py-1 text-xs">
-                  <FileText className="h-3 w-3 text-muted-foreground" />
-                  <span className="max-w-[120px] truncate">{f.name}</span>
-                  <button onClick={() => removeFile(i)} className="ml-1 text-muted-foreground hover:text-destructive">
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              ))}
+          {/* Summary panel - slides in when data is available */}
+          {hasSummaryData && (
+            <div className="w-2/5 min-h-0 animate-in slide-in-from-right-5 duration-300">
+              <LicitacionSummaryPanel
+                summary={liveSummary}
+                attachedFiles={attachedFileNames}
+              />
             </div>
           )}
-          <CompactDropZone
-            onFilesSelected={addFiles}
-            accept={ALLOWED_EXTENSIONS.join(',')}
-            multiple
-            maxSizeMB={12}
-            disabled={isLoading || isCreating}
-            selectedFiles={attachedFiles}
-            onRemoveFile={removeFile}
-            placeholder="Arrastra antecedentes aquí o haz click para adjuntarlos"
-            className="mb-3"
-          />
-          <div className="flex gap-2 items-end">
-            <Textarea
-              ref={textareaRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Escribe tu mensaje o envía solo los archivos..."
-              className="min-h-[44px] max-h-[120px] resize-none rounded-xl"
-              rows={1}
-              disabled={isLoading || isCreating}
-            />
-            <Button
-              onClick={handleSend}
-              disabled={(input.trim().length === 0 && attachedFiles.length === 0) || isLoading || isCreating}
-              size="icon"
-              className="rounded-xl h-[44px] w-[44px] flex-shrink-0"
-            >
-              <Send className="h-4 w-4" />
-            </Button>
-          </div>
         </div>
       </DialogContent>
     </Dialog>

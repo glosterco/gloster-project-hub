@@ -93,7 +93,11 @@ const slides: Slide[] = [
     image2: dashboardImg,
     layout: "left",
     features: [
-      { icon: <Users className="w-5 h-5" />, label: "Multi-oferente", detail: "Invita y gestiona múltiples oferentes" },
+      {
+        icon: <Users className="w-5 h-5" />,
+        label: "Multi-oferente",
+        detail: "Invita, gestiona y notifica múltiples oferentes de manera automática",
+      },
       {
         icon: <Clock className="w-5 h-5" />,
         label: "Calendario integrado",

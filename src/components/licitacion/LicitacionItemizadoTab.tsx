@@ -28,8 +28,7 @@ interface Props {
   licitacionDescripcion?: string;
   licitacionEspecificaciones?: string;
   onRefresh?: () => void;
-  apuDocuments?: { id: number; nombre: string; url: string | null; created_at: string }[];
-  onApuRefresh?: () => void;
+  apuDocuments?: { id?: number; nombre: string; url?: string; tipo?: string }[];
 }
 
 const LicitacionItemizadoTab: React.FC<Props> = ({
@@ -366,9 +365,6 @@ const LicitacionItemizadoTab: React.FC<Props> = ({
                     <div className="flex items-center gap-2 min-w-0">
                       <FileSpreadsheet className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                       <span className="text-sm font-medium truncate">{doc.nombre}</span>
-                      <span className="text-xs text-muted-foreground flex-shrink-0">
-                        {new Date(doc.created_at).toLocaleDateString('es-CL')}
-                      </span>
                     </div>
                     <div className="flex items-center gap-1">
                       {doc.url && (
@@ -384,7 +380,7 @@ const LicitacionItemizadoTab: React.FC<Props> = ({
                         className="h-7 w-7"
                         onClick={async () => {
                           try {
-                            await supabase.from('LicitacionDocumentos').delete().eq('id', doc.id);
+                            if (doc.id) await supabase.from('LicitacionDocumentos').delete().eq('id', doc.id);
                             toast({ title: 'Archivo eliminado' });
                             onRefresh?.();
                           } catch (err: any) {

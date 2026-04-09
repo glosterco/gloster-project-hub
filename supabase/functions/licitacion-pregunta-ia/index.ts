@@ -376,9 +376,7 @@ serve(async (req) => {
     ]);
 
     // --- Download and prepare document content ---
-    // Strategy: PDFs are sent as native inline_data parts to Gemini (best accuracy)
-    // Other formats: extract text and include in context
-    const inlineFileParts: { inline_data: { mime_type: string; data: string } }[] = [];
+    // Strategy: All documents are converted to text for GPT-5 compatibility
     const textDocuments: { nombre: string; contenido: string }[] = [];
     const fileNames: string[] = [];
 
@@ -413,17 +411,48 @@ serve(async (req) => {
           fileNames.push(doc.nombre);
           const effectiveMime = mimeType || doc.tipo || "";
 
-          // PDFs → send natively to Gemini for best accuracy
+          // For PDFs and images: use Gemini to extract text first (GPT-5 doesn't support inline binary)
           if (isNativeGeminiFormat(effectiveMime, doc.nombre) && bytes.length <= MAX_INLINE_FILE_SIZE) {
-            const base64 = bytesToBase64(bytes);
-            const pdfMime = effectiveMime.includes("pdf") ? "application/pdf" : effectiveMime;
-            inlineFileParts.push({
-              inline_data: {
-                mime_type: pdfMime,
-                data: base64,
-              },
-            });
-            console.log(`📎 ${doc.nombre}: attached as native Gemini file (${bytes.length} bytes)`);
+            console.log(`📄 Extracting text from PDF via Gemini: ${doc.nombre} (${bytes.length} bytes)`);
+            try {
+              const base64 = bytesToBase64(bytes);
+              const pdfMime = effectiveMime.includes("pdf") ? "application/pdf" : effectiveMime;
+              const extractResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${LOVABLE_API_KEY}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  model: "google/gemini-2.5-flash-lite",
+                  messages: [
+                    { role: "system", content: "Extrae TODO el texto del documento adjunto. Devuelve el contenido completo tal cual, sin resúmenes ni omisiones. Incluye tablas, notas, anexos y todo el contenido visible. No agregues comentarios propios." },
+                    { role: "user", content: [
+                      { type: "text", text: `Extrae todo el texto del archivo "${doc.nombre}":` },
+                      { inline_data: { mime_type: pdfMime, data: base64 } },
+                    ]},
+                  ],
+                }),
+              });
+
+              if (extractResp.ok) {
+                const extractData = await extractResp.json();
+                const extractedText = extractData.choices?.[0]?.message?.content || "";
+                if (extractedText.length > 10) {
+                  const trimmed = extractedText.length > MAX_TEXT_PER_DOC * 2
+                    ? extractedText.substring(0, MAX_TEXT_PER_DOC * 2) + "\n[... documento truncado ...]"
+                    : extractedText;
+                  textDocuments.push({ nombre: doc.nombre, contenido: trimmed });
+                  console.log(`✅ ${doc.nombre}: ${trimmed.length} chars extracted via Gemini OCR`);
+                } else {
+                  console.log(`⚠️ ${doc.nombre}: Gemini extraction returned minimal text`);
+                }
+              } else {
+                console.error(`❌ Gemini extraction failed for ${doc.nombre}: ${extractResp.status}`);
+              }
+            } catch (extractErr) {
+              console.error(`❌ Gemini extraction error for ${doc.nombre}:`, extractErr);
+            }
             continue;
           }
 
@@ -435,21 +464,6 @@ serve(async (req) => {
             text = await extractTextFromXlsxAsync(bytes, doc.nombre);
           } else {
             text = extractTextFromFile(bytes, effectiveMime, doc.nombre);
-          }
-
-          // If text extraction produced minimal results for non-native formats, use AI extraction
-          if (text.length < 50 && bytes.length > 100 && bytes.length <= MAX_INLINE_FILE_SIZE) {
-            console.log(`🤖 Falling back to AI extraction for ${doc.nombre}`);
-            const base64 = bytesToBase64(bytes);
-            // Send as inline file to Gemini for text extraction
-            inlineFileParts.push({
-              inline_data: {
-                mime_type: effectiveMime || "application/octet-stream",
-                data: base64,
-              },
-            });
-            console.log(`📎 ${doc.nombre}: attached as fallback inline file`);
-            continue;
           }
 
           if (text && text.length > 10) {
@@ -493,20 +507,15 @@ serve(async (req) => {
       }
     }
 
-    const hasInlineFiles = inlineFileParts.length > 0;
-    const inlineFileNote = hasInlineFiles
-      ? `\n\nADEMÁS, se adjuntan ${inlineFileParts.length} archivo(s) del proceso directamente: ${fileNames.filter((_, i) => i < inlineFileParts.length).join(", ")}. DEBES leer y analizar su contenido completo para buscar la respuesta.`
-      : "";
-
     const systemPrompt = `Eres un asistente técnico experto en licitaciones de construcción en Chile.
 Se te proporciona el contexto completo de un proceso de licitación y una pregunta de un oferente.
 Tu tarea es buscar exhaustivamente en TODOS los antecedentes proporcionados para encontrar la respuesta.
 
 CONTEXTO DEL PROCESO:
-${contextParts.join("\n\n")}${inlineFileNote}
+${contextParts.join("\n\n")}
 
 INSTRUCCIONES DE BÚSQUEDA (MUY IMPORTANTE):
-1. BUSCA EN TODOS LOS DOCUMENTOS ADJUNTOS: Lee cada documento completo, no solo los primeros párrafos. La respuesta puede estar en cualquier sección, tabla, anexo o nota al pie.
+1. BUSCA EN TODOS LOS DOCUMENTOS: Lee cada documento completo, no solo los primeros párrafos. La respuesta puede estar en cualquier sección, tabla, anexo o nota al pie.
 2. BUSCA SINÓNIMOS Y TÉRMINOS RELACIONADOS: Si la pregunta habla de "plazo", busca también "duración", "calendario", "tiempo", "días", "meses". Si habla de "pago", busca "facturación", "cobro", "estado de pago", etc.
 3. BUSCA EN TABLAS Y LISTAS: Muchas veces la información está en tablas, cuadros o listas numeradas dentro de los documentos.
 4. CRUZA INFORMACIÓN: Si un documento menciona un tema parcialmente, busca en los demás documentos información complementaria.
@@ -528,15 +537,7 @@ Incluye SOLO los pasajes textuales específicos que fundamentan tu respuesta.`;
 
     const userPrompt = `Pregunta del oferente${pregunta.especialidad ? ` (especialidad: ${pregunta.especialidad})` : ""}:\n\n"${pregunta.pregunta}"\n\nBusca exhaustivamente en todos los antecedentes del proceso la respuesta a esta pregunta.`;
 
-    // Build the messages array with inline file parts
-    const userContent: any[] = [{ type: "text", text: userPrompt }];
-    
-    // Attach inline files directly to the user message
-    for (const filePart of inlineFileParts) {
-      userContent.push(filePart);
-    }
-
-    console.log(`🤖 Sending to AI: ${contextParts.join("").length} chars text context + ${inlineFileParts.length} inline files`);
+    console.log(`🤖 Sending to GPT-5: ${contextParts.join("").length} chars text context, ${textDocuments.length} documents extracted`);
 
     const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -545,10 +546,10 @@ Incluye SOLO los pasajes textuales específicos que fundamentan tu respuesta.`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "openai/gpt-5",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: userContent },
+          { role: "user", content: userPrompt },
         ],
       }),
     });

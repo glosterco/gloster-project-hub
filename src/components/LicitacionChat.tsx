@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -10,6 +10,7 @@ import ReactMarkdown from 'react-markdown';
 import { formatOferenteEntry, normalizeChatCalendarEvents, normalizeChatItems, normalizePercentNumber, parseOferenteEntries } from '@/utils/licitacionCreation';
 import { supabase } from '@/integrations/supabase/client';
 import CompactDropZone from '@/components/licitacion/CompactDropZone';
+import LicitacionSummaryPanel, { LicitacionSummary } from '@/components/licitacion/LicitacionSummaryPanel';
 import type { ParsedItem } from '@/hooks/useParseItemizado';
 
 interface LicitacionChatProps {

@@ -538,7 +538,7 @@ const LicitacionOfertasTab: React.FC<Props> = ({
 
                   {/* Cherry Pick header */}
                   {showCherryPick && (
-                    <TableHead colSpan={1} className="text-center border-l border-r bg-violet-50 dark:bg-violet-950/20">
+                    <TableHead colSpan={colsPerOferta} className="text-center border-l border-r bg-violet-50 dark:bg-violet-950/20">
                       <div className="flex flex-col items-center gap-0.5">
                         <p className="text-xs font-bold">🍒 Cherry Pick</p>
                         <Badge className="text-[9px] bg-violet-600">Óptimo</Badge>
@@ -564,7 +564,11 @@ const LicitacionOfertasTab: React.FC<Props> = ({
                       </React.Fragment>
                     ))}
                     {showCherryPick && (
-                      <TableHead className="text-right text-[10px] min-w-[110px] border-l border-r font-semibold bg-violet-50/50 dark:bg-violet-950/10">Total</TableHead>
+                      <>
+                        <TableHead className="text-center text-[10px] min-w-[80px] border-l bg-violet-50/50 dark:bg-violet-950/10">Empresa</TableHead>
+                        <TableHead className="text-right text-[10px] min-w-[100px] bg-violet-50/50 dark:bg-violet-950/10">P.U.</TableHead>
+                        <TableHead className="text-right text-[10px] min-w-[110px] border-r font-semibold bg-violet-50/50 dark:bg-violet-950/10">Total</TableHead>
+                      </>
                     )}
                   </TableRow>
                 )}

@@ -198,6 +198,7 @@ const Sales = () => {
   const [current, setCurrent] = useState(0);
   const [direction, setDirection] = useState(0);
   const [isContactOpen, setIsContactOpen] = useState(false);
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const total = slides.length;
 
   const go = useCallback(

@@ -35,10 +35,10 @@ const ZoomableImage: React.FC<{ src: string; alt: string; onClick: (src: string)
 );
 
 const HeroSlide: React.FC<{ slide: Slide; onCTA: () => void }> = ({ slide, onCTA }) => (
-  <div className={`h-full w-full bg-gradient-to-br ${slide.accent} flex items-center justify-center px-8`}>
+  <div className={`h-full w-full bg-gradient-to-br ${slide.accent} flex items-center justify-center px-4 md:px-8 pb-8 md:pb-0`}>
     <div className="max-w-3xl text-center">
       <motion.div initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2, duration: 0.6 }}>
-        <span className="inline-block px-3 py-1 text-xs font-medium tracking-widest uppercase bg-brand-yellow text-brand-yellow-foreground rounded-full mb-8">
+        <span className="inline-block px-3 py-1 text-xs font-medium tracking-widest uppercase bg-brand-yellow text-brand-yellow-foreground rounded-full mb-4 md:mb-8">
           {slide.badge || slide.title}
         </span>
       </motion.div>
@@ -46,7 +46,7 @@ const HeroSlide: React.FC<{ slide: Slide; onCTA: () => void }> = ({ slide, onCTA
         initial={{ y: 40, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.3, duration: 0.6 }}
-        className="text-5xl md:text-7xl font-bold text-primary-foreground leading-tight mb-4"
+        className="text-3xl md:text-5xl lg:text-7xl font-bold text-primary-foreground leading-tight mb-3 md:mb-4"
       >
         {slide.title} <span className="text-brand-yellow">{slide.subtitle}</span>
       </motion.h1>
@@ -54,7 +54,7 @@ const HeroSlide: React.FC<{ slide: Slide; onCTA: () => void }> = ({ slide, onCTA
         initial={{ y: 40, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.45, duration: 0.6 }}
-        className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl mx-auto mb-10 leading-relaxed"
+        className="text-sm md:text-lg lg:text-xl text-primary-foreground/80 max-w-2xl mx-auto mb-6 md:mb-10 leading-relaxed"
       >
         {slide.description}
       </motion.p>
@@ -69,9 +69,9 @@ const HeroSlide: React.FC<{ slide: Slide; onCTA: () => void }> = ({ slide, onCTA
 );
 
 const CTASlide: React.FC<{ slide: Slide; onCTA: () => void }> = ({ slide, onCTA }) => (
-  <div className={`h-full w-full bg-gradient-to-br ${slide.accent} flex items-center justify-center px-6`}>
+  <div className={`h-full w-full bg-gradient-to-br ${slide.accent} flex items-center justify-center px-4 md:px-6 pb-8 md:pb-0`}>
     <div className="max-w-3xl w-full text-center flex flex-col items-center">
-      <motion.h1 initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2, duration: 0.6 }} className="text-3xl md:text-4xl font-bold text-primary-foreground leading-tight mb-3">
+      <motion.h1 initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2, duration: 0.6 }} className="text-2xl md:text-3xl lg:text-4xl font-bold text-primary-foreground leading-tight mb-3">
         {slide.title}
       </motion.h1>
       <motion.p initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3, duration: 0.6 }} className="text-base text-primary-foreground/80 mb-5">
@@ -99,21 +99,21 @@ const FeatureSlide: React.FC<{ slide: Slide; onImageClick: (src: string) => void
   const isLeft = slide.layout === "left";
   const hasTwoImages = !!slide.image2;
   return (
-    <div className="h-full w-full flex items-center bg-background">
+    <div className="h-full w-full flex items-center bg-background overflow-y-auto">
       <div className={`w-full h-full flex flex-col md:flex-row ${isLeft ? "" : "md:flex-row-reverse"}`}>
-        <div className="flex-1 relative flex items-center justify-center p-6 md:p-10 bg-muted/30">
-          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.3, duration: 0.6 }} className={`relative w-full max-w-2xl ${hasTwoImages ? "flex flex-col gap-4" : ""}`}>
+        <div className="flex-shrink-0 md:flex-1 relative flex items-center justify-center p-4 md:p-10 bg-muted/30">
+          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.3, duration: 0.6 }} className={`relative w-full max-w-2xl ${hasTwoImages ? "flex flex-col gap-2 md:gap-4" : ""}`}>
             <ZoomableImage src={slide.image!} alt={slide.title} onClick={onImageClick} />
             {hasTwoImages && <ZoomableImage src={slide.image2!} alt={`${slide.title} - vista adicional`} onClick={onImageClick} />}
             <div className="absolute -inset-4 bg-brand-yellow/5 rounded-2xl -z-10 blur-2xl" />
           </motion.div>
         </div>
-        <div className="flex-1 flex items-center justify-center p-8 md:p-12 lg:p-16">
+        <div className="flex-shrink-0 md:flex-1 flex items-center justify-center p-4 pb-10 md:p-12 lg:p-16">
           <div className="max-w-md">
             <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2, duration: 0.5 }}>
-              <div className="w-10 h-1 bg-brand-yellow rounded-full mb-6" />
-              <h2 className="text-3xl md:text-4xl font-bold text-foreground leading-tight mb-4">{slide.title}</h2>
-              <p className="text-base text-muted-foreground leading-relaxed mb-8">{slide.description}</p>
+              <div className="w-10 h-1 bg-brand-yellow rounded-full mb-3 md:mb-6" />
+              <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground leading-tight mb-2 md:mb-4">{slide.title}</h2>
+              <p className="text-sm md:text-base text-muted-foreground leading-relaxed mb-4 md:mb-8">{slide.description}</p>
             </motion.div>
             {slide.features && (
               <div className="space-y-4">
@@ -182,8 +182,8 @@ const SalesPresentation: React.FC<SalesPresentationProps> = ({ slides, onPrevFro
   return (
     <div className="h-screen w-screen overflow-hidden bg-background relative select-none font-sans">
       {/* Edge click zones */}
-      <div className="absolute left-0 top-12 bottom-16 w-16 z-40 cursor-pointer" onClick={prev} />
-      <div className="absolute right-0 top-12 bottom-16 w-16 z-40 cursor-pointer" onClick={next} />
+      <div className="absolute left-0 top-12 bottom-8 md:bottom-16 w-8 md:w-16 z-40 cursor-pointer" onClick={prev} />
+      <div className="absolute right-0 top-12 bottom-8 md:bottom-16 w-8 md:w-16 z-40 cursor-pointer" onClick={next} />
 
       <div className="absolute top-0 left-0 right-0 z-50 bg-white border-b border-border/30 px-6 py-3 flex items-center justify-between">
         <a href="/sales" className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity">
@@ -216,16 +216,16 @@ const SalesPresentation: React.FC<SalesPresentationProps> = ({ slides, onPrevFro
         )}
       </AnimatePresence>
 
-      <div className="absolute bottom-6 left-0 right-0 z-50 flex items-center justify-between px-8">
-        <Button variant="ghost" size="sm" onClick={prev} disabled={current === 0} className="text-muted-foreground hover:text-foreground disabled:opacity-0 transition-opacity">
+      <div className="absolute bottom-2 md:bottom-6 left-0 right-0 z-50 flex items-center justify-between px-4 md:px-8">
+        <Button variant="ghost" size="sm" onClick={prev} disabled={current === 0} className="text-muted-foreground hover:text-foreground disabled:opacity-0 transition-opacity hidden md:flex">
           <ChevronLeft className="w-4 h-4 mr-1" /> Anterior
         </Button>
-        <div className="flex gap-2">
+        <div className="flex gap-1.5 md:gap-2 mx-auto md:mx-0">
           {slides.map((_, i) => (
-            <button key={i} onClick={() => go(i)} className={`w-2 h-2 rounded-full transition-all duration-300 ${i === current ? "bg-brand-yellow w-6" : "bg-muted-foreground/30 hover:bg-muted-foreground/50"}`} />
+            <button key={i} onClick={() => go(i)} className={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full transition-all duration-300 ${i === current ? "bg-brand-yellow w-4 md:w-6" : "bg-muted-foreground/30 hover:bg-muted-foreground/50"}`} />
           ))}
         </div>
-        <Button variant="ghost" size="sm" onClick={next} disabled={current === total - 1} className="text-muted-foreground hover:text-foreground disabled:opacity-0 transition-opacity">
+        <Button variant="ghost" size="sm" onClick={next} disabled={current === total - 1} className="text-muted-foreground hover:text-foreground disabled:opacity-0 transition-opacity hidden md:flex">
           Siguiente <ChevronRight className="w-4 h-4 ml-1" />
         </Button>
       </div>

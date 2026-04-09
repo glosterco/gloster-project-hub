@@ -1,19 +1,31 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  ChevronLeft, ChevronRight, ArrowRight, 
-  MessageSquare, FileText, Users, BarChart3, 
-  Shield, Clock, Brain, Zap, Upload, Layers,
-  TrendingUp, Search, GitMerge
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import ContactModal from '@/components/ContactModal';
+import React, { useState, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ArrowRight,
+  MessageSquare,
+  FileText,
+  Users,
+  BarChart3,
+  Shield,
+  Clock,
+  Brain,
+  Zap,
+  Upload,
+  Layers,
+  TrendingUp,
+  Search,
+  GitMerge,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import ContactModal from "@/components/ContactModal";
 
-import dashboardImg from '@/assets/sales/licitaciones-dashboard.jpg';
-import chatbotImg from '@/assets/sales/licitaciones-chatbot.jpg';
-import ofertasImg from '@/assets/sales/licitaciones-ofertas.jpg';
-import preguntasImg from '@/assets/sales/licitaciones-preguntas.jpg';
-import itemizadoImg from '@/assets/sales/licitaciones-itemizado.jpg';
+import dashboardImg from "@/assets/sales/licitaciones-dashboard.jpg";
+import chatbotImg from "@/assets/sales/licitaciones-chatbot.jpg";
+import ofertasImg from "@/assets/sales/licitaciones-ofertas.jpg";
+import preguntasImg from "@/assets/sales/licitaciones-preguntas.jpg";
+import itemizadoImg from "@/assets/sales/licitaciones-itemizado.jpg";
 
 interface Feature {
   icon: React.ReactNode;
@@ -23,7 +35,7 @@ interface Feature {
 
 interface Slide {
   id: number;
-  type: 'hero' | 'feature' | 'showcase' | 'cta';
+  type: "hero" | "feature" | "showcase" | "cta";
   title: string;
   subtitle?: string;
   description?: string;
@@ -31,92 +43,150 @@ interface Slide {
   image2?: string;
   features?: Feature[];
   accent?: string;
-  layout?: 'left' | 'right' | 'center';
+  layout?: "left" | "right" | "center";
 }
 
 const slides: Slide[] = [
   {
     id: 0,
-    type: 'hero',
-    title: 'Licitaciones',
-    subtitle: 'Inteligentes',
-    description: 'Crea, gestiona y adjudica procesos de licitación con IA. Desde la publicación hasta la comparación de ofertas, todo en un solo lugar.',
-    layout: 'center',
-    accent: 'from-primary via-primary/95 to-primary/85',
+    type: "hero",
+    title: "Licitaciones",
+    subtitle: "Inteligentes",
+    description:
+      "Crea, gestiona y adjudica procesos de licitación con IA. Desde la publicación hasta la comparación de ofertas, todo en un solo lugar.",
+    layout: "center",
+    accent: "from-primary via-primary/95 to-primary/85",
   },
   {
     id: 1,
-    type: 'feature',
-    title: 'Creación asistida por IA',
-    description: 'Describe tu proyecto en lenguaje natural y el sistema genera automáticamente la licitación completa: itemizado jerárquico, calendario, documentos y lista de oferentes.',
+    type: "feature",
+    title: "Creación asistida por IA",
+    description:
+      "Describe tu proyecto en lenguaje natural y el sistema genera automáticamente la licitación completa: itemizado jerárquico, calendario, documentos y lista de oferentes.",
     image: chatbotImg,
-    layout: 'right',
+    layout: "right",
     features: [
-      { icon: <Brain className="w-5 h-5" />, label: 'IA Conversacional', detail: 'Chatbot que entiende tus especificaciones técnicas' },
-      { icon: <FileText className="w-5 h-5" />, label: 'Itemizado automático', detail: 'Genera desglose jerárquico desde EETT' },
-      { icon: <Zap className="w-5 h-5" />, label: 'En minutos', detail: 'Lo que antes tomaba horas, ahora son minutos' },
+      {
+        icon: <Brain className="w-5 h-5" />,
+        label: "IA Conversacional",
+        detail: "Chatbot que entiende tus especificaciones técnicas",
+      },
+      {
+        icon: <FileText className="w-5 h-5" />,
+        label: "Itemizado automático",
+        detail: "Genera desglose jerárquico desde EETT",
+      },
+      {
+        icon: <Zap className="w-5 h-5" />,
+        label: "En minutos",
+        detail: "Lo que antes tomaba horas, ahora son minutos",
+      },
     ],
   },
   {
     id: 2,
-    type: 'showcase',
-    title: 'Gestión centralizada',
-    description: 'Panel completo para administrar todas tus licitaciones activas. Estado, plazos, oferentes invitados y documentación en un solo dashboard.',
+    type: "showcase",
+    title: "Gestión centralizada",
+    description:
+      "Panel completo para administrar todas tus licitaciones activas. Estado, plazos, oferentes invitados y documentación en un solo dashboard.",
     image: dashboardImg,
     image2: dashboardImg,
-    layout: 'left',
+    layout: "left",
     features: [
-      { icon: <Users className="w-5 h-5" />, label: 'Multi-oferente', detail: 'Invita y gestiona múltiples oferentes' },
-      { icon: <Clock className="w-5 h-5" />, label: 'Calendario integrado', detail: 'Hitos, rondas de preguntas y plazos' },
-      { icon: <Shield className="w-5 h-5" />, label: 'Acceso controlado', detail: 'Cada oferente ve solo lo que corresponde' },
+      { icon: <Users className="w-5 h-5" />, label: "Multi-oferente", detail: "Invita y gestiona múltiples oferentes" },
+      {
+        icon: <Clock className="w-5 h-5" />,
+        label: "Calendario integrado",
+        detail: "Hitos, rondas de preguntas y plazos",
+      },
+      {
+        icon: <Shield className="w-5 h-5" />,
+        label: "Acceso controlado",
+        detail: "Cada oferente ve solo lo que corresponde",
+      },
     ],
   },
   {
     id: 3,
-    type: 'feature',
-    title: 'Itemizado jerárquico preciso',
-    description: 'El sistema analiza tus especificaciones técnicas y genera un itemizado fiel a la estructura original. Códigos A, A.01, B, B.01 respetados tal cual.',
+    type: "feature",
+    title: "Itemizado jerárquico preciso",
+    description:
+      "El sistema analiza tus especificaciones técnicas y genera un itemizado fiel a la estructura original. Los valores son editables de manera online y centralizada para evitar confusiones",
     image: itemizadoImg,
-    layout: 'right',
+    layout: "right",
     features: [
-      { icon: <FileText className="w-5 h-5" />, label: 'Jerarquía fiel', detail: 'Respeta la codificación de tus EETT' },
-      { icon: <BarChart3 className="w-5 h-5" />, label: 'Cantidades y unidades', detail: 'Partidas con unidad, cantidad y precio unitario' },
-      { icon: <Upload className="w-5 h-5" />, label: 'Múltiples formas de crear', detail: 'Importa un archivo, usa asistencia IA o crea manualmente' },
+      {
+        icon: <FileText className="w-5 h-5" />,
+        label: "Jerarquía fiel",
+        detail: "Respeta la codificación de tus EETT",
+      },
+      {
+        icon: <BarChart3 className="w-5 h-5" />,
+        label: "Cantidades y unidades",
+        detail: "Partidas con unidad, cantidad y precio unitario",
+      },
+      {
+        icon: <Upload className="w-5 h-5" />,
+        label: "Múltiples formas de crear",
+        detail: "Importa un archivo, usa asistencia IA o crea manualmente",
+      },
     ],
   },
   {
     id: 4,
-    type: 'showcase',
-    title: 'Rondas de preguntas con IA',
-    description: 'Los oferentes envían consultas. La IA sugiere respuestas basadas en tus documentos técnicos. Tú revisas, editas y publicas.',
+    type: "showcase",
+    title: "Rondas de preguntas con IA",
+    description:
+      "Los oferentes envían consultas. La IA sugiere respuestas basadas en tus documentos técnicos. Tú revisas, editas y publicas.",
     image: preguntasImg,
-    layout: 'left',
+    layout: "left",
     features: [
-      { icon: <MessageSquare className="w-5 h-5" />, label: 'Q&A estructurado', detail: 'Rondas organizadas con trazabilidad' },
-      { icon: <Brain className="w-5 h-5" />, label: 'Respuestas IA', detail: 'Sugerencias automáticas desde tus EETT' },
-      { icon: <GitMerge className="w-5 h-5" />, label: 'Respuestas múltiples', detail: 'Agrupa preguntas similares y responde simultáneamente para ahorrar tiempo' },
+      {
+        icon: <MessageSquare className="w-5 h-5" />,
+        label: "Q&A estructurado",
+        detail: "Rondas organizadas con trazabilidad",
+      },
+      { icon: <Brain className="w-5 h-5" />, label: "Respuestas IA", detail: "Sugerencias automáticas desde tus EETT" },
+      {
+        icon: <GitMerge className="w-5 h-5" />,
+        label: "Respuestas múltiples",
+        detail: "Agrupa preguntas similares y responde simultáneamente",
+      },
     ],
   },
   {
     id: 5,
-    type: 'feature',
-    title: 'Comparación de ofertas',
-    description: 'Visualiza y compara ofertas lado a lado. Precios unitarios, totales, plazos y documentación adjunta de cada oferente en una sola vista.',
+    type: "feature",
+    title: "Comparación de ofertas",
+    description:
+      "Visualiza y compara ofertas lado a lado. Precios unitarios, totales, plazos y documentación adjunta de cada oferente en una sola vista.",
     image: ofertasImg,
-    layout: 'right',
+    layout: "right",
     features: [
-      { icon: <BarChart3 className="w-5 h-5" />, label: 'Side by side', detail: 'Compara precios por partida entre oferentes' },
-      { icon: <FileText className="w-5 h-5" />, label: 'Documentación', detail: 'Ofertas con archivos adjuntos organizados' },
-      { icon: <TrendingUp className="w-5 h-5" />, label: 'Análisis automático', detail: 'Detecta desviaciones de precio, cantidades y proyecta la mejor oferta combinada (cherry picking)' },
+      {
+        icon: <BarChart3 className="w-5 h-5" />,
+        label: "Side by side",
+        detail: "Compara precios por partida entre oferentes",
+      },
+      {
+        icon: <FileText className="w-5 h-5" />,
+        label: "Documentación",
+        detail: "Ofertas con archivos adjuntos organizados",
+      },
+      {
+        icon: <TrendingUp className="w-5 h-5" />,
+        label: "Análisis automático",
+        detail: "Detecta desviaciones de precio, cantidades y proyecta la mejor oferta combinada (cherry picking)",
+      },
     ],
   },
   {
     id: 6,
-    type: 'cta',
-    title: '¿Listo para simplificar tus licitaciones?',
-    description: 'Agenda una demo y descubre cómo Gloster puede transformar tu proceso de licitación.',
-    layout: 'center',
-    accent: 'from-primary via-primary/95 to-primary/85',
+    type: "cta",
+    title: "¿Listo para simplificar tus licitaciones?",
+    description: "Agenda una demo y descubre cómo Gloster puede transformar tu proceso de licitación.",
+    layout: "center",
+    accent: "from-primary via-primary/95 to-primary/85",
   },
 ];
 
@@ -126,28 +196,37 @@ const Sales = () => {
   const [isContactOpen, setIsContactOpen] = useState(false);
   const total = slides.length;
 
-  const go = useCallback((idx: number) => {
-    if (idx < 0 || idx >= total || idx === current) return;
-    setDirection(idx > current ? 1 : -1);
-    setCurrent(idx);
-  }, [current, total]);
+  const go = useCallback(
+    (idx: number) => {
+      if (idx < 0 || idx >= total || idx === current) return;
+      setDirection(idx > current ? 1 : -1);
+      setCurrent(idx);
+    },
+    [current, total],
+  );
 
   const next = useCallback(() => go(current + 1), [go, current]);
   const prev = useCallback(() => go(current - 1), [go, current]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); next(); }
-      if (e.key === 'ArrowLeft') { e.preventDefault(); prev(); }
+      if (e.key === "ArrowRight" || e.key === " ") {
+        e.preventDefault();
+        next();
+      }
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        prev();
+      }
     };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
   }, [next, prev]);
 
   const slideVariants = {
-    enter: (d: number) => ({ x: d > 0 ? '100%' : '-100%', opacity: 0 }),
+    enter: (d: number) => ({ x: d > 0 ? "100%" : "-100%", opacity: 0 }),
     center: { x: 0, opacity: 1 },
-    exit: (d: number) => ({ x: d > 0 ? '-100%' : '100%', opacity: 0 }),
+    exit: (d: number) => ({ x: d > 0 ? "-100%" : "100%", opacity: 0 }),
   };
 
   const slide = slides[current];
@@ -158,11 +237,7 @@ const Sales = () => {
       <div className="absolute top-0 left-0 right-0 z-50 bg-white border-b border-border/30 px-6 py-3 flex items-center justify-between">
         {/* Logo */}
         <div className="flex items-center gap-2">
-          <img 
-            src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
-            alt="Gloster" 
-            className="w-7 h-7"
-          />
+          <img src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" alt="Gloster" className="w-7 h-7" />
           <span className="text-sm font-semibold tracking-tight text-gray-900">Gloster</span>
         </div>
 
@@ -174,9 +249,7 @@ const Sales = () => {
               onClick={() => go(i)}
               className="flex-1 h-1 rounded-full transition-all duration-500 cursor-pointer"
               style={{
-                backgroundColor: i <= current 
-                  ? 'hsl(var(--brand-yellow))' 
-                  : 'hsl(0 0% 88%)',
+                backgroundColor: i <= current ? "hsl(var(--brand-yellow))" : "hsl(0 0% 88%)",
               }}
             />
           ))}
@@ -184,7 +257,7 @@ const Sales = () => {
 
         {/* Slide counter */}
         <span className="text-xs text-gray-500 font-mono">
-          {String(current + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}
+          {String(current + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
         </span>
       </div>
 
@@ -200,11 +273,9 @@ const Sales = () => {
           transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
           className="absolute inset-0 pt-12"
         >
-          {slide.type === 'hero' && <HeroSlide slide={slide} onCTA={() => next()} />}
-          {slide.type === 'cta' && <CTASlide slide={slide} onCTA={() => setIsContactOpen(true)} />}
-          {(slide.type === 'feature' || slide.type === 'showcase') && (
-            <FeatureSlide slide={slide} />
-          )}
+          {slide.type === "hero" && <HeroSlide slide={slide} onCTA={() => next()} />}
+          {slide.type === "cta" && <CTASlide slide={slide} onCTA={() => setIsContactOpen(true)} />}
+          {(slide.type === "feature" || slide.type === "showcase") && <FeatureSlide slide={slide} />}
         </motion.div>
       </AnimatePresence>
 
@@ -227,9 +298,7 @@ const Sales = () => {
               key={i}
               onClick={() => go(i)}
               className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                i === current 
-                  ? 'bg-brand-yellow w-6' 
-                  : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
+                i === current ? "bg-brand-yellow w-6" : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
               }`}
             />
           ))}
@@ -270,8 +339,7 @@ const HeroSlide: React.FC<{ slide: Slide; onCTA: () => void }> = ({ slide, onCTA
         transition={{ delay: 0.3, duration: 0.6 }}
         className="text-5xl md:text-7xl font-bold text-primary-foreground leading-tight mb-4"
       >
-        {slide.title}{' '}
-        <span className="text-brand-yellow">{slide.subtitle}</span>
+        {slide.title} <span className="text-brand-yellow">{slide.subtitle}</span>
       </motion.h1>
       <motion.p
         initial={{ y: 40, opacity: 0 }}
@@ -355,32 +423,27 @@ const CTASlide: React.FC<{ slide: Slide; onCTA: () => void }> = ({ slide, onCTA 
 );
 
 const FeatureSlide: React.FC<{ slide: Slide }> = ({ slide }) => {
-  const isLeft = slide.layout === 'left';
+  const isLeft = slide.layout === "left";
   const hasTwoImages = !!slide.image2;
-  
+
   return (
     <div className="h-full w-full flex items-center bg-background">
-      <div className={`w-full h-full flex flex-col md:flex-row ${isLeft ? '' : 'md:flex-row-reverse'}`}>
+      <div className={`w-full h-full flex flex-col md:flex-row ${isLeft ? "" : "md:flex-row-reverse"}`}>
         {/* Image side */}
         <div className="flex-1 relative flex items-center justify-center p-6 md:p-10 bg-muted/30">
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.3, duration: 0.6 }}
-            className={`relative w-full max-w-2xl ${hasTwoImages ? 'flex flex-col gap-4' : ''}`}
+            className={`relative w-full max-w-2xl ${hasTwoImages ? "flex flex-col gap-4" : ""}`}
           >
-            <div className={`rounded-xl overflow-hidden shadow-2xl border border-border/50 ${hasTwoImages ? '' : ''}`}>
-              <img 
-                src={slide.image} 
-                alt={slide.title}
-                className="w-full h-auto"
-                loading="lazy"
-              />
+            <div className={`rounded-xl overflow-hidden shadow-2xl border border-border/50 ${hasTwoImages ? "" : ""}`}>
+              <img src={slide.image} alt={slide.title} className="w-full h-auto" loading="lazy" />
             </div>
             {hasTwoImages && (
               <div className="rounded-xl overflow-hidden shadow-2xl border border-border/50">
-                <img 
-                  src={slide.image2} 
+                <img
+                  src={slide.image2}
                   alt={`${slide.title} - vista adicional`}
                   className="w-full h-auto"
                   loading="lazy"
@@ -400,12 +463,8 @@ const FeatureSlide: React.FC<{ slide: Slide }> = ({ slide }) => {
               transition={{ delay: 0.2, duration: 0.5 }}
             >
               <div className="w-10 h-1 bg-brand-yellow rounded-full mb-6" />
-              <h2 className="text-3xl md:text-4xl font-bold text-foreground leading-tight mb-4">
-                {slide.title}
-              </h2>
-              <p className="text-base text-muted-foreground leading-relaxed mb-8">
-                {slide.description}
-              </p>
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground leading-tight mb-4">{slide.title}</h2>
+              <p className="text-base text-muted-foreground leading-relaxed mb-8">{slide.description}</p>
             </motion.div>
 
             {slide.features && (

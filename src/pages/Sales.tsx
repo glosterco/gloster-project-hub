@@ -327,7 +327,7 @@ const ToolsSlide: React.FC<{ onNavigate: (path: string) => void }> = ({ onNaviga
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
         <motion.button
           initial={{ y: 40, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
+          animate={{ y: 0, opacity: 2 }}
           transition={{ delay: 0.5, duration: 0.5 }}
           whileHover="hover"
           variants={shakeAnimation}

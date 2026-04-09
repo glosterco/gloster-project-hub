@@ -182,8 +182,8 @@ const SalesPresentation: React.FC<SalesPresentationProps> = ({ slides, onPrevFro
   return (
     <div className="h-screen w-screen overflow-hidden bg-background relative select-none font-sans">
       {/* Edge click zones */}
-      <div className="absolute left-0 top-12 bottom-16 w-16 z-40 cursor-pointer" onClick={prev} />
-      <div className="absolute right-0 top-12 bottom-16 w-16 z-40 cursor-pointer" onClick={next} />
+      <div className="absolute left-0 top-12 bottom-8 md:bottom-16 w-8 md:w-16 z-40 cursor-pointer" onClick={prev} />
+      <div className="absolute right-0 top-12 bottom-8 md:bottom-16 w-8 md:w-16 z-40 cursor-pointer" onClick={next} />
 
       <div className="absolute top-0 left-0 right-0 z-50 bg-white border-b border-border/30 px-6 py-3 flex items-center justify-between">
         <a href="/sales" className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity">

@@ -775,9 +775,12 @@ const LicitacionOfertasTab: React.FC<Props> = ({
                   })}
 
                   {showCherryPick && (
-                    <TableCell className="text-right font-bold text-sm border-l border-r bg-violet-50/30 dark:bg-violet-950/10 text-violet-700 dark:text-violet-300">
-                      {fmt(cherryPickTotals)}
-                    </TableCell>
+                    <>
+                      {!collapsed && (<><TableCell className="border-l bg-violet-50/30" /><TableCell className="bg-violet-50/30" /></>)}
+                      <TableCell className="text-right font-bold text-sm border-r bg-violet-50/30 dark:bg-violet-950/10 text-violet-700 dark:text-violet-300">
+                        {fmt(cherryPickTotals)}
+                      </TableCell>
+                    </>
                   )}
                 </TableRow>
 

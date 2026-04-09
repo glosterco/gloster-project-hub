@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -7,10 +7,11 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   MessageSquare, Send, Eye, Lock, Unlock, Sparkles, BookOpen, Clock,
   Paperclip, FileText, ExternalLink, Loader2, X, Wand2, Link2, CheckCircle2,
-  Pencil, Trash2
+  Pencil, Trash2, ShieldCheck, ShieldAlert, Search
 } from 'lucide-react';
 import CompactDropZone from '@/components/licitacion/CompactDropZone';
 import { Ronda, Pregunta, OferenteDetail } from '@/hooks/useLicitacionDetail';
@@ -33,6 +34,60 @@ interface Props {
   onDeleteAnswer: (preguntaId: number) => void;
 }
 
+// Component to render document text with highlighted excerpts
+const HighlightedDocumentText: React.FC<{ text: string; highlight: string }> = ({ text, highlight }) => {
+  if (!highlight || highlight.length < 10) return <>{text}</>;
+
+  const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
+  const textNorm = normalize(text);
+
+  // Try to find the highlight in the text using progressively smaller fragments
+  const highlightNorm = normalize(highlight);
+  let matchStart = textNorm.indexOf(highlightNorm);
+  let matchLength = highlight.length;
+
+  // If full match fails, try first 80 chars
+  if (matchStart === -1) {
+    const partial = highlightNorm.substring(0, 80);
+    if (partial.length > 15) {
+      matchStart = textNorm.indexOf(partial);
+      matchLength = Math.min(highlight.length, 200);
+    }
+  }
+
+  // Try individual sentences
+  if (matchStart === -1) {
+    const sentences = highlight.split(/[.;,\n]/).filter(s => s.trim().length > 15);
+    for (const sentence of sentences) {
+      const sentNorm = normalize(sentence);
+      matchStart = textNorm.indexOf(sentNorm);
+      if (matchStart !== -1) {
+        matchLength = sentence.length + 50;
+        break;
+      }
+    }
+  }
+
+  if (matchStart === -1) return <>{text}</>;
+
+  // Map back to original text positions (approximate)
+  const ratio = text.length / textNorm.length;
+  const origStart = Math.max(0, Math.floor(matchStart * ratio));
+  const origEnd = Math.min(text.length, Math.floor((matchStart + matchLength) * ratio));
+
+  const before = text.substring(0, origStart);
+  const matched = text.substring(origStart, origEnd);
+  const after = text.substring(origEnd);
+
+  return (
+    <>
+      {before}
+      <mark className="bg-yellow-200 dark:bg-yellow-800/60 text-foreground px-0.5 rounded">{matched}</mark>
+      {after}
+    </>
+  );
+};
+
 const LicitacionPreguntasTab: React.FC<Props> = ({
   rondas, preguntas, licitacionId, oferentesDetail = [], onCloseRonda, onOpenRonda,
   onAnswerPregunta, onPublishPreguntas, onRefetch, onDeleteAnswer
@@ -50,6 +105,7 @@ const LicitacionPreguntasTab: React.FC<Props> = ({
   const [batchAnswer, setBatchAnswer] = useState('');
   const [selectedSimilar, setSelectedSimilar] = useState<Set<number>>(new Set());
   const [batchGeneratingIA, setBatchGeneratingIA] = useState(false);
+  const [expandedDoc, setExpandedDoc] = useState<number | null>(null);
 
   const sentPreguntasByRonda = (rondaId: number) =>
     preguntas.filter(p => p.ronda_id === rondaId && p.enviada);
@@ -620,48 +676,107 @@ const LicitacionPreguntasTab: React.FC<Props> = ({
         </DialogContent>
       </Dialog>
 
-      {/* IA Source Dialog */}
-      <Dialog open={!!showIASource} onOpenChange={() => setShowIASource(null)}>
-        <DialogContent className="max-w-2xl">
+      {/* IA Source Dialog with Document Preview & Highlighting */}
+      <Dialog open={!!showIASource} onOpenChange={() => { setShowIASource(null); setExpandedDoc(null); }}>
+        <DialogContent className="max-w-4xl max-h-[85vh]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <BookOpen className="h-5 w-5" /> Fuentes de la Pre-respuesta
             </DialogTitle>
           </DialogHeader>
           {showIASource?.respuesta_ia_fuentes && (
-            <div className="space-y-4 max-h-[500px] overflow-y-auto">
-              {(Array.isArray(showIASource.respuesta_ia_fuentes)
-                ? showIASource.respuesta_ia_fuentes
-                : [showIASource.respuesta_ia_fuentes]
-              ).map((fuente: any, idx: number) => (
-                <div key={idx} className="border rounded-lg overflow-hidden">
-                  {fuente.documento && (
-                    <div className="bg-amber-50 dark:bg-amber-950/30 px-3 py-2 border-b flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-amber-600" />
-                      <span className="text-sm font-medium text-amber-800 dark:text-amber-300">
-                        {fuente.documento}
-                      </span>
-                    </div>
-                  )}
-                  <div className="p-3 bg-muted/30">
-                    {fuente.extracto_relevante ? (
-                      <div className="space-y-2">
-                        <p className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider">Extracto relevante del documento</p>
-                        <div className="bg-background border-l-4 border-amber-400 pl-3 py-2 rounded-r">
-                          <p className="text-sm whitespace-pre-wrap leading-relaxed">{fuente.extracto_relevante}</p>
+            <ScrollArea className="max-h-[65vh]">
+              <div className="space-y-4 pr-4">
+                {(Array.isArray(showIASource.respuesta_ia_fuentes)
+                  ? showIASource.respuesta_ia_fuentes
+                  : [showIASource.respuesta_ia_fuentes]
+                ).map((fuente: any, idx: number) => {
+                  const isVerified = fuente.verificado === true;
+                  const hasDocPreview = !!fuente.texto_documento;
+                  const isExpanded = expandedDoc === idx;
+
+                  return (
+                    <div key={idx} className="border rounded-lg overflow-hidden">
+                      {/* Document header */}
+                      {fuente.documento && (
+                        <div className={`px-3 py-2 border-b flex items-center justify-between gap-2 ${
+                          isVerified
+                            ? 'bg-emerald-50 dark:bg-emerald-950/30'
+                            : 'bg-amber-50 dark:bg-amber-950/30'
+                        }`}>
+                          <div className="flex items-center gap-2 min-w-0">
+                            <FileText className={`h-4 w-4 shrink-0 ${isVerified ? 'text-emerald-600' : 'text-amber-600'}`} />
+                            <span className="text-sm font-medium truncate">
+                              {fuente.documento}
+                            </span>
+                            {isVerified ? (
+                              <Badge variant="outline" className="text-[10px] border-emerald-300 text-emerald-700 bg-emerald-50 shrink-0">
+                                <ShieldCheck className="h-3 w-3 mr-0.5" /> Verificado
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-[10px] border-amber-300 text-amber-700 bg-amber-50 shrink-0">
+                                <ShieldAlert className="h-3 w-3 mr-0.5" /> No verificado
+                              </Badge>
+                            )}
+                          </div>
+                          {hasDocPreview && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 text-xs shrink-0"
+                              onClick={() => setExpandedDoc(isExpanded ? null : idx)}
+                            >
+                              <Search className="h-3 w-3 mr-1" />
+                              {isExpanded ? 'Cerrar vista previa' : 'Ver en documento'}
+                            </Button>
+                          )}
                         </div>
-                      </div>
-                    ) : (
-                      <div className="border-l-4 border-amber-400 pl-3 py-1">
-                        <p className="text-sm italic whitespace-pre-wrap">
-                          {fuente.extracto || fuente.text || JSON.stringify(fuente)}
+                      )}
+
+                      {/* Cited excerpt */}
+                      <div className="p-3 bg-muted/30">
+                        <p className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider mb-1.5">
+                          Extracto citado por la IA
                         </p>
+                        <div className={`border-l-4 pl-3 py-2 rounded-r ${
+                          isVerified ? 'border-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/10' : 'border-amber-400 bg-amber-50/50 dark:bg-amber-950/10'
+                        }`}>
+                          <p className="text-sm whitespace-pre-wrap leading-relaxed">
+                            {fuente.extracto_relevante || fuente.extracto || fuente.text || JSON.stringify(fuente)}
+                          </p>
+                        </div>
+                        {!isVerified && fuente.extracto_relevante && (
+                          <p className="text-[10px] text-amber-600 mt-1.5 flex items-center gap-1">
+                            <ShieldAlert className="h-3 w-3" />
+                            Esta cita no pudo ser encontrada textualmente en el documento. Verifique manualmente.
+                          </p>
+                        )}
                       </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+
+                      {/* Expanded document preview with highlighting */}
+                      {isExpanded && hasDocPreview && (
+                        <div className="border-t">
+                          <div className="px-3 py-1.5 bg-muted/50 flex items-center gap-2">
+                            <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider">
+                              Vista previa del documento - texto con extracto destacado
+                            </span>
+                          </div>
+                          <ScrollArea className="max-h-[300px]">
+                            <div className="p-3 text-xs leading-relaxed font-mono whitespace-pre-wrap">
+                              <HighlightedDocumentText
+                                text={fuente.texto_documento}
+                                highlight={fuente.extracto_relevante || fuente.extracto || ""}
+                              />
+                            </div>
+                          </ScrollArea>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </ScrollArea>
           )}
         </DialogContent>
       </Dialog>

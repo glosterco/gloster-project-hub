@@ -13,7 +13,7 @@ import {
   Pencil, Trash2
 } from 'lucide-react';
 import CompactDropZone from '@/components/licitacion/CompactDropZone';
-import { Ronda, Pregunta } from '@/hooks/useLicitacionDetail';
+import { Ronda, Pregunta, OferenteDetail } from '@/hooks/useLicitacionDetail';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,6 +23,7 @@ interface Props {
   rondas: Ronda[];
   preguntas: Pregunta[];
   licitacionId: number;
+  oferentesDetail?: OferenteDetail[];
   onCreateRonda: (titulo: string) => void;
   onCloseRonda: (rondaId: number) => void;
   onOpenRonda: (rondaId: number) => void;
@@ -33,7 +34,7 @@ interface Props {
 }
 
 const LicitacionPreguntasTab: React.FC<Props> = ({
-  rondas, preguntas, licitacionId, onCloseRonda, onOpenRonda,
+  rondas, preguntas, licitacionId, oferentesDetail = [], onCloseRonda, onOpenRonda,
   onAnswerPregunta, onPublishPreguntas, onRefetch, onDeleteAnswer
 }) => {
   const { toast } = useToast();
@@ -241,6 +242,14 @@ const LicitacionPreguntasTab: React.FC<Props> = ({
               <Badge variant="outline" className="text-[9px] font-normal">
                 {p.oferente_email}
               </Badge>
+              {(() => {
+                const empresa = oferentesDetail.find(o => o.email === p.oferente_email)?.nombre_empresa;
+                return empresa ? (
+                  <Badge variant="secondary" className="text-[9px] font-normal">
+                    {empresa}
+                  </Badge>
+                ) : null;
+              })()}
             </div>
             {p.adjunto_url && (
               <a href={p.adjunto_url} target="_blank" rel="noopener noreferrer"

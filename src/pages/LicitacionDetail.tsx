@@ -166,6 +166,7 @@ const LicitacionDetail = () => {
               rondas={rondas}
               preguntas={preguntas}
               licitacionId={licitacion.id}
+              oferentesDetail={oferentesDetail}
               onCreateRonda={createRonda}
               onCloseRonda={closeRonda}
               onOpenRonda={openRonda}

@@ -443,9 +443,44 @@ const LicitacionOfertasTab: React.FC<Props> = ({
 
         {/* Cherry pick column */}
         {showCherryPick && (
-          <TableCell className={`text-right text-xs font-medium border-l border-r ${cheapest ? 'bg-violet-50/50 dark:bg-violet-950/10' : ''}`}>
-            {cheapest ? fmt(cheapest.minTotal) : '-'}
-          </TableCell>
+          <>
+            {!collapsed ? (
+              <>
+                <TableCell className="text-center text-[10px] border-l bg-violet-50/50 dark:bg-violet-950/10 truncate max-w-[100px]">
+                  {cheapest ? (() => {
+                    if (cheapest.minOfertaId === -999) return 'Mandante';
+                    const src = ofertas.find(o => o.id === cheapest.minOfertaId);
+                    return src?.oferente_empresa || src?.oferente_nombre || src?.oferente_email || '-';
+                  })() : '-'}
+                </TableCell>
+                <TableCell className="text-right text-xs bg-violet-50/50 dark:bg-violet-950/10">
+                  {cheapest ? (() => {
+                    if (cheapest.minOfertaId === -999) return item.precio_unitario ? fmt(item.precio_unitario) : '-';
+                    const src = ofertas.find(o => o.id === cheapest.minOfertaId);
+                    const oi = src ? findOfertaItem(src, item) : null;
+                    return oi?.precio_unitario != null ? fmt(oi.precio_unitario) : '-';
+                  })() : '-'}
+                </TableCell>
+                <TableCell className="text-right text-xs font-medium border-r bg-violet-50/50 dark:bg-violet-950/10">
+                  {cheapest ? fmt(cheapest.minTotal) : '-'}
+                </TableCell>
+              </>
+            ) : (
+              <TableCell className={`text-right text-xs font-medium border-l border-r bg-violet-50/50 dark:bg-violet-950/10`}>
+                {cheapest ? (
+                  <div className="flex flex-col items-end leading-tight">
+                    <span>{fmt(cheapest.minTotal)}</span>
+                    <span className="text-[9px] text-muted-foreground truncate max-w-[90px]">
+                      {cheapest.minOfertaId === -999 ? 'Mandante' : (() => {
+                        const src = ofertas.find(o => o.id === cheapest.minOfertaId);
+                        return src?.oferente_empresa || src?.oferente_nombre || '?';
+                      })()}
+                    </span>
+                  </div>
+                ) : '-'}
+              </TableCell>
+            )}
+          </>
         )}
       </TableRow>
     );

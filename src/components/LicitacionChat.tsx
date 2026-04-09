@@ -78,6 +78,7 @@ const LicitacionChat = ({ open, onOpenChange, onSuccess }: LicitacionChatProps) 
   const [conversationFiles, setConversationFiles] = useState<File[]>([]);
   const conversationFilesRef = useRef<File[]>([]);
   const attachmentAnalysisRef = useRef<Record<string, AttachmentAnalysis>>({});
+  const [liveSummary, setLiveSummary] = useState<LicitacionSummary>({});
 
   const ALLOWED_EXTENSIONS = [
     '.pdf', '.xls', '.xlsx', '.xlsm', '.csv',

@@ -326,7 +326,7 @@ const ToolsSlide: React.FC<{ onNavigate: (path: string) => void }> = ({ onNaviga
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
         <motion.button
-          initial={{ y: 30, opacity: 0 }}
+          initial={{ y: 40, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.5, duration: 0.5 }}
           whileHover="hover"
@@ -334,7 +334,7 @@ const ToolsSlide: React.FC<{ onNavigate: (path: string) => void }> = ({ onNaviga
           onClick={() => onNavigate("/sales/licitacion")}
           className="group p-8 rounded-2xl border border-border bg-card hover:border-brand-yellow/50 hover:shadow-lg transition-all duration-300 text-left cursor-pointer"
         >
-          <div className="w-30 h-20 rounded-2xl bg-brand-yellow/10 flex items-center justify-center mb-5 group-hover:bg-brand-yellow/20 transition-colors">
+          <div className="w-20 h-20 rounded-2xl bg-brand-yellow/10 flex items-center justify-center mb-5 group-hover:bg-brand-yellow/20 transition-colors">
             <Gavel className="w-10 h-10 text-brand-yellow-foreground" />
           </div>
           <h3 className="text-2xl font-bold text-brand-yellow-foreground mb-2">Licitaciones</h3>
@@ -344,7 +344,7 @@ const ToolsSlide: React.FC<{ onNavigate: (path: string) => void }> = ({ onNaviga
         </motion.button>
 
         <motion.button
-          initial={{ y: 30, opacity: 0 }}
+          initial={{ y: 40, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.6, duration: 0.5 }}
           whileHover="hover"
@@ -352,7 +352,7 @@ const ToolsSlide: React.FC<{ onNavigate: (path: string) => void }> = ({ onNaviga
           onClick={() => onNavigate("/sales/subcontratos")}
           className="group p-8 rounded-2xl border border-border bg-card hover:border-brand-yellow/50 hover:shadow-lg transition-all duration-300 text-left cursor-pointer"
         >
-          <div className="w-30 h-20 rounded-2xl bg-brand-yellow/10 flex items-center justify-center mb-5 group-hover:bg-brand-yellow/20 transition-colors">
+          <div className="w-20 h-20 rounded-2xl bg-brand-yellow/10 flex items-center justify-center mb-5 group-hover:bg-brand-yellow/20 transition-colors">
             <HardHat className="w-10 h-10 text-brand-yellow-foreground" />
           </div>
           <h3 className="text-2xl font-bold text-brand-yellow-foreground mb-2">Subcontratos</h3>

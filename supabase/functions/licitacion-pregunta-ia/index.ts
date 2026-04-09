@@ -6,34 +6,21 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Get Google Drive access token via token manager
 async function getDriveAccessToken(): Promise<string> {
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-
   const resp = await fetch(`${supabaseUrl}/functions/v1/google-drive-token-manager`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${supabaseAnonKey}`,
-    },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${supabaseAnonKey}` },
     body: JSON.stringify({ action: "validate" }),
   });
-
   const result = await resp.json();
-  if (!result.valid || !result.access_token) {
-    throw new Error("Failed to get Drive access token");
-  }
+  if (!result.valid || !result.access_token) throw new Error("Failed to get Drive access token");
   return result.access_token;
 }
 
-// Extract Drive file ID from URL
 function extractDriveFileId(url: string): string | null {
-  const patterns = [
-    /\/file\/d\/([a-zA-Z0-9_-]+)/,
-    /id=([a-zA-Z0-9_-]+)/,
-    /\/d\/([a-zA-Z0-9_-]+)/,
-  ];
+  const patterns = [/\/file\/d\/([a-zA-Z0-9_-]+)/, /id=([a-zA-Z0-9_-]+)/, /\/d\/([a-zA-Z0-9_-]+)/];
   for (const p of patterns) {
     const m = url.match(p);
     if (m) return m[1];
@@ -41,35 +28,24 @@ function extractDriveFileId(url: string): string | null {
   return null;
 }
 
-// Download file bytes from Drive
-async function downloadDriveFile(
-  accessToken: string,
-  fileId: string,
-  fileName: string,
-): Promise<{ bytes: Uint8Array; mimeType: string } | null> {
+async function downloadDriveFile(accessToken: string, fileId: string, fileName: string): Promise<{ bytes: Uint8Array; mimeType: string } | null> {
   try {
-    // First get file metadata for mime type
-    const metaUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?fields=mimeType,size`;
-    const metaResp = await fetch(metaUrl, {
+    const metaResp = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?fields=mimeType,size`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
-    
     let fileMimeType = "";
     if (metaResp.ok) {
       const meta = await metaResp.json();
       fileMimeType = meta.mimeType || "";
     }
 
-    // For Google Docs native formats, export as plain text
     const googleDocTypes = [
       "application/vnd.google-apps.document",
       "application/vnd.google-apps.spreadsheet",
       "application/vnd.google-apps.presentation",
     ];
-
     if (googleDocTypes.includes(fileMimeType)) {
-      const exportUrl = `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=text/plain`;
-      const resp = await fetch(exportUrl, {
+      const resp = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=text/plain`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       if (!resp.ok) return null;
@@ -77,128 +53,15 @@ async function downloadDriveFile(
       return { bytes: new TextEncoder().encode(text), mimeType: "text/plain" };
     }
 
-    // Download binary
-    const downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
-    const resp = await fetch(downloadUrl, {
+    const resp = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
-    if (!resp.ok) {
-      console.error(`Failed to download ${fileName}: ${resp.status}`);
-      return null;
-    }
-
-    const buffer = await resp.arrayBuffer();
-    return { bytes: new Uint8Array(buffer), mimeType: fileMimeType };
+    if (!resp.ok) return null;
+    return { bytes: new Uint8Array(await resp.arrayBuffer()), mimeType: fileMimeType };
   } catch (err) {
     console.error(`Error downloading ${fileName}:`, err);
     return null;
   }
-}
-
-// Extract text from non-PDF files (text, DOCX, XLSX)
-function extractTextFromFile(bytes: Uint8Array, mimeType: string, fileName: string): string {
-  // Text-based files
-  if (
-    mimeType?.includes("text/") ||
-    mimeType?.includes("csv") ||
-    fileName.endsWith(".txt") ||
-    fileName.endsWith(".csv")
-  ) {
-    return new TextDecoder().decode(bytes);
-  }
-
-  // DOCX - extract via ZIP/XML  
-  if (
-    mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
-    fileName.toLowerCase().endsWith(".docx")
-  ) {
-    return extractTextFromDocxBytes(bytes, fileName);
-  }
-
-  // XLSX
-  if (
-    mimeType === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
-    fileName.toLowerCase().endsWith(".xlsx")
-  ) {
-    return extractTextFromXlsxBytes(bytes, fileName);
-  }
-
-  return "";
-}
-
-// Synchronous DOCX text extraction
-function extractTextFromDocxBytes(bytes: Uint8Array, fileName: string): string {
-  try {
-    const files = parseZipSync(bytes);
-    const docXml = files["word/document.xml"];
-    if (!docXml) return "";
-    const xml = new TextDecoder().decode(docXml);
-    const texts: string[] = [];
-    // Match w:t tags
-    const tRegex = /<w:t[^>]*>([^<]*)<\/w:t>/g;
-    let m;
-    while ((m = tRegex.exec(xml)) !== null) {
-      texts.push(m[1]);
-    }
-    const text = texts.join(" ");
-    console.log(`DOCX ${fileName}: extracted ${text.length} chars`);
-    return text;
-  } catch (err) {
-    console.error(`DOCX extraction error for ${fileName}:`, err);
-    return "";
-  }
-}
-
-// Synchronous XLSX text extraction
-function extractTextFromXlsxBytes(bytes: Uint8Array, fileName: string): string {
-  try {
-    const files = parseZipSync(bytes);
-    const sharedStringsFile = files["xl/sharedStrings.xml"];
-    if (!sharedStringsFile) return "";
-    const xml = new TextDecoder().decode(sharedStringsFile);
-    const texts: string[] = [];
-    const tRegex = /<t[^>]*>([^<]+)<\/t>/g;
-    let m;
-    while ((m = tRegex.exec(xml)) !== null) {
-      texts.push(m[1]);
-    }
-    const text = texts.join(" ");
-    console.log(`XLSX ${fileName}: extracted ${text.length} chars`);
-    return text;
-  } catch (err) {
-    console.error(`XLSX extraction error for ${fileName}:`, err);
-    return "";
-  }
-}
-
-// Synchronous ZIP parser — only handles STORED (uncompressed) entries
-function parseZipSync(data: Uint8Array): Record<string, Uint8Array> {
-  const files: Record<string, Uint8Array> = {};
-  let offset = 0;
-  const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
-
-  while (offset < data.length - 4) {
-    const sig = view.getUint32(offset, true);
-    if (sig !== 0x04034b50) break;
-
-    const compressionMethod = view.getUint16(offset + 8, true);
-    const compressedSize = view.getUint32(offset + 18, true);
-    const uncompressedSize = view.getUint32(offset + 22, true);
-    const nameLength = view.getUint16(offset + 26, true);
-    const extraLength = view.getUint16(offset + 28, true);
-    const fileName = new TextDecoder().decode(data.slice(offset + 30, offset + 30 + nameLength));
-    const fileDataStart = offset + 30 + nameLength + extraLength;
-
-    if (compressionMethod === 0) {
-      // STORED
-      files[fileName] = data.slice(fileDataStart, fileDataStart + uncompressedSize);
-    }
-    // Skip compressed entries — they'll be handled by AI extraction as fallback
-
-    offset = fileDataStart + compressedSize;
-  }
-
-  return files;
 }
 
 // Async ZIP parser for compressed entries
@@ -206,11 +69,9 @@ async function parseZipAsync(data: Uint8Array): Promise<Record<string, Uint8Arra
   const files: Record<string, Uint8Array> = {};
   let offset = 0;
   const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
-
   while (offset < data.length - 4) {
     const sig = view.getUint32(offset, true);
     if (sig !== 0x04034b50) break;
-
     const compressionMethod = view.getUint16(offset + 8, true);
     const compressedSize = view.getUint32(offset + 18, true);
     const uncompressedSize = view.getUint32(offset + 22, true);
@@ -218,7 +79,6 @@ async function parseZipAsync(data: Uint8Array): Promise<Record<string, Uint8Arra
     const extraLength = view.getUint16(offset + 28, true);
     const fileName = new TextDecoder().decode(data.slice(offset + 30, offset + 30 + nameLength));
     const fileDataStart = offset + 30 + nameLength + extraLength;
-
     if (compressionMethod === 0) {
       files[fileName] = data.slice(fileDataStart, fileDataStart + uncompressedSize);
     } else if (compressionMethod === 8) {
@@ -227,38 +87,27 @@ async function parseZipAsync(data: Uint8Array): Promise<Record<string, Uint8Arra
         const ds = new DecompressionStream("raw-deflate" as any);
         const writer = ds.writable.getWriter();
         const reader = ds.readable.getReader();
-        
         writer.write(compressed);
         writer.close();
-        
         const chunks: Uint8Array[] = [];
         while (true) {
           const { value, done } = await reader.read();
           if (done) break;
           if (value) chunks.push(value);
         }
-        
         const total = chunks.reduce((s, c) => s + c.length, 0);
         const result = new Uint8Array(total);
         let pos = 0;
-        for (const chunk of chunks) {
-          result.set(chunk, pos);
-          pos += chunk.length;
-        }
+        for (const chunk of chunks) { result.set(chunk, pos); pos += chunk.length; }
         files[fileName] = result;
-      } catch (e) {
-        console.error(`Failed to decompress ${fileName}:`, e);
-      }
+      } catch (e) { console.error(`Failed to decompress ${fileName}:`, e); }
     }
-
     offset = fileDataStart + compressedSize;
   }
-
   return files;
 }
 
-// Extract text from DOCX using async ZIP (handles compressed entries)
-async function extractTextFromDocxAsync(bytes: Uint8Array, fileName: string): Promise<string> {
+async function extractTextFromDocx(bytes: Uint8Array, fileName: string): Promise<string> {
   try {
     const files = await parseZipAsync(bytes);
     const docXml = files["word/document.xml"];
@@ -267,41 +116,25 @@ async function extractTextFromDocxAsync(bytes: Uint8Array, fileName: string): Pr
     const texts: string[] = [];
     const tRegex = /<w:t[^>]*>([^<]*)<\/w:t>/g;
     let m;
-    while ((m = tRegex.exec(xml)) !== null) {
-      texts.push(m[1]);
-    }
-    const text = texts.join(" ");
-    console.log(`DOCX async ${fileName}: extracted ${text.length} chars`);
-    return text;
-  } catch (err) {
-    console.error(`DOCX async extraction error for ${fileName}:`, err);
-    return "";
-  }
+    while ((m = tRegex.exec(xml)) !== null) texts.push(m[1]);
+    return texts.join(" ");
+  } catch { return ""; }
 }
 
-// Extract text from XLSX using async ZIP
-async function extractTextFromXlsxAsync(bytes: Uint8Array, fileName: string): Promise<string> {
+async function extractTextFromXlsx(bytes: Uint8Array, fileName: string): Promise<string> {
   try {
     const files = await parseZipAsync(bytes);
-    const sharedStringsFile = files["xl/sharedStrings.xml"];
-    if (!sharedStringsFile) return "";
-    const xml = new TextDecoder().decode(sharedStringsFile);
+    const ss = files["xl/sharedStrings.xml"];
+    if (!ss) return "";
+    const xml = new TextDecoder().decode(ss);
     const texts: string[] = [];
     const tRegex = /<t[^>]*>([^<]+)<\/t>/g;
     let m;
-    while ((m = tRegex.exec(xml)) !== null) {
-      texts.push(m[1]);
-    }
-    const text = texts.join(" ");
-    console.log(`XLSX async ${fileName}: extracted ${text.length} chars`);
-    return text;
-  } catch (err) {
-    console.error(`XLSX async extraction error for ${fileName}:`, err);
-    return "";
-  }
+    while ((m = tRegex.exec(xml)) !== null) texts.push(m[1]);
+    return texts.join(" ");
+  } catch { return ""; }
 }
 
-// Convert bytes to base64
 function bytesToBase64(bytes: Uint8Array): string {
   let binary = "";
   const chunkSize = 8192;
@@ -311,35 +144,23 @@ function bytesToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
-// Determine if a file should be sent natively to Gemini (as inline_data)
 function isNativeGeminiFormat(mimeType: string, fileName: string): boolean {
-  const nativeMimes = [
-    "application/pdf",
-    "image/png",
-    "image/jpeg",
-    "image/webp",
-    "image/gif",
-  ];
   const fl = fileName.toLowerCase();
-  return nativeMimes.includes(mimeType) || fl.endsWith(".pdf") || fl.endsWith(".png") || fl.endsWith(".jpg") || fl.endsWith(".jpeg");
+  return mimeType === "application/pdf" || mimeType.startsWith("image/") ||
+    fl.endsWith(".pdf") || fl.endsWith(".png") || fl.endsWith(".jpg") || fl.endsWith(".jpeg");
 }
 
-// Size limit for inline files (15MB)
 const MAX_INLINE_FILE_SIZE = 15 * 1024 * 1024;
-// Increased text limit per document (20K chars)
-const MAX_TEXT_PER_DOC = 20000;
+const MAX_TEXT_PER_DOC = 40000;
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const { preguntaId, licitacionId } = await req.json();
     if (!preguntaId || !licitacionId) {
       return new Response(JSON.stringify({ error: "preguntaId and licitacionId required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -350,15 +171,10 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Fetch the question
     const { data: pregunta, error: pErr } = await supabase
-      .from("LicitacionPreguntas")
-      .select("*")
-      .eq("id", preguntaId)
-      .single();
+      .from("LicitacionPreguntas").select("*").eq("id", preguntaId).single();
     if (pErr || !pregunta) throw new Error("Pregunta not found");
 
-    // Fetch all context in parallel
     const [
       { data: licitacion },
       { data: docs },
@@ -375,26 +191,21 @@ serve(async (req) => {
       supabase.from("LicitacionPreguntas").select("pregunta, respuesta, respondida, publicada").eq("licitacion_id", licitacionId).eq("respondida", true).neq("id", preguntaId).limit(30),
     ]);
 
-    // --- Download and prepare document content ---
-    // Strategy: All documents are converted to text for GPT-5 compatibility
-    const textDocuments: { nombre: string; contenido: string }[] = [];
+    // --- Build message content parts for Gemini (single-model approach) ---
+    // Gemini 2.5 Flash handles PDFs and images natively via inline_data
+    const userContentParts: any[] = [];
     const fileNames: string[] = [];
+    const textDocuments: { nombre: string; contenido: string }[] = [];
 
     if (docs && docs.length > 0) {
       let accessToken: string | null = null;
-      try {
-        accessToken = await getDriveAccessToken();
-      } catch (err) {
-        console.error("Could not get Drive token:", err);
-      }
+      try { accessToken = await getDriveAccessToken(); } catch (err) { console.error("Could not get Drive token:", err); }
 
       if (accessToken) {
-        // Download all files in parallel
         const downloadPromises = docs.map(async (doc) => {
           if (!doc.url) return null;
           const fileId = extractDriveFileId(doc.url);
           if (!fileId) return null;
-          
           console.log(`📄 Downloading: ${doc.nombre}`);
           const result = await downloadDriveFile(accessToken!, fileId, doc.nombre);
           if (!result) return null;
@@ -403,67 +214,31 @@ serve(async (req) => {
 
         const downloaded = (await Promise.all(downloadPromises)).filter(Boolean) as {
           doc: { nombre: string; tipo: string | null; url: string | null };
-          bytes: Uint8Array;
-          mimeType: string;
+          bytes: Uint8Array; mimeType: string;
         }[];
 
         for (const { doc, bytes, mimeType } of downloaded) {
           fileNames.push(doc.nombre);
           const effectiveMime = mimeType || doc.tipo || "";
 
-          // For PDFs and images: use Gemini to extract text first (GPT-5 doesn't support inline binary)
+          // PDFs and images: send directly as inline_data to Gemini
           if (isNativeGeminiFormat(effectiveMime, doc.nombre) && bytes.length <= MAX_INLINE_FILE_SIZE) {
-            console.log(`📄 Extracting text from PDF via Gemini: ${doc.nombre} (${bytes.length} bytes)`);
-            try {
-              const base64 = bytesToBase64(bytes);
-              const pdfMime = effectiveMime.includes("pdf") ? "application/pdf" : effectiveMime;
-              const extractResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-                method: "POST",
-                headers: {
-                  Authorization: `Bearer ${LOVABLE_API_KEY}`,
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  model: "google/gemini-2.5-flash-lite",
-                  messages: [
-                    { role: "system", content: "Extrae TODO el texto del documento adjunto. Devuelve el contenido completo tal cual, sin resúmenes ni omisiones. Incluye tablas, notas, anexos y todo el contenido visible. No agregues comentarios propios." },
-                    { role: "user", content: [
-                      { type: "text", text: `Extrae todo el texto del archivo "${doc.nombre}":` },
-                      { inline_data: { mime_type: pdfMime, data: base64 } },
-                    ]},
-                  ],
-                }),
-              });
-
-              if (extractResp.ok) {
-                const extractData = await extractResp.json();
-                const extractedText = extractData.choices?.[0]?.message?.content || "";
-                if (extractedText.length > 10) {
-                  const trimmed = extractedText.length > MAX_TEXT_PER_DOC * 2
-                    ? extractedText.substring(0, MAX_TEXT_PER_DOC * 2) + "\n[... documento truncado ...]"
-                    : extractedText;
-                  textDocuments.push({ nombre: doc.nombre, contenido: trimmed });
-                  console.log(`✅ ${doc.nombre}: ${trimmed.length} chars extracted via Gemini OCR`);
-                } else {
-                  console.log(`⚠️ ${doc.nombre}: Gemini extraction returned minimal text`);
-                }
-              } else {
-                console.error(`❌ Gemini extraction failed for ${doc.nombre}: ${extractResp.status}`);
-              }
-            } catch (extractErr) {
-              console.error(`❌ Gemini extraction error for ${doc.nombre}:`, extractErr);
-            }
+            const base64 = bytesToBase64(bytes);
+            const inlineMime = effectiveMime.includes("pdf") ? "application/pdf" : effectiveMime;
+            userContentParts.push({ type: "text", text: `\n--- DOCUMENTO ADJUNTO: "${doc.nombre}" ---` });
+            userContentParts.push({ inline_data: { mime_type: inlineMime, data: base64 } });
+            console.log(`📎 ${doc.nombre}: sent as inline_data (${bytes.length} bytes)`);
             continue;
           }
 
-          // DOCX/XLSX → try async extraction (handles compressed ZIP entries)
+          // DOCX/XLSX/Text: extract text
           let text = "";
           if (effectiveMime.includes("wordprocessingml") || doc.nombre.toLowerCase().endsWith(".docx")) {
-            text = await extractTextFromDocxAsync(bytes, doc.nombre);
+            text = await extractTextFromDocx(bytes, doc.nombre);
           } else if (effectiveMime.includes("spreadsheetml") || doc.nombre.toLowerCase().endsWith(".xlsx")) {
-            text = await extractTextFromXlsxAsync(bytes, doc.nombre);
-          } else {
-            text = extractTextFromFile(bytes, effectiveMime, doc.nombre);
+            text = await extractTextFromXlsx(bytes, doc.nombre);
+          } else if (effectiveMime.includes("text/") || effectiveMime.includes("csv") || doc.nombre.endsWith(".txt") || doc.nombre.endsWith(".csv")) {
+            text = new TextDecoder().decode(bytes);
           }
 
           if (text && text.length > 10) {
@@ -473,22 +248,19 @@ serve(async (req) => {
             textDocuments.push({ nombre: doc.nombre, contenido: trimmed });
             console.log(`✅ ${doc.nombre}: ${trimmed.length} chars extracted as text`);
           } else {
-            console.log(`⚠️ ${doc.nombre}: no text extracted (${text.length} chars)`);
+            console.log(`⚠️ ${doc.nombre}: no text extracted`);
           }
         }
       }
     }
 
-    // Build text context
+    // Build structured context
     const contextParts: string[] = [];
     if (licitacion) {
       contextParts.push(`Nombre del proceso: ${licitacion.nombre}`);
       contextParts.push(`Descripción: ${licitacion.descripcion}`);
-      if (licitacion.especificaciones) {
-        contextParts.push(`Especificaciones técnicas:\n${licitacion.especificaciones}`);
-      }
+      if (licitacion.especificaciones) contextParts.push(`Especificaciones técnicas:\n${licitacion.especificaciones}`);
     }
-
     if (oferentes && oferentes.length > 0) {
       contextParts.push(`OFERENTES INVITADOS:\n${oferentes.map(o => `- ${o.email}${o.nombre_empresa ? ` (${o.nombre_empresa})` : ''} - ${o.aceptada ? 'Aceptó' : 'Pendiente'}`).join('\n')}`);
     }
@@ -499,45 +271,49 @@ serve(async (req) => {
       contextParts.push(`ITEMIZADO BASE (${items.length} ítems):\n${items.map(i => `- ${i.descripcion} | ${i.unidad || '-'} | Cant: ${i.cantidad || '-'} | PU: ${i.precio_unitario || '-'}`).join('\n')}`);
     }
     if (otherPreguntas && otherPreguntas.length > 0) {
-      contextParts.push(`PREGUNTAS YA RESPONDIDAS EN ESTE PROCESO:\n${otherPreguntas.map(p => `P: ${p.pregunta}\nR: ${p.respuesta}`).join('\n\n')}`);
+      contextParts.push(`PREGUNTAS YA RESPONDIDAS:\n${otherPreguntas.map(p => `P: ${p.pregunta}\nR: ${p.respuesta}`).join('\n\n')}`);
     }
-    if (textDocuments.length > 0) {
-      for (const dt of textDocuments) {
-        contextParts.push(`--- CONTENIDO DEL DOCUMENTO: "${dt.nombre}" ---\n${dt.contenido}\n--- FIN DOCUMENTO ---`);
-      }
+    // Add text-extracted documents
+    for (const dt of textDocuments) {
+      contextParts.push(`--- CONTENIDO DEL DOCUMENTO: "${dt.nombre}" ---\n${dt.contenido}\n--- FIN DOCUMENTO ---`);
     }
 
     const systemPrompt = `Eres un asistente técnico experto en licitaciones de construcción en Chile.
-Se te proporciona el contexto completo de un proceso de licitación y una pregunta de un oferente.
+Se te proporciona el contexto completo de un proceso de licitación incluyendo documentos adjuntos (PDFs, imágenes, planillas) y una pregunta de un oferente.
 Tu tarea es buscar exhaustivamente en TODOS los antecedentes proporcionados para encontrar la respuesta.
 
 CONTEXTO DEL PROCESO:
 ${contextParts.join("\n\n")}
 
 INSTRUCCIONES DE BÚSQUEDA (MUY IMPORTANTE):
-1. BUSCA EN TODOS LOS DOCUMENTOS: Lee cada documento completo, no solo los primeros párrafos. La respuesta puede estar en cualquier sección, tabla, anexo o nota al pie.
-2. BUSCA SINÓNIMOS Y TÉRMINOS RELACIONADOS: Si la pregunta habla de "plazo", busca también "duración", "calendario", "tiempo", "días", "meses". Si habla de "pago", busca "facturación", "cobro", "estado de pago", etc.
-3. BUSCA EN TABLAS Y LISTAS: Muchas veces la información está en tablas, cuadros o listas numeradas dentro de los documentos.
-4. CRUZA INFORMACIÓN: Si un documento menciona un tema parcialmente, busca en los demás documentos información complementaria.
-5. CITAS TEXTUALES: Cuando encuentres la información, incluye la cita textual exacta del documento para respaldar tu respuesta.
+1. BUSCA EN TODOS LOS DOCUMENTOS ADJUNTOS: Lee cada documento completo incluyendo tablas, anexos, notas al pie, planos y especificaciones. La respuesta puede estar en cualquier parte.
+2. BUSCA SINÓNIMOS: Si la pregunta habla de "plazo", busca también "duración", "calendario", "tiempo", "días", "meses". Si habla de "pago", busca "facturación", "cobro", "estado de pago", etc.
+3. BUSCA EN TABLAS Y LISTAS: La información frecuentemente está en tablas o cuadros dentro de los documentos.
+4. CRUZA INFORMACIÓN entre documentos: Si un documento menciona un tema parcialmente, busca complementos en los demás.
+5. CITAS TEXTUALES OBLIGATORIAS: Cuando encuentres la información, incluye la cita textual exacta del documento.
 
 REGLAS DE RESPUESTA:
 - Responde SOLO con información que se encuentre en los documentos, especificaciones, itemizado, calendario o descripción del proceso.
 - También puedes usar respuestas previas ya dadas en este proceso para mantener coherencia.
-- Si tras buscar exhaustivamente NO encuentras la información, responde: "No se encontró información suficiente en los antecedentes del proceso para responder esta consulta. Se recomienda que el mandante responda directamente."
-- NO uses formato con doble asterisco (**). Usa texto plano, viñetas simples con guiones (-) y saltos de línea.
-- Sé directo y profesional. Incluye citas textuales del documento fuente.
-- Cita la fuente: "Según [nombre del documento], sección/página X: '[cita textual]'..."
+- Si NO encuentras la información, responde: "No se encontró información suficiente en los antecedentes del proceso para responder esta consulta. Se recomienda que el mandante responda directamente."
+- NO uses formato con doble asterisco (**). Usa texto plano, viñetas con guiones (-) y saltos de línea.
+- Sé directo y profesional.
+- Cita la fuente: "Según [nombre del documento]: '[cita textual]'..."
 - Responde en español chileno.
 
-IMPORTANTE SOBRE FUENTES:
-Al final de tu respuesta, agrega una línea con "---FUENTES---" seguida de las citas textuales relevantes:
-[DOCUMENTO: nombre_documento] "cita textual exacta del documento que respalda la respuesta"
-Incluye SOLO los pasajes textuales específicos que fundamentan tu respuesta.`;
+FUENTES (OBLIGATORIO):
+Al final de tu respuesta, agrega una línea con "---FUENTES---" seguida de las citas textuales:
+[DOCUMENTO: nombre_documento] "cita textual exacta del documento que respalda la respuesta"`;
 
-    const userPrompt = `Pregunta del oferente${pregunta.especialidad ? ` (especialidad: ${pregunta.especialidad})` : ""}:\n\n"${pregunta.pregunta}"\n\nBusca exhaustivamente en todos los antecedentes del proceso la respuesta a esta pregunta.`;
+    // Build user message with inline documents
+    const questionText = `Pregunta del oferente${pregunta.especialidad ? ` (especialidad: ${pregunta.especialidad})` : ""}:\n\n"${pregunta.pregunta}"\n\nBusca exhaustivamente en todos los antecedentes y documentos adjuntos la respuesta a esta pregunta.`;
 
-    console.log(`🤖 Sending to GPT-5: ${contextParts.join("").length} chars text context, ${textDocuments.length} documents extracted`);
+    // If we have inline parts (PDFs/images), use multimodal content array
+    const userMessage: any = userContentParts.length > 0
+      ? { role: "user", content: [{ type: "text", text: questionText }, ...userContentParts] }
+      : { role: "user", content: questionText };
+
+    console.log(`🤖 Sending to Gemini 2.5 Flash: ${contextParts.join("").length} chars context, ${userContentParts.length} inline parts, ${textDocuments.length} text docs`);
 
     const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -546,10 +322,10 @@ Incluye SOLO los pasajes textuales específicos que fundamentan tu respuesta.`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "openai/gpt-5",
+        model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
+          userMessage,
         ],
       }),
     });
@@ -557,13 +333,23 @@ Incluye SOLO los pasajes textuales específicos que fundamentan tu respuesta.`;
     if (!aiResp.ok) {
       const t = await aiResp.text();
       console.error("AI error:", aiResp.status, t);
+      if (aiResp.status === 429) {
+        return new Response(JSON.stringify({ error: "Rate limit excedido. Intenta de nuevo en unos segundos." }), {
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (aiResp.status === 402) {
+        return new Response(JSON.stringify({ error: "Créditos agotados. Agrega fondos en Settings > Workspace > Usage." }), {
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       throw new Error(`AI gateway error: ${aiResp.status}`);
     }
 
     const aiData = await aiResp.json();
     let aiAnswer = aiData.choices?.[0]?.message?.content || "";
 
-    // Parse sources from AI response
+    // Parse sources
     const fuentes: any[] = [];
     const fuentesSeparator = "---FUENTES---";
     if (aiAnswer.includes(fuentesSeparator)) {
@@ -573,52 +359,21 @@ Incluye SOLO los pasajes textuales específicos que fundamentan tu respuesta.`;
       const fuenteRegex = /\[DOCUMENTO:\s*([^\]]+)\]\s*([\s\S]*?)(?=\[DOCUMENTO:|$)/g;
       let fm;
       while ((fm = fuenteRegex.exec(fuentesText)) !== null) {
-        fuentes.push({
-          documento: fm[1].trim(),
-          extracto_relevante: fm[2].trim(),
-        });
+        fuentes.push({ documento: fm[1].trim(), extracto_relevante: fm[2].trim() });
       }
       if (fuentes.length === 0 && fuentesText.length > 10) {
-        fuentes.push({
-          documento: "Fuentes del proceso",
-          extracto_relevante: fuentesText,
-        });
+        fuentes.push({ documento: "Fuentes del proceso", extracto_relevante: fuentesText });
       }
     }
 
-    // Fallback: add document names if no structured sources
-    if (fuentes.length === 0) {
-      if (textDocuments.length > 0) {
-        for (const dt of textDocuments) {
-          fuentes.push({
-            documento: dt.nombre,
-            extracto: dt.contenido.substring(0, 500) + (dt.contenido.length > 500 ? "..." : ""),
-          });
-        }
-      }
-      if (fileNames.length > 0 && fuentes.length === 0) {
-        fuentes.push({
-          documento: "Documentos analizados",
-          extracto_relevante: `Se analizaron los siguientes archivos: ${fileNames.join(", ")}`,
-        });
-      }
-      if (licitacion?.especificaciones) {
-        fuentes.push({
-          documento: "Especificaciones Técnicas",
-          extracto: licitacion.especificaciones.substring(0, 500) + (licitacion.especificaciones.length > 500 ? "..." : ""),
-        });
-      }
+    if (fuentes.length === 0 && fileNames.length > 0) {
+      fuentes.push({ documento: "Documentos analizados", extracto_relevante: `Se analizaron: ${fileNames.join(", ")}` });
     }
 
-    // Update the pregunta with AI answer
     const { error: uErr } = await supabase
       .from("LicitacionPreguntas")
-      .update({
-        respuesta_ia: aiAnswer,
-        respuesta_ia_fuentes: fuentes,
-      })
+      .update({ respuesta_ia: aiAnswer, respuesta_ia_fuentes: fuentes })
       .eq("id", preguntaId);
-
     if (uErr) throw uErr;
 
     return new Response(JSON.stringify({ success: true, respuesta_ia: aiAnswer, fuentes }), {
@@ -628,10 +383,7 @@ Incluye SOLO los pasajes textuales específicos que fundamentan tu respuesta.`;
     console.error("licitacion-pregunta-ia error:", e);
     return new Response(
       JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
 });

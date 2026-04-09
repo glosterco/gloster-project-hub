@@ -85,7 +85,7 @@ const LicitacionAcceso = () => {
 
   // Inline edit item state
   const [editingItemId, setEditingItemId] = useState<number | null>(null);
-  const [editItemValues, setEditItemValues] = useState<{ cantidad: string; pu: string }>({ cantidad: '', pu: '' });
+  const [editItemValues, setEditItemValues] = useState<{ cantidad: string; pu: string; unidad: string }>({ cantidad: '', pu: '', unidad: '' });
 
   // Per-bidder GG / Utilidades
   const [bidderGG, setBidderGG] = useState('');
@@ -430,7 +430,27 @@ const LicitacionAcceso = () => {
     setEditItemValues({
       cantidad: item.cantidad?.toString() || '',
       pu: item.precio_unitario?.toString() || '',
+      unidad: item.unidad?.toString() || '',
     });
+  };
+
+  // Ensure an oferta record exists for this bidder, return its id
+  const ensureOferta = async (): Promise<number | null> => {
+    if (miOferta) return miOferta.id;
+    if (!licitacionId) return null;
+    const { data, error } = await supabase
+      .from('LicitacionOfertas')
+      .insert({
+        licitacion_id: licitacionId,
+        oferente_email: oferenteEmail.toLowerCase().trim(),
+        estado: 'borrador',
+      })
+      .select('id')
+      .single();
+    if (error) { console.error(error); return null; }
+    // Refresh to get the new oferta
+    fetchData();
+    return data.id;
   };
 
   const saveEditItem = async () => {
@@ -440,11 +460,49 @@ const LicitacionAcceso = () => {
       const cantidad = parseFloat(editItemValues.cantidad) || null;
       const pu = parseFloat(editItemValues.pu) || null;
       const total = cantidad && pu ? cantidad * pu : null;
-      const { error } = await supabase
-        .from('LicitacionItems')
-        .update({ cantidad, precio_unitario: pu, precio_total: total })
-        .eq('id', editingItemId);
-      if (error) throw error;
+      const unidad = editItemValues.unidad.trim() || null;
+
+      // Find the item being edited
+      const editedItem = allItems.find((i: any) => i.id === editingItemId);
+      
+      if (editedItem && !editedItem.agregado_por_oferente) {
+        // Mandante item → save override to LicitacionOfertaItems
+        const ofertaId = await ensureOferta();
+        if (!ofertaId) throw new Error('No se pudo crear la oferta');
+
+        // Check if an override already exists
+        const existingOverride = miOfertaItems.find((oi: any) => oi.item_referencia_id === editingItemId);
+        
+        if (existingOverride) {
+          const { error } = await supabase
+            .from('LicitacionOfertaItems')
+            .update({ cantidad, precio_unitario: pu, precio_total: total, unidad })
+            .eq('id', existingOverride.id);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase
+            .from('LicitacionOfertaItems')
+            .insert({
+              oferta_id: ofertaId,
+              item_referencia_id: editingItemId,
+              descripcion: editedItem.descripcion,
+              unidad,
+              cantidad,
+              precio_unitario: pu,
+              precio_total: total,
+              orden: editedItem.orden || 0,
+            });
+          if (error) throw error;
+        }
+      } else {
+        // Bidder-added item → update LicitacionItems directly (RLS allows this)
+        const { error } = await supabase
+          .from('LicitacionItems')
+          .update({ cantidad, precio_unitario: pu, precio_total: total, unidad })
+          .eq('id', editingItemId);
+        if (error) throw error;
+      }
+
       setEditingItemId(null);
       toast({ title: "Partida actualizada" });
       fetchData();
@@ -857,7 +915,23 @@ const LicitacionAcceso = () => {
       fecha_fin: ronda?.fecha_cierre || null,
     };
   });
-  const combinedItemNodes = buildHierarchicalItems(allItems.filter(i => !i.agregado_por_oferente || i.oferente_email === visibleEmail));
+  // Merge bidder's oferta item overrides onto mandante items
+  const mergedItems = allItems.filter(i => !i.agregado_por_oferente || i.oferente_email === visibleEmail).map((item: any) => {
+    if (item.agregado_por_oferente) return item;
+    // Check if bidder has an override in LicitacionOfertaItems
+    const override = miOfertaItems.find((oi: any) => oi.item_referencia_id === item.id);
+    if (override) {
+      return {
+        ...item,
+        cantidad: override.cantidad ?? item.cantidad,
+        precio_unitario: override.precio_unitario ?? item.precio_unitario,
+        precio_total: override.precio_total ?? item.precio_total,
+        unidad: override.unidad ?? item.unidad,
+      };
+    }
+    return item;
+  });
+  const combinedItemNodes = buildHierarchicalItems(mergedItems);
   const mandanteItemNodes = combinedItemNodes.filter(({ item }) => !item.agregado_por_oferente);
   const bidderItemNodes = combinedItemNodes.filter(({ item }) => item.agregado_por_oferente && item.oferente_email === visibleEmail);
   const combinedItems = combinedItemNodes.map(({ item }) => item);

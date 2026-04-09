@@ -51,6 +51,7 @@ const LicitacionPreguntasTab: React.FC<Props> = ({
   const [batchAnswer, setBatchAnswer] = useState('');
   const [selectedSimilar, setSelectedSimilar] = useState<Set<number>>(new Set());
   const [batchGeneratingIA, setBatchGeneratingIA] = useState(false);
+  const [expandedDoc, setExpandedDoc] = useState<number | null>(null);
 
   const sentPreguntasByRonda = (rondaId: number) =>
     preguntas.filter(p => p.ronda_id === rondaId && p.enviada);

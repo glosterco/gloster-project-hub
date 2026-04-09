@@ -118,7 +118,33 @@ IMPORTANTE:
 - Responde siempre en español chileno.
 - Si el usuario menciona empresa junto al correo del oferente, consérvala en cada elemento de "oferentes_emails".
 - gastos_generales, utilidades e iva_porcentaje se incluyen en el JSON solo si el usuario confirmó que los oferentes deben considerarlos. Si no, déjalos en 0.
-- El campo "divisa" debe ser "UF", "CLP" o "abierto" según lo que indique el usuario.`;
+- El campo "divisa" debe ser "UF", "CLP" o "abierto" según lo que indique el usuario.
+
+## RESUMEN EN TIEMPO REAL (OBLIGATORIO):
+
+En CADA respuesta que des (excepto el saludo inicial), debes incluir al final un bloque JSON oculto con el resumen de lo que se ha recopilado hasta el momento. Usa este formato:
+
+\`\`\`json_resumen
+{
+  "nombre": "string o null si no se ha definido",
+  "descripcion": "string o null",
+  "divisa": "UF | CLP | abierto | null",
+  "oferentes": ["email1@example.com", "Empresa <email2@example.com>"],
+  "calendario": [
+    {"titulo": "string", "fecha": "ISO date", "fecha_fin": "ISO date o null", "esRondaPreguntas": false}
+  ],
+  "items_count": 0,
+  "itemizado_compartido": true
+}
+\`\`\`
+
+Reglas del json_resumen:
+- Inclúyelo en CADA respuesta después del texto conversacional.
+- Solo incluye los campos que ya se han confirmado o mencionado. Usa null para campos no definidos aún.
+- El array "oferentes" solo incluye los emails/empresas ya mencionados por el usuario.
+- El array "calendario" solo incluye eventos ya definidos con fechas.
+- "items_count" es el número de partidas del itemizado si se han mencionado (0 si no hay).
+- Este bloque NO se muestra al usuario, es para uso interno del sistema.`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {

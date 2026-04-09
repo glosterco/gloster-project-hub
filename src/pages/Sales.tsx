@@ -1,13 +1,19 @@
-import React from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight, ArrowRight, Gavel, HardHat } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
+const teamMembers = [
+  { name: "Nombre Fundador 1", role: "Ingeniero Civil", position: "CEO & Co-Founder", photo: "/placeholder.svg" },
+  { name: "Nombre Fundador 2", role: "Ingeniero Comercial", position: "COO & Co-Founder", photo: "/placeholder.svg" },
+  { name: "Nombre Fundador 3", role: "Ingeniero en Computación", position: "CTO & Co-Founder", photo: "/placeholder.svg" },
+];
+
 const Sales = () => {
   const [current, setCurrent] = useState(0);
   const [direction, setDirection] = useState(0);
+  const [lightbox, setLightbox] = useState<{ src: string; name: string; role: string; position: string } | null>(null);
   const navigate = useNavigate();
   const total = 3;
 
@@ -39,10 +45,10 @@ const Sales = () => {
     <div className="h-screen w-screen overflow-hidden bg-background relative select-none font-sans">
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 z-50 bg-white border-b border-border/30 px-6 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <button onClick={() => go(0)} className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity">
           <img src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" alt="Gloster" className="w-7 h-7" />
           <span className="text-sm font-semibold tracking-tight text-foreground">Gloster</span>
-        </div>
+        </button>
         <div className="flex-1 mx-8 flex gap-1.5 max-w-md">
           {[0, 1, 2].map((i) => (
             <button key={i} onClick={() => go(i)} className="flex-1 h-1 rounded-full transition-all duration-500 cursor-pointer" style={{ backgroundColor: i <= current ? "hsl(var(--brand-yellow))" : "hsl(0 0% 88%)" }} />
@@ -65,9 +71,23 @@ const Sales = () => {
           className="absolute inset-0 pt-12"
         >
           {current === 0 && <BrandSlide onCTA={() => next()} />}
-          {current === 1 && <AboutSlide onCTA={() => next()} />}
+          {current === 1 && <AboutSlide onCTA={() => next()} onPhotoClick={setLightbox} />}
           {current === 2 && <ToolsSlide onNavigate={navigate} />}
         </motion.div>
+      </AnimatePresence>
+
+      {/* Lightbox for team photos */}
+      <AnimatePresence>
+        {lightbox && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-8 cursor-pointer" onClick={() => setLightbox(null)}>
+            <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }} transition={{ duration: 0.3 }} className="flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
+              <img src={lightbox.src} alt={lightbox.name} className="w-64 h-64 rounded-2xl object-cover shadow-2xl mb-6" />
+              <h3 className="text-2xl font-bold text-white">{lightbox.name}</h3>
+              <p className="text-white/70 text-base">{lightbox.role}</p>
+              <p className="text-brand-yellow text-sm font-medium mt-1">{lightbox.position}</p>
+            </motion.div>
+          </motion.div>
+        )}
       </AnimatePresence>
 
       {/* Navigation */}
@@ -89,79 +109,111 @@ const Sales = () => {
 };
 
 const BrandSlide: React.FC<{ onCTA: () => void }> = ({ onCTA }) => (
-  <div className="h-full w-full bg-gradient-to-br from-primary via-primary/95 to-primary/85 flex items-center justify-center px-8">
-    <div className="text-center flex flex-col items-center">
+  <div className="h-full w-full bg-background flex items-center justify-center px-8">
+    <div className="flex items-center gap-10">
       <motion.img
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ delay: 0.2, duration: 0.7 }}
         src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png"
         alt="Gloster"
-        className="w-28 h-28 md:w-36 md:h-36 mb-8"
+        className="w-40 h-40 md:w-52 md:h-52 object-contain flex-shrink-0"
       />
-      <motion.h1
-        initial={{ y: 30, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.4, duration: 0.6 }}
-        className="text-6xl md:text-8xl font-bold text-primary-foreground tracking-tight mb-4"
-      >
-        Gloster
-      </motion.h1>
-      <motion.p
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.6, duration: 0.6 }}
-        className="text-xl md:text-2xl text-primary-foreground/70 font-light max-w-xl leading-relaxed"
-      >
-        Tecnología para la construcción
-      </motion.p>
-      <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.85, duration: 0.5 }} className="mt-10">
-        <Button size="lg" onClick={onCTA} className="bg-brand-yellow text-brand-yellow-foreground hover:bg-brand-yellow/90 px-8 py-3 text-base font-medium">
-          Conocer más <ArrowRight className="w-4 h-4 ml-2" />
-        </Button>
-      </motion.div>
+      <div className="flex flex-col justify-center">
+        <motion.h1
+          initial={{ y: 30, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.4, duration: 0.6 }}
+          className="text-6xl md:text-8xl font-bold text-foreground tracking-tight"
+        >
+          Gloster
+        </motion.h1>
+        <motion.p
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.6, duration: 0.6 }}
+          className="text-xl md:text-2xl text-muted-foreground font-light leading-relaxed mt-2"
+        >
+          Tecnología para la construcción
+        </motion.p>
+        <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.85, duration: 0.5 }} className="mt-8">
+          <Button size="lg" onClick={onCTA} className="bg-brand-yellow text-brand-yellow-foreground hover:bg-brand-yellow/90 px-8 py-3 text-base font-medium">
+            Conocer más <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
+        </motion.div>
+      </div>
     </div>
   </div>
 );
 
-const AboutSlide: React.FC<{ onCTA: () => void }> = ({ onCTA }) => (
+interface AboutSlideProps {
+  onCTA: () => void;
+  onPhotoClick: (data: { src: string; name: string; role: string; position: string }) => void;
+}
+
+const AboutSlide: React.FC<AboutSlideProps> = ({ onCTA, onPhotoClick }) => (
   <div className="h-full w-full bg-background flex items-center justify-center px-8">
-    <div className="max-w-2xl text-center">
-      <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2, duration: 0.5 }}>
-        <div className="w-10 h-1 bg-brand-yellow rounded-full mb-6 mx-auto" />
-      </motion.div>
-      <motion.h2
-        initial={{ y: 30, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.3, duration: 0.6 }}
-        className="text-4xl md:text-5xl font-bold text-foreground leading-tight mb-6"
-      >
-        ¿Quiénes somos?
-      </motion.h2>
-      <motion.p
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.45, duration: 0.6 }}
-        className="text-lg text-muted-foreground leading-relaxed mb-6"
-      >
-        Somos un equipo que conoce de primera mano los problemas de gestión en la industria de la construcción. Planillas interminables, correos perdidos, estados de pago que nadie sabe dónde están, procesos de licitación que toman semanas de trabajo manual.
-      </motion.p>
-      <motion.p
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.55, duration: 0.6 }}
-        className="text-lg text-muted-foreground leading-relaxed mb-10"
-      >
-        Creamos Gloster para resolver eso: una plataforma que centraliza, ordena y automatiza la gestión de proyectos de construcción. Sin complejidad innecesaria, con herramientas que realmente se usan.
-      </motion.p>
-      <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.7, duration: 0.5 }}>
-        <Button size="lg" onClick={onCTA} className="bg-brand-yellow text-brand-yellow-foreground hover:bg-brand-yellow/90 px-8 py-3 text-base font-medium">
-          Ver herramientas <ArrowRight className="w-4 h-4 ml-2" />
-        </Button>
-      </motion.div>
+    <div className="max-w-5xl w-full flex flex-col md:flex-row items-center gap-10">
+      {/* Team photos on the left */}
+      <div className="flex md:flex-col gap-4 flex-shrink-0">
+        {teamMembers.map((member, i) => (
+          <motion.div
+            key={i}
+            initial={{ x: -30, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ delay: 0.3 + i * 0.15, duration: 0.5 }}
+            className="w-28 h-28 md:w-32 md:h-32 rounded-xl overflow-hidden cursor-pointer transition-transform duration-300 hover:scale-[1.05] hover:shadow-lg border border-border/50"
+            onClick={() => onPhotoClick({ src: member.photo, name: member.name, role: member.role, position: member.position })}
+          >
+            <img src={member.photo} alt={member.name} className="w-full h-full object-cover" />
+          </motion.div>
+        ))}
+      </div>
+      {/* Text on the right */}
+      <div className="flex-1">
+        <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2, duration: 0.5 }}>
+          <div className="w-10 h-1 bg-brand-yellow rounded-full mb-6" />
+        </motion.div>
+        <motion.h2
+          initial={{ y: 30, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.3, duration: 0.6 }}
+          className="text-4xl md:text-5xl font-bold text-foreground leading-tight mb-6"
+        >
+          ¿Quiénes somos?
+        </motion.h2>
+        <motion.p
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.45, duration: 0.6 }}
+          className="text-lg text-muted-foreground leading-relaxed mb-6"
+        >
+          Somos un equipo que conoce de primera mano los problemas de gestión en la industria de la construcción. Planillas interminables, correos perdidos, estados de pago que nadie sabe dónde están, procesos de licitación que toman semanas de trabajo manual.
+        </motion.p>
+        <motion.p
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.55, duration: 0.6 }}
+          className="text-lg text-muted-foreground leading-relaxed mb-10"
+        >
+          Creamos Gloster para resolver eso: una plataforma que centraliza, ordena y automatiza la gestión de proyectos de construcción. Sin complejidad innecesaria, con herramientas que realmente se usan.
+        </motion.p>
+        <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.7, duration: 0.5 }}>
+          <Button size="lg" onClick={onCTA} className="bg-brand-yellow text-brand-yellow-foreground hover:bg-brand-yellow/90 px-8 py-3 text-base font-medium">
+            Ver herramientas <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
+        </motion.div>
+      </div>
     </div>
   </div>
 );
+
+const shakeAnimation = {
+  hover: {
+    x: [0, -3, 3, -3, 3, 0],
+    transition: { duration: 0.4, ease: "easeInOut" }
+  }
+};
 
 const ToolsSlide: React.FC<{ onNavigate: (path: string) => void }> = ({ onNavigate }) => (
   <div className="h-full w-full bg-background flex items-center justify-center px-8">
@@ -191,38 +243,36 @@ const ToolsSlide: React.FC<{ onNavigate: (path: string) => void }> = ({ onNaviga
           initial={{ y: 30, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.5, duration: 0.5 }}
+          whileHover="hover"
+          variants={shakeAnimation}
           onClick={() => onNavigate("/sales/licitacion")}
           className="group p-8 rounded-2xl border border-border bg-card hover:border-brand-yellow/50 hover:shadow-lg transition-all duration-300 text-left cursor-pointer"
         >
-          <div className="w-16 h-16 rounded-2xl bg-brand-yellow/10 flex items-center justify-center mb-5 group-hover:bg-brand-yellow/20 transition-colors">
-            <Gavel className="w-8 h-8 text-brand-yellow-foreground" />
+          <div className="w-20 h-20 rounded-2xl bg-brand-yellow/10 flex items-center justify-center mb-5 group-hover:bg-brand-yellow/20 transition-colors">
+            <Gavel className="w-10 h-10 text-brand-yellow-foreground" />
           </div>
-          <h3 className="text-xl font-bold text-foreground mb-2">Licitaciones</h3>
+          <h3 className="text-2xl font-bold text-brand-yellow-foreground mb-2">Licitaciones</h3>
           <p className="text-sm text-muted-foreground leading-relaxed">
             Crea, gestiona y adjudica procesos de licitación con asistencia de IA. Itemizados, rondas de preguntas y comparación de ofertas.
           </p>
-          <div className="mt-4 flex items-center text-sm font-medium text-brand-yellow-foreground group-hover:gap-2 transition-all">
-            Ver presentación <ArrowRight className="w-4 h-4 ml-1" />
-          </div>
         </motion.button>
 
         <motion.button
           initial={{ y: 30, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.6, duration: 0.5 }}
+          whileHover="hover"
+          variants={shakeAnimation}
           onClick={() => onNavigate("/sales/subcontratos")}
           className="group p-8 rounded-2xl border border-border bg-card hover:border-brand-yellow/50 hover:shadow-lg transition-all duration-300 text-left cursor-pointer"
         >
-          <div className="w-16 h-16 rounded-2xl bg-brand-yellow/10 flex items-center justify-center mb-5 group-hover:bg-brand-yellow/20 transition-colors">
-            <HardHat className="w-8 h-8 text-brand-yellow-foreground" />
+          <div className="w-20 h-20 rounded-2xl bg-brand-yellow/10 flex items-center justify-center mb-5 group-hover:bg-brand-yellow/20 transition-colors">
+            <HardHat className="w-10 h-10 text-brand-yellow-foreground" />
           </div>
-          <h3 className="text-xl font-bold text-foreground mb-2">Subcontratos</h3>
+          <h3 className="text-2xl font-bold text-brand-yellow-foreground mb-2">Subcontratos</h3>
           <p className="text-sm text-muted-foreground leading-relaxed">
             Controla estados de pago, documentos, presupuesto, RFI y adicionales de todos tus subcontratos en un solo lugar.
           </p>
-          <div className="mt-4 flex items-center text-sm font-medium text-brand-yellow-foreground group-hover:gap-2 transition-all">
-            Ver presentación <ArrowRight className="w-4 h-4 ml-1" />
-          </div>
         </motion.button>
       </div>
     </div>

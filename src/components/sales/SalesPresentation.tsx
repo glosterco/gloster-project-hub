@@ -174,10 +174,10 @@ const SalesPresentation: React.FC<SalesPresentationProps> = ({ slides }) => {
   return (
     <div className="h-screen w-screen overflow-hidden bg-background relative select-none font-sans">
       <div className="absolute top-0 left-0 right-0 z-50 bg-white border-b border-border/30 px-6 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <a href="/sales" className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity">
           <img src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" alt="Gloster" className="w-7 h-7" />
           <span className="text-sm font-semibold tracking-tight text-foreground">Gloster</span>
-        </div>
+        </a>
         <div className="flex-1 mx-8 flex gap-1.5 max-w-md">
           {slides.map((_, i) => (
             <button key={i} onClick={() => go(i)} className="flex-1 h-1 rounded-full transition-all duration-500 cursor-pointer" style={{ backgroundColor: i <= current ? "hsl(var(--brand-yellow))" : "hsl(0 0% 88%)" }} />

@@ -334,7 +334,7 @@ const ToolsSlide: React.FC<{ onNavigate: (path: string) => void }> = ({ onNaviga
           onClick={() => onNavigate("/sales/licitacion")}
           className="group p-8 rounded-2xl border border-border bg-card hover:border-brand-yellow/50 hover:shadow-lg transition-all duration-300 text-left cursor-pointer"
         >
-          <div className="w-20 h-20 rounded-2xl bg-brand-yellow/10 flex items-center justify-center mb-5 group-hover:bg-brand-yellow/20 transition-colors">
+          <div className="w-30 h-20 rounded-2xl bg-brand-yellow/10 flex items-center justify-center mb-5 group-hover:bg-brand-yellow/20 transition-colors">
             <Gavel className="w-10 h-10 text-brand-yellow-foreground" />
           </div>
           <h3 className="text-2xl font-bold text-brand-yellow-foreground mb-2">Licitaciones</h3>
@@ -352,12 +352,12 @@ const ToolsSlide: React.FC<{ onNavigate: (path: string) => void }> = ({ onNaviga
           onClick={() => onNavigate("/sales/subcontratos")}
           className="group p-8 rounded-2xl border border-border bg-card hover:border-brand-yellow/50 hover:shadow-lg transition-all duration-300 text-left cursor-pointer"
         >
-          <div className="w-20 h-20 rounded-2xl bg-brand-yellow/10 flex items-center justify-center mb-5 group-hover:bg-brand-yellow/20 transition-colors">
+          <div className="w-30 h-20 rounded-2xl bg-brand-yellow/10 flex items-center justify-center mb-5 group-hover:bg-brand-yellow/20 transition-colors">
             <HardHat className="w-10 h-10 text-brand-yellow-foreground" />
           </div>
           <h3 className="text-2xl font-bold text-brand-yellow-foreground mb-2">Subcontratos</h3>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Controla EDP, documentos, presupuesto, RFI y adicionales de tus subcontratos.
+            Controla estados de pago, documentos, presupuesto, RFI y adicionales de tus subcontratos.
           </p>
         </motion.button>
       </div>

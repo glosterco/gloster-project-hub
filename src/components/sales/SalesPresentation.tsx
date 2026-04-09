@@ -216,16 +216,16 @@ const SalesPresentation: React.FC<SalesPresentationProps> = ({ slides, onPrevFro
         )}
       </AnimatePresence>
 
-      <div className="absolute bottom-6 left-0 right-0 z-50 flex items-center justify-between px-8">
-        <Button variant="ghost" size="sm" onClick={prev} disabled={current === 0} className="text-muted-foreground hover:text-foreground disabled:opacity-0 transition-opacity">
+      <div className="absolute bottom-2 md:bottom-6 left-0 right-0 z-50 flex items-center justify-between px-4 md:px-8">
+        <Button variant="ghost" size="sm" onClick={prev} disabled={current === 0} className="text-muted-foreground hover:text-foreground disabled:opacity-0 transition-opacity hidden md:flex">
           <ChevronLeft className="w-4 h-4 mr-1" /> Anterior
         </Button>
-        <div className="flex gap-2">
+        <div className="flex gap-1.5 md:gap-2 mx-auto md:mx-0">
           {slides.map((_, i) => (
-            <button key={i} onClick={() => go(i)} className={`w-2 h-2 rounded-full transition-all duration-300 ${i === current ? "bg-brand-yellow w-6" : "bg-muted-foreground/30 hover:bg-muted-foreground/50"}`} />
+            <button key={i} onClick={() => go(i)} className={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full transition-all duration-300 ${i === current ? "bg-brand-yellow w-4 md:w-6" : "bg-muted-foreground/30 hover:bg-muted-foreground/50"}`} />
           ))}
         </div>
-        <Button variant="ghost" size="sm" onClick={next} disabled={current === total - 1} className="text-muted-foreground hover:text-foreground disabled:opacity-0 transition-opacity">
+        <Button variant="ghost" size="sm" onClick={next} disabled={current === total - 1} className="text-muted-foreground hover:text-foreground disabled:opacity-0 transition-opacity hidden md:flex">
           Siguiente <ChevronRight className="w-4 h-4 ml-1" />
         </Button>
       </div>

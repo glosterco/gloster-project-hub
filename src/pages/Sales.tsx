@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ChevronLeft, ChevronRight, ArrowRight, 
   MessageSquare, FileText, Users, BarChart3, 
-  Shield, Clock, Brain, Zap
+  Shield, Clock, Brain, Zap, Upload, Layers,
+  TrendingUp, Search, GitMerge
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ContactModal from '@/components/ContactModal';
@@ -14,6 +15,12 @@ import ofertasImg from '@/assets/sales/licitaciones-ofertas.jpg';
 import preguntasImg from '@/assets/sales/licitaciones-preguntas.jpg';
 import itemizadoImg from '@/assets/sales/licitaciones-itemizado.jpg';
 
+interface Feature {
+  icon: React.ReactNode;
+  label: string;
+  detail: string;
+}
+
 interface Slide {
   id: number;
   type: 'hero' | 'feature' | 'showcase' | 'cta';
@@ -21,7 +28,8 @@ interface Slide {
   subtitle?: string;
   description?: string;
   image?: string;
-  features?: { icon: React.ReactNode; label: string; detail: string }[];
+  image2?: string;
+  features?: Feature[];
   accent?: string;
   layout?: 'left' | 'right' | 'center';
 }
@@ -52,26 +60,28 @@ const slides: Slide[] = [
   {
     id: 2,
     type: 'showcase',
-    title: 'Itemizado jerárquico preciso',
-    description: 'El sistema analiza tus especificaciones técnicas y genera un itemizado fiel a la estructura original. Códigos A, A.01, B, B.01 respetados tal cual.',
-    image: itemizadoImg,
+    title: 'Gestión centralizada',
+    description: 'Panel completo para administrar todas tus licitaciones activas. Estado, plazos, oferentes invitados y documentación en un solo dashboard.',
+    image: dashboardImg,
+    image2: dashboardImg,
     layout: 'left',
     features: [
-      { icon: <FileText className="w-5 h-5" />, label: 'Jerarquía fiel', detail: 'Respeta la codificación de tus EETT' },
-      { icon: <BarChart3 className="w-5 h-5" />, label: 'Cantidades y unidades', detail: 'Partidas con unidad, cantidad y precio unitario' },
+      { icon: <Users className="w-5 h-5" />, label: 'Multi-oferente', detail: 'Invita y gestiona múltiples oferentes' },
+      { icon: <Clock className="w-5 h-5" />, label: 'Calendario integrado', detail: 'Hitos, rondas de preguntas y plazos' },
+      { icon: <Shield className="w-5 h-5" />, label: 'Acceso controlado', detail: 'Cada oferente ve solo lo que corresponde' },
     ],
   },
   {
     id: 3,
     type: 'feature',
-    title: 'Gestión centralizada',
-    description: 'Panel completo para administrar todas tus licitaciones activas. Estado, plazos, oferentes invitados y documentación en un solo dashboard.',
-    image: dashboardImg,
+    title: 'Itemizado jerárquico preciso',
+    description: 'El sistema analiza tus especificaciones técnicas y genera un itemizado fiel a la estructura original. Códigos A, A.01, B, B.01 respetados tal cual.',
+    image: itemizadoImg,
     layout: 'right',
     features: [
-      { icon: <Users className="w-5 h-5" />, label: 'Multi-oferente', detail: 'Invita y gestiona múltiples oferentes' },
-      { icon: <Clock className="w-5 h-5" />, label: 'Calendario integrado', detail: 'Hitos, rondas de preguntas y plazos' },
-      { icon: <Shield className="w-5 h-5" />, label: 'Acceso controlado', detail: 'Cada oferente ve solo lo que corresponde' },
+      { icon: <FileText className="w-5 h-5" />, label: 'Jerarquía fiel', detail: 'Respeta la codificación de tus EETT' },
+      { icon: <BarChart3 className="w-5 h-5" />, label: 'Cantidades y unidades', detail: 'Partidas con unidad, cantidad y precio unitario' },
+      { icon: <Upload className="w-5 h-5" />, label: 'Múltiples formas de crear', detail: 'Importa un archivo, usa asistencia IA o crea manualmente' },
     ],
   },
   {
@@ -84,6 +94,7 @@ const slides: Slide[] = [
     features: [
       { icon: <MessageSquare className="w-5 h-5" />, label: 'Q&A estructurado', detail: 'Rondas organizadas con trazabilidad' },
       { icon: <Brain className="w-5 h-5" />, label: 'Respuestas IA', detail: 'Sugerencias automáticas desde tus EETT' },
+      { icon: <GitMerge className="w-5 h-5" />, label: 'Respuestas múltiples', detail: 'Agrupa preguntas similares y responde simultáneamente para ahorrar tiempo' },
     ],
   },
   {
@@ -96,6 +107,7 @@ const slides: Slide[] = [
     features: [
       { icon: <BarChart3 className="w-5 h-5" />, label: 'Side by side', detail: 'Compara precios por partida entre oferentes' },
       { icon: <FileText className="w-5 h-5" />, label: 'Documentación', detail: 'Ofertas con archivos adjuntos organizados' },
+      { icon: <TrendingUp className="w-5 h-5" />, label: 'Análisis automático', detail: 'Detecta desviaciones de precio, cantidades y proyecta la mejor oferta combinada (cherry picking)' },
     ],
   },
   {
@@ -142,35 +154,36 @@ const Sales = () => {
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-background relative select-none font-sans">
-      {/* Progress bar */}
-      <div className="absolute top-0 left-0 right-0 z-50 flex gap-1 px-4 pt-3">
-        {slides.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => go(i)}
-            className="flex-1 h-1 rounded-full transition-all duration-500 cursor-pointer"
-            style={{
-              backgroundColor: i <= current 
-                ? 'hsl(var(--brand-yellow))' 
-                : 'hsl(var(--muted-foreground) / 0.2)',
-            }}
+      {/* White header banner */}
+      <div className="absolute top-0 left-0 right-0 z-50 bg-white border-b border-border/30 px-6 py-3 flex items-center justify-between">
+        {/* Logo */}
+        <div className="flex items-center gap-2">
+          <img 
+            src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
+            alt="Gloster" 
+            className="w-7 h-7"
           />
-        ))}
-      </div>
+          <span className="text-sm font-semibold tracking-tight text-gray-900">Gloster</span>
+        </div>
 
-      {/* Logo */}
-      <div className="absolute top-6 left-6 z-50 flex items-center gap-2">
-        <img 
-          src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" 
-          alt="Gloster" 
-          className="w-7 h-7"
-        />
-        <span className="text-sm font-semibold tracking-tight text-foreground">Gloster</span>
-      </div>
+        {/* Progress bar */}
+        <div className="flex-1 mx-8 flex gap-1.5 max-w-md">
+          {slides.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => go(i)}
+              className="flex-1 h-1 rounded-full transition-all duration-500 cursor-pointer"
+              style={{
+                backgroundColor: i <= current 
+                  ? 'hsl(var(--brand-yellow))' 
+                  : 'hsl(0 0% 88%)',
+              }}
+            />
+          ))}
+        </div>
 
-      {/* Slide counter */}
-      <div className="absolute top-6 right-6 z-50">
-        <span className="text-xs text-muted-foreground font-mono">
+        {/* Slide counter */}
+        <span className="text-xs text-gray-500 font-mono">
           {String(current + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}
         </span>
       </div>
@@ -185,7 +198,7 @@ const Sales = () => {
           animate="center"
           exit="exit"
           transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="absolute inset-0"
+          className="absolute inset-0 pt-12"
         >
           {slide.type === 'hero' && <HeroSlide slide={slide} onCTA={() => next()} />}
           {slide.type === 'cta' && <CTASlide slide={slide} onCTA={() => setIsContactOpen(true)} />}
@@ -208,7 +221,6 @@ const Sales = () => {
           Anterior
         </Button>
 
-        {/* Dot nav */}
         <div className="flex gap-2">
           {slides.map((_, i) => (
             <button
@@ -289,7 +301,7 @@ const HeroSlide: React.FC<{ slide: Slide; onCTA: () => void }> = ({ slide, onCTA
 
 const CTASlide: React.FC<{ slide: Slide; onCTA: () => void }> = ({ slide, onCTA }) => (
   <div className={`h-full w-full bg-gradient-to-br ${slide.accent} flex items-center justify-center px-8`}>
-    <div className="max-w-2xl text-center">
+    <div className="max-w-3xl text-center">
       <motion.h1
         initial={{ y: 40, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -302,15 +314,32 @@ const CTASlide: React.FC<{ slide: Slide; onCTA: () => void }> = ({ slide, onCTA 
         initial={{ y: 30, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.35, duration: 0.6 }}
-        className="text-lg text-primary-foreground/80 mb-10"
+        className="text-lg text-primary-foreground/80 mb-8"
       >
         {slide.description}
       </motion.p>
+
+      {/* Video embed placeholder */}
       <motion.div
         initial={{ y: 30, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.5, duration: 0.5 }}
-        className="flex flex-col sm:flex-row gap-4 justify-center"
+        transition={{ delay: 0.45, duration: 0.6 }}
+        className="max-w-2xl mx-auto mb-8 rounded-xl overflow-hidden border border-primary-foreground/20 bg-black/20 aspect-video flex items-center justify-center"
+      >
+        {/* Replace the div below with an iframe or video element */}
+        {/* Example: <iframe src="https://www.loom.com/embed/VIDEO_ID" allowFullScreen className="w-full h-full" /> */}
+        <div className="text-primary-foreground/40 text-sm flex flex-col items-center gap-2">
+          <div className="w-16 h-16 rounded-full border-2 border-primary-foreground/30 flex items-center justify-center">
+            <div className="w-0 h-0 border-l-[12px] border-l-primary-foreground/40 border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent ml-1" />
+          </div>
+          <span>Video demo</span>
+        </div>
+      </motion.div>
+
+      <motion.div
+        initial={{ y: 30, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.6, duration: 0.5 }}
       >
         <Button
           size="lg"
@@ -320,14 +349,6 @@ const CTASlide: React.FC<{ slide: Slide; onCTA: () => void }> = ({ slide, onCTA 
           Agendar Demo
           <ArrowRight className="w-4 h-4 ml-2" />
         </Button>
-        <Button
-          size="lg"
-          variant="outline"
-          onClick={() => window.open('https://loom.com/share/folder/a4fd94baeb5642bcb1339ced7936e4b5', '_blank')}
-          className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 px-8 py-3 text-base"
-        >
-          Ver videos demo
-        </Button>
       </motion.div>
     </div>
   </div>
@@ -335,6 +356,7 @@ const CTASlide: React.FC<{ slide: Slide; onCTA: () => void }> = ({ slide, onCTA 
 
 const FeatureSlide: React.FC<{ slide: Slide }> = ({ slide }) => {
   const isLeft = slide.layout === 'left';
+  const hasTwoImages = !!slide.image2;
   
   return (
     <div className="h-full w-full flex items-center bg-background">
@@ -345,9 +367,9 @@ const FeatureSlide: React.FC<{ slide: Slide }> = ({ slide }) => {
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.3, duration: 0.6 }}
-            className="relative w-full max-w-2xl"
+            className={`relative w-full max-w-2xl ${hasTwoImages ? 'flex flex-col gap-4' : ''}`}
           >
-            <div className="rounded-xl overflow-hidden shadow-2xl border border-border/50">
+            <div className={`rounded-xl overflow-hidden shadow-2xl border border-border/50 ${hasTwoImages ? '' : ''}`}>
               <img 
                 src={slide.image} 
                 alt={slide.title}
@@ -355,7 +377,16 @@ const FeatureSlide: React.FC<{ slide: Slide }> = ({ slide }) => {
                 loading="lazy"
               />
             </div>
-            {/* Subtle glow */}
+            {hasTwoImages && (
+              <div className="rounded-xl overflow-hidden shadow-2xl border border-border/50">
+                <img 
+                  src={slide.image2} 
+                  alt={`${slide.title} - vista adicional`}
+                  className="w-full h-auto"
+                  loading="lazy"
+                />
+              </div>
+            )}
             <div className="absolute -inset-4 bg-brand-yellow/5 rounded-2xl -z-10 blur-2xl" />
           </motion.div>
         </div>

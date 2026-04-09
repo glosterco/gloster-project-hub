@@ -198,6 +198,7 @@ const Sales = () => {
   const [current, setCurrent] = useState(0);
   const [direction, setDirection] = useState(0);
   const [isContactOpen, setIsContactOpen] = useState(false);
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const total = slides.length;
 
   const go = useCallback(
@@ -279,8 +280,32 @@ const Sales = () => {
         >
           {slide.type === "hero" && <HeroSlide slide={slide} onCTA={() => next()} />}
           {slide.type === "cta" && <CTASlide slide={slide} onCTA={() => setIsContactOpen(true)} />}
-          {(slide.type === "feature" || slide.type === "showcase") && <FeatureSlide slide={slide} />}
+          {(slide.type === "feature" || slide.type === "showcase") && <FeatureSlide slide={slide} onImageClick={setLightboxSrc} />}
         </motion.div>
+      </AnimatePresence>
+
+      {/* Lightbox */}
+      <AnimatePresence>
+        {lightboxSrc && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-8 cursor-pointer"
+            onClick={() => setLightboxSrc(null)}
+          >
+            <motion.img
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              src={lightboxSrc}
+              alt="Vista ampliada"
+              className="max-w-[90vw] max-h-[85vh] rounded-xl shadow-2xl object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </motion.div>
+        )}
       </AnimatePresence>
 
       {/* Navigation */}
@@ -372,46 +397,30 @@ const HeroSlide: React.FC<{ slide: Slide; onCTA: () => void }> = ({ slide, onCTA
 );
 
 const CTASlide: React.FC<{ slide: Slide; onCTA: () => void }> = ({ slide, onCTA }) => (
-  <div className={`h-full w-full bg-gradient-to-br ${slide.accent} flex items-center justify-center px-8`}>
-    <div className="max-w-3xl text-center">
+  <div className={`h-full w-full bg-gradient-to-br ${slide.accent} flex items-center justify-center px-6`}>
+    <div className="max-w-3xl w-full text-center flex flex-col items-center">
       <motion.h1
-        initial={{ y: 40, opacity: 0 }}
+        initial={{ y: 30, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.2, duration: 0.6 }}
-        className="text-4xl md:text-5xl font-bold text-primary-foreground leading-tight mb-6"
+        className="text-3xl md:text-4xl font-bold text-primary-foreground leading-tight mb-3"
       >
         {slide.title}
       </motion.h1>
       <motion.p
-        initial={{ y: 30, opacity: 0 }}
+        initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.35, duration: 0.6 }}
-        className="text-lg text-primary-foreground/80 mb-8"
+        transition={{ delay: 0.3, duration: 0.6 }}
+        className="text-base text-primary-foreground/80 mb-5"
       >
         {slide.description}
       </motion.p>
 
-      {/* Video embed placeholder */}
       <motion.div
-        initial={{ y: 30, opacity: 0 }}
+        initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.45, duration: 0.6 }}
-        className="max-w-2xl mx-auto mb-8 rounded-xl overflow-hidden border border-primary-foreground/20 bg-black/20 aspect-video flex items-center justify-center"
-      >
-        {/* Replace the div below with an iframe or video element */}
-        {/* Example: <iframe src="https://www.loom.com/embed/VIDEO_ID" allowFullScreen className="w-full h-full" /> */}
-        <div className="text-primary-foreground/40 text-sm flex flex-col items-center gap-2">
-          <div className="w-16 h-16 rounded-full border-2 border-primary-foreground/30 flex items-center justify-center">
-            <div className="w-0 h-0 border-l-[12px] border-l-primary-foreground/40 border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent ml-1" />
-          </div>
-          <span>Video demo</span>
-        </div>
-      </motion.div>
-
-      <motion.div
-        initial={{ y: 30, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.6, duration: 0.5 }}
+        transition={{ delay: 0.4, duration: 0.5 }}
+        className="mb-5"
       >
         <Button
           size="lg"
@@ -422,18 +431,40 @@ const CTASlide: React.FC<{ slide: Slide; onCTA: () => void }> = ({ slide, onCTA 
           <ArrowRight className="w-4 h-4 ml-2" />
         </Button>
       </motion.div>
+
+      <motion.div
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.5, duration: 0.6 }}
+        className="w-full max-w-xl rounded-xl overflow-hidden border border-primary-foreground/20 bg-black/20 aspect-video flex items-center justify-center"
+      >
+        <div className="text-primary-foreground/40 text-sm flex flex-col items-center gap-2">
+          <div className="w-12 h-12 rounded-full border-2 border-primary-foreground/30 flex items-center justify-center">
+            <div className="w-0 h-0 border-l-[10px] border-l-primary-foreground/40 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent ml-1" />
+          </div>
+          <span>Video demo</span>
+        </div>
+      </motion.div>
     </div>
   </div>
 );
 
-const FeatureSlide: React.FC<{ slide: Slide }> = ({ slide }) => {
+const ZoomableImage: React.FC<{ src: string; alt: string; onClick: (src: string) => void }> = ({ src, alt, onClick }) => (
+  <div
+    className="rounded-xl overflow-hidden shadow-2xl border border-border/50 cursor-pointer transition-transform duration-300 hover:scale-[1.03] hover:shadow-[0_0_20px_rgba(0,0,0,0.15)]"
+    onClick={() => onClick(src)}
+  >
+    <img src={src} alt={alt} className="w-full h-auto" loading="lazy" />
+  </div>
+);
+
+const FeatureSlide: React.FC<{ slide: Slide; onImageClick: (src: string) => void }> = ({ slide, onImageClick }) => {
   const isLeft = slide.layout === "left";
   const hasTwoImages = !!slide.image2;
 
   return (
     <div className="h-full w-full flex items-center bg-background">
       <div className={`w-full h-full flex flex-col md:flex-row ${isLeft ? "" : "md:flex-row-reverse"}`}>
-        {/* Image side */}
         <div className="flex-1 relative flex items-center justify-center p-6 md:p-10 bg-muted/30">
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
@@ -441,24 +472,14 @@ const FeatureSlide: React.FC<{ slide: Slide }> = ({ slide }) => {
             transition={{ delay: 0.3, duration: 0.6 }}
             className={`relative w-full max-w-2xl ${hasTwoImages ? "flex flex-col gap-4" : ""}`}
           >
-            <div className={`rounded-xl overflow-hidden shadow-2xl border border-border/50 ${hasTwoImages ? "" : ""}`}>
-              <img src={slide.image} alt={slide.title} className="w-full h-auto" loading="lazy" />
-            </div>
+            <ZoomableImage src={slide.image!} alt={slide.title} onClick={onImageClick} />
             {hasTwoImages && (
-              <div className="rounded-xl overflow-hidden shadow-2xl border border-border/50">
-                <img
-                  src={slide.image2}
-                  alt={`${slide.title} - vista adicional`}
-                  className="w-full h-auto"
-                  loading="lazy"
-                />
-              </div>
+              <ZoomableImage src={slide.image2!} alt={`${slide.title} - vista adicional`} onClick={onImageClick} />
             )}
             <div className="absolute -inset-4 bg-brand-yellow/5 rounded-2xl -z-10 blur-2xl" />
           </motion.div>
         </div>
 
-        {/* Content side */}
         <div className="flex-1 flex items-center justify-center p-8 md:p-12 lg:p-16">
           <div className="max-w-md">
             <motion.div
@@ -498,5 +519,4 @@ const FeatureSlide: React.FC<{ slide: Slide }> = ({ slide }) => {
     </div>
   );
 };
-
 export default Sales;

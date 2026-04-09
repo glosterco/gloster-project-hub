@@ -1,228 +1,29 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  ChevronLeft,
-  ChevronRight,
-  ArrowRight,
-  MessageSquare,
-  FileText,
-  Users,
-  BarChart3,
-  Shield,
-  Clock,
-  Brain,
-  Zap,
-  Upload,
-  Layers,
-  TrendingUp,
-  Search,
-  GitMerge,
-} from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { ChevronLeft, ChevronRight, ArrowRight, Gavel, HardHat } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import ContactModal from "@/components/ContactModal";
-
-import dashboardImg from "@/assets/sales/licitaciones-dashboard.jpg";
-import chatbotImg from "@/assets/sales/licitaciones-chatbot.jpg";
-import ofertasImg from "@/assets/sales/licitaciones-ofertas.jpg";
-import preguntasImg from "@/assets/sales/licitaciones-preguntas.jpg";
-import itemizadoImg from "@/assets/sales/licitaciones-itemizado.jpg";
-
-interface Feature {
-  icon: React.ReactNode;
-  label: string;
-  detail: string;
-}
-
-interface Slide {
-  id: number;
-  type: "hero" | "feature" | "showcase" | "cta";
-  title: string;
-  subtitle?: string;
-  description?: string;
-  image?: string;
-  image2?: string;
-  features?: Feature[];
-  accent?: string;
-  layout?: "left" | "right" | "center";
-}
-
-const slides: Slide[] = [
-  {
-    id: 0,
-    type: "hero",
-    title: "Licitaciones",
-    subtitle: "Inteligentes",
-    description:
-      "Crea, gestiona y adjudica procesos de licitación con IA. Desde la publicación hasta la comparación de ofertas, todo en un solo lugar.",
-    layout: "center",
-    accent: "from-primary via-primary/95 to-primary/85",
-  },
-  {
-    id: 1,
-    type: "feature",
-    title: "Creación asistida por IA",
-    description:
-      "Describe tu proyecto en lenguaje natural y el sistema genera automáticamente la licitación completa: itemizado jerárquico, calendario, documentos y lista de oferentes.",
-    image: chatbotImg,
-    layout: "right",
-    features: [
-      {
-        icon: <Brain className="w-5 h-5" />,
-        label: "IA Conversacional",
-        detail: "Chatbot que entiende tus especificaciones técnicas",
-      },
-      {
-        icon: <FileText className="w-5 h-5" />,
-        label: "Itemizado automático",
-        detail: "Genera desglose jerárquico desde EETT",
-      },
-      {
-        icon: <Zap className="w-5 h-5" />,
-        label: "En minutos",
-        detail: "Lo que antes tomaba horas, ahora son minutos",
-      },
-    ],
-  },
-  {
-    id: 2,
-    type: "showcase",
-    title: "Gestión centralizada",
-    description:
-      "Panel completo para administrar todas tus licitaciones activas. Estado, plazos, oferentes invitados y documentación en un solo dashboard.",
-    image: dashboardImg,
-    image2: dashboardImg,
-    layout: "left",
-    features: [
-      {
-        icon: <Users className="w-5 h-5" />,
-        label: "Multi-oferente",
-        detail: "Invita, gestiona y notifica múltiples oferentes de manera automática",
-      },
-      {
-        icon: <Clock className="w-5 h-5" />,
-        label: "Calendario integrado",
-        detail: "Hitos, rondas de preguntas y plazos",
-      },
-      {
-        icon: <Shield className="w-5 h-5" />,
-        label: "Acceso controlado",
-        detail: "Cada oferente ve solo lo que corresponde",
-      },
-    ],
-  },
-  {
-    id: 3,
-    type: "feature",
-    title: "Itemizado jerárquico preciso",
-    description:
-      "El sistema analiza tus especificaciones técnicas y genera un itemizado fiel a la estructura original. Los valores son editables de manera online y centralizada para evitar confusiones",
-    image: itemizadoImg,
-    layout: "right",
-    features: [
-      {
-        icon: <FileText className="w-5 h-5" />,
-        label: "Jerarquía fiel",
-        detail: "Respeta la codificación de tus EETT",
-      },
-      {
-        icon: <BarChart3 className="w-5 h-5" />,
-        label: "Cantidades y unidades",
-        detail: "Partidas con unidad, cantidad y precio unitario",
-      },
-      {
-        icon: <Upload className="w-5 h-5" />,
-        label: "Múltiples formas de crear",
-        detail: "Importa un archivo, usa asistencia IA o crea manualmente",
-      },
-    ],
-  },
-  {
-    id: 4,
-    type: "showcase",
-    title: "Rondas de preguntas con IA",
-    description:
-      "Los oferentes envían consultas. La IA sugiere respuestas basadas en tus documentos técnicos. Tú revisas, editas y publicas.",
-    image: preguntasImg,
-    layout: "left",
-    features: [
-      {
-        icon: <MessageSquare className="w-5 h-5" />,
-        label: "Q&A estructurado",
-        detail: "Rondas organizadas con trazabilidad",
-      },
-      { icon: <Brain className="w-5 h-5" />, label: "Respuestas IA", detail: "Sugerencias automáticas desde tus EETT" },
-      {
-        icon: <GitMerge className="w-5 h-5" />,
-        label: "Respuestas múltiples",
-        detail: "Agrupa preguntas similares y responde simultáneamente",
-      },
-    ],
-  },
-  {
-    id: 5,
-    type: "feature",
-    title: "Comparación de ofertas",
-    description:
-      "Visualiza y compara ofertas lado a lado. Precios unitarios, totales, plazos y documentación adjunta de cada oferente en una sola vista.",
-    image: ofertasImg,
-    layout: "right",
-    features: [
-      {
-        icon: <BarChart3 className="w-5 h-5" />,
-        label: "Side by side",
-        detail: "Compara precios por partida entre oferentes",
-      },
-      {
-        icon: <FileText className="w-5 h-5" />,
-        label: "Documentación",
-        detail: "Ofertas con archivos adjuntos organizados",
-      },
-      {
-        icon: <TrendingUp className="w-5 h-5" />,
-        label: "Análisis automático",
-        detail: "Detecta desviaciones de precio, cantidades y proyecta la mejor oferta combinada (cherry picking)",
-      },
-    ],
-  },
-  {
-    id: 6,
-    type: "cta",
-    title: "¿Listo para simplificar tus licitaciones?",
-    description: "Agenda una demo y descubre cómo Gloster puede transformar tu proceso de licitación.",
-    layout: "center",
-    accent: "from-primary via-primary/95 to-primary/85",
-  },
-];
+import { useNavigate } from "react-router-dom";
 
 const Sales = () => {
   const [current, setCurrent] = useState(0);
   const [direction, setDirection] = useState(0);
-  const [isContactOpen, setIsContactOpen] = useState(false);
-  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
-  const total = slides.length;
+  const navigate = useNavigate();
+  const total = 3;
 
-  const go = useCallback(
-    (idx: number) => {
-      if (idx < 0 || idx >= total || idx === current) return;
-      setDirection(idx > current ? 1 : -1);
-      setCurrent(idx);
-    },
-    [current, total],
-  );
+  const go = useCallback((idx: number) => {
+    if (idx < 0 || idx >= total || idx === current) return;
+    setDirection(idx > current ? 1 : -1);
+    setCurrent(idx);
+  }, [current, total]);
 
   const next = useCallback(() => go(current + 1), [go, current]);
   const prev = useCallback(() => go(current - 1), [go, current]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight" || e.key === " ") {
-        e.preventDefault();
-        next();
-      }
-      if (e.key === "ArrowLeft") {
-        e.preventDefault();
-        prev();
-      }
+      if (e.key === "ArrowRight" || e.key === " ") { e.preventDefault(); next(); }
+      if (e.key === "ArrowLeft") { e.preventDefault(); prev(); }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
@@ -234,42 +35,27 @@ const Sales = () => {
     exit: (d: number) => ({ x: d > 0 ? "-100%" : "100%", opacity: 0 }),
   };
 
-  const slide = slides[current];
-
   return (
     <div className="h-screen w-screen overflow-hidden bg-background relative select-none font-sans">
-      {/* White header banner */}
+      {/* Header */}
       <div className="absolute top-0 left-0 right-0 z-50 bg-white border-b border-border/30 px-6 py-3 flex items-center justify-between">
-        {/* Logo */}
         <div className="flex items-center gap-2">
           <img src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png" alt="Gloster" className="w-7 h-7" />
-          <span className="text-sm font-semibold tracking-tight text-gray-900">Gloster</span>
+          <span className="text-sm font-semibold tracking-tight text-foreground">Gloster</span>
         </div>
-
-        {/* Progress bar */}
         <div className="flex-1 mx-8 flex gap-1.5 max-w-md">
-          {slides.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => go(i)}
-              className="flex-1 h-1 rounded-full transition-all duration-500 cursor-pointer"
-              style={{
-                backgroundColor: i <= current ? "hsl(var(--brand-yellow))" : "hsl(0 0% 88%)",
-              }}
-            />
+          {[0, 1, 2].map((i) => (
+            <button key={i} onClick={() => go(i)} className="flex-1 h-1 rounded-full transition-all duration-500 cursor-pointer" style={{ backgroundColor: i <= current ? "hsl(var(--brand-yellow))" : "hsl(0 0% 88%)" }} />
           ))}
         </div>
-
-        {/* Slide counter */}
-        <span className="text-xs text-gray-500 font-mono">
+        <span className="text-xs text-muted-foreground font-mono">
           {String(current + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
         </span>
       </div>
 
-      {/* Main content */}
       <AnimatePresence custom={direction} mode="wait">
         <motion.div
-          key={slide.id}
+          key={current}
           custom={direction}
           variants={slideVariants}
           initial="enter"
@@ -278,245 +64,169 @@ const Sales = () => {
           transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
           className="absolute inset-0 pt-12"
         >
-          {slide.type === "hero" && <HeroSlide slide={slide} onCTA={() => next()} />}
-          {slide.type === "cta" && <CTASlide slide={slide} onCTA={() => setIsContactOpen(true)} />}
-          {(slide.type === "feature" || slide.type === "showcase") && <FeatureSlide slide={slide} onImageClick={setLightboxSrc} />}
+          {current === 0 && <BrandSlide onCTA={() => next()} />}
+          {current === 1 && <AboutSlide onCTA={() => next()} />}
+          {current === 2 && <ToolsSlide onNavigate={navigate} />}
         </motion.div>
-      </AnimatePresence>
-
-      {/* Lightbox */}
-      <AnimatePresence>
-        {lightboxSrc && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-8 cursor-pointer"
-            onClick={() => setLightboxSrc(null)}
-          >
-            <motion.img
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              src={lightboxSrc}
-              alt="Vista ampliada"
-              className="max-w-[90vw] max-h-[85vh] rounded-xl shadow-2xl object-contain"
-              onClick={(e) => e.stopPropagation()}
-            />
-          </motion.div>
-        )}
       </AnimatePresence>
 
       {/* Navigation */}
       <div className="absolute bottom-6 left-0 right-0 z-50 flex items-center justify-between px-8">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={prev}
-          disabled={current === 0}
-          className="text-muted-foreground hover:text-foreground disabled:opacity-0 transition-opacity"
-        >
-          <ChevronLeft className="w-4 h-4 mr-1" />
-          Anterior
+        <Button variant="ghost" size="sm" onClick={prev} disabled={current === 0} className="text-muted-foreground hover:text-foreground disabled:opacity-0 transition-opacity">
+          <ChevronLeft className="w-4 h-4 mr-1" /> Anterior
         </Button>
-
         <div className="flex gap-2">
-          {slides.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => go(i)}
-              className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                i === current ? "bg-brand-yellow w-6" : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
-              }`}
-            />
+          {[0, 1, 2].map((i) => (
+            <button key={i} onClick={() => go(i)} className={`w-2 h-2 rounded-full transition-all duration-300 ${i === current ? "bg-brand-yellow w-6" : "bg-muted-foreground/30 hover:bg-muted-foreground/50"}`} />
           ))}
         </div>
-
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={next}
-          disabled={current === total - 1}
-          className="text-muted-foreground hover:text-foreground disabled:opacity-0 transition-opacity"
-        >
-          Siguiente
-          <ChevronRight className="w-4 h-4 ml-1" />
+        <Button variant="ghost" size="sm" onClick={next} disabled={current === total - 1} className="text-muted-foreground hover:text-foreground disabled:opacity-0 transition-opacity">
+          Siguiente <ChevronRight className="w-4 h-4 ml-1" />
         </Button>
       </div>
-
-      <ContactModal isOpen={isContactOpen} onClose={() => setIsContactOpen(false)} />
     </div>
   );
 };
 
-const HeroSlide: React.FC<{ slide: Slide; onCTA: () => void }> = ({ slide, onCTA }) => (
-  <div className={`h-full w-full bg-gradient-to-br ${slide.accent} flex items-center justify-center px-8`}>
-    <div className="max-w-3xl text-center">
-      <motion.div
+const BrandSlide: React.FC<{ onCTA: () => void }> = ({ onCTA }) => (
+  <div className="h-full w-full bg-gradient-to-br from-primary via-primary/95 to-primary/85 flex items-center justify-center px-8">
+    <div className="text-center flex flex-col items-center">
+      <motion.img
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ delay: 0.2, duration: 0.7 }}
+        src="/lovable-uploads/8d7c313a-28e4-405f-a69a-832a4962a83f.png"
+        alt="Gloster"
+        className="w-28 h-28 md:w-36 md:h-36 mb-8"
+      />
+      <motion.h1
         initial={{ y: 30, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.2, duration: 0.6 }}
+        transition={{ delay: 0.4, duration: 0.6 }}
+        className="text-6xl md:text-8xl font-bold text-primary-foreground tracking-tight mb-4"
       >
-        <span className="inline-block px-3 py-1 text-xs font-medium tracking-widest uppercase bg-brand-yellow text-brand-yellow-foreground rounded-full mb-8">
-          Módulo de Licitaciones
-        </span>
-      </motion.div>
-      <motion.h1
-        initial={{ y: 40, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.3, duration: 0.6 }}
-        className="text-5xl md:text-7xl font-bold text-primary-foreground leading-tight mb-4"
-      >
-        {slide.title} <span className="text-brand-yellow">{slide.subtitle}</span>
+        Gloster
       </motion.h1>
       <motion.p
-        initial={{ y: 40, opacity: 0 }}
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.6, duration: 0.6 }}
+        className="text-xl md:text-2xl text-primary-foreground/70 font-light max-w-xl leading-relaxed"
+      >
+        Tecnología para la construcción
+      </motion.p>
+      <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.85, duration: 0.5 }} className="mt-10">
+        <Button size="lg" onClick={onCTA} className="bg-brand-yellow text-brand-yellow-foreground hover:bg-brand-yellow/90 px-8 py-3 text-base font-medium">
+          Conocer más <ArrowRight className="w-4 h-4 ml-2" />
+        </Button>
+      </motion.div>
+    </div>
+  </div>
+);
+
+const AboutSlide: React.FC<{ onCTA: () => void }> = ({ onCTA }) => (
+  <div className="h-full w-full bg-background flex items-center justify-center px-8">
+    <div className="max-w-2xl text-center">
+      <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2, duration: 0.5 }}>
+        <div className="w-10 h-1 bg-brand-yellow rounded-full mb-6 mx-auto" />
+      </motion.div>
+      <motion.h2
+        initial={{ y: 30, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.3, duration: 0.6 }}
+        className="text-4xl md:text-5xl font-bold text-foreground leading-tight mb-6"
+      >
+        ¿Quiénes somos?
+      </motion.h2>
+      <motion.p
+        initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.45, duration: 0.6 }}
-        className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl mx-auto mb-10 leading-relaxed"
+        className="text-lg text-muted-foreground leading-relaxed mb-6"
       >
-        {slide.description}
+        Somos un equipo que conoce de primera mano los problemas de gestión en la industria de la construcción. Planillas interminables, correos perdidos, estados de pago que nadie sabe dónde están, procesos de licitación que toman semanas de trabajo manual.
       </motion.p>
-      <motion.div
-        initial={{ y: 30, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.6, duration: 0.5 }}
-      >
-        <Button
-          size="lg"
-          onClick={onCTA}
-          className="bg-brand-yellow text-brand-yellow-foreground hover:bg-brand-yellow/90 px-8 py-3 text-base font-medium"
-        >
-          Ver cómo funciona
-          <ArrowRight className="w-4 h-4 ml-2" />
-        </Button>
-      </motion.div>
-    </div>
-  </div>
-);
-
-const CTASlide: React.FC<{ slide: Slide; onCTA: () => void }> = ({ slide, onCTA }) => (
-  <div className={`h-full w-full bg-gradient-to-br ${slide.accent} flex items-center justify-center px-6`}>
-    <div className="max-w-3xl w-full text-center flex flex-col items-center">
-      <motion.h1
-        initial={{ y: 30, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.2, duration: 0.6 }}
-        className="text-3xl md:text-4xl font-bold text-primary-foreground leading-tight mb-3"
-      >
-        {slide.title}
-      </motion.h1>
       <motion.p
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.3, duration: 0.6 }}
-        className="text-base text-primary-foreground/80 mb-5"
+        transition={{ delay: 0.55, duration: 0.6 }}
+        className="text-lg text-muted-foreground leading-relaxed mb-10"
       >
-        {slide.description}
+        Creamos Gloster para resolver eso: una plataforma que centraliza, ordena y automatiza la gestión de proyectos de construcción. Sin complejidad innecesaria, con herramientas que realmente se usan.
       </motion.p>
-
-      <motion.div
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.4, duration: 0.5 }}
-        className="mb-5"
-      >
-        <Button
-          size="lg"
-          onClick={onCTA}
-          className="bg-brand-yellow text-brand-yellow-foreground hover:bg-brand-yellow/90 px-8 py-3 text-base font-medium"
-        >
-          Agendar Demo
-          <ArrowRight className="w-4 h-4 ml-2" />
+      <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.7, duration: 0.5 }}>
+        <Button size="lg" onClick={onCTA} className="bg-brand-yellow text-brand-yellow-foreground hover:bg-brand-yellow/90 px-8 py-3 text-base font-medium">
+          Ver herramientas <ArrowRight className="w-4 h-4 ml-2" />
         </Button>
       </motion.div>
+    </div>
+  </div>
+);
 
-      <motion.div
+const ToolsSlide: React.FC<{ onNavigate: (path: string) => void }> = ({ onNavigate }) => (
+  <div className="h-full w-full bg-background flex items-center justify-center px-8">
+    <div className="max-w-3xl w-full text-center">
+      <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2, duration: 0.5 }}>
+        <div className="w-10 h-1 bg-brand-yellow rounded-full mb-6 mx-auto" />
+      </motion.div>
+      <motion.h2
+        initial={{ y: 30, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.3, duration: 0.6 }}
+        className="text-3xl md:text-4xl font-bold text-foreground leading-tight mb-3"
+      >
+        Dos herramientas, un objetivo
+      </motion.h2>
+      <motion.p
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.5, duration: 0.6 }}
-        className="w-full max-w-xl rounded-xl overflow-hidden border border-primary-foreground/20 bg-black/20 aspect-video flex items-center justify-center"
+        transition={{ delay: 0.4, duration: 0.6 }}
+        className="text-base text-muted-foreground mb-12"
       >
-        <div className="text-primary-foreground/40 text-sm flex flex-col items-center gap-2">
-          <div className="w-12 h-12 rounded-full border-2 border-primary-foreground/30 flex items-center justify-center">
-            <div className="w-0 h-0 border-l-[10px] border-l-primary-foreground/40 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent ml-1" />
+        Hemos desarrollado dos módulos especializados para cubrir las necesidades principales de gestión en construcción.
+      </motion.p>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+        <motion.button
+          initial={{ y: 30, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.5, duration: 0.5 }}
+          onClick={() => onNavigate("/sales/licitacion")}
+          className="group p-8 rounded-2xl border border-border bg-card hover:border-brand-yellow/50 hover:shadow-lg transition-all duration-300 text-left cursor-pointer"
+        >
+          <div className="w-16 h-16 rounded-2xl bg-brand-yellow/10 flex items-center justify-center mb-5 group-hover:bg-brand-yellow/20 transition-colors">
+            <Gavel className="w-8 h-8 text-brand-yellow-foreground" />
           </div>
-          <span>Video demo</span>
-        </div>
-      </motion.div>
-    </div>
-  </div>
-);
-
-const ZoomableImage: React.FC<{ src: string; alt: string; onClick: (src: string) => void }> = ({ src, alt, onClick }) => (
-  <div
-    className="rounded-xl overflow-hidden shadow-2xl border border-border/50 cursor-pointer transition-transform duration-300 hover:scale-[1.03] hover:shadow-[0_0_20px_rgba(0,0,0,0.15)]"
-    onClick={() => onClick(src)}
-  >
-    <img src={src} alt={alt} className="w-full h-auto" loading="lazy" />
-  </div>
-);
-
-const FeatureSlide: React.FC<{ slide: Slide; onImageClick: (src: string) => void }> = ({ slide, onImageClick }) => {
-  const isLeft = slide.layout === "left";
-  const hasTwoImages = !!slide.image2;
-
-  return (
-    <div className="h-full w-full flex items-center bg-background">
-      <div className={`w-full h-full flex flex-col md:flex-row ${isLeft ? "" : "md:flex-row-reverse"}`}>
-        <div className="flex-1 relative flex items-center justify-center p-6 md:p-10 bg-muted/30">
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.3, duration: 0.6 }}
-            className={`relative w-full max-w-2xl ${hasTwoImages ? "flex flex-col gap-4" : ""}`}
-          >
-            <ZoomableImage src={slide.image!} alt={slide.title} onClick={onImageClick} />
-            {hasTwoImages && (
-              <ZoomableImage src={slide.image2!} alt={`${slide.title} - vista adicional`} onClick={onImageClick} />
-            )}
-            <div className="absolute -inset-4 bg-brand-yellow/5 rounded-2xl -z-10 blur-2xl" />
-          </motion.div>
-        </div>
-
-        <div className="flex-1 flex items-center justify-center p-8 md:p-12 lg:p-16">
-          <div className="max-w-md">
-            <motion.div
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.2, duration: 0.5 }}
-            >
-              <div className="w-10 h-1 bg-brand-yellow rounded-full mb-6" />
-              <h2 className="text-3xl md:text-4xl font-bold text-foreground leading-tight mb-4">{slide.title}</h2>
-              <p className="text-base text-muted-foreground leading-relaxed mb-8">{slide.description}</p>
-            </motion.div>
-
-            {slide.features && (
-              <div className="space-y-4">
-                {slide.features.map((f, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ x: isLeft ? 20 : -20, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: 0.4 + i * 0.1, duration: 0.4 }}
-                    className="flex items-start gap-3"
-                  >
-                    <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-brand-yellow/10 flex items-center justify-center text-brand-yellow-foreground">
-                      {f.icon}
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">{f.label}</p>
-                      <p className="text-xs text-muted-foreground">{f.detail}</p>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            )}
+          <h3 className="text-xl font-bold text-foreground mb-2">Licitaciones</h3>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Crea, gestiona y adjudica procesos de licitación con asistencia de IA. Itemizados, rondas de preguntas y comparación de ofertas.
+          </p>
+          <div className="mt-4 flex items-center text-sm font-medium text-brand-yellow-foreground group-hover:gap-2 transition-all">
+            Ver presentación <ArrowRight className="w-4 h-4 ml-1" />
           </div>
-        </div>
+        </motion.button>
+
+        <motion.button
+          initial={{ y: 30, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.6, duration: 0.5 }}
+          onClick={() => onNavigate("/sales/subcontratos")}
+          className="group p-8 rounded-2xl border border-border bg-card hover:border-brand-yellow/50 hover:shadow-lg transition-all duration-300 text-left cursor-pointer"
+        >
+          <div className="w-16 h-16 rounded-2xl bg-brand-yellow/10 flex items-center justify-center mb-5 group-hover:bg-brand-yellow/20 transition-colors">
+            <HardHat className="w-8 h-8 text-brand-yellow-foreground" />
+          </div>
+          <h3 className="text-xl font-bold text-foreground mb-2">Subcontratos</h3>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Controla estados de pago, documentos, presupuesto, RFI y adicionales de todos tus subcontratos en un solo lugar.
+          </p>
+          <div className="mt-4 flex items-center text-sm font-medium text-brand-yellow-foreground group-hover:gap-2 transition-all">
+            Ver presentación <ArrowRight className="w-4 h-4 ml-1" />
+          </div>
+        </motion.button>
       </div>
     </div>
-  );
-};
+  </div>
+);
+
 export default Sales;

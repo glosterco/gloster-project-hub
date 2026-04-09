@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { LicitacionItem } from '@/hooks/useLicitaciones';
-import { ListOrdered, Plus, Loader2, Share2, Pencil, Check, X, Trash2 } from 'lucide-react';
+import { ListOrdered, Plus, Loader2, Share2, Pencil, Check, X, Trash2, FileSpreadsheet, Upload, ExternalLink } from 'lucide-react';
 import ItemizadoFileParser from '@/components/ItemizadoFileParser';
 import ItemizadoChatbot from '@/components/licitacion/ItemizadoChatbot';
 import { ParsedItem } from '@/hooks/useParseItemizado';
@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { buildHierarchicalItems, prefixItemDescription } from '@/utils/licitacionItemHierarchy';
+import CompactDropZone from '@/components/licitacion/CompactDropZone';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -27,16 +28,19 @@ interface Props {
   licitacionDescripcion?: string;
   licitacionEspecificaciones?: string;
   onRefresh?: () => void;
+  apuDocuments?: { id?: number; nombre: string; url?: string; tipo?: string }[];
 }
 
 const LicitacionItemizadoTab: React.FC<Props> = ({
-  items, ivaPorcentaje, licitacionId,
+  items, ivaPorcentaje, licitacionId, apuDocuments = [],
   licitacionNombre, licitacionDescripcion, licitacionEspecificaciones, onRefresh
 }) => {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [showShareConfirm, setShowShareConfirm] = useState(false);
+  const [apuFiles, setApuFiles] = useState<File[]>([]);
+  const [uploadingApu, setUploadingApu] = useState(false);
   const [newCode, setNewCode] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [newUnit, setNewUnit] = useState('');
@@ -215,6 +219,7 @@ const LicitacionItemizadoTab: React.FC<Props> = ({
   return (
     <div className="space-y-4">
       {/* 1. Itemizado Oficial */}
+
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <CardTitle className="flex items-center gap-2 font-rubik">
@@ -337,7 +342,124 @@ const LicitacionItemizadoTab: React.FC<Props> = ({
         </CardContent>
       </Card>
 
-      {/* 2. Tools section */}
+      {/* 2. Análisis de Precios Unitarios (APU) */}
+      {licitacionId && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <CardTitle className="flex items-center gap-2 font-rubik">
+              <FileSpreadsheet className="h-5 w-5" />
+              Análisis de Precios Unitarios (APU)
+              <Badge variant="secondary" className="text-[10px] ml-1">Mandante</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Sube el archivo con el detalle de los Análisis de Precios Unitarios de este presupuesto.
+            </p>
+
+            {/* Existing APU files */}
+            {apuDocuments.length > 0 && (
+              <div className="space-y-2">
+                {apuDocuments.map((doc) => (
+                  <div key={doc.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <FileSpreadsheet className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <span className="text-sm font-medium truncate">{doc.nombre}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {doc.url && (
+                        <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
+                          <a href={doc.url} target="_blank" rel="noopener noreferrer">
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={async () => {
+                          try {
+                            if (doc.id) await supabase.from('LicitacionDocumentos').delete().eq('id', doc.id);
+                            toast({ title: 'Archivo eliminado' });
+                            onRefresh?.();
+                          } catch (err: any) {
+                            toast({ title: 'Error', description: err.message, variant: 'destructive' });
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Upload zone */}
+            <CompactDropZone
+              onFilesSelected={(files) => setApuFiles(files)}
+              multiple
+              selectedFiles={apuFiles}
+              onRemoveFile={(idx) => setApuFiles((prev) => prev.filter((_, i) => i !== idx))}
+              placeholder="Arrastra archivos APU aquí o haz click"
+              disabled={uploadingApu}
+            />
+
+            {apuFiles.length > 0 && (
+              <Button
+                size="sm"
+                disabled={uploadingApu}
+                onClick={async () => {
+                  if (!licitacionId || apuFiles.length === 0) return;
+                  setUploadingApu(true);
+                  try {
+                    const docs = await Promise.all(
+                      apuFiles.map(async (file) => {
+                        const buffer = await file.arrayBuffer();
+                        const base64 = btoa(
+                          new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+                        );
+                        return {
+                          name: file.name,
+                          content: base64,
+                          mimeType: file.type || 'application/octet-stream',
+                          size: file.size,
+                        };
+                      })
+                    );
+
+                    const { data, error } = await supabase.functions.invoke('upload-licitacion-documents', {
+                      body: {
+                        licitacionId,
+                        licitacionName: licitacionNombre,
+                        documents: docs,
+                        targetSubfolder: 'Itemizado',
+                        documentTipo: 'apu',
+                      },
+                    });
+
+                    if (error) throw error;
+
+                    setApuFiles([]);
+                    toast({ title: 'APU subido', description: `${docs.length} archivo(s) subido(s) correctamente.` });
+                    onRefresh?.();
+                  } catch (err: any) {
+                    toast({ title: 'Error al subir APU', description: err.message, variant: 'destructive' });
+                  } finally {
+                    setUploadingApu(false);
+                  }
+                }}
+              >
+                {uploadingApu ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Upload className="h-3.5 w-3.5 mr-1" />}
+                Subir {apuFiles.length} archivo{apuFiles.length > 1 ? 's' : ''}
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* 3. Tools section */}
       {licitacionId && (
         <div className="grid gap-4 md:grid-cols-2">
           <ItemizadoFileParser
@@ -360,7 +482,7 @@ const LicitacionItemizadoTab: React.FC<Props> = ({
         </div>
       )}
 
-      {/* 3. Manual add */}
+      {/* 4. Manual add */}
       {licitacionId && (
         <Card>
           <CardHeader className="pb-2">

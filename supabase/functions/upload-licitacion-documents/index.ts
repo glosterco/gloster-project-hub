@@ -121,7 +121,7 @@ serve(async (req) => {
   }
 
   try {
-    const { licitacionId, licitacionName, documents, notifyOferentes } = await req.json();
+    const { licitacionId, licitacionName, documents, notifyOferentes, targetSubfolder, documentTipo } = await req.json();
 
     if (!licitacionId || !documents || !Array.isArray(documents) || documents.length === 0) {
       return new Response(
@@ -182,6 +182,26 @@ serve(async (req) => {
         .eq('id', licitacionId);
     }
 
+    // If a target subfolder is specified, create/find it inside the main licitacion folder
+    let uploadFolderId = docsFolderId!;
+    if (targetSubfolder && licitacion.drive_folder_id) {
+      // Search for existing subfolder
+      const searchQuery = `name='${targetSubfolder}' and '${licitacion.drive_folder_id}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`;
+      const searchResp = await fetch(
+        `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(searchQuery)}&fields=files(id)`,
+        { headers: { 'Authorization': `Bearer ${accessToken}` } }
+      );
+      const searchData = await searchResp.json();
+      if (searchData.files && searchData.files.length > 0) {
+        uploadFolderId = searchData.files[0].id;
+        console.log(`📁 Found existing subfolder '${targetSubfolder}': ${uploadFolderId}`);
+      } else {
+        const subFolder = await createGoogleDriveFolder(accessToken, targetSubfolder, licitacion.drive_folder_id);
+        uploadFolderId = subFolder.id;
+        console.log(`📁 Created subfolder '${targetSubfolder}': ${uploadFolderId}`);
+      }
+    }
+
     // Upload each document
     const uploadResults = [];
     for (const doc of documents) {
@@ -192,7 +212,7 @@ serve(async (req) => {
           doc.name,
           doc.content,
           doc.mimeType || 'application/octet-stream',
-          docsFolderId!
+          uploadFolderId
         );
 
         // Insert into LicitacionDocumentos
@@ -202,7 +222,7 @@ serve(async (req) => {
             licitacion_id: licitacionId,
             nombre: doc.name,
             size: doc.size || null,
-            tipo: doc.mimeType || 'application/octet-stream',
+            tipo: documentTipo || doc.mimeType || 'application/octet-stream',
             url: result.webViewLink,
           });
 

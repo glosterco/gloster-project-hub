@@ -64,6 +64,7 @@ const LicitacionDetail = () => {
 
   // Filter items to only show mandante's base items (not oferente-added)
   const baseItems = (licitacion.items || []).filter((i: any) => !i.agregado_por_oferente);
+  const apuDocuments = (licitacion.documentos || []).filter((d: any) => d.tipo === 'apu');
   const eventosConDuracion = (licitacion.eventos || []).map((evento) => {
     if (evento.fechaFin || !evento.esRondaPreguntas) return evento;
 
@@ -184,6 +185,7 @@ const LicitacionDetail = () => {
               licitacionDescripcion={licitacion.descripcion}
               licitacionEspecificaciones={licitacion.especificaciones || undefined}
               onRefresh={refetch}
+              apuDocuments={apuDocuments}
             />
           </TabsContent>
 

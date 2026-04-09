@@ -468,8 +468,18 @@ const LicitacionChat = ({ open, onOpenChange, onSuccess }: LicitacionChatProps) 
   };
 
   const renderMessageContent = (content: string) => {
-    // Remove the json_licitacion and json_resumen blocks from display
-    const cleanContent = content.replace(/```json_licitacion[\s\S]*?```/g, '').replace(/```json_resumen[\s\S]*?```/g, '').trim();
+    // Remove the json_licitacion and json_resumen blocks from display (complete and partial/streaming)
+    const cleanContent = content
+      .replace(/```json_licitacion[\s\S]*?(```|$)/g, '')
+      .replace(/```json_resumen[\s\S]*?(```|$)/g, '')
+      .replace(/```json\s*\{[\s\S]*?(```|$)/g, (match) => {
+        // Only remove json blocks that look like internal resumen/licitacion data
+        if (match.includes('"nombre"') || match.includes('"oferentes"') || match.includes('"calendario"') || match.includes('"items_count"')) {
+          return '';
+        }
+        return match;
+      })
+      .trim();
     return (
       <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:mb-2 [&>ul]:mb-2 [&>ol]:mb-2">
         <ReactMarkdown>{cleanContent}</ReactMarkdown>

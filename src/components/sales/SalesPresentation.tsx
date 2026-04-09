@@ -46,7 +46,7 @@ const HeroSlide: React.FC<{ slide: Slide; onCTA: () => void }> = ({ slide, onCTA
         initial={{ y: 40, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.3, duration: 0.6 }}
-        className="text-5xl md:text-7xl font-bold text-primary-foreground leading-tight mb-4"
+        className="text-3xl md:text-5xl lg:text-7xl font-bold text-primary-foreground leading-tight mb-3 md:mb-4"
       >
         {slide.title} <span className="text-brand-yellow">{slide.subtitle}</span>
       </motion.h1>
@@ -54,7 +54,7 @@ const HeroSlide: React.FC<{ slide: Slide; onCTA: () => void }> = ({ slide, onCTA
         initial={{ y: 40, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.45, duration: 0.6 }}
-        className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl mx-auto mb-10 leading-relaxed"
+        className="text-sm md:text-lg lg:text-xl text-primary-foreground/80 max-w-2xl mx-auto mb-6 md:mb-10 leading-relaxed"
       >
         {slide.description}
       </motion.p>
@@ -99,21 +99,21 @@ const FeatureSlide: React.FC<{ slide: Slide; onImageClick: (src: string) => void
   const isLeft = slide.layout === "left";
   const hasTwoImages = !!slide.image2;
   return (
-    <div className="h-full w-full flex items-center bg-background">
+    <div className="h-full w-full flex items-center bg-background overflow-y-auto">
       <div className={`w-full h-full flex flex-col md:flex-row ${isLeft ? "" : "md:flex-row-reverse"}`}>
-        <div className="flex-1 relative flex items-center justify-center p-6 md:p-10 bg-muted/30">
-          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.3, duration: 0.6 }} className={`relative w-full max-w-2xl ${hasTwoImages ? "flex flex-col gap-4" : ""}`}>
+        <div className="flex-shrink-0 md:flex-1 relative flex items-center justify-center p-4 md:p-10 bg-muted/30">
+          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.3, duration: 0.6 }} className={`relative w-full max-w-2xl ${hasTwoImages ? "flex flex-col gap-2 md:gap-4" : ""}`}>
             <ZoomableImage src={slide.image!} alt={slide.title} onClick={onImageClick} />
             {hasTwoImages && <ZoomableImage src={slide.image2!} alt={`${slide.title} - vista adicional`} onClick={onImageClick} />}
             <div className="absolute -inset-4 bg-brand-yellow/5 rounded-2xl -z-10 blur-2xl" />
           </motion.div>
         </div>
-        <div className="flex-1 flex items-center justify-center p-8 md:p-12 lg:p-16">
+        <div className="flex-shrink-0 md:flex-1 flex items-center justify-center p-4 pb-10 md:p-12 lg:p-16">
           <div className="max-w-md">
             <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2, duration: 0.5 }}>
-              <div className="w-10 h-1 bg-brand-yellow rounded-full mb-6" />
-              <h2 className="text-3xl md:text-4xl font-bold text-foreground leading-tight mb-4">{slide.title}</h2>
-              <p className="text-base text-muted-foreground leading-relaxed mb-8">{slide.description}</p>
+              <div className="w-10 h-1 bg-brand-yellow rounded-full mb-3 md:mb-6" />
+              <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground leading-tight mb-2 md:mb-4">{slide.title}</h2>
+              <p className="text-sm md:text-base text-muted-foreground leading-relaxed mb-4 md:mb-8">{slide.description}</p>
             </motion.div>
             {slide.features && (
               <div className="space-y-4">

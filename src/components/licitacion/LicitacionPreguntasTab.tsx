@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -7,10 +7,11 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   MessageSquare, Send, Eye, Lock, Unlock, Sparkles, BookOpen, Clock,
   Paperclip, FileText, ExternalLink, Loader2, X, Wand2, Link2, CheckCircle2,
-  Pencil, Trash2
+  Pencil, Trash2, ShieldCheck, ShieldAlert, Search
 } from 'lucide-react';
 import CompactDropZone from '@/components/licitacion/CompactDropZone';
 import { Ronda, Pregunta, OferenteDetail } from '@/hooks/useLicitacionDetail';

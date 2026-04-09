@@ -841,7 +841,12 @@ const LicitacionOfertasTab: React.FC<Props> = ({
                         </TableCell>
                       </React.Fragment>
                     ))}
-                    {showCherryPick && <TableCell className="border-l border-r" />}
+                    {showCherryPick && (
+                      <>
+                        {!collapsed && (<><TableCell className="border-l" /><TableCell /></>)}
+                        <TableCell className="border-r" />
+                      </>
+                    )}
                   </TableRow>
                 )}
               </TableBody>

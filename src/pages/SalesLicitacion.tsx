@@ -1,5 +1,6 @@
 import React from "react";
 import { Brain, FileText, Zap, Users, Clock, Shield, BarChart3, Upload, MessageSquare, GitMerge, TrendingUp } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import SalesPresentation, { Slide } from "@/components/sales/SalesPresentation";
 
 import dashboardImg from "@/assets/sales/licitaciones-dashboard.jpg";
@@ -72,8 +73,7 @@ const slides: Slide[] = [
 ];
 
 const SalesLicitacion = () => {
-  const navigate = (await import("react-router-dom")).useNavigate ? undefined : undefined;
-  return <SalesPresentation slides={slides} onPrevFromFirst={() => window.location.href = "/sales?slide=last"} />;
+  const navigate = useNavigate();
+  return <SalesPresentation slides={slides} onPrevFromFirst={() => navigate("/sales?slide=last")} />;
 };
-
 export default SalesLicitacion;

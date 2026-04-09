@@ -621,48 +621,107 @@ const LicitacionPreguntasTab: React.FC<Props> = ({
         </DialogContent>
       </Dialog>
 
-      {/* IA Source Dialog */}
-      <Dialog open={!!showIASource} onOpenChange={() => setShowIASource(null)}>
-        <DialogContent className="max-w-2xl">
+      {/* IA Source Dialog with Document Preview & Highlighting */}
+      <Dialog open={!!showIASource} onOpenChange={() => { setShowIASource(null); setExpandedDoc(null); }}>
+        <DialogContent className="max-w-4xl max-h-[85vh]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <BookOpen className="h-5 w-5" /> Fuentes de la Pre-respuesta
             </DialogTitle>
           </DialogHeader>
           {showIASource?.respuesta_ia_fuentes && (
-            <div className="space-y-4 max-h-[500px] overflow-y-auto">
-              {(Array.isArray(showIASource.respuesta_ia_fuentes)
-                ? showIASource.respuesta_ia_fuentes
-                : [showIASource.respuesta_ia_fuentes]
-              ).map((fuente: any, idx: number) => (
-                <div key={idx} className="border rounded-lg overflow-hidden">
-                  {fuente.documento && (
-                    <div className="bg-amber-50 dark:bg-amber-950/30 px-3 py-2 border-b flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-amber-600" />
-                      <span className="text-sm font-medium text-amber-800 dark:text-amber-300">
-                        {fuente.documento}
-                      </span>
-                    </div>
-                  )}
-                  <div className="p-3 bg-muted/30">
-                    {fuente.extracto_relevante ? (
-                      <div className="space-y-2">
-                        <p className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider">Extracto relevante del documento</p>
-                        <div className="bg-background border-l-4 border-amber-400 pl-3 py-2 rounded-r">
-                          <p className="text-sm whitespace-pre-wrap leading-relaxed">{fuente.extracto_relevante}</p>
+            <ScrollArea className="max-h-[65vh]">
+              <div className="space-y-4 pr-4">
+                {(Array.isArray(showIASource.respuesta_ia_fuentes)
+                  ? showIASource.respuesta_ia_fuentes
+                  : [showIASource.respuesta_ia_fuentes]
+                ).map((fuente: any, idx: number) => {
+                  const isVerified = fuente.verificado === true;
+                  const hasDocPreview = !!fuente.texto_documento;
+                  const isExpanded = expandedDoc === idx;
+
+                  return (
+                    <div key={idx} className="border rounded-lg overflow-hidden">
+                      {/* Document header */}
+                      {fuente.documento && (
+                        <div className={`px-3 py-2 border-b flex items-center justify-between gap-2 ${
+                          isVerified
+                            ? 'bg-emerald-50 dark:bg-emerald-950/30'
+                            : 'bg-amber-50 dark:bg-amber-950/30'
+                        }`}>
+                          <div className="flex items-center gap-2 min-w-0">
+                            <FileText className={`h-4 w-4 shrink-0 ${isVerified ? 'text-emerald-600' : 'text-amber-600'}`} />
+                            <span className="text-sm font-medium truncate">
+                              {fuente.documento}
+                            </span>
+                            {isVerified ? (
+                              <Badge variant="outline" className="text-[10px] border-emerald-300 text-emerald-700 bg-emerald-50 shrink-0">
+                                <ShieldCheck className="h-3 w-3 mr-0.5" /> Verificado
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-[10px] border-amber-300 text-amber-700 bg-amber-50 shrink-0">
+                                <ShieldAlert className="h-3 w-3 mr-0.5" /> No verificado
+                              </Badge>
+                            )}
+                          </div>
+                          {hasDocPreview && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 text-xs shrink-0"
+                              onClick={() => setExpandedDoc(isExpanded ? null : idx)}
+                            >
+                              <Search className="h-3 w-3 mr-1" />
+                              {isExpanded ? 'Cerrar vista previa' : 'Ver en documento'}
+                            </Button>
+                          )}
                         </div>
-                      </div>
-                    ) : (
-                      <div className="border-l-4 border-amber-400 pl-3 py-1">
-                        <p className="text-sm italic whitespace-pre-wrap">
-                          {fuente.extracto || fuente.text || JSON.stringify(fuente)}
+                      )}
+
+                      {/* Cited excerpt */}
+                      <div className="p-3 bg-muted/30">
+                        <p className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider mb-1.5">
+                          Extracto citado por la IA
                         </p>
+                        <div className={`border-l-4 pl-3 py-2 rounded-r ${
+                          isVerified ? 'border-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/10' : 'border-amber-400 bg-amber-50/50 dark:bg-amber-950/10'
+                        }`}>
+                          <p className="text-sm whitespace-pre-wrap leading-relaxed">
+                            {fuente.extracto_relevante || fuente.extracto || fuente.text || JSON.stringify(fuente)}
+                          </p>
+                        </div>
+                        {!isVerified && fuente.extracto_relevante && (
+                          <p className="text-[10px] text-amber-600 mt-1.5 flex items-center gap-1">
+                            <ShieldAlert className="h-3 w-3" />
+                            Esta cita no pudo ser encontrada textualmente en el documento. Verifique manualmente.
+                          </p>
+                        )}
                       </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+
+                      {/* Expanded document preview with highlighting */}
+                      {isExpanded && hasDocPreview && (
+                        <div className="border-t">
+                          <div className="px-3 py-1.5 bg-muted/50 flex items-center gap-2">
+                            <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider">
+                              Vista previa del documento - texto con extracto destacado
+                            </span>
+                          </div>
+                          <ScrollArea className="max-h-[300px]">
+                            <div className="p-3 text-xs leading-relaxed font-mono whitespace-pre-wrap">
+                              <HighlightedDocumentText
+                                text={fuente.texto_documento}
+                                highlight={fuente.extracto_relevante || fuente.extracto || ""}
+                              />
+                            </div>
+                          </ScrollArea>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </ScrollArea>
           )}
         </DialogContent>
       </Dialog>

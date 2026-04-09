@@ -85,7 +85,7 @@ const LicitacionAcceso = () => {
 
   // Inline edit item state
   const [editingItemId, setEditingItemId] = useState<number | null>(null);
-  const [editItemValues, setEditItemValues] = useState<{ cantidad: string; pu: string }>({ cantidad: '', pu: '' });
+  const [editItemValues, setEditItemValues] = useState<{ cantidad: string; pu: string; unidad: string }>({ cantidad: '', pu: '', unidad: '' });
 
   // Per-bidder GG / Utilidades
   const [bidderGG, setBidderGG] = useState('');

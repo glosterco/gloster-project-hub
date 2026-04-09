@@ -35,7 +35,7 @@ const ZoomableImage: React.FC<{ src: string; alt: string; onClick: (src: string)
 );
 
 const HeroSlide: React.FC<{ slide: Slide; onCTA: () => void }> = ({ slide, onCTA }) => (
-  <div className={`h-full w-full bg-gradient-to-br ${slide.accent} flex items-center justify-center px-8`}>
+  <div className={`h-full w-full bg-gradient-to-br ${slide.accent} flex items-center justify-center px-4 md:px-8 pb-8 md:pb-0`}>
     <div className="max-w-3xl text-center">
       <motion.div initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2, duration: 0.6 }}>
         <span className="inline-block px-3 py-1 text-xs font-medium tracking-widest uppercase bg-brand-yellow text-brand-yellow-foreground rounded-full mb-8">

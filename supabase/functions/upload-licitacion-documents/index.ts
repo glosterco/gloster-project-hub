@@ -121,7 +121,7 @@ serve(async (req) => {
   }
 
   try {
-    const { licitacionId, licitacionName, documents, notifyOferentes, targetSubfolder } = await req.json();
+    const { licitacionId, licitacionName, documents, notifyOferentes, targetSubfolder, documentTipo } = await req.json();
 
     if (!licitacionId || !documents || !Array.isArray(documents) || documents.length === 0) {
       return new Response(
@@ -222,7 +222,7 @@ serve(async (req) => {
             licitacion_id: licitacionId,
             nombre: doc.name,
             size: doc.size || null,
-            tipo: doc.mimeType || 'application/octet-stream',
+            tipo: documentTipo || doc.mimeType || 'application/octet-stream',
             url: result.webViewLink,
           });
 

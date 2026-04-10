@@ -86,6 +86,9 @@ const SortableOfertaHeader: React.FC<{
     transition,
   };
 
+  const empresaName = oferta.oferente_empresa || oferta.oferente_nombre || null;
+  const emailDisplay = oferta.oferente_email;
+
   return (
     <TableHead
       ref={setNodeRef}
@@ -94,27 +97,35 @@ const SortableOfertaHeader: React.FC<{
       className={`text-center border-l border-r ${isAdj ? "bg-emerald-50 dark:bg-emerald-950/20" : ""} ${isCherryPick ? "bg-violet-50 dark:bg-violet-950/20" : ""}`}
     >
       <div className="flex flex-col items-center gap-0.5">
-        <div className="flex items-center gap-1">
-          {!isCherryPick && (
-            <span {...attributes} {...listeners} className="cursor-grab">
-              <GripVertical className="h-3 w-3 text-muted-foreground" />
-            </span>
-          )}
-          <p className="text-xs font-bold truncate max-w-[140px]">
-            {isCherryPick
-              ? "🍒 Cherry Pick"
-              : oferta.oferente_empresa || oferta.oferente_nombre || oferta.oferente_email}
-          </p>
-        </div>
-        <div className="flex items-center gap-1">
-          {isAdj && <Trophy className="h-3 w-3 text-emerald-600" />}
-          <Badge
-            variant={isAdj ? "default" : "outline"}
-            className={`text-[9px] ${isAdj ? "bg-emerald-600" : ""} ${isCherryPick ? "bg-violet-600 text-white" : ""}`}
-          >
-            {isCherryPick ? "Óptimo" : isAdj ? "Adjudicada" : oferta.estado}
-          </Badge>
-        </div>
+        {isCherryPick ? (
+          <>
+            <p className="text-xs font-bold">🍒 Cherry Pick</p>
+            <Badge className="text-[9px] bg-violet-600 text-white">Óptimo</Badge>
+          </>
+        ) : (
+          <>
+            <div className="flex items-center gap-1">
+              <span {...attributes} {...listeners} className="cursor-grab">
+                <GripVertical className="h-3 w-3 text-muted-foreground" />
+              </span>
+              <p className="text-xs font-bold truncate max-w-[140px]">
+                {empresaName || emailDisplay}
+              </p>
+            </div>
+            {empresaName && (
+              <p className="text-[9px] text-muted-foreground truncate max-w-[140px]">{emailDisplay}</p>
+            )}
+            <div className="flex items-center gap-1">
+              {isAdj && <Trophy className="h-3 w-3 text-emerald-600" />}
+              <Badge
+                variant={isAdj ? "default" : "outline"}
+                className={`text-[9px] ${isAdj ? "bg-emerald-600" : ""}`}
+              >
+                {isAdj ? "Adjudicada" : oferta.estado}
+              </Badge>
+            </div>
+          </>
+        )}
       </div>
     </TableHead>
   );
@@ -497,7 +508,7 @@ const LicitacionOfertasTab: React.FC<Props> = ({
                     ? (() => {
                         if (cheapest.minOfertaId === -999) return "Mandante";
                         const src = ofertas.find((o) => o.id === cheapest.minOfertaId);
-                        return src?.oferente_nombre || src?.oferente_empresa || "-";
+                        return src?.oferente_empresa || src?.oferente_nombre || src?.oferente_email || "-";
                       })()
                     : "-"}
                 </TableCell>
@@ -517,7 +528,7 @@ const LicitacionOfertasTab: React.FC<Props> = ({
                         ? "Mandante"
                         : (() => {
                             const src = ofertas.find((o) => o.id === cheapest.minOfertaId);
-                            return src?.oferente_empresa || src?.oferente_nombre || "-";
+                            return src?.oferente_empresa || src?.oferente_nombre || src?.oferente_email || "-";
                           })()}
                     </span>
                   </div>

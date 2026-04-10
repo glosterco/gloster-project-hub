@@ -7,7 +7,9 @@ import dashboardImg from "@/assets/slides/subcontratos-dashboard.png";
 import pagosImg from "@/assets/slides/subcontratos-estados-pago.png";
 import presupuestoImg from "@/assets/slides/subcontratos-presupuesto.png";
 import documentosImg from "@/assets/slides/subcontratos-documentos.png";
-import rfiImg from "@/assets/slides/subcontratos-documentos.png";
+import fotosImg from "@/assets/slides/subcontratos-fotos.png";
+import rfiImg from "@/assets/slides/subcontratos-rfi.png";
+import adicionalesImg from "@/assets/slides/subcontratos-adicionales.png";
 
 const slides: Slide[] = [
   {

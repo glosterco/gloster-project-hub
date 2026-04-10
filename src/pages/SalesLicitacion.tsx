@@ -15,11 +15,12 @@ import {
 import { useNavigate } from "react-router-dom";
 import SalesPresentation, { Slide } from "@/components/sales/SalesPresentation";
 
-import dashboardImg from "@/assets/sales/licitaciones-dashboard.jpg";
-import chatbotImg from "@/assets/sales/licitaciones-chatbot.jpg";
-import ofertasImg from "@/assets/sales/licitaciones-ofertas.jpg";
-import preguntasImg from "@/assets/sales/licitaciones-preguntas.jpg";
-import itemizadoImg from "@/assets/sales/licitaciones-itemizado.jpg";
+import chatbotImg from "@/assets/slides/licitacion-ia-creation.png";
+import gestionImg1 from "@/assets/slides/licitacion-gestion-centralizada-1.png";
+import gestionImg2 from "@/assets/slides/licitacion-gestion-centralizada-2.png";
+import itemizadoImg from "@/assets/slides/licitacion-itemizado.png";
+import preguntasImg from "@/assets/slides/licitacion-consultas.png";
+import ofertasImg from "@/assets/slides/licitacion-ofertas.png";
 
 const slides: Slide[] = [
   {
@@ -65,8 +66,8 @@ const slides: Slide[] = [
     title: "Gestión centralizada",
     description:
       "Panel completo para administrar todas tus licitaciones activas. Estado, plazos, oferentes invitados y documentación en un solo dashboard.",
-    image: dashboardImg,
-    image2: dashboardImg,
+    image: gestionImg1,
+    image2: gestionImg2,
     layout: "left",
     features: [
       {

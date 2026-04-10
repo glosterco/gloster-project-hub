@@ -34,12 +34,16 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { useState } from "react";
 import ContactModal from "@/components/ContactModal";
 
-// URLs de las imágenes subidas
-const homeImage = "/lovable-uploads/4e1775b7-5550-4e5a-a78b-261535b4c52b.png";
-const dashboardContratistaImage = "/lovable-uploads/25a89fa1-64d5-488b-b6b2-c85b6daee5f5.png";
-const payment1Image = "/lovable-uploads/fc73cc7b-9b91-43d6-a910-2c7ada490b57.png";
-const dashboardMandanteImage = "/lovable-uploads/13012c60-5258-4c3f-b6ba-fa85b2530748.png";
-const submissionImage = "/lovable-uploads/736cf34a-679d-4c6a-bfaf-b1c2225022d9.png";
+// Subcontratos images
+import subDashboardImg from "@/assets/slides/subcontratos-dashboard.png";
+import subPagosImg from "@/assets/slides/subcontratos-estados-pago.png";
+import subPresupuestoImg from "@/assets/slides/subcontratos-presupuesto.png";
+import subDocumentosImg from "@/assets/slides/subcontratos-documentos.png";
+// Licitaciones images
+import licIAImg from "@/assets/slides/licitacion-ia-creation.png";
+import licGestionImg from "@/assets/slides/licitacion-gestion-centralizada-1.png";
+import licOfertasImg from "@/assets/slides/licitacion-ofertas.png";
+import licConsultasImg from "@/assets/slides/licitacion-consultas.png";
 
 type ProductMode = "subcontratos" | "licitaciones";
 

@@ -3,11 +3,11 @@ import { BarChart3, FileText, Users, Shield, Clock, Camera, CheckCircle, FolderO
 import { useNavigate } from "react-router-dom";
 import SalesPresentation, { Slide } from "@/components/sales/SalesPresentation";
 
-import dashboardImg from "@/assets/sales/subcontratos-dashboard.jpg";
-import pagosImg from "@/assets/sales/subcontratos-pagos.jpg";
-import documentosImg from "@/assets/sales/subcontratos-documentos.jpg";
-import rfiImg from "@/assets/sales/subcontratos-rfi.jpg";
-import presupuestoImg from "@/assets/sales/subcontratos-presupuesto.jpg";
+import dashboardImg from "@/assets/slides/subcontratos-dashboard.png";
+import pagosImg from "@/assets/slides/subcontratos-estados-pago.png";
+import presupuestoImg from "@/assets/slides/subcontratos-presupuesto.png";
+import documentosImg from "@/assets/slides/subcontratos-documentos.png";
+import rfiImg from "@/assets/slides/subcontratos-documentos.png";
 
 const slides: Slide[] = [
   {

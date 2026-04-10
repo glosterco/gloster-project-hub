@@ -7,7 +7,9 @@ import dashboardImg from "@/assets/slides/subcontratos-dashboard.png";
 import pagosImg from "@/assets/slides/subcontratos-estados-pago.png";
 import presupuestoImg from "@/assets/slides/subcontratos-presupuesto.png";
 import documentosImg from "@/assets/slides/subcontratos-documentos.png";
-import rfiImg from "@/assets/slides/subcontratos-documentos.png";
+import fotosImg from "@/assets/slides/subcontratos-fotos.png";
+import rfiImg from "@/assets/slides/subcontratos-rfi.png";
+import adicionalesImg from "@/assets/slides/subcontratos-adicionales.png";
 
 const slides: Slide[] = [
   {
@@ -48,7 +50,7 @@ const slides: Slide[] = [
   {
     id: 4, type: "showcase", title: "Gestión documental integrada",
     description: "Todos los documentos del proyecto organizados por tipo: contratos, planos, EETT, garantías. Integración directa con Google Drive.",
-    image: documentosImg, image2: documentosImg, layout: "left",
+    image: documentosImg, image2: fotosImg, layout: "left",
     features: [
       { icon: <FolderOpen className="w-5 h-5" />, label: "Organización automática", detail: "Documentos clasificados por tipo con estructura predefinida" },
       { icon: <Camera className="w-5 h-5" />, label: "Registro fotográfico", detail: "Sube y organiza fotos de avance del proyecto" },
@@ -58,7 +60,7 @@ const slides: Slide[] = [
   {
     id: 5, type: "feature", title: "RFI y Adicionales",
     description: "Gestiona solicitudes de información (RFI) y adicionales con flujos conversacionales, urgencia, plazos y trazabilidad completa entre contratista y mandante.",
-    image: rfiImg, image2: rfiImg, layout: "right",
+    image: rfiImg, image2: adicionalesImg, layout: "right",
     features: [
       { icon: <MessageSquare className="w-5 h-5" />, label: "Conversación estructurada", detail: "Hilo de mensajes entre contratista y mandante por cada RFI" },
       { icon: <AlertTriangle className="w-5 h-5" />, label: "Niveles de urgencia", detail: "Clasifica RFIs por urgencia y controla plazos de respuesta" },

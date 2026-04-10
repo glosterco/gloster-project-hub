@@ -401,7 +401,7 @@ const MKT = () => {
                 </div>
                 <div className="rounded overflow-hidden">
                   <img
-                    src={homeImage}
+                    src={mode === "subcontratos" ? subDashboardImg : licGestionImg}
                     alt={mode === "subcontratos" ? "Dashboard Principal de la Plataforma" : "Panel de Licitaciones"}
                     className="w-full h-auto object-contain"
                   />
@@ -471,8 +471,8 @@ const MKT = () => {
                   <CarouselItem>
                     <div className="rounded-lg overflow-hidden">
                       <img
-                        src={dashboardMandanteImage}
-                        alt="Dashboard de Mandante"
+                        src={mode === "subcontratos" ? subDashboardImg : licGestionImg}
+                        alt={mode === "subcontratos" ? "Dashboard de Mandante" : "Gestión de Licitaciones"}
                         className="w-full h-auto object-contain"
                       />
                     </div>
@@ -480,8 +480,8 @@ const MKT = () => {
                   <CarouselItem>
                     <div className="rounded-lg overflow-hidden">
                       <img
-                        src={submissionImage}
-                        alt="Vista detalle"
+                        src={mode === "subcontratos" ? subPresupuestoImg : licOfertasImg}
+                        alt={mode === "subcontratos" ? "Presupuesto y avance" : "Comparación de ofertas"}
                         className="w-full h-auto object-contain"
                       />
                     </div>
@@ -545,8 +545,8 @@ const MKT = () => {
                   <CarouselItem>
                     <div className="rounded-lg overflow-hidden">
                       <img
-                        src={dashboardContratistaImage}
-                        alt="Dashboard de Contratista"
+                        src={mode === "subcontratos" ? subPagosImg : licIAImg}
+                        alt={mode === "subcontratos" ? "Estados de pago" : "Creación con IA"}
                         className="w-full h-auto object-contain"
                       />
                     </div>
@@ -554,8 +554,8 @@ const MKT = () => {
                   <CarouselItem>
                     <div className="rounded-lg overflow-hidden">
                       <img
-                        src={payment1Image}
-                        alt="Vista detalle"
+                        src={mode === "subcontratos" ? subDocumentosImg : licConsultasImg}
+                        alt={mode === "subcontratos" ? "Gestión documental" : "Rondas de consultas"}
                         className="w-full h-auto object-contain"
                       />
                     </div>
